@@ -9,6 +9,7 @@ import { computePaymentFormValues, type PaymentFormValues } from './paymentFormV
 import {
 	createPurchaseSubmitApi,
 	submitPurchasePayment,
+	computeDeliveryAmountForAppliedDebt,
 	type PurchaseSubmitSnapshot
 } from './purchasePayment';
 import { submitSalePayment } from './salePaymentSubmit';
@@ -180,8 +181,19 @@ export class PaymentFormModel {
 		const info = this.values.prontoPagoInfo;
 		if (!info || info.recommendedPayment <= 0) return;
 		if (this.values.isNativeSettlement) {
+			if (!this.sel.rail) return;
+			// recommendedPayment is in settlement units; the amount field is in
+			// the rail's delivery currency, so convert via the amortization math.
 			this.sel.lastEditedAmount = 'native';
-			this.sel.nativeAmountInput = formatInputValue(info.recommendedPayment);
+			this.sel.nativeAmountInput = formatInputValue(
+				computeDeliveryAmountForAppliedDebt({
+					railCurrency: this.values.purchaseCurrencyCode,
+					appliedDebt: info.recommendedPayment,
+					settlementRateToVes: this.values.settlementRateToVes,
+					bcvRate: this.values.activeBcvRate,
+					specificRateValue: this.values.specificRateValue
+				})
+			);
 		} else {
 			this.sel.lastEditedAmount = 'usd';
 			this.sel.usdBcvAmountInput = formatInputValue(info.recommendedPayment);

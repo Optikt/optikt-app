@@ -53,12 +53,93 @@ export interface VoidPurchaseOrderPaymentSubmission {
 	userId: string;
 }
 
+function roundCurrency(value: number): number {
+	return Number(value.toFixed(2));
+}
+
+/** Pronto-pago terms + date window checks shared by both benefit registration paths. */
+function assertProntoPagoTerms(
+	purchaseOrder: PurchaseOrder,
+	benefitDate: string
+): { percent: number } {
+	const percent = Number(purchaseOrder.earlyPaymentDiscountPercent ?? 0);
+	const deadline = purchaseOrder.earlyPaymentDiscountDeadline;
+	if (percent <= 0 || !deadline) {
+		throw new Error('La orden no tiene pronto pago configurado');
+	}
+	if (benefitDate > deadline) {
+		throw new Error('La fecha del beneficio debe estar dentro del plazo de pronto pago');
+	}
+	return { percent };
+}
+
+/** Remaining amount a new benefit may apply, in settlement currency. */
+export function earlyPaymentBenefitCap(args: {
+	percent: number;
+	settlementDebtAmount: number;
+	settlementBenefitsApplied: number;
+	settlementBalance: number;
+}): number {
+	const percentCap = (args.settlementDebtAmount * Math.min(args.percent, 100)) / 100;
+	return roundCurrency(
+		Math.min(percentCap - args.settlementBenefitsApplied, args.settlementBalance)
+	);
+}
+
+async function computePurchaseOrderState(purchaseOrder: PurchaseOrder, executor: DbOrTx) {
+	const [items, payments, earlyPaymentBenefits] = await Promise.all([
+		getPurchaseOrderItems(purchaseOrder.id, executor),
+		getPurchaseOrderPayments(purchaseOrder.id, { includeVoided: true }, executor),
+		getPurchaseOrderEarlyPaymentBenefits(purchaseOrder.id, { includeVoided: true }, executor)
+	]);
+	const balance = computePurchaseOrderBalance(
+		purchaseOrder,
+		items,
+		payments,
+		earlyPaymentBenefits,
+		{
+			settlementCurrency: purchaseOrder.settlementCurrency,
+			settlementGrossAmount: purchaseOrder.settlementGrossAmount,
+			settlementDebtAmount: purchaseOrder.settlementDebtAmount
+		}
+	);
+	const dueStatus = getPurchaseOrderDueStatus({
+		paymentTerms: purchaseOrder.paymentTerms,
+		creditDueDate: purchaseOrder.creditDueDate,
+		earlyPaymentDiscountDeadline: purchaseOrder.earlyPaymentDiscountDeadline,
+		balance: balance.settlementBalance
+	});
+	return { items, payments, earlyPaymentBenefits, balance, dueStatus };
+}
+
 /** Adapter over purchase order payment + native debt amortization. Caller owns the transaction. */
 export async function submitPurchaseOrderPayment(
 	input: PurchaseOrderPaymentSubmission,
 	executor: DbOrTx
 ) {
 	const { purchaseOrder } = input;
+	const { earlyPaymentBenefit } = input;
+
+	if (earlyPaymentBenefit) {
+		// Server-side pronto pago guard: date window + remaining % cap, inside the tx.
+		const { percent } = assertProntoPagoTerms(purchaseOrder, input.benefitDate);
+		const preBalance = (await computePurchaseOrderState(purchaseOrder, executor)).balance;
+		const cap = earlyPaymentBenefitCap({
+			percent,
+			settlementDebtAmount: Number(purchaseOrder.settlementDebtAmount ?? 0),
+			settlementBenefitsApplied: preBalance.settlementBenefitsApplied,
+			settlementBalance: preBalance.settlementBalance
+		});
+		const nativeApplied = Number(
+			earlyPaymentBenefit.amountAppliedToDebt ?? earlyPaymentBenefit.amountUsdBcv ?? 0
+		);
+		if (cap <= 0) {
+			throw new Error('No hay saldo pendiente ni descuento disponible para aplicar');
+		}
+		if (nativeApplied > cap + 0.01) {
+			throw new Error(`El beneficio no puede superar ${cap.toFixed(2)}`);
+		}
+	}
 
 	const paymentNumber = await getNextPurchaseOrderPaymentNumber(purchaseOrder.id, executor);
 
@@ -97,49 +178,30 @@ export async function submitPurchaseOrderPayment(
 		executor
 	);
 
-	const benefit = input.earlyPaymentBenefit
+	const benefit = earlyPaymentBenefit
 		? await createPurchaseOrderEarlyPaymentBenefit(
 				{
 					purchaseOrderId: purchaseOrder.id,
 					paymentId: payment.id,
 					benefitDate: input.benefitDate,
-					amountUsdBcv: input.earlyPaymentBenefit.amountUsdBcv,
+					amountUsdBcv: earlyPaymentBenefit.amountUsdBcv,
 					amountAppliedToDebt:
-						input.earlyPaymentBenefit.amountAppliedToDebt ?? input.earlyPaymentBenefit.amountUsdBcv,
+						earlyPaymentBenefit.amountAppliedToDebt ?? earlyPaymentBenefit.amountUsdBcv,
 					amountAppliedToDebtUsdBcvAtOrder:
-						input.earlyPaymentBenefit.amountAppliedToDebtUsdBcvAtOrder ??
-						input.earlyPaymentBenefit.amountUsdBcv,
-					appliedToBalance: input.earlyPaymentBenefit.appliedToBalance,
-					note: input.earlyPaymentBenefit.note ?? null,
+						earlyPaymentBenefit.amountAppliedToDebtUsdBcvAtOrder ??
+						earlyPaymentBenefit.amountUsdBcv,
+					appliedToBalance: earlyPaymentBenefit.appliedToBalance,
+					note: earlyPaymentBenefit.note ?? null,
 					createdById: input.userId
 				},
 				executor
 			)
 		: null;
 
-	const [items, payments, earlyPaymentBenefits] = await Promise.all([
-		getPurchaseOrderItems(purchaseOrder.id, executor),
-		getPurchaseOrderPayments(purchaseOrder.id, { includeVoided: true }, executor),
-		getPurchaseOrderEarlyPaymentBenefits(purchaseOrder.id, { includeVoided: true }, executor)
-	]);
-
-	const balance = computePurchaseOrderBalance(
+	const { earlyPaymentBenefits, balance, dueStatus } = await computePurchaseOrderState(
 		purchaseOrder,
-		items,
-		payments,
-		earlyPaymentBenefits,
-		{
-			settlementCurrency: purchaseOrder.settlementCurrency,
-			settlementGrossAmount: purchaseOrder.settlementGrossAmount,
-			settlementDebtAmount: purchaseOrder.settlementDebtAmount
-		}
+		executor
 	);
-	const dueStatus = getPurchaseOrderDueStatus({
-		paymentTerms: purchaseOrder.paymentTerms,
-		creditDueDate: purchaseOrder.creditDueDate,
-		earlyPaymentDiscountDeadline: purchaseOrder.earlyPaymentDiscountDeadline,
-		balance: balance.settlementBalance
-	});
 
 	return { payment, benefit, earlyPaymentBenefits, balance, dueStatus };
 }
@@ -157,31 +219,14 @@ export async function voidPurchaseOrderPayment(
 	}
 	await voidPurchaseOrderEarlyPaymentBenefitsByPayment(input.paymentId, input.userId, executor);
 
-	const [items, payments, earlyPaymentBenefits] = await Promise.all([
-		getPurchaseOrderItems(purchaseOrder.id, executor),
-		getPurchaseOrderPayments(purchaseOrder.id, { includeVoided: true }, executor),
-		getPurchaseOrderEarlyPaymentBenefits(purchaseOrder.id, { includeVoided: true }, executor)
-	]);
+	const state = await computePurchaseOrderState(purchaseOrder, executor);
 
-	const balance = computePurchaseOrderBalance(
-		purchaseOrder,
-		items,
-		payments,
-		earlyPaymentBenefits,
-		{
-			settlementCurrency: purchaseOrder.settlementCurrency,
-			settlementGrossAmount: purchaseOrder.settlementGrossAmount,
-			settlementDebtAmount: purchaseOrder.settlementDebtAmount
-		}
-	);
-	const dueStatus = getPurchaseOrderDueStatus({
-		paymentTerms: purchaseOrder.paymentTerms,
-		creditDueDate: purchaseOrder.creditDueDate,
-		earlyPaymentDiscountDeadline: purchaseOrder.earlyPaymentDiscountDeadline,
-		balance: balance.settlementBalance
-	});
-
-	return { voided, earlyPaymentBenefits, balance, dueStatus };
+	return {
+		voided,
+		earlyPaymentBenefits: state.earlyPaymentBenefits,
+		balance: state.balance,
+		dueStatus: state.dueStatus
+	};
 }
 
 // ============================================================================
@@ -195,10 +240,6 @@ export interface RegisterEarlyPaymentBenefitSubmission {
 	appliedToBalance: boolean;
 	note?: string | null;
 	userId: string;
-}
-
-function roundCurrency(value: number): number {
-	return Number(value.toFixed(2));
 }
 
 /** USD-BCV value of a settlement-currency benefit, using the order's own rates. */
@@ -219,38 +260,16 @@ export async function registerPurchaseOrderEarlyPaymentBenefit(
 ) {
 	const { purchaseOrder, amount } = input;
 
-	const percent = Number(purchaseOrder.earlyPaymentDiscountPercent ?? 0);
-	const deadline = purchaseOrder.earlyPaymentDiscountDeadline;
-	if (percent <= 0 || !deadline) {
-		throw new Error('La orden no tiene pronto pago configurado');
-	}
-	if (input.benefitDate > deadline) {
-		throw new Error('La fecha del beneficio debe estar dentro del plazo de pronto pago');
-	}
+	const { percent } = assertProntoPagoTerms(purchaseOrder, input.benefitDate);
 
-	const [items, payments, earlyPaymentBenefits] = await Promise.all([
-		getPurchaseOrderItems(purchaseOrder.id, executor),
-		getPurchaseOrderPayments(purchaseOrder.id, { includeVoided: true }, executor),
-		getPurchaseOrderEarlyPaymentBenefits(purchaseOrder.id, { includeVoided: true }, executor)
-	]);
-	const balance = computePurchaseOrderBalance(
-		purchaseOrder,
-		items,
-		payments,
-		earlyPaymentBenefits,
-		{
-			settlementCurrency: purchaseOrder.settlementCurrency,
-			settlementGrossAmount: purchaseOrder.settlementGrossAmount,
-			settlementDebtAmount: purchaseOrder.settlementDebtAmount
-		}
-	);
+	const state = await computePurchaseOrderState(purchaseOrder, executor);
 
-	const discountCap = roundCurrency(
-		Math.min(
-			(Number(purchaseOrder.settlementDebtAmount ?? 0) * percent) / 100,
-			balance.settlementBalance
-		)
-	);
+	const discountCap = earlyPaymentBenefitCap({
+		percent,
+		settlementDebtAmount: Number(purchaseOrder.settlementDebtAmount ?? 0),
+		settlementBenefitsApplied: state.balance.settlementBenefitsApplied,
+		settlementBalance: state.balance.settlementBalance
+	});
 	if (discountCap <= 0) {
 		throw new Error('No hay saldo pendiente ni descuento disponible para aplicar');
 	}
@@ -288,28 +307,12 @@ export async function registerPurchaseOrderEarlyPaymentBenefit(
 		executor
 	);
 
-	const updatedBenefits = await getPurchaseOrderEarlyPaymentBenefits(
-		purchaseOrder.id,
-		{ includeVoided: true },
-		executor
-	);
-	const updatedBalance = computePurchaseOrderBalance(
-		purchaseOrder,
-		items,
-		payments,
-		updatedBenefits,
-		{
-			settlementCurrency: purchaseOrder.settlementCurrency,
-			settlementGrossAmount: purchaseOrder.settlementGrossAmount,
-			settlementDebtAmount: purchaseOrder.settlementDebtAmount
-		}
-	);
-	const dueStatus = getPurchaseOrderDueStatus({
-		paymentTerms: purchaseOrder.paymentTerms,
-		creditDueDate: purchaseOrder.creditDueDate,
-		earlyPaymentDiscountDeadline: purchaseOrder.earlyPaymentDiscountDeadline,
-		balance: updatedBalance.settlementBalance
-	});
+	const finalState = await computePurchaseOrderState(purchaseOrder, executor);
 
-	return { benefit, earlyPaymentBenefits: updatedBenefits, balance: updatedBalance, dueStatus };
+	return {
+		benefit,
+		earlyPaymentBenefits: finalState.earlyPaymentBenefits,
+		balance: finalState.balance,
+		dueStatus: finalState.dueStatus
+	};
 }

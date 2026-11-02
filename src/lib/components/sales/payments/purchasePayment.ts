@@ -3,7 +3,8 @@ import { CurrencyCode, PurchasePaymentTerms } from '$lib/shared/enums';
 import {
 	computePaymentExchangeVariance,
 	denormalizePurchasePaymentAmount,
-	normalizePurchasePaymentAmounts
+	normalizePurchasePaymentAmounts,
+	requiresPurchasePaymentSpecificRate
 } from '$lib/shared/purchaseOrderPayments';
 import {
 	getEarlyPaymentDiscountSuggestion,
@@ -60,6 +61,31 @@ export function computeAmountAppliedToDebt(args: {
 	const { isNativeSettlement, purchaseNormalizedAmountBs, settlementRateToVes } = args;
 	if (!isNativeSettlement || settlementRateToVes <= 0) return undefined;
 	return Math.round((purchaseNormalizedAmountBs / settlementRateToVes) * 100) / 100;
+}
+
+/**
+ * Delivered amount (in the rail's currency) that amortizes `appliedDebt`
+ * settlement units. Inverse of `computeAmountAppliedToDebt`:
+ *   appliedDebt × settlementRateToVes = deliveredBs
+ * and deliveredBs comes from the rail's own Bs-per-unit rate.
+ */
+export function computeDeliveryAmountForAppliedDebt(args: {
+	railCurrency: CurrencyCode;
+	appliedDebt: number;
+	settlementRateToVes: number;
+	bcvRate: number;
+	specificRateValue: number;
+}) {
+	const { railCurrency, appliedDebt, settlementRateToVes, bcvRate, specificRateValue } = args;
+	if (appliedDebt <= 0 || settlementRateToVes <= 0) return 0;
+	if (railCurrency === CurrencyCode.VES) {
+		return Math.round(appliedDebt * settlementRateToVes * 100) / 100;
+	}
+	const bsPerRailUnit = requiresPurchasePaymentSpecificRate(railCurrency)
+		? specificRateValue
+		: bcvRate;
+	if (bsPerRailUnit <= 0) return 0;
+	return Math.round(((appliedDebt * settlementRateToVes) / bsPerRailUnit) * 100) / 100;
 }
 
 export function computeExchangeVariance(args: {
