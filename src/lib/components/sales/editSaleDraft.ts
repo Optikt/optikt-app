@@ -102,14 +102,22 @@ export function previewSubtotalForItems(
 	discount: number,
 	discountType: string
 ): { subtotal: number; globalDiscount: number; total: number } {
+	// Mirrors computeSaleTotals on the server: each line's discount is clamped
+	// to the line's gross so the preview can never drift from what is saved.
 	const subtotal = activeItems.reduce((acc, item) => {
-		const lineTotal = item.unitPrice * item.quantity;
-		const itemDiscount = computeDiscount(
-			item.discount ?? 0,
-			(item.discountType ?? DiscountType.FIXED) as DiscountTypeEnum,
-			lineTotal
+		const gross = item.unitPrice * item.quantity;
+		const lineDiscount = Math.min(
+			gross,
+			Math.max(
+				0,
+				computeDiscount(
+					item.discount ?? 0,
+					(item.discountType ?? DiscountType.FIXED) as DiscountTypeEnum,
+					gross
+				)
+			)
 		);
-		return acc + lineTotal - itemDiscount;
+		return acc + gross - lineDiscount;
 	}, 0);
 	const globalDiscount = computeDiscount(
 		discount ?? 0,
@@ -210,6 +218,24 @@ function perEyePrice(child: EditableItem): { price: number; salePrice: number } 
 		return { price: child.snapshotBaseCost ?? child.unitPrice, salePrice: child.unitPrice };
 	}
 	return { price: (child.snapshotBaseCost ?? child.unitPrice) / 2, salePrice: child.unitPrice / 2 };
+}
+
+/**
+ * Display resolution for a treatment child row in a list: new rows (marked via
+ * `snapshotSalePrice`) store qty = eyes with rx and a per-eye unitPrice; legacy
+ * rows store qty 1 with a pair (×2) unitPrice. Shared so list views and editors
+ * agree on the price shown «c/u».
+ */
+export function treatmentChildDisplay(child: EditableItem): {
+	perEyeSalePrice: number;
+	eyes: number;
+} {
+	if (child.snapshotSalePrice != null) {
+		return { perEyeSalePrice: child.unitPrice, eyes: child.quantity };
+	}
+	return child.quantity > 1
+		? { perEyeSalePrice: child.unitPrice, eyes: child.quantity }
+		: { perEyeSalePrice: child.unitPrice / 2, eyes: 2 };
 }
 
 export function mapTreatmentsForEdit(
@@ -441,20 +467,19 @@ export function buildUpdateSalePayload(
 	if (draft.prescriptionPatch) {
 		const patch = draft.prescriptionPatch;
 		const seed = draft.prescription ?? null;
-		const changed =
-			!seed ||
-			seed.dp !== patch.dp ||
-			seed.npRight !== patch.npRight ||
-			seed.npLeft !== patch.npLeft;
+		const changed = seed
+			? seed.dp !== patch.dp || seed.npRight !== patch.npRight || seed.npLeft !== patch.npLeft
+			: patch.dp != null || patch.npRight != null || patch.npLeft != null;
 		if (changed) {
-			// The provider patch schema is partial: drop nulls, only real values.
-			const cleanPatch: Record<string, number> = {};
-			if (patch.dp != null) cleanPatch.dp = patch.dp;
-			if (patch.npRight != null) cleanPatch.npRight = patch.npRight;
-			if (patch.npLeft != null) cleanPatch.npLeft = patch.npLeft;
-			if (Object.keys(cleanPatch).length > 0) {
-				payload.prescription = cleanPatch as typeof payload.prescription;
-			}
+			// Full triple patch: explicit nulls CLEAR the stored measure (the
+			// server schema `NullableCoercedInteger` preserves them); a number
+			// sets it. Absent prescription ⇒ sales without a prescription row
+			// are rejected server-side with an explicit error.
+			payload.prescription = {
+				dp: patch.dp,
+				npRight: patch.npRight,
+				npLeft: patch.npLeft
+			};
 		}
 	}
 

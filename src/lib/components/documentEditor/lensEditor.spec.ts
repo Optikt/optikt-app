@@ -4,9 +4,11 @@ import { DiscountType } from '$lib/shared/enums';
 
 import {
 	createEmptyLensEditorDraft,
+	opticalStepDelta,
 	evaluateLensEditorRange,
 	formatOpticalInput,
 	hasLensEditorErrors,
+	stepOpticalValue,
 	treatmentTotal,
 	validateLensEditorDraft
 } from './lensEditor';
@@ -153,6 +155,35 @@ describe('evaluateLensEditorRange', () => {
 		const evaluation = evaluateLensEditorRange(draft(), []);
 		expect(evaluation.warnings).toHaveLength(0);
 		expect(evaluation.hasRanges).toBe(false);
+	});
+});
+
+describe('stepOpticalValue (arrow-key stepping, pure)', () => {
+	it('steps dioptrías in ¼ and snaps fractional inputs to quarters', () => {
+		expect(stepOpticalValue(-2.25, 'esf', -1)).toBe(-2.5);
+		expect(stepOpticalValue(0, 'esf', 1)).toBe(0.25);
+		expect(stepOpticalValue(-0.25, 'esf', 1)).toBeCloseTo(0, 10);
+		expect(stepOpticalValue(0.5, 'cil', -1)).toBe(0.25);
+		/** Off-quarter inputs snap back to the nearest ¼ (e.g. 0.3 − 0.25 → 0). */
+		expect(stepOpticalValue(0.3, 'cil', -1)).toBe(0);
+	});
+
+	it('clamps eje to 0–180 in whole degrees', () => {
+		expect(stepOpticalValue(0, 'eje', -1)).toBe(0);
+		expect(stepOpticalValue(180, 'eje', 1)).toBe(180);
+		expect(stepOpticalValue(88.5, 'eje', 1)).toBe(90);
+	});
+
+	it('steps mm measures in whole units (rounds fractional input)', () => {
+		expect(stepOpticalValue(61.6, 'mm', 1)).toBe(63);
+		expect(stepOpticalValue(62, 'mm', -1)).toBe(61);
+	});
+
+	it('uses 0.25 for dioptrías and 1 for everything else', () => {
+		expect(opticalStepDelta('esf')).toBe(0.25);
+		expect(opticalStepDelta('add')).toBe(0.25);
+		expect(opticalStepDelta('eje')).toBe(1);
+		expect(opticalStepDelta('mm')).toBe(1);
 	});
 });
 

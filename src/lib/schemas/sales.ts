@@ -23,7 +23,7 @@ import {
 import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 import { ALL_CUSTOMER_GENDERS } from '$lib/shared/enums/customerGenders';
-import { AxisSchema, AlturaSchema, DpSchema, NpSchema } from '$lib/schemas/prescriptions';
+import { AxisSchema, AlturaSchema, DpPatchSchema, NpPatchSchema } from '$lib/schemas/prescriptions';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
@@ -339,12 +339,14 @@ export const UpdateSaleSchema = z.object({
 	snapshotTaxRate: CoercedNumber.min(0).optional(),
 	/** Full replacement of sale items (if provided) */
 	items: z.array(SaleItemSchema).optional(),
-	/** Prescription measures (DP / nasal) patch for the sale's lens prescription. */
+	/** Prescription measures (DP / nasal) patch for the sale's lens prescription.
+	 *  Accepts explicit nulls so the editor can clear a measure; sending the
+	 *  field absent means «don't touch». */
 	prescription: z
 		.object({
-			dp: DpSchema.optional(),
-			npRight: NpSchema.optional(),
-			npLeft: NpSchema.optional()
+			dp: DpPatchSchema,
+			npRight: NpPatchSchema,
+			npLeft: NpPatchSchema
 		})
 		.optional()
 });

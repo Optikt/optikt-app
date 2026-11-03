@@ -4,7 +4,6 @@
 	import { LensCatalogSource } from '$lib/shared/enums';
 	import ItemSelect from '../ItemSelect.svelte';
 	import LensEditorPanel from '$lib/components/documentEditor/LensEditorPanel.svelte';
-	import { createEmptyLensEditorDraft } from '$lib/components/documentEditor/lensEditor';
 	import type { LensEditorDraft } from '$lib/components/documentEditor/types';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { getCachedLensItem, getCachedLensItems } from '../catalogCache.svelte';
@@ -39,13 +38,11 @@
 
 	let { item, editTreatments, treatments, measures, onApply }: Props = $props();
 
+	/** Mount-time snapshot: placeholders always carry a local id, so editing an
+	 *  existing item and adding a fresh one both seed through the adapter. */
 	const lensBase = untrack(() => ({ ...item }));
 	let lensDraft = $state<LensEditorDraft>(
-		untrack(() =>
-			item.id
-				? lensEditorDraftFromEditableItem(item, editTreatments, measures)
-				: createEmptyLensEditorDraft()
-		)
+		untrack(() => lensEditorDraftFromEditableItem(item, editTreatments, measures))
 	);
 
 	const context = $derived(
@@ -86,7 +83,7 @@
 		lensDraft.lensCatalogItemId = id || '';
 		if (id && unitPrice > 0) lensDraft.unitPrice = unitPrice;
 
-		if (id && (supplierChanged || !item.id)) {
+		if (id && supplierChanged) {
 			if (lensDraft.treatments.length > 0) {
 				toast.warning('Se quitaron los tratamientos porque pertenecen a otro proveedor');
 			}

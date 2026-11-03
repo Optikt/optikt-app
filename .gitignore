@@ -36,4 +36,7 @@ vite.config.ts.timestamp-*
 
 .codebase-memory/
 .opencode/
-.agents/designs/
+.agents/
+
+# Mockups y previews (designs/) no van en el repo
+designs/

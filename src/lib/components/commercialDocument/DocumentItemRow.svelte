@@ -33,11 +33,15 @@
 </script>
 
 {#snippet rowTrigger({ props }: { props: Record<string, unknown> })}
+	<!-- The row is clickable but is NOT role="button": it contains real <button>
+	     elements (quitar / restaurar), which ARIA forbids nesting inside a
+	     button. Focusable generic region with its own name + keyboard support. -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<!-- Intentional focus target: the row's keyboard «open» support (Enter/Espacio). -->
 	<div
 		{...props}
-		role="button"
 		tabindex="0"
-		aria-label={item.title}
+		aria-label={`Editar ${item.title}`}
 		onclick={onOpen}
 		onkeydown={(event) => {
 			if (event.key === 'Enter' || event.key === ' ') {

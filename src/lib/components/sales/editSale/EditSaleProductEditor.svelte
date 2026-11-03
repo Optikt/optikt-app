@@ -36,6 +36,7 @@
 	);
 
 	function selectProduct(id: string, catalogPrice: number) {
+		error = '';
 		productId = id;
 		if (id && unitPrice <= 0 && catalogPrice > 0) unitPrice = catalogPrice;
 	}
@@ -96,10 +97,22 @@
 			{quantity}
 			{discount}
 			{discountType}
-			onPrice={(value) => (unitPrice = value)}
-			onQty={(value) => (quantity = value)}
-			onDiscount={(value) => (discount = value)}
-			onDiscountType={(value) => (discountType = value)}
+			onPrice={(value) => {
+				error = '';
+				unitPrice = value;
+			}}
+			onQty={(value) => {
+				error = '';
+				quantity = value;
+			}}
+			onDiscount={(value) => {
+				error = '';
+				discount = value;
+			}}
+			onDiscountType={(value) => {
+				error = '';
+				discountType = value;
+			}}
 			referencePrice={product?.currentSalePrice ?? undefined}
 		/>
 	</div>

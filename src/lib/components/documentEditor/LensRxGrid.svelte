@@ -6,7 +6,7 @@
 	 */
 	import { Check, TriangleAlert } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
-	import { formatOpticalInput, opticalStepDelta, type OpticalInputKind } from './lensEditor';
+	import { formatOpticalInput, stepOpticalValue, type OpticalInputKind } from './lensEditor';
 	import type { LensEditorEyeDraft } from './types';
 
 	interface Props {
@@ -56,13 +56,11 @@
 		const target = eye === 'od' ? od : oi;
 		const key = fieldFor(kind, cell) as keyof LensEditorEyeDraft;
 		const current = Number(target[key] ?? 0);
-		const next = current + dir * opticalStepDelta(kind);
-		(target[key] as number) =
-			kind === 'eje'
-				? Math.min(180, Math.max(0, Math.round(next)))
-				: kind === 'mm'
-					? Math.round(next)
-					: Math.round(next * 4) / 4;
+		const next = stepOpticalValue(current, kind, dir);
+		(target[key] as number) = next;
+		// Sync the display cache too: it otherwise wins over the draft in
+		// `current()` and the step would be invisible (and reverted on blur).
+		raw[cell] = formatDisplay(next, kind);
 	}
 
 	function onArrow(event: KeyboardEvent, cell: CellKey, kind: OpticalInputKind, eye: 'od' | 'oi') {
@@ -80,7 +78,76 @@
 		raw[cell] = parsed;
 		(target[key] as number | null) = parsed === '' ? null : Number(parsed);
 	}
+
+	/** Spanish field names for aria-labels. */
+	const FIELD_LABEL: Partial<Record<keyof LensEditorEyeDraft, string>> = {
+		sphere: 'Esfera',
+		cylinder: 'Cilindro',
+		axis: 'Eje',
+		addition: 'Adición',
+		altura: 'Altura',
+		dp: 'DP',
+		dnp: 'DNP'
+	};
+
+	/**
+	 * DP is ONE value («distancia pupilar» total, single DB column so it
+	 * persists from the OD eye): both cells read and write `od.dp` so they stay
+	 * an exact mirror — editing the OI cell never gets silently dropped.
+	 * Shared raw key `dp` keeps both inputs on the same cached text.
+	 */
+	function stepDp(dir: 1 | -1): void {
+		const next = stepOpticalValue(Number(od.dp ?? 0), 'mm', dir);
+		od.dp = next;
+		raw['dp'] = formatDisplay(next, 'mm');
+	}
+
+	function blurDp(): void {
+		const parsed = formatOpticalInput(raw['dp'] ?? '', 'mm');
+		raw['dp'] = parsed;
+		od.dp = parsed === '' ? null : Number(parsed);
+	}
+
+	/** Reset any in-progress raw text so external draft writes (e.g. Copy
+	OD→OI) repaint their values instead of being hidden by stale raw. */
+	function resetRaw(): void {
+		raw = {};
+	}
 </script>
+
+<!-- DP cell: OD and OI share the single «distancia pupilar» value (od.dp). -->
+{#snippet dpCell(eye: 'od' | 'oi', warnMissing?: boolean)}
+	<input
+		type="text"
+		inputmode="decimal"
+		autocomplete="off"
+		value={raw['dp'] ?? formatDisplay(od.dp, 'mm')}
+		disabled={eye === 'od' ? !od.enabled : !oi.enabled}
+		onfocus={(event) => {
+			raw['dp'] = event.currentTarget.value;
+			event.currentTarget.select();
+		}}
+		oninput={(event) => {
+			raw['dp'] = event.currentTarget.value;
+			const parsed = event.currentTarget.value === '' ? null : Number(event.currentTarget.value);
+			od.dp = parsed != null && !Number.isNaN(parsed) ? parsed : null;
+		}}
+		onblur={blurDp}
+		onkeydown={(event) => {
+			if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+			event.preventDefault();
+			stepDp(event.key === 'ArrowUp' ? 1 : -1);
+		}}
+		placeholder="—"
+		aria-invalid={warnMissing === true && od.dp == null}
+		aria-label={EYE_LABEL[eye] + ' ' + (FIELD_LABEL.dp ?? 'DP')}
+		class={`tabular h-8 w-[88px] rounded-lg border bg-white text-center text-[13px] text-brand-navy outline-transparent transition focus:outline-2 focus:outline-brand-blue disabled:cursor-not-allowed disabled:bg-surface-container-low disabled:text-on-surface-variant ${
+			warnMissing === true && od.dp == null
+				? 'border-warning bg-[#fffaf0]'
+				: 'border-outline-variant'
+		}`}
+	/>
+{/snippet}
 
 {#snippet headerCell(eye: 'od' | 'oi', dotClass: string)}
 	<div class="flex h-7 items-center justify-center gap-1">
@@ -196,7 +263,7 @@
 		onkeydown={(event) => onArrow(event, cellKey, kind, eye)}
 		placeholder="—"
 		aria-invalid={warnMissing === true && val[field] == null}
-		aria-label={EYE_LABEL[eye] + ' ' + String(field)}
+		aria-label={EYE_LABEL[eye] + ' ' + (FIELD_LABEL[field] ?? String(field))}
 		class={`tabular h-8 w-[88px] rounded-lg border bg-white text-center text-[13px] text-brand-navy outline-transparent transition focus:outline-2 focus:outline-brand-blue disabled:cursor-not-allowed disabled:bg-surface-container-low disabled:text-on-surface-variant ${
 			warnMissing === true && val[field] == null
 				? 'border-warning bg-[#fffaf0]'
@@ -214,7 +281,11 @@
 		{@render headerCell('od', 'bg-brand-blue')}
 		<button
 			type="button"
-			onclick={onCopy}
+			onclick={() => {
+				// Drop stale raw text: the OI cells must repaint the copied values.
+				resetRaw();
+				onCopy();
+			}}
 			aria-label="Copiar OD a OI"
 			class="mx-auto grid h-[30px] w-[30px] place-items-center rounded-full border border-outline-variant bg-white text-brand-navy transition hover:bg-brand-navy hover:text-white"
 		>
@@ -290,9 +361,13 @@
 			)}
 		{/if}
 
-		{@render rowLabel('Pupilar', 'DP', 'DP: distancia pupilar')}
-		{@render numInput('od.dp', 'mm', 'od')}
-		{@render numInput('oi.dp', 'mm', 'oi')}
+		{@render rowLabel(
+			'Pupilar',
+			'DP',
+			'DP: distancia pupilar — se guarda desde el ojo derecho y se refleja en ambos (un solo valor)'
+		)}
+		{@render dpCell('od')}
+		{@render dpCell('oi')}
 
 		{@render rowLabel('Naso-pupilar', 'DNP', 'DNP: del puente nasal al centro de la pupila')}
 		{@render numInput(
@@ -309,7 +384,3 @@
 		)}
 	</div>
 </div>
-
-<style>
-	/* Column fades to .45 while the eye is off (label + inputs, 250 ms). */
-</style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { ChevronDown, Plus } from '@lucide/svelte';
 	import DocumentItemRow from '$lib/components/commercialDocument/DocumentItemRow.svelte';
 	import DocumentChildRow from '$lib/components/commercialDocument/DocumentChildRow.svelte';
@@ -9,6 +10,7 @@
 		type DocumentChildView,
 		type DocumentItemView
 	} from '$lib/components/commercialDocument/itemView';
+	import { treatmentChildDisplay } from '../editSaleDraft';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { getCachedLensItem } from '../catalogCache.svelte';
 	import { ADD_ITEM_KINDS, type AddItemKind } from './addItemKinds';
@@ -144,18 +146,19 @@
 	 * unitPrice; legacy rows store qty=1 with a pair (×2) unitPrice.
 	 */
 	function childView(child: EditableItem): DocumentChildView | null {
-		const perEye = child.quantity > 1 ? child.unitPrice : child.unitPrice / 2;
-		const eyes = child.quantity > 1 ? child.quantity : 2;
-		if (perEye <= 0) return null;
+		// Same convention as the editor's perEyePrice: keep both views aligned
+		// through the snapshotSalePrice marker (per-eye rows) vs legacy pair rows.
+		const display = treatmentChildDisplay(child);
+		if (display.perEyeSalePrice <= 0) return null;
 		const isAr = child.snapshotTreatmentCategory?.toUpperCase() === 'AR';
 		return {
 			key: child.id ?? child.supplierTreatmentId ?? child.snapshotName ?? 'child',
 			title: child.snapshotName ?? 'Tratamiento',
 			kind: 'treatment',
 			tag: isAr ? 'Antirreflejo' : 'Adicional',
-			quantity: eyes,
-			unitPrice: perEye,
-			unitPriceLabel: `${formatPrice(perEye)} c/u`
+			quantity: display.eyes,
+			unitPrice: display.perEyeSalePrice,
+			unitPriceLabel: `${formatPrice(display.perEyeSalePrice)} c/u`
 		};
 	}
 
@@ -176,12 +179,23 @@
 		if (menuOpen && menuRoot && !menuRoot.contains(event.target as Node)) menuOpen = false;
 	}
 
-	function onWindowKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') menuOpen = false;
-	}
+	// ── Escape closes ONLY the add menu (capture phase) ─────────────────────
+	// The drawer's Bubble-phase Escape handler would otherwise also run and
+	// close the drawer / open the discard confirm while the user just wanted
+	// the menu gone. Capture + stopPropagation keeps the key out of the drawer.
+	$effect(() => {
+		function onWindowKeydownCapture(event: KeyboardEvent) {
+			if (event.key === 'Escape' && untrack(() => menuOpen)) {
+				menuOpen = false;
+				event.stopPropagation();
+			}
+		}
+		window.addEventListener('keydown', onWindowKeydownCapture, true);
+		return () => window.removeEventListener('keydown', onWindowKeydownCapture, true);
+	});
 </script>
 
-<svelte:window onpointerdown={onWindowPointerDown} onkeydown={onWindowKeydown} />
+<svelte:window onpointerdown={onWindowPointerDown} />
 
 <section class="relative">
 	<!-- Live region for remove / restore announcements -->

@@ -1,5 +1,6 @@
 import { toSaleTotalsLine } from '$lib/remote/sales/helpers';
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
+import { findSaleById, getSalePrescription } from '$lib/server/db/queries/sales/reads';
+import type { Prescription } from '$lib/server/db/schema';
 import { findCustomerById } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import {
@@ -137,29 +138,40 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		};
 	}
 
-	// Prescription measures (DP / nasal) patch: update the sale's current lens
-	// prescription within the same transaction (§ fields added for the editor UI).
-	async function currentPrescriptionId(txn: Parameters<Parameters<typeof db.transaction>[0]>[0]) {
-		const [row] = await txn
-			.select({ prescriptionId: saleItems.prescriptionId })
-			.from(saleItems)
-			.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)))
-			.orderBy(saleItems.createdAt)
-			.limit(1);
-		return row?.prescriptionId ?? null;
+	// Prescription measures (DP / nasal) patch. The target row is resolved once
+	// (before the transaction) as pre-validation — a sale without a prescription
+	// row must NOT silently drop the patch. The same `getSalePrescription` join
+	// (inner → prescriptionId IS NOT NULL, ordered like the sale detail read)
+	// picks the row both here and in the resolver below.
+	let prescriptionBefore: Prescription | null = null;
+	if (data.prescription) {
+		prescriptionBefore = await getSalePrescription(data.id);
+		if (!prescriptionBefore) {
+			return {
+				success: false as const,
+				error:
+					'No se pueden guardar las medidas: esta venta no tiene una receta asociada. Edita la graduación del cristal.'
+			};
+		}
 	}
 
 	// All writes in a single transaction
-	const updatedSale = await db.transaction(async (tx) => {
+	const txResult = await db.transaction(async (tx) => {
+		let patchedPrescription: Prescription | null = null;
 		if (data.prescription) {
-			const prescId = await currentPrescriptionId(tx);
+			const prescId = (await getSalePrescription(data.id, tx))?.id;
 			if (prescId) {
 				const patch: Record<string, unknown> = { updatedAt: nowISO() };
 				for (const key of ['dp', 'npRight', 'npLeft'] as const) {
 					const value = data.prescription[key];
 					if (value !== undefined) patch[key] = value;
 				}
-				await tx.update(prescriptions).set(patch).where(eq(prescriptions.id, prescId));
+				const [after] = await tx
+					.update(prescriptions)
+					.set(patch)
+					.where(eq(prescriptions.id, prescId))
+					.returning();
+				patchedPrescription = after ?? null;
 			}
 		}
 
@@ -292,13 +304,11 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 				.where(eq(sales.id, data.id))
 				.returning();
 
-			return updated;
+			return { sale: updated, prescription: patchedPrescription };
 		}
 
 		// ── Header-only update (no item changes) ───────────────────────────
-		const headerUpdate: Record<string, unknown> = {
-			updatedAt: nowISO()
-		};
+		const headerUpdate: Record<string, unknown> = {};
 		if (data.customerId) headerUpdate.customerId = data.customerId;
 		/** saleDate alias → createdAt (modal already composes day + preserved time) */
 		if (data.saleDate) headerUpdate.createdAt = data.saleDate;
@@ -314,14 +324,36 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 			headerUpdate.total = newTotal;
 		}
 
+		// A no-op save (reason only) must not touch the sale row at all:
+		// `updatedAt` only bumps when a real field changes.
+		if (Object.keys(headerUpdate).length === 0) {
+			return { sale: existing, prescription: patchedPrescription };
+		}
+		headerUpdate.updatedAt = nowISO();
+
 		const [updated] = await tx
 			.update(sales)
 			.set(headerUpdate)
 			.where(eq(sales.id, data.id))
 			.returning();
 
-		return updated;
+		return { sale: updated, prescription: patchedPrescription };
 	});
+
+	const updatedSale = txResult.sale;
+
+	// Prescription audit (best-effort, after transaction succeeds): the DP/NP patch
+	// does NOT land on the sale row, so the sale logUpdate above would never show it.
+	if (txResult.prescription && prescriptionBefore) {
+		await auditService.logUpdate(
+			'prescription',
+			txResult.prescription.id,
+			prescriptionBefore,
+			txResult.prescription,
+			{ ...ctx, reason: data.reason },
+			{ excludeFields: ['updatedAt', 'createdAt', 'deletedAt'] }
+		);
+	}
 
 	if (!updatedSale) {
 		return { success: false as const, error: 'Error al actualizar la venta' };

@@ -57,7 +57,7 @@
 	const title = $derived(
 		kind === 'lens' ? 'Cristal' : kind === 'product' ? 'Producto' : 'Ítem libre'
 	);
-	const isNew = $derived(creating && !item.id);
+	const isNew = $derived(creating);
 
 	function done() {
 		if (kind === 'lens') lensApi?.apply();

@@ -69,6 +69,7 @@
 			<input
 				type="text"
 				bind:value={name}
+				oninput={() => (error = '')}
 				placeholder="Ej.: Examen visual"
 				class="h-9 w-full rounded-lg border border-outline-variant/70 bg-white px-2.5 text-[13px] text-brand-navy transition outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
 			/>
@@ -114,10 +115,22 @@
 			{quantity}
 			{discount}
 			{discountType}
-			onPrice={(value) => (unitPrice = value)}
-			onQty={(value) => (quantity = value)}
-			onDiscount={(value) => (discount = value)}
-			onDiscountType={(value) => (discountType = value)}
+			onPrice={(value) => {
+				error = '';
+				unitPrice = value;
+			}}
+			onQty={(value) => {
+				error = '';
+				quantity = value;
+			}}
+			onDiscount={(value) => {
+				error = '';
+				discount = value;
+			}}
+			onDiscountType={(value) => {
+				error = '';
+				discountType = value;
+			}}
 		/>
 	</div>
 

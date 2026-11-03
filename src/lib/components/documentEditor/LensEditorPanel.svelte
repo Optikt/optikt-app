@@ -183,6 +183,12 @@
 				ranges[key] = { label: 'Revisar', tone: 'w' };
 				continue;
 			}
+			// The crystal has no configured ranges — «En rango» would promise
+			// a check that never happened; neutral info instead (lab decision).
+			if (!rangeEvaluation.hasRanges) {
+				ranges[key] = { label: 'Sin rangos', tone: 'n' };
+				continue;
+			}
 			if (missingSoftMeasures(draft[key], showAddition)) {
 				ranges[key] = { label: 'Faltan medidas', tone: 'w' };
 				continue;

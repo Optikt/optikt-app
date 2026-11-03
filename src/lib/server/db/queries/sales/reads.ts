@@ -55,6 +55,7 @@ export async function getSalePrescription(
 		.from(saleItems)
 		.innerJoin(prescriptions, eq(saleItems.prescriptionId, prescriptions.id))
 		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)))
+		.orderBy(saleItems.createdAt)
 		.limit(1);
 	return row?.prescription ?? null;
 }

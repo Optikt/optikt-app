@@ -179,6 +179,18 @@ export function opticalStepDelta(kind: OpticalInputKind): number {
 	return kind === 'esf' || kind === 'cil' || kind === 'add' ? 0.25 : 1;
 }
 
+/**
+ * Arrow-key stepping for the rx grid (pure): eje clamps 0–180, mm stays whole,
+ * dioptrías snap to ¼. The grid writes the result to both the draft cell and
+ * its raw display cache so the value is visible and survives blur.
+ */
+export function stepOpticalValue(current: number, kind: OpticalInputKind, dir: 1 | -1): number {
+	const next = current + dir * opticalStepDelta(kind);
+	if (kind === 'eje') return Math.min(180, Math.max(0, Math.round(next)));
+	if (kind === 'mm') return Math.round(next);
+	return Math.round(next * 4) / 4;
+}
+
 /** Eyes with an active (enabled) switch; treatment children bill per eye. */
 export function eyesWithRx(eye: LensEditorEyeDraft): number {
 	return eye.enabled ? 1 : 0;

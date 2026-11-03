@@ -125,8 +125,12 @@
 	function handleQueryChange(query: string) {
 		clearTimeout(searchTimer);
 		if (query.trim().length < 2) {
-			// Keep the seed so a mid-typing clear doesn't blank the selection.
-			options = seedOption();
+			// Keep the CURRENT selection (and the mount seed) when clearing the
+			// search: resetting to the seed alone would blank the input and drop
+			// the stock/on-demand chips after the user changed the item.
+			const currentOption = options.find((opt) => opt.id === value);
+			const seed = seedOption().filter((opt) => opt.id !== currentOption?.id);
+			options = currentOption ? [currentOption, ...seed] : seed;
 			return;
 		}
 		searchTimer = setTimeout(() => void runSearch(query.trim()), 250);

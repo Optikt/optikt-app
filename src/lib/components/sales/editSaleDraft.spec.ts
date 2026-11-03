@@ -18,6 +18,7 @@ import {
 	mapTreatmentsForEdit,
 	previewSubtotalForItems,
 	seedCatalogCacheForItems,
+	treatmentChildDisplay,
 	type EditableItem
 } from './editSaleDraft';
 
@@ -162,6 +163,52 @@ describe('previewSubtotalForItems', () => {
 		const result = previewSubtotalForItems([draft({ unitPrice: 10 })], 99, DiscountType.FIXED);
 
 		expect(result.total).toBe(0);
+	});
+
+	it('clamps a line discount exceeding the line gross (like the server)', () => {
+		// A $10 line with a $50 fixed discount contributes 0, never a negative
+		// drift that would make the footer preview differ from the saved total.
+		const result = previewSubtotalForItems(
+			[
+				draft({ unitPrice: 10, discount: 50, discountType: DiscountType.FIXED }),
+				draft({ unitPrice: 40 })
+			],
+			0,
+			DiscountType.FIXED
+		);
+
+		expect(result.subtotal).toBe(40);
+	});
+});
+
+describe('treatmentChildDisplay', () => {
+	it('per-eye rows (snapshotSalePrice) keep their qty and unit price', () => {
+		expect(
+			treatmentChildDisplay(
+				draft({
+					itemType: SaleItemType.TREATMENT,
+					snapshotSalePrice: 15,
+					quantity: 2,
+					unitPrice: 15
+				})
+			)
+		).toEqual({ perEyeSalePrice: 15, eyes: 2 });
+		expect(
+			treatmentChildDisplay(
+				draft({
+					itemType: SaleItemType.TREATMENT,
+					snapshotSalePrice: 15,
+					quantity: 1,
+					unitPrice: 15
+				})
+			)
+		).toEqual({ perEyeSalePrice: 15, eyes: 1 });
+	});
+
+	it('legacy pair rows (qty 1) halve the unit price for both eyes', () => {
+		expect(
+			treatmentChildDisplay(draft({ itemType: SaleItemType.TREATMENT, quantity: 1, unitPrice: 30 }))
+		).toEqual({ perEyeSalePrice: 15, eyes: 2 });
 	});
 });
 
@@ -394,6 +441,36 @@ describe('buildUpdateSalePayload', () => {
 			prescriptionPatch: { dp: 62, npRight: 31, npLeft: 32 }
 		});
 		expect(same.prescription).toBeUndefined();
+	});
+
+	it('preserves explicit nulls so a cleared measure reaches the server', () => {
+		const payload = buildUpdateSalePayload(sale, {
+			...base,
+			prescription: { dp: 62, npRight: 31, npLeft: 32 },
+			prescriptionPatch: { dp: null, npRight: 31, npLeft: 32 }
+		});
+
+		// Clearing a measure must send null (the server writes it as NULL);
+		// dropping it sent nothing before and the old value stayed in the DB.
+		expect(payload.prescription).toEqual({ dp: null, npRight: 31, npLeft: 32 });
+	});
+
+	it('does not send a patch when the measures stay empty without a seed', () => {
+		const payload = buildUpdateSalePayload(sale, {
+			...base,
+			prescription: null,
+			prescriptionPatch: { dp: null, npRight: null, npLeft: null }
+		});
+		expect(payload.prescription).toBeUndefined();
+	});
+
+	it('sends a patch when the measures go from empty to a value without a seed', () => {
+		const payload = buildUpdateSalePayload(sale, {
+			...base,
+			prescription: null,
+			prescriptionPatch: { dp: 62, npRight: null, npLeft: null }
+		});
+		expect(payload.prescription).toEqual({ dp: 62, npRight: null, npLeft: null });
 	});
 });
 
