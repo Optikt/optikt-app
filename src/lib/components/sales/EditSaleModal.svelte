@@ -43,6 +43,8 @@
 	let submitError = $state('');
 	let confirmDiscard = $state(false);
 
+	// Clear the reason error as soon as the user types again.
+
 	// ── Meta bar ────────────────────────────────────────────────────────────
 	let saleDate = $state('');
 	let notes = $state('');
@@ -55,6 +57,10 @@
 	// ── Reason (mandatory) ──────────────────────────────────────────────────
 	let reason = $state('');
 	let reasonError = $state('');
+
+	$effect(() => {
+		if (reason) reasonError = '';
+	});
 
 	// ── Editable items + inline editor ──────────────────────────────────────
 	let editableItems = $state<EditableItem[]>([]);
@@ -73,12 +79,6 @@
 	let previewSubtotal = $derived(previewTotals.subtotal);
 	let previewGlobalDiscount = $derived(previewTotals.globalDiscount);
 	let previewTotal = $derived(previewTotals.total);
-	let itemsDiscount = $derived(
-		Math.max(
-			0,
-			activeItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) - previewSubtotal
-		)
-	);
 	let lensRangeWarnings = $derived(collectLensRangeWarnings(activeItems, getCachedLensItem));
 
 	// ── Seed state (mount + each open) ──────────────────────────────────────
@@ -298,17 +298,18 @@
 	bind:open
 	size="xl"
 	closeGuard={guardClose}
-	widthClass="w-full lg:w-[680px]"
-	bodyClass="p-0"
+	widthClass="w-full lg:w-[clamp(720px,60vw,920px)]"
+	bodyClass="p-0 bg-surface-drawer"
 >
 	{#snippet header({ onclose })}
 		<EditSaleModalHeader
 			orderNumber={sale.orderNumber}
+			customer={sale.customer}
+			bind:isCashea
 			{saving}
-			inventoryNotice={SALE_CAPABILITIES.inventory}
 			onClose={onclose}
 		/>
-		<EditSaleMetaBar {sale} bind:saleDate bind:notes bind:isCashea />
+		<EditSaleMetaBar bind:saleDate bind:notes />
 	{/snippet}
 
 	<EditSaleItemsList
@@ -331,7 +332,6 @@
 	{#snippet footer()}
 		<EditSaleFooter
 			subtotal={previewSubtotal}
-			{itemsDiscount}
 			orderDiscountAmount={previewGlobalDiscount}
 			total={previewTotal}
 			bind:discount
@@ -339,14 +339,13 @@
 			bind:reason
 			{reasonError}
 			{submitError}
-			{removedCount}
 			{saving}
 			{hasChanges}
+			hasItems={activeItems.length > 0}
 			onClose={() => {
 				if (guardClose()) open = false;
 			}}
 			onSubmit={handleSubmit}
-			onClearReasonError={() => (reasonError = '')}
 		/>
 	{/snippet}
 </SlideOver>

@@ -2,6 +2,7 @@
 	/**
 	 * Segmented discount type control ($ fixed / % percentage) plus value.
 	 * The value stays a single number; the type decides how the adapter reads it.
+	 * `variant="navy"` renders for the dark footer (ghost white, gold active).
 	 */
 	import { DiscountType } from '$lib/shared/enums';
 
@@ -13,6 +14,9 @@
 		maxPercent?: number;
 		disabled?: boolean;
 		size?: 'sm' | 'md';
+		variant?: 'light' | 'navy';
+		/** Focus the value input when this prop flips on (e.g. panel just opened). */
+		focusOnMount?: boolean;
 	}
 
 	let {
@@ -22,12 +26,37 @@
 		onValue,
 		maxPercent = 100,
 		disabled = false,
-		size = 'md'
+		size = 'md',
+		variant = 'light',
+		focusOnMount = false
 	}: Props = $props();
 
-	const isSmall = $derived(size === 'sm');
+	let valueInput: HTMLInputElement | undefined = $state();
 
+	$effect(() => {
+		if (focusOnMount) valueInput?.focus();
+	});
+
+	const isSmall = $derived(size === 'sm');
+	const isNavy = $derived(variant === 'navy');
 	const isPercent = $derived(type === DiscountType.PERCENTAGE);
+
+	const controlHeight = $derived(isSmall ? 'h-7' : 'h-9');
+	const controlWidth = $derived(isSmall ? 'w-9' : 'w-11');
+	const controlText = $derived(isSmall ? 'text-xs' : 'text-sm');
+
+	// Selected segment; on navy the whole control is gold with navy text.
+	const activeClass = $derived(
+		isNavy ? 'bg-brand-gold text-brand-navy' : 'bg-brand-navy text-white'
+	);
+	const inactiveClass = $derived(
+		isNavy ? 'bg-transparent text-white' : 'text-slate-600 dark:text-slate-300'
+	);
+	const inactiveHover = $derived(
+		isNavy ? 'hover:bg-white/10' : 'hover:bg-surface-container dark:hover:bg-slate-700'
+	);
+	// Active-on-navy segments keep a gold hover; on light they darken.
+	const activeHover = $derived(isNavy ? 'hover:bg-brand-gold-dark' : '');
 
 	function select(next: string) {
 		if (disabled || next === type) return;
@@ -38,19 +67,13 @@
 
 <div class="flex items-center gap-1.5">
 	<div
-		class="inline-flex overflow-hidden rounded-lg border border-outline-variant/70 bg-white dark:border-slate-600 dark:bg-slate-800"
+		class={`inline-flex overflow-hidden rounded-lg border ${isNavy ? 'border-white/35 bg-transparent' : 'border-outline-variant/70 bg-white dark:border-slate-600 dark:bg-slate-800'}`}
 		role="group"
 		aria-label="Tipo de descuento"
 	>
 		<button
 			type="button"
-			class="font-semibold transition {isSmall ? 'h-7 w-9 text-xs' : 'h-9 w-11 text-sm'}"
-			class:bg-brand-navy={!isPercent}
-			class:text-white={!isPercent}
-			class:text-slate-600={isPercent}
-			class:hover:bg-surface-container={isPercent}
-			class:dark:text-slate-300={isPercent}
-			class:dark:hover:bg-slate-700={isPercent}
+			class={`${controlHeight} ${controlWidth} font-semibold ${controlText} transition ${isPercent ? inactiveClass : activeClass} ${isPercent ? inactiveHover : activeHover}`}
 			onclick={() => select(DiscountType.FIXED)}
 			aria-pressed={!isPercent}
 			aria-label="Monto fijo"
@@ -60,15 +83,7 @@
 		</button>
 		<button
 			type="button"
-			class="border-l border-outline-variant/60 font-semibold transition dark:border-slate-600 {isSmall
-				? 'h-7 w-9 text-xs'
-				: 'h-9 w-11 text-sm'}"
-			class:bg-brand-navy={isPercent}
-			class:text-white={isPercent}
-			class:text-slate-600={!isPercent}
-			class:hover:bg-surface-container={!isPercent}
-			class:dark:text-slate-300={!isPercent}
-			class:dark:hover:bg-slate-700={!isPercent}
+			class={`${controlHeight} ${controlWidth} ${controlText} border-l font-semibold transition ${isNavy ? 'border-white/35' : 'border-outline-variant/60 dark:border-slate-600'} ${isPercent ? activeClass : inactiveClass} ${isPercent ? activeHover : inactiveHover}`}
 			onclick={() => select(DiscountType.PERCENTAGE)}
 			aria-pressed={isPercent}
 			aria-label="Porcentaje"
@@ -79,8 +94,9 @@
 	</div>
 
 	<input
+		bind:this={valueInput}
 		type="number"
-		class="h-9 w-24 rounded-lg border border-outline-variant/70 bg-white px-2.5 text-sm tabular-nums transition outline-none placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 disabled:bg-surface-container dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+		class={`${controlHeight} ${isSmall ? 'w-[72px]' : 'w-24'} rounded-lg border px-2.5 text-sm tabular-nums transition outline-none placeholder:text-slate-400 focus:ring-2 disabled:bg-surface-container ${isNavy ? 'border-white/35 bg-transparent text-white focus:ring-white/30' : 'border-outline-variant/70 bg-white text-brand-navy focus:border-brand-blue focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white'}`}
 		min="0"
 		max={isPercent ? maxPercent : undefined}
 		step={isPercent ? 1 : 0.01}
