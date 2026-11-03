@@ -115,10 +115,10 @@
 </script>
 
 <footer
-	class="shrink-0 bg-brand-navy px-5 pt-3 pb-4 text-white shadow-[0_-8px_24px_rgba(21,35,70,0.18)]"
+	class="shrink-0 bg-brand-navy px-5 pt-2.5 pb-3 text-white shadow-[0_-8px_24px_rgba(21,35,70,0.18)]"
 >
 	{#if hasChanges}
-		<div class="relative mb-2.5" class:reason-in={reasonAnim && !reduceMotion}>
+		<div class="relative mb-2" class:reason-in={reasonAnim && !reduceMotion}>
 			{#snippet reasonTrigger({ props }: { props: Record<string, unknown> })}
 				<span class="relative block w-full">
 					<input
@@ -148,16 +148,16 @@
 	{/if}
 
 	<div
-		class="grid grid-cols-1 items-end gap-x-6 gap-y-3 min-[560px]:grid-cols-[minmax(300px,380px)_1fr]"
+		class="grid grid-cols-1 items-end gap-x-6 gap-y-2 min-[560px]:grid-cols-[minmax(300px,380px)_1fr]"
 	>
 		<!-- Summary (right-aligned stack) -->
-		<div class="space-y-0.5">
-			<div class="flex items-center justify-between gap-4 py-0.5 text-[13px] text-[#c9d3ea]">
+		<div class="space-y-0">
+			<div class="flex items-center justify-between gap-4 py-[3px] text-[13px] text-[#c9d3ea]">
 				<span>Subtotal</span>
 				<span class="font-semibold text-white tabular-nums">{formatPrice(subtotal)}</span>
 			</div>
 
-			<div class="flex items-center justify-between gap-4 py-0.5 text-[13px] text-[#c9d3ea]">
+			<div class="flex items-center justify-between gap-4 py-[3px] text-[13px] text-[#c9d3ea]">
 				<span>Descuento de la orden</span>
 				<span class="flex items-center gap-2">
 					{#if !discountOpen}
@@ -271,7 +271,7 @@
 	</div>
 
 	<!-- Total row -->
-	<div class="mt-1 flex items-center justify-between border-t border-white/20 pt-2">
+	<div class="flex items-center justify-between border-t border-white/20 pt-1.5">
 		<span class="font-heading text-[15px] font-bold text-white/90">Total</span>
 		<span class="font-heading text-[26px] font-bold text-white tabular-nums">
 			{formatPrice(displayedTotal)}

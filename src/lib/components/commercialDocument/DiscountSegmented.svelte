@@ -96,7 +96,7 @@
 	<input
 		bind:this={valueInput}
 		type="number"
-		class={`${controlHeight} ${isSmall ? 'w-[72px]' : 'w-24'} rounded-lg border px-2.5 text-sm tabular-nums transition outline-none placeholder:text-slate-400 focus:ring-2 disabled:bg-surface-container ${isNavy ? 'border-white/35 bg-transparent text-white focus:ring-white/30' : 'border-outline-variant/70 bg-white text-brand-navy focus:border-brand-blue focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white'}`}
+		class={`${controlHeight} w-[70px] rounded-lg border px-2.5 text-sm tabular-nums transition outline-none placeholder:text-slate-400 focus:ring-2 disabled:bg-surface-container ${isNavy ? 'border-white/35 bg-transparent text-white focus:ring-white/30' : 'border-outline-variant/70 bg-white text-brand-navy focus:border-brand-blue focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white'}`}
 		min="0"
 		max={isPercent ? maxPercent : undefined}
 		step={isPercent ? 1 : 0.01}

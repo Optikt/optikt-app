@@ -24,7 +24,6 @@
 
 	interface Props {
 		item: EditableItem;
-		mode: 'add' | 'edit';
 		editTreatments: EditLensTreatment[];
 		treatments: SupplierTreatment[];
 		/** Per-eye DP/DNP seed from the sale prescription (edition round-trip). */
@@ -38,7 +37,7 @@
 		) => void;
 	}
 
-	let { item, mode, editTreatments, treatments, measures, onApply }: Props = $props();
+	let { item, editTreatments, treatments, measures, onApply }: Props = $props();
 
 	const lensBase = untrack(() => ({ ...item }));
 	let lensDraft = $state<LensEditorDraft>(
@@ -117,8 +116,14 @@
 		lensDraft.treatments = lensDraft.treatments.filter((_, current) => current !== index);
 	}
 
-	/** Exposed for the item band's «Hecho» button (item detail view). */
+	let panelApi: LensEditorPanel | undefined = $state();
+
+	/** Exposed for the item band's «Hecho» button: runs the guarded panel flow. */
 	export function apply() {
+		panelApi?.requestApply();
+	}
+
+	function commitDraft() {
 		if (!lensDraft.lensCatalogItemId) return;
 
 		const sellerId = context.selectedLens?.supplier?.id;
@@ -165,7 +170,6 @@
 {/snippet}
 
 <LensEditorPanel
-	{mode}
 	bind:draft={lensDraft}
 	lensType={context.selectedLens?.type ?? ''}
 	ranges={context.selectedLens?.ranges ?? []}
@@ -182,6 +186,5 @@
 	{lensSelector}
 	onAddTreatment={addTreatment}
 	onRemoveTreatment={removeTreatment}
-	onApply={apply}
-	showHeader={false}
+	onApply={commitDraft}
 />

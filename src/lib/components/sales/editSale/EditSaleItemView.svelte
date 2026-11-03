@@ -66,38 +66,28 @@
 	}
 </script>
 
-<div class="flex min-h-full flex-col">
+<div class="flex min-h-full flex-col bg-surface-drawer">
 	<EditSaleItemBand {title} {isNew} {onBack} onDone={done} />
 
 	<div class="flex flex-col gap-3 px-4 pt-3.5 pb-4">
-		<div
-			class="rounded-xl bg-white shadow-[0_1px_2px_rgba(21,35,70,0.06),0_2px_8px_rgba(21,35,70,0.06)]"
-		>
-			{#if kind === 'lens'}
-				<EditSaleLensEditor
-					bind:this={lensApi}
-					{item}
-					mode={creating ? 'add' : 'edit'}
-					editTreatments={mapTreatmentsForEdit(activeItems, item.id)}
-					{treatments}
-					{measures}
-					onApply={onApplyLens}
-				/>
-			{:else if kind === 'product'}
-				<EditSaleProductEditor
-					bind:this={productApi}
-					{item}
-					mode={creating ? 'add' : 'edit'}
-					onCommit={onCommitProduct}
-				/>
-			{:else}
-				<EditSaleFreeEditor
-					bind:this={freeApi}
-					{item}
-					mode={creating ? 'add' : 'edit'}
-					onCommit={onCommitFree}
-				/>
-			{/if}
-		</div>
+		{#if kind === 'lens'}
+			<EditSaleLensEditor
+				bind:this={lensApi}
+				{item}
+				editTreatments={mapTreatmentsForEdit(activeItems, item.id)}
+				{treatments}
+				{measures}
+				onApply={onApplyLens}
+			/>
+		{:else if kind === 'product'}
+			<EditSaleProductEditor
+				bind:this={productApi}
+				{item}
+				mode={creating ? 'add' : 'edit'}
+				onCommit={onCommitProduct}
+			/>
+		{:else}
+			<EditSaleFreeEditor bind:this={freeApi} {item} onCommit={onCommitFree} />
+		{/if}
 	</div>
 </div>

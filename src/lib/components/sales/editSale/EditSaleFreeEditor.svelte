@@ -9,13 +9,10 @@
 
 	interface Props {
 		item: EditableItem;
-		mode: 'add' | 'edit';
-		/** Hide the «Editando ítem libre / Hecho» row when a shell owns the band. */
-		showHeader?: boolean;
 		onCommit: (item: EditableItem) => void;
 	}
 
-	let { item, mode, onCommit, showHeader = true }: Props = $props();
+	let { item, onCommit }: Props = $props();
 
 	let name = $state(untrack(() => item.freeItemDescription ?? item.snapshotName ?? ''));
 	let note = $state(untrack(() => item.notes ?? ''));
@@ -58,82 +55,71 @@
 	}
 </script>
 
-{#if showHeader}<div class="mb-2.5 flex items-center justify-between gap-2">
-		<span
-			class="text-[10.5px] font-extrabold tracking-[0.09em] text-on-info-container uppercase dark:text-brand-blue-light"
-		>
-			{mode === 'add' ? 'Nuevo ítem libre' : 'Editando ítem libre'}
-		</span>
-		<button
-			type="button"
-			onclick={commit}
-			class="h-[26px] rounded-[7px] bg-brand-blue/10 px-3 text-xs font-bold text-brand-blue-dark transition hover:bg-brand-blue/15 dark:bg-brand-blue/20 dark:text-brand-blue-light"
-		>
-			Hecho ✓
-		</button>
-	</div>{/if}
+<div
+	class="rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(21,35,70,0.06),0_2px_8px_rgba(21,35,70,0.06)]"
+>
+	<div class="flex flex-wrap items-end gap-2.5">
+		<div class="w-44">
+			<span
+				class="mb-1 block text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
+				>Nombre</span
+			>
+			<input
+				type="text"
+				bind:value={name}
+				placeholder="Ej.: Examen visual"
+				class="h-9 w-full rounded-lg border border-outline-variant/70 bg-white px-2.5 text-[13px] text-brand-navy transition outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+			/>
+		</div>
 
-<div class="flex flex-wrap items-end gap-2.5">
-	<div class="w-44">
-		<span
-			class="mb-1 block text-[10.5px] font-bold tracking-[0.05em] text-slate-400 uppercase dark:text-slate-500"
-			>Nombre</span
-		>
-		<input
-			type="text"
-			bind:value={name}
-			placeholder="Ej.: Examen visual"
-			class="h-9 w-full rounded-lg border border-outline-variant/70 bg-white px-2.5 text-[13px] text-brand-navy transition outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+		<div class="min-w-[200px] flex-1">
+			<span
+				class="mb-1 block text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
+				>Descripción</span
+			>
+			<input
+				type="text"
+				bind:value={note}
+				placeholder="Detalle del servicio o fórmula"
+				class="h-9 w-full rounded-lg border border-outline-variant/70 bg-white px-2.5 text-[13px] text-brand-navy transition outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+			/>
+		</div>
+
+		<div class="min-w-[150px] flex-1">
+			<span
+				class="mb-1 block text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
+				>Categoría</span
+			>
+			<SearchCombobox
+				options={[...ALL_FREE_ITEM_CATEGORIES]}
+				value={category}
+				getId={(option: string | unknown) => String(option)}
+				getLabel={(option: unknown) => String(option)}
+				onselect={(option: unknown) => (category = String(option) as FreeItemCategory)}
+				showIcon={false}
+				placeholder="Categoría…"
+			>
+				{#snippet children({ option }: { option: unknown })}
+					<span class="block text-sm font-semibold text-brand-navy">{String(option)}</span>
+				{/snippet}
+			</SearchCombobox>
+		</div>
+	</div>
+
+	<div class="mt-3">
+		<PriceQtyFields
+			{unitPrice}
+			{quantity}
+			{discount}
+			{discountType}
+			onPrice={(value) => (unitPrice = value)}
+			onQty={(value) => (quantity = value)}
+			onDiscount={(value) => (discount = value)}
+			onDiscountType={(value) => (discountType = value)}
 		/>
 	</div>
 
-	<div class="min-w-[200px] flex-1">
-		<span
-			class="mb-1 block text-[10.5px] font-bold tracking-[0.05em] text-slate-400 uppercase dark:text-slate-500"
-			>Descripción</span
-		>
-		<input
-			type="text"
-			bind:value={note}
-			placeholder="Detalle del servicio o fórmula"
-			class="h-9 w-full rounded-lg border border-outline-variant/70 bg-white px-2.5 text-[13px] text-brand-navy transition outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-		/>
-	</div>
-
-	<div class="min-w-[150px] flex-1">
-		<span
-			class="mb-1 block text-[10.5px] font-bold tracking-[0.05em] text-slate-400 uppercase dark:text-slate-500"
-			>Categoría</span
-		>
-		<SearchCombobox
-			options={[...ALL_FREE_ITEM_CATEGORIES]}
-			value={category}
-			getId={(option: string | unknown) => String(option)}
-			getLabel={(option: unknown) => String(option)}
-			onselect={(option: unknown) => (category = String(option) as FreeItemCategory)}
-			showIcon={false}
-			placeholder="Categoría…"
-		>
-			{#snippet children({ option }: { option: unknown })}
-				<span class="block text-sm font-semibold text-brand-navy">{String(option)}</span>
-			{/snippet}
-		</SearchCombobox>
-	</div>
+	{#if error}
+		<p class="mt-1.5 text-[10.5px] text-red-600 dark:text-red-400">{error}</p>
+	{/if}
 </div>
-
-<div class="mt-2.5">
-	<PriceQtyFields
-		{unitPrice}
-		{quantity}
-		{discount}
-		{discountType}
-		onPrice={(value) => (unitPrice = value)}
-		onQty={(value) => (quantity = value)}
-		onDiscount={(value) => (discount = value)}
-		onDiscountType={(value) => (discountType = value)}
-	/>
-</div>
-
-{#if error}
-	<p class="mt-1.5 text-[10.5px] text-red-600 dark:text-red-400">{error}</p>
-{/if}

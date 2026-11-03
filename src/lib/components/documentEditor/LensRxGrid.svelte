@@ -171,15 +171,15 @@
 	<TriggerTooltip text={tooltip} side="top" trigger={labelTrigger} />
 {/snippet}
 
-{#snippet numInput(cell: string, kind: OpticalInputKind, eye: 'od' | 'oi', isWarn?: boolean)}
+{#snippet numInput(cell: string, kind: OpticalInputKind, eye: 'od' | 'oi', warnMissing?: boolean)}
 	{@const val = eye === 'od' ? od : oi}
 	{@const field = fieldFor(kind, cell)}
 	{@const disabled = eye === 'od' ? !od.enabled : !oi.enabled}
 	{@const cellKey = cell as CellKey}
 	<input
-		type="number"
+		type="text"
 		inputmode="decimal"
-		step="any"
+		autocomplete="off"
 		value={current(cellKey, val, field, kind)}
 		{disabled}
 		onfocus={(event) => {
@@ -195,9 +195,12 @@
 		onblur={() => blurFormat(cellKey, kind, eye)}
 		onkeydown={(event) => onArrow(event, cellKey, kind, eye)}
 		placeholder="—"
+		aria-invalid={warnMissing === true && val[field] == null}
 		aria-label={EYE_LABEL[eye] + ' ' + String(field)}
 		class={`tabular h-8 w-[88px] rounded-lg border bg-white text-center text-[13px] text-brand-navy outline-transparent transition focus:outline-2 focus:outline-brand-blue disabled:cursor-not-allowed disabled:bg-surface-container-low disabled:text-on-surface-variant ${
-			isWarn ? 'border-warning bg-[#fffaf0]' : 'border-outline-variant'
+			warnMissing === true && val[field] == null
+				? 'border-warning bg-[#fffaf0]'
+				: 'border-outline-variant'
 		}`}
 	/>
 {/snippet}
@@ -254,7 +257,7 @@
 	<div class="w-px self-stretch bg-surface-container-highest"></div>
 
 	<!-- MEDIDAS · MM -->
-	<div class="grid grid-cols-[90px_88px_88px] items-center gap-y-2">
+	<div class="grid grid-cols-[90px_88px_88px] items-center gap-x-2 gap-y-2">
 		<span class="text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
 			Medidas · mm
 		</span>
@@ -292,8 +295,18 @@
 		{@render numInput('oi.dp', 'mm', 'oi')}
 
 		{@render rowLabel('Naso-pupilar', 'DNP', 'DNP: del puente nasal al centro de la pupila')}
-		{@render numInput('od.dnp', 'mm', 'od')}
-		{@render numInput('oi.dnp', 'mm', 'oi')}
+		{@render numInput(
+			'od.dnp',
+			'mm',
+			'od',
+			status.od.tone === 'w' && status.od.label === 'Faltan medidas'
+		)}
+		{@render numInput(
+			'oi.dnp',
+			'mm',
+			'oi',
+			status.oi.tone === 'w' && status.oi.label === 'Faltan medidas'
+		)}
 	</div>
 </div>
 

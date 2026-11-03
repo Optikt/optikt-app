@@ -151,9 +151,9 @@
 			onclick={handleClick}
 			onblur={handleBlur}
 			onkeydown={handleKeyDown}
-			class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pr-14 {showIcon
+			class="h-9 w-full rounded-lg border border-outline-variant bg-white px-3 pr-14 {showIcon
 				? 'pl-9'
-				: 'pl-3'} text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 {open
+				: 'pl-3'} text-sm text-on-surface transition-[border-color,box-shadow] outline-none placeholder:text-outline hover:border-brand-blue/60 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/25 {open
 				? 'rounded-b-none'
 				: ''}"
 		/>
@@ -180,7 +180,7 @@
 
 	{#if open && filtered.length > 0}
 		<div
-			class="absolute top-full right-0 left-0 z-50 max-h-60 overflow-y-auto rounded-b-lg border-x border-b border-outline-variant/20 bg-surface-container-lowest shadow-lg"
+			class="absolute top-full right-0 left-0 z-50 max-h-60 overflow-y-auto rounded-b-lg border-x border-b border-outline-variant bg-white shadow-lg"
 			role="listbox"
 			id="searchcombobox-list"
 		>
@@ -203,7 +203,7 @@
 		</div>
 	{:else if open && query}
 		<div
-			class="absolute top-full right-0 left-0 z-50 rounded-b-lg border-x border-b border-outline-variant/20 bg-surface-container-lowest px-3 py-4 text-center text-sm text-on-surface-variant shadow-lg"
+			class="absolute top-full right-0 left-0 z-50 rounded-b-lg border-x border-b border-outline-variant bg-white px-3 py-4 text-center text-sm text-on-surface-variant shadow-lg"
 		>
 			{#if loading}
 				<span class="inline-flex items-center gap-2">

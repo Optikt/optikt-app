@@ -143,9 +143,19 @@
 </script>
 
 <div>
-	{#if label}
-		<p class="mb-1 text-sm font-medium text-on-surface-variant">{label}</p>
-	{/if}
+	<div class="mb-1 flex min-h-6 items-center justify-between gap-2">
+		<span class="block text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase">
+			{label ?? (kind === 'product' ? 'Producto' : 'Cristal')}
+		</span>
+		{#if isOnDemand}
+			<span
+				class="inline-flex h-6 items-center gap-1 rounded-[4px] bg-info-container px-2 text-[12px] font-semibold whitespace-nowrap text-on-info-container"
+			>
+				<Package class="h-3.5 w-3.5 shrink-0" />
+				Se pedirá al proveedor
+			</span>
+		{/if}
+	</div>
 
 	<SearchCombobox
 		{options}
@@ -206,14 +216,7 @@
 		{/snippet}
 	</SearchCombobox>
 
-	{#if isOnDemand}
-		<div
-			class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
-		>
-			<Package class="h-4 w-4 shrink-0" />
-			<span>Se pedirá al proveedor</span>
-		</div>
-	{:else if hasStockWarning}
+	{#if hasStockWarning}
 		{#if kind === 'lens'}
 			<div
 				class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"

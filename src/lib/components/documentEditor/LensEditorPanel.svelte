@@ -28,7 +28,6 @@
 	}
 
 	interface Props {
-		mode: 'add' | 'edit';
 		draft: LensEditorDraft;
 		/** Lens type of the selected catalog item (drives addition/height inputs). */
 		lensType: string;
@@ -42,15 +41,12 @@
 		supplierName?: string | null;
 		/** Lens catalog selector rendered by the adapter (keeps this panel domain-free). */
 		lensSelector: Snippet;
-		/** Hide the «Editando cristal / Hecho» row when a shell owns the band. */
-		showHeader?: boolean;
 		onAddTreatment: (id: string) => void;
 		onRemoveTreatment: (idx: number) => void;
 		onApply: () => void;
 	}
 
 	let {
-		mode,
 		draft = $bindable(),
 		lensType,
 		ranges,
@@ -59,7 +55,6 @@
 		factorySource = null,
 		supplierName = null,
 		lensSelector,
-		showHeader = true,
 		onAddTreatment,
 		onRemoveTreatment,
 		onApply
@@ -81,7 +76,7 @@
 
 	const eyes = $derived(eyesWithRxPair(draft.od, draft.oi));
 
-	/** Antirreflejo choices: current selections + types the lab offers. */
+	/** Antirreflejo choices: current selections + types the lab offers (cheapest last after «Ninguno»). */
 	const arOptions = $derived.by(() => {
 		const chosen = draft.treatments
 			.filter((treatment) => treatment.category.toUpperCase() === 'AR')
@@ -101,7 +96,9 @@
 				salePrice: treatment.salePrice ?? treatment.price,
 				selected: false
 			}));
-		return [...chosen, ...selectable];
+		return [...chosen, ...selectable].sort(
+			(a, b) => (a.salePrice ?? a.price) - (b.salePrice ?? b.price)
+		);
 	});
 
 	const additionalOptions = $derived.by(() => {
@@ -146,6 +143,8 @@
 		if (victim >= 0) onRemoveTreatment(victim);
 	}
 
+	/** Errors surface only after a «Hecho» attempt (design §: errors on demand). */
+	let attempted = $state(false);
 	let acknowledgedSignature = $state<string | null>(null);
 
 	const draftSignature = $derived(
@@ -164,6 +163,9 @@
 	);
 
 	// Per-eye status icon (GRADUACIÓN header): text lives in a tooltip.
+	// Precedence: Sin receta → Incompleto (sin esfera ni cilindro) → Revisar
+	// (fuera de rango) → Faltan medidas (progresivo con graduación y sin
+	// Altura/DNP) → En rango. Without graduation there is never an amber state.
 	const status = $derived.by(() => {
 		const ranges: Record<'od' | 'oi', { tone: 'ok' | 'w' | 'n'; label: string }> = {
 			od: { label: 'Sin receta', tone: 'n' },
@@ -176,13 +178,13 @@
 				ranges[key] = { label: 'Incompleto', tone: 'n' };
 				continue;
 			}
-			if (missingSoftMeasures(draft[key], showAddition)) {
-				ranges[key] = { label: 'Faltan medidas', tone: 'w' };
-				continue;
-			}
 			const result = rangeEvaluation.eyes.find((eyeResult) => eyeResult.eye === key.toUpperCase());
 			if (result?.status === 'out-of-range') {
 				ranges[key] = { label: 'Revisar', tone: 'w' };
+				continue;
+			}
+			if (missingSoftMeasures(draft[key], showAddition)) {
+				ranges[key] = { label: 'Faltan medidas', tone: 'w' };
 				continue;
 			}
 			ranges[key] = { label: 'En rango', tone: 'ok' };
@@ -200,8 +202,17 @@
 		return lines;
 	});
 
+	/** OD → OI copies graduation only (esf/cil/eje/add); measures and the
+	 * switch state stay per-eye (mockup §8.5). */
 	function copyOdToOi() {
-		draft.oi = { ...draft.od };
+		draft.oi = {
+			...draft.oi,
+			sphere: draft.od.sphere,
+			cylinder: draft.od.cylinder,
+			axis: draft.od.axis,
+			addition: draft.od.addition
+		};
+		acknowledgedSignature = null;
 		toast.success('Graduación copiada al OI');
 	}
 
@@ -225,61 +236,54 @@
 	}
 
 	function handleApply() {
+		attempted = true;
 		if (hasErrors) return;
 		if (outOfRangeEyes.length > 0 && !confirmingRange) {
 			acknowledgedSignature = draftSignature;
 			return;
 		}
 		acknowledgedSignature = null;
+		attempted = false;
 		onApply();
+	}
+
+	/** Guarded entry point for shells that own the «Hecho» button (band). */
+	export function requestApply() {
+		handleApply();
 	}
 </script>
 
-{#if showHeader}
-	<div class="mb-2.5 flex items-center justify-between gap-2">
-		<span
-			class="text-[10.5px] font-extrabold tracking-[0.09em] text-on-info-container uppercase dark:text-brand-blue-light"
-		>
-			{mode === 'edit' ? 'Editando cristal' : 'Nuevo cristal'}
-		</span>
-		<button
-			type="button"
-			onclick={handleApply}
-			aria-disabled={hasErrors}
-			class="h-[26px] rounded-[7px] bg-brand-blue/10 px-3 text-xs font-bold text-brand-blue-dark transition hover:bg-brand-blue/15 aria-disabled:cursor-not-allowed aria-disabled:opacity-40 dark:bg-brand-blue/20 dark:text-brand-blue-light"
-		>
-			Hecho ✓
-		</button>
-	</div>
-{/if}
+<!-- Tarjeta A: cristal + precios -->
+<section
+	class="rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(21,35,70,0.06),0_2px_8px_rgba(21,35,70,0.06)]"
+>
+	<div class="flex flex-wrap items-end gap-x-3 gap-y-2.5">
+		<div class="min-w-[240px] flex-[2]">
+			{@render lensSelector()}
+		</div>
 
-<div class="flex flex-wrap items-end gap-2.5">
-	<div class="min-w-[220px] flex-[2]">
-		<span
-			class="mb-1 block text-[10.5px] font-bold tracking-[0.05em] text-slate-400 uppercase dark:text-slate-500"
-			>Cristal</span
-		>
-		{@render lensSelector()}
+		<PriceQtyFields
+			unitPrice={draft.unitPrice}
+			quantity={draft.quantity}
+			discount={draft.discount}
+			discountType={draft.discountType}
+			onPrice={(value) => (draft.unitPrice = value)}
+			onQty={(value) => (draft.quantity = value)}
+			onDiscount={(value) => (draft.discount = value)}
+			onDiscountType={(value) => (draft.discountType = value)}
+		/>
 	</div>
 
-	<PriceQtyFields
-		unitPrice={draft.unitPrice}
-		quantity={draft.quantity}
-		discount={draft.discount}
-		discountType={draft.discountType}
-		onPrice={(value) => (draft.unitPrice = value)}
-		onQty={(value) => (draft.quantity = value)}
-		onDiscount={(value) => (draft.discount = value)}
-		onDiscountType={(value) => (draft.discountType = value)}
-	/>
-</div>
+	{#if attempted && fieldErrors.length > 0}
+		<p class="mt-1 text-[12px] text-error" role="alert">{fieldErrors.join(' · ')}</p>
+	{/if}
+</section>
 
-{#if fieldErrors.length > 0}
-	<p class="mt-1 text-[12px] text-error" role="alert">{fieldErrors.join(' · ')}</p>
-{/if}
-
-<!-- Receta: GRADUACIÓN + MEDIDAS side-by-side (folds at small widths) -->
-<div class="px-2 py-3.5">
+<!-- Tarjeta B: receta + tratamientos -->
+<section
+	class="rounded-xl bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(21,35,70,0.06),0_2px_8px_rgba(21,35,70,0.06)]"
+>
+	<!-- Receta: GRADUACIÓN + MEDIDAS side-by-side (folds at small widths) -->
 	<LensRxGrid
 		bind:od={draft.od}
 		bind:oi={draft.oi}
@@ -309,11 +313,9 @@
 	{/if}
 
 	<!-- Tratamientos: fábrica + AR del laboratorio + adicionales (§8.6) -->
-	<div class="mt-3 border-t border-outline-variant/70 pt-3">
+	<div class="mt-3 border-t border-surface-container-highest pt-3">
 		<div class="mb-2 flex items-center justify-between">
-			<span
-				class="text-[10.5px] font-bold tracking-[0.05em] text-slate-400 uppercase dark:text-slate-500"
-			>
+			<span class="text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase">
 				Tratamientos
 			</span>
 			{#if treatmentsTotal > 0}
@@ -386,7 +388,7 @@
 									? 'text-on-info-container'
 									: 'text-on-surface-variant'}"
 							>
-								{'USD ' + (ar.salePrice ?? ar.price).toFixed(2)} por ojo
+								{formatPrice(ar.salePrice ?? ar.price)} por ojo
 							</span>
 						</button>
 					{/each}
@@ -412,7 +414,7 @@
 						{/if}
 						{extra.name}
 						<span class="text-[10px] opacity-70"
-							>+USD {(extra.salePrice ?? extra.price).toFixed(2)}/ojo</span
+							>+{formatPrice(extra.salePrice ?? extra.price)}/ojo</span
 						>
 					</button>
 				{/each}
@@ -432,4 +434,4 @@
 			/>
 		{/if}
 	</div>
-</div>
+</section>
