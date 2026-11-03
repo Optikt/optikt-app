@@ -258,16 +258,26 @@
 		savedItem: EditableItem,
 		editTreatments: EditLensTreatment[],
 		brandName: string | undefined,
-		newMeasures?: {
-			odDp: number | null;
-			osDp: number | null;
-			odDnp: number | null;
-			osDnp: number | null;
+		applyInfo?: {
+			measures: {
+				odDp: number | null;
+				osDp: number | null;
+				odDnp: number | null;
+				osDnp: number | null;
+			};
+			eyesWithRx: number;
 		}
 	) {
 		const wasNew = creating;
-		if (newMeasures) measures = newMeasures;
-		editableItems = applyLensEdit(editableItems, editingId, savedItem, editTreatments, brandName);
+		if (applyInfo) measures = applyInfo.measures;
+		editableItems = applyLensEdit(
+			editableItems,
+			editingId,
+			savedItem,
+			editTreatments,
+			brandName,
+			applyInfo?.eyesWithRx ?? 2
+		);
 		finishEditing();
 		toast.success(wasNew ? 'Cristal agregado' : 'Cristal actualizado');
 	}

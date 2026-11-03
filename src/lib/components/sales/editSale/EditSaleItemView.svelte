@@ -30,7 +30,7 @@
 			saved: EditableItem,
 			treatments: EditLensTreatment[],
 			brandName: string | undefined,
-			measures?: PrescriptionMeasures
+			applyInfo?: { measures: PrescriptionMeasures; eyesWithRx: number }
 		) => void;
 		onCommitProduct: (item: EditableItem) => void;
 		onCommitFree: (item: EditableItem) => void;

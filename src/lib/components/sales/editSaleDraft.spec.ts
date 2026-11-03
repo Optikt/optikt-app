@@ -238,10 +238,21 @@ describe('applyLensEdit', () => {
 		expect(result[1]).toMatchObject({
 			itemType: SaleItemType.TREATMENT,
 			parentSaleItemId: 'lens-9',
-			unitPrice: 20,
-			snapshotBaseCost: 10,
+			/** Convention per eye: quantity = eyes with rx, unit price per eye. */
+			quantity: 2,
+			unitPrice: 10,
+			snapshotSalePrice: 10,
+			snapshotBaseCost: 5,
 			snapshotBrand: 'Sup'
 		});
+	});
+
+	it('bills one eye only when the other switch is off', () => {
+		const saved = draft({ id: 'lens-1', itemType: SaleItemType.LENS_PAIR });
+
+		const result = applyLensEdit([], 'lens-1', saved, [treatment], 'Sup', 1);
+
+		expect(result[1]).toMatchObject({ quantity: 1, unitPrice: 10 });
 	});
 
 	it('appends new lens keeping removed markers', () => {

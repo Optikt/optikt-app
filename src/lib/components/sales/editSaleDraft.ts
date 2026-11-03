@@ -186,21 +186,44 @@ export interface EditLensTreatment {
 	_keep?: boolean;
 }
 
+/**
+ * Children carry the per-eye sale price. New rows (qty = eyes, marked via
+ * snapshotSalePrice) keep their unitPrice; legacy rows (qty 1, unit price for
+ * the pair) divide by two.
+ */
+function perEyePrice(child: EditableItem): { price: number; salePrice: number } {
+	if (child.snapshotSalePrice != null) {
+		return {
+			price: child.snapshotBaseCost ?? child.unitPrice / child.quantity,
+			salePrice: child.snapshotSalePrice
+		};
+	}
+	if (child.quantity > 1) {
+		return { price: child.snapshotBaseCost ?? child.unitPrice, salePrice: child.unitPrice };
+	}
+	return { price: (child.snapshotBaseCost ?? child.unitPrice) / 2, salePrice: child.unitPrice / 2 };
+}
+
 export function mapTreatmentsForEdit(
 	activeItems: EditableItem[],
 	itemId: string | undefined
 ): EditLensTreatment[] {
 	return activeItems
-		.filter((i) => i.parentSaleItemId === itemId && i.itemType === SaleItemType.TREATMENT)
-		.map((t) => ({
-			supplierTreatmentId: t.supplierTreatmentId ?? '',
-			name: t.snapshotName ?? 'Tratamiento',
-			price: (t.snapshotBaseCost ?? t.unitPrice) / 2,
-			salePrice: t.unitPrice / 2,
-			isTaxable: t.snapshotIsTaxable ?? true,
-			category: t.snapshotTreatmentCategory ?? '',
-			_keep: true
-		}));
+		.filter(
+			(i) => i.parentSaleItemId === itemId && i.itemType === SaleItemType.TREATMENT && !i._removed
+		)
+		.map((t) => {
+			const prices = perEyePrice(t);
+			return {
+				supplierTreatmentId: t.supplierTreatmentId ?? '',
+				name: t.snapshotName ?? 'Tratamiento',
+				price: prices.price,
+				salePrice: prices.salePrice,
+				isTaxable: t.snapshotIsTaxable ?? true,
+				category: t.snapshotTreatmentCategory ?? '',
+				_keep: true
+			};
+		});
 }
 
 export function applyLensEdit(
@@ -208,7 +231,9 @@ export function applyLensEdit(
 	editingLensId: string | null,
 	savedItem: EditableItem,
 	treatments: EditLensTreatment[],
-	brandName: string | undefined
+	brandName: string | undefined,
+	/** Eyes with an active rx switch (mín 1). Children bill per eye. */
+	eyesWithRx = 2
 ): EditableItem[] {
 	const updated: EditableItem[] = [];
 	let insertAt = -1;
@@ -231,15 +256,17 @@ export function applyLensEdit(
 			itemType: SaleItemType.TREATMENT,
 			parentSaleItemId: savedItem.id,
 			supplierTreatmentId: treatment.supplierTreatmentId,
-			quantity: 1,
-			unitPrice: treatment.salePrice * 2,
+			quantity: eyesWithRx,
+			unitPrice: treatment.salePrice,
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotName: treatment.name,
 			snapshotBrand: brandName,
 			snapshotTreatmentCategory: treatment.category,
 			snapshotIsTaxable: treatment.isTaxable,
-			snapshotBaseCost: treatment.price * 2,
+			snapshotBaseCost: treatment.price,
+			/** Marks the per-eye convention: unitPrice is the price per eye. */
+			snapshotSalePrice: treatment.salePrice,
 			_removed: false
 		});
 	}
