@@ -4,7 +4,7 @@
 	import { updateSale } from '$lib/remote/sales/update.remote';
 	import { getErrorMessage, logger } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
-	import { ALL_FREE_ITEM_CATEGORIES, SaleItemType } from '$lib/shared/enums/lensTypes';
+	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import type { SupplierTreatment, Prescription } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
@@ -17,10 +17,10 @@
 	import { SALE_CAPABILITIES } from '$lib/components/documentEditor/types';
 	import EditSaleMetaBar from './editSale/EditSaleMetaBar.svelte';
 	import EditSaleItemsList from './editSale/EditSaleItemsList.svelte';
-	import type { EditorKind } from './editSale/editSaleViews';
+	import { editorKindFor, type EditorKind } from './editSale/editSaleViews';
 	import EditSaleFooter from './editSale/EditSaleFooter.svelte';
 	import EditSaleModalHeader from './editSale/EditSaleModalHeader.svelte';
-	import type { AddItemKind } from './editSale/addItemKinds';
+	import { createPlaceholder, type AddItemKind } from './editSale/addItemKinds';
 	import {
 		applyLensEdit,
 		buildUpdateSalePayload,
@@ -193,29 +193,6 @@
 	});
 
 	// ── Inline editor ───────────────────────────────────────────────────────
-	function kindFor(item: EditableItem): EditorKind {
-		if (item.itemType === SaleItemType.LENS_PAIR) return 'lens';
-		if (item.itemType === SaleItemType.FREE_ITEM) return 'free';
-		return 'product';
-	}
-
-	function createPlaceholder(kind: AddItemKind): EditableItem {
-		const base = {
-			id: crypto.randomUUID(),
-			quantity: 1,
-			unitPrice: 0,
-			discount: 0,
-			discountType: DiscountType.FIXED,
-			_removed: false
-		};
-		if (kind === 'lens') return { ...base, itemType: SaleItemType.LENS_PAIR };
-		if (kind === 'product') return { ...base, itemType: SaleItemType.PRODUCT };
-		return {
-			...base,
-			itemType: SaleItemType.FREE_ITEM,
-			freeItemCategory: ALL_FREE_ITEM_CATEGORIES[0]
-		};
-	}
 
 	function closeEditor() {
 		if (creating && editingId) {
@@ -249,7 +226,7 @@
 		closeEditor();
 		if (!item.id) return;
 		editingId = item.id;
-		editorKind = kindFor(item);
+		editorKind = editorKindFor(item);
 		creating = false;
 		view = 'editor';
 	}
