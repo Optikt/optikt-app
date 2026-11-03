@@ -7,16 +7,30 @@
 	let {
 		open = $bindable(false),
 		onclose,
+		closeGuard,
 		size = 'lg' as Size,
+		widthClass,
 		direction = 'right' as Direction,
+		bodyClass = 'px-6 py-4',
+		/** Intercept Escape inside the drawer: return true when an inner view
+		 *  (editor / combobox) consumed the key so the drawer stays open. */
+		escapeHandler,
 		children,
 		header,
 		footer
 	}: {
 		open?: boolean;
 		onclose?: () => void;
+		/** Return false to block closing (e.g. unsaved changes). */
+		closeGuard?: () => boolean;
 		size?: Size;
+		/** Overrides the size width (e.g. `w-full lg:w-[min(94vw,1280px)]`). */
+		widthClass?: string;
 		direction?: Direction;
+		/** Classes for the scrollable body (default `px-6 py-4`). */
+		bodyClass?: string;
+		/** Return true when Escape was consumed by an inner view. */
+		escapeHandler?: () => boolean;
 		children: Snippet;
 		header?: Snippet<[{ onclose: () => void }]>;
 		footer?: Snippet;
@@ -31,6 +45,7 @@
 	let panel: HTMLDivElement | undefined = $state();
 
 	function handleClose() {
+		if (closeGuard && !closeGuard()) return;
 		open = false;
 		onclose?.();
 	}
@@ -40,7 +55,12 @@
 		panel?.focus();
 
 		function onKeyDown(e: KeyboardEvent) {
-			if (e.key === 'Escape') handleClose();
+			if (e.key !== 'Escape') return;
+			if (escapeHandler?.()) {
+				e.preventDefault();
+				return;
+			}
+			handleClose();
 		}
 		window.addEventListener('keydown', onKeyDown);
 		return () => window.removeEventListener('keydown', onKeyDown);
@@ -68,7 +88,7 @@
 		{#if header}
 			{@render header({ onclose: handleClose })}
 		{/if}
-		<div class="flex-1 overflow-y-auto px-6 py-4">
+		<div class="flex-1 overflow-y-auto {bodyClass}">
 			{@render children()}
 		</div>
 		{#if footer}
@@ -78,9 +98,8 @@
 {:else}
 	<div
 		bind:this={panel}
-		class="fixed top-0 right-0 z-55 flex h-full w-full {maxWidth[
-			size
-		]} flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
+		class="fixed top-0 right-0 z-55 flex h-full flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none {widthClass ??
+			`w-full ${maxWidth[size]}`}"
 		class:translate-x-full={!open}
 		class:translate-x-0={open}
 		role="dialog"
@@ -90,7 +109,7 @@
 		{#if header}
 			{@render header({ onclose: handleClose })}
 		{/if}
-		<div class="flex-1 overflow-y-auto px-6 py-4">
+		<div class="flex-1 overflow-y-auto {bodyClass}">
 			{@render children()}
 		</div>
 		{#if footer}

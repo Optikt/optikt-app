@@ -17,6 +17,8 @@
 		onclear?: () => void;
 		/** Called with the raw query on every input — enables async/server search. */
 		onquerychange?: (query: string) => void;
+		/** Hide the leading search icon (small static option list). */
+		showIcon?: boolean;
 		children: Snippet<[{ option: T; highlighted: boolean; selected: boolean }]>;
 	};
 
@@ -27,6 +29,7 @@
 		loading = false,
 		clearOnSelect = false,
 		value = '',
+		showIcon = true,
 		getId,
 		getLabel,
 		filterFn,
@@ -120,15 +123,19 @@
 			handleSelect(filtered[highlightedIdx]);
 		} else if (e.key === 'Escape') {
 			open = false;
+			// Keep the key from closing the surrounding drawer/modal (§ Esc order).
+			e.stopPropagation();
 		}
 	}
 </script>
 
 <div class="relative">
 	<div class="relative">
-		<Search
-			class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline"
-		/>
+		{#if showIcon}
+			<Search
+				class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline"
+			/>
+		{/if}
 		<input
 			bind:this={inputEl}
 			type="text"
@@ -144,7 +151,9 @@
 			onclick={handleClick}
 			onblur={handleBlur}
 			onkeydown={handleKeyDown}
-			class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pr-14 pl-9 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 {open
+			class="h-9 w-full rounded-lg border border-outline-variant bg-white px-3 pr-14 {showIcon
+				? 'pl-9'
+				: 'pl-3'} text-sm text-on-surface transition-[border-color,box-shadow] outline-none placeholder:text-outline hover:border-brand-blue/60 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/25 {open
 				? 'rounded-b-none'
 				: ''}"
 		/>
@@ -171,7 +180,7 @@
 
 	{#if open && filtered.length > 0}
 		<div
-			class="absolute top-full right-0 left-0 z-50 max-h-60 overflow-y-auto rounded-b-lg border-x border-b border-outline-variant/20 bg-surface-container-lowest shadow-lg"
+			class="absolute top-full right-0 left-0 z-50 max-h-60 overflow-y-auto rounded-b-lg border-x border-b border-outline-variant bg-white shadow-lg"
 			role="listbox"
 			id="searchcombobox-list"
 		>
@@ -194,7 +203,7 @@
 		</div>
 	{:else if open && query}
 		<div
-			class="absolute top-full right-0 left-0 z-50 rounded-b-lg border-x border-b border-outline-variant/20 bg-surface-container-lowest px-3 py-4 text-center text-sm text-on-surface-variant shadow-lg"
+			class="absolute top-full right-0 left-0 z-50 rounded-b-lg border-x border-b border-outline-variant bg-white px-3 py-4 text-center text-sm text-on-surface-variant shadow-lg"
 		>
 			{#if loading}
 				<span class="inline-flex items-center gap-2">

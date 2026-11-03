@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { LensType } from '$lib/shared/enums/lensTypes';
 import { EntityIdSchema } from './common/identity';
-import { CoercedBoolean, OptionalCoercedInteger } from './common/numbers';
+import { CoercedBoolean, NullableCoercedInteger, OptionalCoercedInteger } from './common/numbers';
 import {
 	OptionalSphereSchema,
 	OptionalCylinderSchema,
@@ -137,6 +137,14 @@ export const DpSchema = OptionalCoercedInteger({ min: 10, max: 80 });
  * Uses OptionalCoercedInteger to distinguish empty string from intentional 0
  */
 export const NpSchema = OptionalCoercedInteger({ min: 10, max: 80 });
+
+/**
+ * Patch variants of DP / NP that preserve an explicit `null`: used by the sale
+ * update command so the editor can CLEAR a measure («NULL in DB») while an
+ * absent field means «don't touch». Bounds/messages mirror DpSchema / NpSchema.
+ */
+export const DpPatchSchema = NullableCoercedInteger({ min: 10, max: 80 });
+export const NpPatchSchema = NullableCoercedInteger({ min: 10, max: 80 });
 
 /**
  * Altura (segment height) validation - for bifocal/progressive lenses

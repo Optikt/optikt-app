@@ -1,5 +1,5 @@
 import { DiscountType } from '$lib/shared/enums';
-import { FreeItemCategory, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
+import { FreeItemCategory, SaleItemType } from '$lib/shared/enums/lensTypes';
 import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 import type { SaleItemInput, UpdateSaleInput } from '$lib/schemas/sales';
 import type { SupplierTreatment } from '$lib/server/db/schema';
@@ -102,14 +102,22 @@ export function previewSubtotalForItems(
 	discount: number,
 	discountType: string
 ): { subtotal: number; globalDiscount: number; total: number } {
+	// Mirrors computeSaleTotals on the server: each line's discount is clamped
+	// to the line's gross so the preview can never drift from what is saved.
 	const subtotal = activeItems.reduce((acc, item) => {
-		const lineTotal = item.unitPrice * item.quantity;
-		const itemDiscount = computeDiscount(
-			item.discount ?? 0,
-			(item.discountType ?? DiscountType.FIXED) as DiscountTypeEnum,
-			lineTotal
+		const gross = item.unitPrice * item.quantity;
+		const lineDiscount = Math.min(
+			gross,
+			Math.max(
+				0,
+				computeDiscount(
+					item.discount ?? 0,
+					(item.discountType ?? DiscountType.FIXED) as DiscountTypeEnum,
+					gross
+				)
+			)
 		);
-		return acc + lineTotal - itemDiscount;
+		return acc + gross - lineDiscount;
 	}, 0);
 	const globalDiscount = computeDiscount(
 		discount ?? 0,
@@ -157,11 +165,18 @@ export function haveItemsChanged(
 }
 
 export function hasChangesForSale(
-	sale: { saleDate: string; notes: string | null; discount: number; discountType: string },
+	sale: {
+		saleDate: string;
+		notes: string | null;
+		discount: number;
+		discountType: string;
+		isCashea?: boolean | null;
+	},
 	saleDate: string,
 	notes: string,
 	discount: number,
 	discountType: string,
+	isCashea: boolean,
 	editableItems: EditableItem[],
 	originalItems: SaleItemWithDetails[]
 ): boolean {
@@ -170,6 +185,7 @@ export function hasChangesForSale(
 		notes !== (sale.notes ?? '') ||
 		discount !== sale.discount ||
 		discountType !== sale.discountType ||
+		isCashea !== (sale.isCashea ?? false) ||
 		editableItems.some((i) => i._removed) ||
 		editableItems.some((i) => !i.id) ||
 		haveItemsChanged(originalItems, editableItems)
@@ -186,21 +202,62 @@ export interface EditLensTreatment {
 	_keep?: boolean;
 }
 
+/**
+ * Children carry the per-eye sale price. New rows (qty = eyes, marked via
+ * snapshotSalePrice) keep their unitPrice; legacy rows (qty 1, unit price for
+ * the pair) divide by two.
+ */
+function perEyePrice(child: EditableItem): { price: number; salePrice: number } {
+	if (child.snapshotSalePrice != null) {
+		return {
+			price: child.snapshotBaseCost ?? child.unitPrice / child.quantity,
+			salePrice: child.snapshotSalePrice
+		};
+	}
+	if (child.quantity > 1) {
+		return { price: child.snapshotBaseCost ?? child.unitPrice, salePrice: child.unitPrice };
+	}
+	return { price: (child.snapshotBaseCost ?? child.unitPrice) / 2, salePrice: child.unitPrice / 2 };
+}
+
+/**
+ * Display resolution for a treatment child row in a list: new rows (marked via
+ * `snapshotSalePrice`) store qty = eyes with rx and a per-eye unitPrice; legacy
+ * rows store qty 1 with a pair (×2) unitPrice. Shared so list views and editors
+ * agree on the price shown «c/u».
+ */
+export function treatmentChildDisplay(child: EditableItem): {
+	perEyeSalePrice: number;
+	eyes: number;
+} {
+	if (child.snapshotSalePrice != null) {
+		return { perEyeSalePrice: child.unitPrice, eyes: child.quantity };
+	}
+	return child.quantity > 1
+		? { perEyeSalePrice: child.unitPrice, eyes: child.quantity }
+		: { perEyeSalePrice: child.unitPrice / 2, eyes: 2 };
+}
+
 export function mapTreatmentsForEdit(
 	activeItems: EditableItem[],
 	itemId: string | undefined
 ): EditLensTreatment[] {
 	return activeItems
-		.filter((i) => i.parentSaleItemId === itemId && i.itemType === SaleItemType.TREATMENT)
-		.map((t) => ({
-			supplierTreatmentId: t.supplierTreatmentId ?? '',
-			name: t.snapshotName ?? 'Tratamiento',
-			price: (t.snapshotBaseCost ?? t.unitPrice) / 2,
-			salePrice: t.unitPrice / 2,
-			isTaxable: t.snapshotIsTaxable ?? true,
-			category: t.snapshotTreatmentCategory ?? '',
-			_keep: true
-		}));
+		.filter(
+			(i) => i.parentSaleItemId === itemId && i.itemType === SaleItemType.TREATMENT && !i._removed
+		)
+		.map((t) => {
+			const prices = perEyePrice(t);
+			return {
+				supplierTreatmentId: t.supplierTreatmentId ?? '',
+				name: t.snapshotName ?? 'Tratamiento',
+				price: prices.price,
+				salePrice: prices.salePrice,
+				isTaxable: t.snapshotIsTaxable ?? true,
+				category: t.snapshotTreatmentCategory ?? '',
+				_keep: true
+			};
+		});
 }
 
 export function applyLensEdit(
@@ -208,34 +265,50 @@ export function applyLensEdit(
 	editingLensId: string | null,
 	savedItem: EditableItem,
 	treatments: EditLensTreatment[],
-	brandName: string | undefined
+	brandName: string | undefined,
+	/** Eyes with an active rx switch (mín 1). Children bill per eye. */
+	eyesWithRx = 2
 ): EditableItem[] {
-	let updated = editableItems.filter((i) => {
-		if (i._removed) return true;
-		if (editingLensId && i.id === editingLensId) return false;
-		if (editingLensId && i.parentSaleItemId === editingLensId) return false;
-		return true;
-	});
+	const updated: EditableItem[] = [];
+	let insertAt = -1;
 
-	updated = [...updated, savedItem];
+	for (const item of editableItems) {
+		if (
+			!item._removed &&
+			editingLensId &&
+			(item.id === editingLensId || item.parentSaleItemId === editingLensId)
+		) {
+			if (insertAt === -1 && item.id === editingLensId) insertAt = updated.length;
+			continue;
+		}
+		updated.push(item);
+	}
 
-	for (const t of treatments) {
-		const treatmentRow: EditableItem = {
+	const rows: EditableItem[] = [savedItem];
+	for (const treatment of treatments) {
+		rows.push({
 			itemType: SaleItemType.TREATMENT,
 			parentSaleItemId: savedItem.id,
-			supplierTreatmentId: t.supplierTreatmentId,
-			quantity: 1,
-			unitPrice: t.salePrice * 2,
+			supplierTreatmentId: treatment.supplierTreatmentId,
+			quantity: eyesWithRx,
+			unitPrice: treatment.salePrice,
 			discount: 0,
 			discountType: DiscountType.FIXED,
-			snapshotName: t.name,
+			snapshotName: treatment.name,
 			snapshotBrand: brandName,
-			snapshotTreatmentCategory: t.category,
-			snapshotIsTaxable: t.isTaxable,
-			snapshotBaseCost: t.price * 2,
+			snapshotTreatmentCategory: treatment.category,
+			snapshotIsTaxable: treatment.isTaxable,
+			snapshotBaseCost: treatment.price,
+			/** Marks the per-eye convention: unitPrice is the price per eye. */
+			snapshotSalePrice: treatment.salePrice,
 			_removed: false
-		};
-		updated = [...updated, treatmentRow];
+		});
+	}
+
+	if (insertAt >= 0) {
+		updated.splice(insertAt, 0, ...rows);
+	} else {
+		updated.push(...rows);
 	}
 
 	return updated;
@@ -280,10 +353,11 @@ export function createFreeItem(opts: {
 	discount: number;
 	discountType: string;
 	notes: string;
+	quantity?: number;
 }): EditableItem {
 	return {
 		itemType: SaleItemType.FREE_ITEM,
-		quantity: 1,
+		quantity: opts.quantity ?? 1,
 		unitPrice: opts.price,
 		discount: opts.discount,
 		discountType: opts.discountType as DiscountTypeEnum,
@@ -308,7 +382,6 @@ export interface LensEditContext {
 	availableTreatments: SupplierTreatment[];
 	selectableTreatments: SupplierTreatment[];
 	selectedLens: LensCatalogItemWithRelations | null;
-	showAddition: boolean;
 }
 
 export function getLensEditContext(
@@ -327,8 +400,7 @@ export function getLensEditContext(
 		selectableTreatments: availableTreatments.filter(
 			(t) => !currentTreatments.some((et) => et.supplierTreatmentId === t.id)
 		),
-		selectedLens,
-		showAddition: (selectedLens?.type ?? '') !== LensType.MONOFOCAL
+		selectedLens
 	};
 }
 
@@ -342,6 +414,10 @@ export interface UpdateSaleDraft {
 	removedCount: number;
 	activeItems: EditableItem[];
 	originalItems: SaleItemWithDetails[];
+	/** Prescription seed at open time (from the sale detail read). */
+	prescription?: { dp: number | null; npRight: number | null; npLeft: number | null } | null;
+	/** Prescription patch: sent only when it differs from the seed. */
+	prescriptionPatch?: { dp: number | null; npRight: number | null; npLeft: number | null } | null;
 }
 
 export function buildUpdateSalePayload(
@@ -386,6 +462,25 @@ export function buildUpdateSalePayload(
 		haveItemsChanged(draft.originalItems, draft.activeItems)
 	) {
 		payload.items = draft.activeItems.map(({ _removed, ...input }) => input);
+	}
+
+	if (draft.prescriptionPatch) {
+		const patch = draft.prescriptionPatch;
+		const seed = draft.prescription ?? null;
+		const changed = seed
+			? seed.dp !== patch.dp || seed.npRight !== patch.npRight || seed.npLeft !== patch.npLeft
+			: patch.dp != null || patch.npRight != null || patch.npLeft != null;
+		if (changed) {
+			// Full triple patch: explicit nulls CLEAR the stored measure (the
+			// server schema `NullableCoercedInteger` preserves them); a number
+			// sets it. Absent prescription ⇒ sales without a prescription row
+			// are rejected server-side with an explicit error.
+			payload.prescription = {
+				dp: patch.dp,
+				npRight: patch.npRight,
+				npLeft: patch.npLeft
+			};
+		}
 	}
 
 	return payload;

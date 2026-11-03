@@ -93,6 +93,25 @@ function parseOptionalNumber(
 }
 
 /**
+ * Like OptionalCoercedInteger, but explicit null is PRESERVED (not folded to
+ * undefined). Required where a patch must distinguish «don't touch» (field
+ * absent) from «clear» (null) — e.g. the sale prescription measures patch.
+ */
+export const NullableCoercedInteger = (options?: OptionalCoercedNumberOptions) => {
+	const invalidMessage = options?.invalidMessage ?? 'Debe ser un número entero válido';
+	return z
+		.union([
+			z.coerce
+				.number(invalidMessage)
+				.int(invalidMessage)
+				.min(options?.min ?? -Number.MAX_SAFE_INTEGER, options?.minMessage)
+				.max(options?.max ?? Number.MAX_SAFE_INTEGER, options?.maxMessage),
+			z.null()
+		])
+		.optional();
+};
+
+/**
  * Factory for optional coerced integer schemas
  * Converts empty string, null, or undefined to undefined (no value provided)
  * This allows distinguishing between "user didn't enter anything" and "user entered 0"

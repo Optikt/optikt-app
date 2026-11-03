@@ -1,0 +1,223 @@
+import { describe, expect, it } from 'vitest';
+
+import { DiscountType } from '$lib/shared/enums';
+
+import {
+	createEmptyLensEditorDraft,
+	opticalStepDelta,
+	evaluateLensEditorRange,
+	formatOpticalInput,
+	hasLensEditorErrors,
+	stepOpticalValue,
+	treatmentTotal,
+	validateLensEditorDraft
+} from './lensEditor';
+import type { LensEditorDraft, LensEditorEyeDraft } from './types';
+import type { OpticalRangeBounds } from './opticalRange';
+
+function eye(overrides: Partial<LensEditorEyeDraft> = {}): LensEditorEyeDraft {
+	return {
+		enabled: true,
+		sphere: null,
+		cylinder: null,
+		axis: null,
+		addition: null,
+		altura: null,
+		dp: null,
+		dnp: null,
+		...overrides
+	};
+}
+
+function draft(overrides: Partial<LensEditorDraft> = {}): LensEditorDraft {
+	return {
+		...createEmptyLensEditorDraft(),
+		lensCatalogItemId: 'lens-1',
+		unitPrice: 50,
+		od: eye({ sphere: -1, cylinder: -0.5, axis: 90 }),
+		oi: eye({ enabled: false }),
+		...overrides
+	};
+}
+
+const range: OpticalRangeBounds = {
+	sphereMin: -2,
+	sphereMax: 2,
+	cylinderMin: -2,
+	cylinderMax: 0,
+	additionMin: null,
+	additionMax: null
+};
+
+describe('validateLensEditorDraft', () => {
+	it('accepts a valid monofocal lens with one eye', () => {
+		const errors = validateLensEditorDraft(draft());
+		expect(hasLensEditorErrors(errors)).toBe(false);
+	});
+
+	it('requires a lens selection', () => {
+		const errors = validateLensEditorDraft(draft({ lensCatalogItemId: '' }));
+		expect(errors.lensCatalogItemId).toBe('Seleccione un cristal');
+	});
+
+	it('allows a zero price (gift) and blocks negatives', () => {
+		const zero = validateLensEditorDraft(draft({ unitPrice: 0 }));
+		expect(zero.unitPrice).toBeUndefined();
+
+		const negative = validateLensEditorDraft(draft({ unitPrice: -5 }));
+		expect(negative.unitPrice).toBe('Precio debe ser mayor o igual a 0');
+	});
+
+	it('requires sphere or cylinder for an enabled eye', () => {
+		const errors = validateLensEditorDraft(draft({ od: eye() }));
+		expect(errors.odSphere).toBe('Esfera o cilindro requerido');
+	});
+
+	it('requires axis when a cylinder is present', () => {
+		const errors = validateLensEditorDraft(draft({ od: eye({ sphere: -1, cylinder: -0.5 }) }));
+		expect(errors.odAxis).toBe('Eje requerido con cilindro');
+	});
+
+	it('requires addition for progressive/bifocal lenses', () => {
+		const errors = validateLensEditorDraft(draft({ od: eye({ sphere: -1 }) }), {
+			requiresAddition: true
+		});
+		expect(errors.odAddition).toBe('Adición requerida');
+	});
+
+	it('does not require addition for monofocal lenses', () => {
+		const errors = validateLensEditorDraft(draft({ od: eye({ sphere: -1 }) }), {
+			requiresAddition: false
+		});
+		expect(errors.odAddition).toBeUndefined();
+	});
+
+	it('skips validation for disabled eyes', () => {
+		const errors = validateLensEditorDraft(
+			draft({ od: eye({ enabled: false }), oi: eye({ sphere: -1 }) })
+		);
+		expect(hasLensEditorErrors(errors)).toBe(false);
+	});
+
+	it('requires at least one enabled eye', () => {
+		const errors = validateLensEditorDraft(
+			draft({ od: eye({ enabled: false }), oi: eye({ enabled: false }) })
+		);
+		expect(errors.prescription).toBe('Selecciona al menos un ojo');
+	});
+
+	it('rejects a positive cylinder (negative convention)', () => {
+		const errors = validateLensEditorDraft(
+			draft({ od: eye({ sphere: -1, cylinder: 0.5, axis: 90 }) })
+		);
+		expect(errors.odCylinder).toBe('Cilindro debe ser negativo o cero');
+	});
+
+	it('rejects an out-of-bounds axis', () => {
+		const errors = validateLensEditorDraft(
+			draft({ od: eye({ sphere: -1, cylinder: -0.5, axis: 200 }) })
+		);
+		expect(errors.odAxis).toBeDefined();
+	});
+
+	it('keeps discount non-negative', () => {
+		const errors = validateLensEditorDraft(
+			draft({ discount: -1, discountType: DiscountType.FIXED })
+		);
+		expect(errors.discount).toBe('El descuento no puede ser negativo');
+	});
+
+	it('does not block a prescription that is outside the lens range', () => {
+		const outOfRange = draft({ od: eye({ sphere: 4, cylinder: -0.5, axis: 90 }) });
+
+		expect(hasLensEditorErrors(validateLensEditorDraft(outOfRange))).toBe(false);
+		expect(evaluateLensEditorRange(outOfRange, [range]).warnings.length).toBeGreaterThan(0);
+	});
+});
+
+describe('evaluateLensEditorRange', () => {
+	it('flags an eye outside the lens range as a warning', () => {
+		const evaluation = evaluateLensEditorRange(draft({ od: eye({ sphere: 3.5 }) }), [range]);
+		expect(evaluation.warnings).toHaveLength(1);
+		expect(evaluation.eyes[0]?.status).toBe('out-of-range');
+	});
+
+	it('ignores disabled eyes', () => {
+		const evaluation = evaluateLensEditorRange(
+			draft({ od: eye({ enabled: false, sphere: 3.5 }) }),
+			[range]
+		);
+		expect(evaluation.eyes).toHaveLength(0);
+		expect(evaluation.warnings).toHaveLength(0);
+	});
+
+	it('does not warn when there are no ranges', () => {
+		const evaluation = evaluateLensEditorRange(draft(), []);
+		expect(evaluation.warnings).toHaveLength(0);
+		expect(evaluation.hasRanges).toBe(false);
+	});
+});
+
+describe('stepOpticalValue (arrow-key stepping, pure)', () => {
+	it('steps dioptrías in ¼ and snaps fractional inputs to quarters', () => {
+		expect(stepOpticalValue(-2.25, 'esf', -1)).toBe(-2.5);
+		expect(stepOpticalValue(0, 'esf', 1)).toBe(0.25);
+		expect(stepOpticalValue(-0.25, 'esf', 1)).toBeCloseTo(0, 10);
+		expect(stepOpticalValue(0.5, 'cil', -1)).toBe(0.25);
+		/** Off-quarter inputs snap back to the nearest ¼ (e.g. 0.3 − 0.25 → 0). */
+		expect(stepOpticalValue(0.3, 'cil', -1)).toBe(0);
+	});
+
+	it('clamps eje to 0–180 in whole degrees', () => {
+		expect(stepOpticalValue(0, 'eje', -1)).toBe(0);
+		expect(stepOpticalValue(180, 'eje', 1)).toBe(180);
+		expect(stepOpticalValue(88.5, 'eje', 1)).toBe(90);
+	});
+
+	it('steps mm measures in whole units (rounds fractional input)', () => {
+		expect(stepOpticalValue(61.6, 'mm', 1)).toBe(63);
+		expect(stepOpticalValue(62, 'mm', -1)).toBe(61);
+	});
+
+	it('uses 0.25 for dioptrías and 1 for everything else', () => {
+		expect(opticalStepDelta('esf')).toBe(0.25);
+		expect(opticalStepDelta('add')).toBe(0.25);
+		expect(opticalStepDelta('eje')).toBe(1);
+		expect(opticalStepDelta('mm')).toBe(1);
+	});
+});
+
+describe('treatmentTotal', () => {
+	it('sums both-eye treatment prices', () => {
+		expect(
+			treatmentTotal([
+				{
+					supplierTreatmentId: 't1',
+					name: 'AR',
+					price: 5,
+					salePrice: 10,
+					isTaxable: true,
+					category: 'COAT'
+				}
+			])
+		).toBe(20);
+	});
+});
+
+describe('formatOpticalInput', () => {
+	it('formats quarter increments with explicit sign', () => {
+		expect(formatOpticalInput('0.25', 'esf')).toBe('+0.25');
+		expect(formatOpticalInput('-1.3', 'cil')).toBe('-1.25');
+		expect(formatOpticalInput('2', 'add')).toBe('+2.00');
+	});
+
+	it('clamps the axis to 0-180 and rounds mm to integers', () => {
+		expect(formatOpticalInput('185', 'eje')).toBe('180');
+		expect(formatOpticalInput('-5', 'eje')).toBe('0');
+		expect(formatOpticalInput('31.6', 'mm')).toBe('32');
+	});
+
+	it('keeps empty input empty', () => {
+		expect(formatOpticalInput('', 'esf')).toBe('');
+	});
+});

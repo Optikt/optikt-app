@@ -15,7 +15,15 @@ import { db } from '$lib/server/db';
 import { relevanceScoreOrderSql } from '$lib/server/db/search';
 import type { DbOrTx } from '$lib/server/db/types';
 
-import { sales, customers, users, type Sale } from '$lib/server/db/schema';
+import {
+	sales,
+	customers,
+	users,
+	prescriptions,
+	saleItems,
+	type Sale,
+	type Prescription
+} from '$lib/server/db/schema';
 import type { AnyColumn } from 'drizzle-orm';
 
 /** Column map for orderBy (saleDate is an alias of createdAt — single date truth) */
@@ -34,6 +42,24 @@ const ORDER_COLUMNS: Record<SaleOrderBy, AnyColumn> = {
  * Get the next order number (MAX + 1).
  * When called inside a transaction, ensures sequential numbering without gaps.
  */
+/**
+ * Linked prescription of a sale's lens items (DP / nasal measures source).
+ * Null when the sale has no lens pairs or they were created without one.
+ */
+export async function getSalePrescription(
+	saleId: string,
+	executor: DbOrTx = db
+): Promise<Prescription | null> {
+	const [row] = await executor
+		.select({ prescription: prescriptions })
+		.from(saleItems)
+		.innerJoin(prescriptions, eq(saleItems.prescriptionId, prescriptions.id))
+		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)))
+		.orderBy(saleItems.createdAt)
+		.limit(1);
+	return row?.prescription ?? null;
+}
+
 export async function getNextOrderNumber(executor: DbOrTx = db): Promise<number> {
 	const [row] = await executor.select({ maxNum: max(sales.orderNumber) }).from(sales);
 	return (row?.maxNum ?? 0) + 1;
