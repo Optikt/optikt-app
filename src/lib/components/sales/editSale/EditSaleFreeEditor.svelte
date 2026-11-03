@@ -4,6 +4,7 @@
 	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 	import type { FreeItemCategory } from '$lib/shared/enums/lensTypes';
 	import PriceQtyFields from '$lib/components/commercialDocument/PriceQtyFields.svelte';
+	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
 	import type { EditableItem } from '../editSaleDraft';
 
 	interface Props {
@@ -59,7 +60,7 @@
 
 {#if showHeader}<div class="mb-2.5 flex items-center justify-between gap-2">
 		<span
-			class="text-[10.5px] font-extrabold tracking-[0.09em] text-brand-blue-dark uppercase dark:text-brand-blue-light"
+			class="text-[10.5px] font-extrabold tracking-[0.09em] text-on-info-container uppercase dark:text-brand-blue-light"
 		>
 			{mode === 'add' ? 'Nuevo ítem libre' : 'Editando ítem libre'}
 		</span>
@@ -99,19 +100,24 @@
 		/>
 	</div>
 
-	<div class="w-40">
+	<div class="min-w-[150px] flex-1">
 		<span
 			class="mb-1 block text-[10.5px] font-bold tracking-[0.05em] text-slate-400 uppercase dark:text-slate-500"
 			>Categoría</span
 		>
-		<select
-			bind:value={category}
-			class="h-9 w-full rounded-lg border border-outline-variant/70 bg-white px-2 text-[13px] text-brand-navy transition outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+		<SearchCombobox
+			options={[...ALL_FREE_ITEM_CATEGORIES]}
+			value={category}
+			getId={(option: string | unknown) => String(option)}
+			getLabel={(option: unknown) => String(option)}
+			onselect={(option: unknown) => (category = String(option) as FreeItemCategory)}
+			showIcon={false}
+			placeholder="Categoría…"
 		>
-			{#each ALL_FREE_ITEM_CATEGORIES as option (option)}
-				<option value={option}>{option}</option>
-			{/each}
-		</select>
+			{#snippet children({ option }: { option: unknown })}
+				<span class="block text-sm font-semibold text-brand-navy">{String(option)}</span>
+			{/snippet}
+		</SearchCombobox>
 	</div>
 </div>
 

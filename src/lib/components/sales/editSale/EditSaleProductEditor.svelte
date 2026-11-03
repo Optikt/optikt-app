@@ -65,7 +65,7 @@
 
 {#if showHeader}<div class="mb-2.5 flex items-center justify-between gap-2">
 		<span
-			class="text-[10.5px] font-extrabold tracking-[0.09em] text-brand-blue-dark uppercase dark:text-brand-blue-light"
+			class="text-[10.5px] font-extrabold tracking-[0.09em] text-on-info-container uppercase dark:text-brand-blue-light"
 		>
 			{mode === 'add' ? 'Nuevo producto' : 'Editando producto'}
 		</span>

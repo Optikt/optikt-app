@@ -17,6 +17,8 @@
 		onclear?: () => void;
 		/** Called with the raw query on every input — enables async/server search. */
 		onquerychange?: (query: string) => void;
+		/** Hide the leading search icon (small static option list). */
+		showIcon?: boolean;
 		children: Snippet<[{ option: T; highlighted: boolean; selected: boolean }]>;
 	};
 
@@ -27,6 +29,7 @@
 		loading = false,
 		clearOnSelect = false,
 		value = '',
+		showIcon = true,
 		getId,
 		getLabel,
 		filterFn,
@@ -128,9 +131,11 @@
 
 <div class="relative">
 	<div class="relative">
-		<Search
-			class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline"
-		/>
+		{#if showIcon}
+			<Search
+				class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline"
+			/>
+		{/if}
 		<input
 			bind:this={inputEl}
 			type="text"
@@ -146,7 +151,9 @@
 			onclick={handleClick}
 			onblur={handleBlur}
 			onkeydown={handleKeyDown}
-			class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pr-14 pl-9 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 {open
+			class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pr-14 {showIcon
+				? 'pl-9'
+				: 'pl-3'} text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 {open
 				? 'rounded-b-none'
 				: ''}"
 		/>
