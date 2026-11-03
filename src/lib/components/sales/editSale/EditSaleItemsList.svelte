@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { tick, untrack } from 'svelte';
 	import { ChevronDown, Plus } from '@lucide/svelte';
 	import DocumentItemRow from '$lib/components/commercialDocument/DocumentItemRow.svelte';
 	import DocumentChildRow from '$lib/components/commercialDocument/DocumentChildRow.svelte';
@@ -11,55 +10,35 @@
 		type DocumentItemView
 	} from '$lib/components/commercialDocument/itemView';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { getCachedLensItem } from '../catalogCache.svelte';
-	import EditSaleLensEditor from './EditSaleLensEditor.svelte';
-	import EditSaleProductEditor from './EditSaleProductEditor.svelte';
-	import EditSaleFreeEditor from './EditSaleFreeEditor.svelte';
 	import { ADD_ITEM_KINDS, type AddItemKind } from './addItemKinds';
-	import {
-		mapTreatmentsForEdit,
-		type EditableItem,
-		type EditLensTreatment
-	} from '../editSaleDraft';
-	import type { EditorKind } from './editSaleViews';
+	import type { EditableItem } from '../editSaleDraft';
 
 	interface Props {
 		activeItems: EditableItem[];
 		mainItems: EditableItem[];
-		editingId: string | null;
-		editorKind: EditorKind | null;
-		creating: boolean;
+		/** Playing the staggered entrance after returning from the item view. */
+		stagger: boolean;
 		saving: boolean;
-		treatments: SupplierTreatment[];
 		rangeWarnings?: Record<string, string[]>;
 		onToggleEditor: (item: EditableItem, focusTreatments?: boolean) => void;
 		onRemove: (item: EditableItem) => void;
 		onRestore: (item: EditableItem) => void;
 		onAdd: (kind: AddItemKind) => void;
 		onRemoveChild: (child: EditableItem) => void;
-		onApplyLens: (saved: EditableItem, treatments: EditLensTreatment[], brandName?: string) => void;
-		onCommitProduct: (item: EditableItem) => void;
-		onCommitFree: (item: EditableItem) => void;
 	}
 
 	let {
 		activeItems,
 		mainItems,
-		editingId,
-		editorKind,
-		creating,
+		stagger,
 		saving,
-		treatments,
 		rangeWarnings = {},
 		onToggleEditor,
 		onRemove,
 		onRestore,
 		onAdd,
-		onRemoveChild,
-		onApplyLens,
-		onCommitProduct,
-		onCommitFree
+		onRemoveChild
 	}: Props = $props();
 
 	let menuOpen = $state(false);
@@ -164,13 +143,13 @@
 	 * Display convention: new rows store qty = eyes with rx and a per-eye
 	 * unitPrice; legacy rows store qty=1 with a pair (×2) unitPrice.
 	 */
-	function childView(parent: EditableItem, child: EditableItem): DocumentChildView | null {
+	function childView(child: EditableItem): DocumentChildView | null {
 		const perEye = child.quantity > 1 ? child.unitPrice : child.unitPrice / 2;
 		const eyes = child.quantity > 1 ? child.quantity : 2;
 		if (perEye <= 0) return null;
 		const isAr = child.snapshotTreatmentCategory?.toUpperCase() === 'AR';
 		return {
-			key: child.id ?? `${parent.id}-${child.supplierTreatmentId}-${child.snapshotName}`,
+			key: child.id ?? child.supplierTreatmentId ?? child.snapshotName ?? 'child',
 			title: child.snapshotName ?? 'Tratamiento',
 			kind: 'treatment',
 			tag: isAr ? 'Antirreflejo' : 'Adicional',
@@ -200,16 +179,6 @@
 	function onWindowKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') menuOpen = false;
 	}
-
-	$effect(() => {
-		if (!editingId) return;
-		void tick().then(() => {
-			untrack(() => {
-				const row = document.querySelector(`[data-item-id="${editingId}"]`);
-				row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-			});
-		});
-	});
 </script>
 
 <svelte:window onpointerdown={onWindowPointerDown} onkeydown={onWindowKeydown} />
@@ -290,52 +259,25 @@
 	{:else}
 		<div>
 			{#each mainItems as item, index (item.id ?? `new-${index}`)}
-				<div data-item-id={item.id ?? `new-${index}`}>
+				<div data-item-id={item.id ?? `new-${index}`} style:--d={index} class:row-in={stagger}>
 					<DocumentItemRow
 						item={toView(item)}
-						open={editingId === item.id}
 						onOpen={() => onToggleEditor(item)}
 						onRemove={() => onRemove(item)}
 						onRestore={() => onRestore(item)}
 					/>
 
 					{#each childItemsOf(item) as child, childIndex (child.id)}
-						{@const view = childView(item, child)}
-						{#if view}
+						{@const childVm = childView(child)}
+						{#if childVm}
 							<DocumentChildRow
-								child={view}
+								child={childVm}
 								last={childIndex === childItemsOf(item).length - 1}
 								onOpen={() => onToggleEditor(item, true)}
 								onRemove={() => onRemoveChild(child)}
 							/>
 						{/if}
 					{/each}
-
-					{#if editingId === item.id && editorKind}
-						<div class="mb-2 rounded-xl bg-surface-container-low px-4 py-3.5 pl-[60px]">
-							{#if editorKind === 'lens'}
-								<EditSaleLensEditor
-									{item}
-									mode={creating ? 'add' : 'edit'}
-									editTreatments={mapTreatmentsForEdit(activeItems, item.id)}
-									{treatments}
-									onApply={onApplyLens}
-								/>
-							{:else if editorKind === 'product'}
-								<EditSaleProductEditor
-									{item}
-									mode={creating ? 'add' : 'edit'}
-									onCommit={onCommitProduct}
-								/>
-							{:else}
-								<EditSaleFreeEditor
-									{item}
-									mode={creating ? 'add' : 'edit'}
-									onCommit={onCommitFree}
-								/>
-							{/if}
-						</div>
-					{/if}
 				</div>
 			{/each}
 		</div>
@@ -343,3 +285,21 @@
 
 	<div class="h-3"></div>
 </section>
+
+<style>
+	@keyframes row-in {
+		from {
+			transform: translateY(8px);
+			opacity: 0;
+		}
+	}
+	.row-in {
+		animation: row-in 0.35s cubic-bezier(0.25, 1, 0.5, 1) both;
+		animation-delay: calc(var(--d) * 40ms);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.row-in {
+			animation: none;
+		}
+	}
+</style>

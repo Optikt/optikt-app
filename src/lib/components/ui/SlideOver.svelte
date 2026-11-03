@@ -12,6 +12,9 @@
 		widthClass,
 		direction = 'right' as Direction,
 		bodyClass = 'px-6 py-4',
+		/** Intercept Escape inside the drawer: return true when an inner view
+		 *  (editor / combobox) consumed the key so the drawer stays open. */
+		escapeHandler,
 		children,
 		header,
 		footer
@@ -26,6 +29,8 @@
 		direction?: Direction;
 		/** Classes for the scrollable body (default `px-6 py-4`). */
 		bodyClass?: string;
+		/** Return true when Escape was consumed by an inner view. */
+		escapeHandler?: () => boolean;
 		children: Snippet;
 		header?: Snippet<[{ onclose: () => void }]>;
 		footer?: Snippet;
@@ -50,7 +55,12 @@
 		panel?.focus();
 
 		function onKeyDown(e: KeyboardEvent) {
-			if (e.key === 'Escape') handleClose();
+			if (e.key !== 'Escape') return;
+			if (escapeHandler?.()) {
+				e.preventDefault();
+				return;
+			}
+			handleClose();
 		}
 		window.addEventListener('keydown', onKeyDown);
 		return () => window.removeEventListener('keydown', onKeyDown);

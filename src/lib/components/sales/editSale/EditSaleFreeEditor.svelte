@@ -9,10 +9,12 @@
 	interface Props {
 		item: EditableItem;
 		mode: 'add' | 'edit';
+		/** Hide the «Editando ítem libre / Hecho» row when a shell owns the band. */
+		showHeader?: boolean;
 		onCommit: (item: EditableItem) => void;
 	}
 
-	let { item, mode, onCommit }: Props = $props();
+	let { item, mode, onCommit, showHeader = true }: Props = $props();
 
 	let name = $state(untrack(() => item.freeItemDescription ?? item.snapshotName ?? ''));
 	let note = $state(untrack(() => item.notes ?? ''));
@@ -26,6 +28,11 @@
 	let discount = $state(untrack(() => item.discount ?? 0));
 	let discountType = $state<string>(untrack(() => item.discountType ?? DiscountType.FIXED));
 	let error = $state('');
+
+	/** Exposed for the item band's «Hecho» button. */
+	export function apply() {
+		commit();
+	}
 
 	function commit() {
 		if (name.trim().length < 3) {
@@ -50,20 +57,20 @@
 	}
 </script>
 
-<div class="mb-2.5 flex items-center justify-between gap-2">
-	<span
-		class="text-[10.5px] font-extrabold tracking-[0.09em] text-brand-blue-dark uppercase dark:text-brand-blue-light"
-	>
-		{mode === 'add' ? 'Nuevo ítem libre' : 'Editando ítem libre'}
-	</span>
-	<button
-		type="button"
-		onclick={commit}
-		class="h-[26px] rounded-[7px] bg-brand-blue/10 px-3 text-xs font-bold text-brand-blue-dark transition hover:bg-brand-blue/15 dark:bg-brand-blue/20 dark:text-brand-blue-light"
-	>
-		Hecho ✓
-	</button>
-</div>
+{#if showHeader}<div class="mb-2.5 flex items-center justify-between gap-2">
+		<span
+			class="text-[10.5px] font-extrabold tracking-[0.09em] text-brand-blue-dark uppercase dark:text-brand-blue-light"
+		>
+			{mode === 'add' ? 'Nuevo ítem libre' : 'Editando ítem libre'}
+		</span>
+		<button
+			type="button"
+			onclick={commit}
+			class="h-[26px] rounded-[7px] bg-brand-blue/10 px-3 text-xs font-bold text-brand-blue-dark transition hover:bg-brand-blue/15 dark:bg-brand-blue/20 dark:text-brand-blue-light"
+		>
+			Hecho ✓
+		</button>
+	</div>{/if}
 
 <div class="flex flex-wrap items-end gap-2.5">
 	<div class="w-44">

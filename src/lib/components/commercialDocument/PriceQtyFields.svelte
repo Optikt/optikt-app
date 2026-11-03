@@ -101,11 +101,11 @@
 			class="text-[10.5px] font-bold tracking-[0.05em] text-slate-400 uppercase dark:text-slate-500"
 			>Precio final</span
 		>
-		<div
-			class="flex h-9 items-center rounded-lg bg-brand-blue/10 px-3 text-[13.5px] font-bold text-brand-blue-dark tabular-nums dark:bg-brand-blue/20 dark:text-brand-blue-light"
+		<span
+			class="font-heading h-9 text-[20px] font-bold text-brand-navy tabular-nums dark:text-white"
 		>
 			{formatPrice(net)}
-		</div>
+		</span>
 	</div>
 </div>
 

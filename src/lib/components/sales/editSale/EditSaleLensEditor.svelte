@@ -89,7 +89,8 @@
 		lensDraft.treatments = lensDraft.treatments.filter((_, current) => current !== index);
 	}
 
-	function apply() {
+	/** Exposed for the item band's «Hecho» button (item detail view). */
+	export function apply() {
 		if (!lensDraft.lensCatalogItemId) return;
 
 		const sellerId = context.selectedLens?.supplier?.id;
@@ -131,4 +132,5 @@
 	onAddTreatment={addTreatment}
 	onRemoveTreatment={removeTreatment}
 	onApply={apply}
+	showHeader={false}
 />

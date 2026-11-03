@@ -4,15 +4,18 @@
 	import ItemSelect from '../ItemSelect.svelte';
 	import PriceQtyFields from '$lib/components/commercialDocument/PriceQtyFields.svelte';
 	import { getCachedProducts } from '../catalogCache.svelte';
+	import { SALE_CAPABILITIES } from '$lib/components/documentEditor/types';
 	import type { EditableItem } from '../editSaleDraft';
 
 	interface Props {
 		item: EditableItem;
 		mode: 'add' | 'edit';
+		/** Hide the «Editando producto / Hecho» row when a shell owns the band. */
+		showHeader?: boolean;
 		onCommit: (item: EditableItem) => void;
 	}
 
-	let { item, mode, onCommit }: Props = $props();
+	let { item, mode, onCommit, showHeader = true }: Props = $props();
 
 	let productId = $state(untrack(() => item.productId ?? ''));
 	let quantity = $state(untrack(() => item.quantity));
@@ -28,6 +31,11 @@
 	function selectProduct(id: string, catalogPrice: number) {
 		productId = id;
 		if (id && unitPrice <= 0 && catalogPrice > 0) unitPrice = catalogPrice;
+	}
+
+	/** Exposed for the item band's «Hecho» button. */
+	export function apply() {
+		commit();
 	}
 
 	function commit() {
@@ -55,20 +63,20 @@
 	}
 </script>
 
-<div class="mb-2.5 flex items-center justify-between gap-2">
-	<span
-		class="text-[10.5px] font-extrabold tracking-[0.09em] text-brand-blue-dark uppercase dark:text-brand-blue-light"
-	>
-		{mode === 'add' ? 'Nuevo producto' : 'Editando producto'}
-	</span>
-	<button
-		type="button"
-		onclick={commit}
-		class="h-[26px] rounded-[7px] bg-brand-blue/10 px-3 text-xs font-bold text-brand-blue-dark transition hover:bg-brand-blue/15 dark:bg-brand-blue/20 dark:text-brand-blue-light"
-	>
-		Hecho ✓
-	</button>
-</div>
+{#if showHeader}<div class="mb-2.5 flex items-center justify-between gap-2">
+		<span
+			class="text-[10.5px] font-extrabold tracking-[0.09em] text-brand-blue-dark uppercase dark:text-brand-blue-light"
+		>
+			{mode === 'add' ? 'Nuevo producto' : 'Editando producto'}
+		</span>
+		<button
+			type="button"
+			onclick={commit}
+			class="h-[26px] rounded-[7px] bg-brand-blue/10 px-3 text-xs font-bold text-brand-blue-dark transition hover:bg-brand-blue/15 dark:bg-brand-blue/20 dark:text-brand-blue-light"
+		>
+			Hecho ✓
+		</button>
+	</div>{/if}
 
 <div class="flex flex-wrap items-end gap-2.5">
 	<div class="min-w-[220px] flex-[2]">
@@ -77,6 +85,11 @@
 			>Producto</span
 		>
 		<ItemSelect kind="product" value={productId} onselect={selectProduct} />
+		{#if SALE_CAPABILITIES.inventory && mode === 'add'}
+			<p class="mt-1.5 text-[11px] text-on-warning-container">
+				Los productos nuevos consumirán inventario al guardar.
+			</p>
+		{/if}
 	</div>
 
 	<PriceQtyFields

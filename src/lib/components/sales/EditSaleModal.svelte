@@ -8,6 +8,10 @@
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
+	import { cubicOut } from 'svelte/easing';
+	import { fly } from 'svelte/transition';
+
+	import EditSaleItemView from './editSale/EditSaleItemView.svelte';
 	import { fromISO } from '$lib/dates';
 	import { getCachedLensItem } from './catalogCache.svelte';
 	import { SALE_CAPABILITIES } from '$lib/components/documentEditor/types';
@@ -63,11 +67,29 @@
 		if (reason) reasonError = '';
 	});
 
-	// ── Editable items + inline editor ──────────────────────────────────────
+	// ── Editable items + item detail view ───────────────────────────────────
 	let editableItems = $state<EditableItem[]>([]);
 	let editingId = $state<string | null>(null);
 	let editorKind = $state<EditorKind | null>(null);
 	let creating = $state(false);
+	/** Two views inside the body: the list and the open item editor. */
+	let view = $state<'list' | 'editor'>('list');
+	let staggerRows = $state(false);
+	let staggerTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function backToList() {
+		view = 'list';
+
+		staggerRows = true;
+		clearTimeout(staggerTimer);
+		staggerTimer = setTimeout(() => (staggerRows = false), 420);
+	}
+
+	function inFly(node: HTMLElement) {
+		return view === 'list'
+			? fly(node, { x: -28, duration: 280, easing: cubicOut })
+			: fly(node, { x: 28, duration: 280, easing: cubicOut });
+	}
 
 	// ── Derived ─────────────────────────────────────────────────────────────
 	let hasChanges = $derived(
@@ -97,6 +119,8 @@
 		editingId = null;
 		editorKind = null;
 		creating = false;
+		view = 'list';
+		staggerRows = false;
 		void seedCatalogCacheForItems(items).catch((error) => {
 			logger.error('No se pudo cargar el catálogo de cristales de la venta', error);
 		});
@@ -152,6 +176,8 @@
 		editingId = null;
 		editorKind = null;
 		creating = false;
+		view = 'list';
+		staggerRows = false;
 	}
 
 	function startAdd(kind: AddItemKind) {
@@ -161,6 +187,7 @@
 		editingId = placeholder.id ?? null;
 		editorKind = kind;
 		creating = true;
+		view = 'editor';
 	}
 
 	function toggleEditor(item: EditableItem, _focusTreatments = false) {
@@ -173,12 +200,15 @@
 		editingId = item.id;
 		editorKind = kindFor(item);
 		creating = false;
+		view = 'editor';
 	}
 
 	function finishEditing() {
 		editingId = null;
 		editorKind = null;
 		creating = false;
+		view = 'list';
+		staggerRows = false;
 	}
 
 	function handleApplyLens(
@@ -233,6 +263,7 @@
 			creating = false;
 			editingId = null;
 			editorKind = null;
+			backToList();
 		}
 	}
 
@@ -322,6 +353,13 @@
 	bind:open
 	size="xl"
 	closeGuard={guardClose}
+	escapeHandler={() => {
+		if (view === 'editor') {
+			closeEditor();
+			return true;
+		}
+		return false;
+	}}
 	widthClass="w-full lg:w-[clamp(720px,60vw,920px)]"
 	bodyClass="p-0 bg-surface-drawer"
 >
@@ -333,27 +371,44 @@
 			{saving}
 			onClose={onclose}
 		/>
-		<EditSaleMetaBar bind:saleDate bind:notes />
+		{#if view === 'list'}
+			<EditSaleMetaBar bind:saleDate bind:notes />
+		{/if}
 	{/snippet}
 
-	<EditSaleItemsList
-		{activeItems}
-		{mainItems}
-		{editingId}
-		{editorKind}
-		{creating}
-		{saving}
-		{treatments}
-		rangeWarnings={lensRangeWarnings}
-		onToggleEditor={toggleEditor}
-		onRemove={removeItem}
-		onRestore={restoreItem}
-		onRemoveChild={removeChild}
-		onAdd={startAdd}
-		onApplyLens={handleApplyLens}
-		onCommitProduct={handleCommitProduct}
-		onCommitFree={handleCommitFree}
-	/>
+	{#key view}
+		{#if view === 'list'}
+			<div transition:inFly>
+				<EditSaleItemsList
+					{activeItems}
+					{mainItems}
+					{saving}
+					stagger={staggerRows}
+					rangeWarnings={lensRangeWarnings}
+					onToggleEditor={toggleEditor}
+					onRemove={removeItem}
+					onRestore={restoreItem}
+					onAdd={startAdd}
+					onRemoveChild={removeChild}
+				/>
+			</div>
+		{:else}
+			{@const editing = editableItems.find((item) => item.id === editingId)}
+			{#if editing}
+				<EditSaleItemView
+					item={editing}
+					{activeItems}
+					kind={editorKind ?? 'lens'}
+					{creating}
+					{treatments}
+					onApplyLens={handleApplyLens}
+					onCommitProduct={handleCommitProduct}
+					onCommitFree={handleCommitFree}
+					onBack={closeEditor}
+				/>
+			{/if}
+		{/if}
+	{/key}
 
 	{#snippet footer()}
 		<EditSaleFooter

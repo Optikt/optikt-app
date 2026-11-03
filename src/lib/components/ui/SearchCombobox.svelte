@@ -120,6 +120,8 @@
 			handleSelect(filtered[highlightedIdx]);
 		} else if (e.key === 'Escape') {
 			open = false;
+			// Keep the key from closing the surrounding drawer/modal (§ Esc order).
+			e.stopPropagation();
 		}
 	}
 </script>

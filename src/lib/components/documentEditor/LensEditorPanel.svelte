@@ -15,6 +15,8 @@
 
 	interface Props {
 		mode: 'add' | 'edit';
+		/** Hide the «Editando cristal / Hecho» row when a shell owns the band. */
+		showHeader?: boolean;
 		draft: LensEditorDraft;
 		/** Lens type of the selected catalog item (drives addition/height inputs). */
 		lensType: string;
@@ -29,6 +31,7 @@
 
 	let {
 		mode,
+		showHeader = true,
 		draft = $bindable(),
 		lensType,
 		ranges,
@@ -138,21 +141,21 @@
 	}
 </script>
 
-<div class="mb-2.5 flex items-center justify-between gap-2">
-	<span
-		class="text-[10.5px] font-extrabold tracking-[0.09em] text-brand-blue-dark uppercase dark:text-brand-blue-light"
-	>
-		{mode === 'edit' ? 'Editando cristal' : 'Nuevo cristal'}
-	</span>
-	<button
-		type="button"
-		onclick={handleApply}
-		aria-disabled={hasErrors}
-		class="h-[26px] rounded-[7px] bg-brand-blue/10 px-3 text-xs font-bold text-brand-blue-dark transition hover:bg-brand-blue/15 aria-disabled:cursor-not-allowed aria-disabled:opacity-40 dark:bg-brand-blue/20 dark:text-brand-blue-light"
-	>
-		Hecho ✓
-	</button>
-</div>
+{#if showHeader}<div class="mb-2.5 flex items-center justify-between gap-2">
+		<span
+			class="text-[10.5px] font-extrabold tracking-[0.09em] text-brand-blue-dark uppercase dark:text-brand-blue-light"
+		>
+			{mode === 'edit' ? 'Editando cristal' : 'Nuevo cristal'}
+		</span>
+		<button
+			type="button"
+			onclick={handleApply}
+			aria-disabled={hasErrors}
+			class="h-[26px] rounded-[7px] bg-brand-blue/10 px-3 text-xs font-bold text-brand-blue-dark transition hover:bg-brand-blue/15 aria-disabled:cursor-not-allowed aria-disabled:opacity-40 dark:bg-brand-blue/20 dark:text-brand-blue-light"
+		>
+			Hecho ✓
+		</button>
+	</div>{/if}
 
 <div class="flex flex-wrap items-end gap-2.5">
 	<div class="min-w-[220px] flex-[2]">
