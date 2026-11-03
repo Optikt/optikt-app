@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
+	import { untrack } from 'svelte';
 	import { TriangleAlert, Eye, Package, Loader2 } from '@lucide/svelte';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -26,11 +27,14 @@
 		value: string;
 		/** Label */
 		label?: string;
+		/** Snapshot label of the currently selected item: seeds the input before
+		 *  the RPC round-trip lands the real catalog option (no empty flash). */
+		snapshotLabel?: string;
 		/** Callback when selection changes, passes unit price */
 		onselect?: (id: string, unitPrice: number) => void;
 	}
 
-	let { kind, value = '', label, onselect }: Props = $props();
+	let { kind, value = '', label, snapshotLabel = '', onselect }: Props = $props();
 
 	interface SelectOption {
 		id: string;
@@ -45,7 +49,27 @@
 		inventoryMode?: string;
 	}
 
-	let options = $state<SelectOption[]>([]);
+	// Load the currently-selected item so the combobox shows its label.
+	/** Seed option straight from the saved snapshot: instant display at mount. */
+	const initialId = untrack(() => value);
+	function seedOption(): SelectOption[] {
+		if (!initialId || !snapshotLabel) return [];
+		return [
+			{
+				id: initialId,
+				label: snapshotLabel,
+				name: snapshotLabel,
+				sku: '',
+				brand: '',
+				stock: null,
+				price: 0,
+				productType: '',
+				source: undefined
+			}
+		];
+	}
+
+	let options = $state<SelectOption[]>(seedOption());
 	let searching = $state(false);
 	let loadedValue = $state('');
 
@@ -101,7 +125,8 @@
 	function handleQueryChange(query: string) {
 		clearTimeout(searchTimer);
 		if (query.trim().length < 2) {
-			options = [];
+			// Keep the seed so a mid-typing clear doesn't blank the selection.
+			options = seedOption();
 			return;
 		}
 		searchTimer = setTimeout(() => void runSearch(query.trim()), 250);

@@ -22,6 +22,14 @@
 	let discountType = $state<string>(untrack(() => item.discountType ?? DiscountType.FIXED));
 	let error = $state('');
 
+	const snapshotLabel = $derived(
+		item.snapshotName
+			? item.snapshotSku
+				? `${item.snapshotName} (${item.snapshotSku})`
+				: item.snapshotName
+			: ''
+	);
+
 	const product = $derived(
 		productId ? getCachedProducts().find((candidate) => candidate.id === productId) : undefined
 	);
@@ -41,13 +49,15 @@
 			error = 'Selecciona un producto del catálogo.';
 			return;
 		}
-		if (unitPrice <= 0) {
-			error = 'Indica un precio unitario mayor a 0.';
+		if (unitPrice < 0) {
+			error = 'El precio no puede ser negativo.';
 			return;
 		}
 		const found = getCachedProducts().find((candidate) => candidate.id === productId);
 		onCommit({
 			...item,
+			/** Placeholders join the basket with a local id (same as lens apply). */
+			id: item.id ?? crypto.randomUUID(),
 			productId,
 			quantity,
 			unitPrice,
@@ -66,7 +76,13 @@
 >
 	<div class="flex flex-wrap items-end gap-2.5">
 		<div class="min-w-[220px] flex-[2]">
-			<ItemSelect kind="product" value={productId} onselect={selectProduct} label="Producto" />
+			<ItemSelect
+				kind="product"
+				value={productId}
+				{snapshotLabel}
+				onselect={selectProduct}
+				label="Producto"
+			/>
 			{#if SALE_CAPABILITIES.inventory && mode === 'add'}
 				<p class="mt-1.5 text-[11px] text-on-warning-container">
 					Los productos nuevos consumirán inventario al guardar.

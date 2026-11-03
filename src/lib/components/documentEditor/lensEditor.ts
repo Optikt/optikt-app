@@ -98,8 +98,9 @@ export function validateLensEditorDraft(
 	if (!draft.lensCatalogItemId) {
 		errors.lensCatalogItemId = 'Seleccione un cristal';
 	}
-	if (!(draft.unitPrice > 0)) {
-		errors.unitPrice = 'El precio debe ser mayor a 0';
+	/** Zero-priced lines are allowed (regalos); only negative blocks. */
+	if (draft.unitPrice < 0) {
+		errors.unitPrice = 'El precio no puede ser negativo';
 	}
 	if (!Number.isInteger(draft.quantity) || draft.quantity < 1) {
 		errors.quantity = 'La cantidad debe ser al menos 1';

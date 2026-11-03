@@ -43,6 +43,8 @@
 		}
 		onCommit({
 			...item,
+			/** Placeholders join the basket with a local id (same as lens apply). */
+			id: item.id ?? crypto.randomUUID(),
 			quantity,
 			unitPrice,
 			discount,

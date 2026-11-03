@@ -58,9 +58,12 @@ describe('validateLensEditorDraft', () => {
 		expect(errors.lensCatalogItemId).toBe('Seleccione un cristal');
 	});
 
-	it('requires a positive price', () => {
-		const errors = validateLensEditorDraft(draft({ unitPrice: 0 }));
-		expect(errors.unitPrice).toBe('El precio debe ser mayor a 0');
+	it('allows a zero price (gift) and blocks negatives', () => {
+		const zero = validateLensEditorDraft(draft({ unitPrice: 0 }));
+		expect(zero.unitPrice).toBeUndefined();
+
+		const negative = validateLensEditorDraft(draft({ unitPrice: -5 }));
+		expect(negative.unitPrice).toBe('El precio no puede ser negativo');
 	});
 
 	it('requires sphere or cylinder for an enabled eye', () => {

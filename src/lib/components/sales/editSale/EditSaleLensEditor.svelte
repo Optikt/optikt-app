@@ -164,6 +164,7 @@
 	<ItemSelect
 		kind="lens"
 		value={lensDraft.lensCatalogItemId}
+		snapshotLabel={lensBase.snapshotName ?? ''}
 		onselect={handleLensSelect}
 		label="Cristal"
 	/>
