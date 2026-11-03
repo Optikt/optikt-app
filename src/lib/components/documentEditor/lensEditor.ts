@@ -11,6 +11,7 @@ import {
 	OptionalSphereSchema
 } from '$lib/schemas/common/optical';
 import { AlturaSchema, AxisSchema, DpSchema, NpSchema } from '$lib/schemas/prescriptions';
+import { SaleItemUnitPriceSchema } from '$lib/schemas/sales';
 import { DiscountType } from '$lib/shared/enums';
 
 import {
@@ -98,9 +99,10 @@ export function validateLensEditorDraft(
 	if (!draft.lensCatalogItemId) {
 		errors.lensCatalogItemId = 'Seleccione un cristal';
 	}
-	/** Zero-priced lines are allowed (regalos); only negative blocks. */
-	if (draft.unitPrice < 0) {
-		errors.unitPrice = 'El precio no puede ser negativo';
+	/** Zero-priced lines are allowed (regalos): validated by the shared sale
+	 *  item schema so the editor can never drift from the server rule. */
+	if (firstIssue(SaleItemUnitPriceSchema.safeParse(draft.unitPrice))) {
+		errors.unitPrice = 'Precio debe ser mayor o igual a 0';
 	}
 	if (!Number.isInteger(draft.quantity) || draft.quantity < 1) {
 		errors.quantity = 'La cantidad debe ser al menos 1';

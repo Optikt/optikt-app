@@ -4,6 +4,7 @@
 	import ItemSelect from '../ItemSelect.svelte';
 	import PriceQtyFields from '$lib/components/commercialDocument/PriceQtyFields.svelte';
 	import { getCachedProducts } from '../catalogCache.svelte';
+	import { SaleItemUnitPriceSchema } from '$lib/schemas/sales';
 	import { SALE_CAPABILITIES } from '$lib/components/documentEditor/types';
 	import type { EditableItem } from '../editSaleDraft';
 
@@ -49,8 +50,8 @@
 			error = 'Selecciona un producto del catálogo.';
 			return;
 		}
-		if (unitPrice < 0) {
-			error = 'El precio no puede ser negativo.';
+		if (!SaleItemUnitPriceSchema.safeParse(unitPrice).success) {
+			error = 'Precio debe ser mayor o igual a 0';
 			return;
 		}
 		const found = getCachedProducts().find((candidate) => candidate.id === productId);

@@ -82,6 +82,13 @@ export type FreeItemDetailsInput = z.infer<typeof FreeItemDetailsSchema>;
 // SALE ITEM SCHEMA (redesigned - PRODUCT | LENS_PAIR | TREATMENT | FREE_ITEM)
 // ============================================================================
 
+/**
+ * Shared price rule for sale items: zero is allowed (regalos), negatives are not.
+ * Exported so client-side editors validate with the exact rule (and message)
+ * the remote save applies — see LensEditorPanel / product editor guards.
+ */
+export const SaleItemUnitPriceSchema = CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0');
+
 export const SaleItemSchema = z
 	.object({
 		/** Optional client-generated UUID - used to link treatment items to their parent lens item */
@@ -110,7 +117,7 @@ export const SaleItemSchema = z
 		osAddition: OptionalAdditionSchema.optional(),
 		osAltura: AlturaSchema.optional(),
 		quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
-		unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
+		unitPrice: SaleItemUnitPriceSchema,
 		discount: CoercedNumber.min(0).default(0),
 		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 

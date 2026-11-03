@@ -63,7 +63,7 @@ describe('validateLensEditorDraft', () => {
 		expect(zero.unitPrice).toBeUndefined();
 
 		const negative = validateLensEditorDraft(draft({ unitPrice: -5 }));
-		expect(negative.unitPrice).toBe('El precio no puede ser negativo');
+		expect(negative.unitPrice).toBe('Precio debe ser mayor o igual a 0');
 	});
 
 	it('requires sphere or cylinder for an enabled eye', () => {
