@@ -12,7 +12,8 @@
 	import { getCachedLensItem } from './catalogCache.svelte';
 	import { SALE_CAPABILITIES } from '$lib/components/documentEditor/types';
 	import EditSaleMetaBar from './editSale/EditSaleMetaBar.svelte';
-	import EditSaleItemsList, { type EditorKind } from './editSale/EditSaleItemsList.svelte';
+	import EditSaleItemsList from './editSale/EditSaleItemsList.svelte';
+	import type { EditorKind } from './editSale/editSaleViews';
 	import EditSaleFooter from './editSale/EditSaleFooter.svelte';
 	import EditSaleModalHeader from './editSale/EditSaleModalHeader.svelte';
 	import type { AddItemKind } from './editSale/addItemKinds';
@@ -162,7 +163,7 @@
 		creating = true;
 	}
 
-	function toggleEditor(item: EditableItem) {
+	function toggleEditor(item: EditableItem, _focusTreatments = false) {
 		if (editingId === item.id) {
 			closeEditor();
 			return;
@@ -209,9 +210,16 @@
 		toast.success(wasNew ? 'Ítem libre agregado' : 'Ítem libre actualizado');
 	}
 
-	// ── Remove item ──────────────────────────────────────────────────────────
+	// ── Remove / restore item ─────────────────────────────────────────────────
+	/** Placeholders (no server id) vanish outright; persisted items stay restorable. */
 	function removeItem(item: EditableItem) {
 		const targetId = item.id;
+		if (!targetId) {
+			editableItems = editableItems.filter(
+				(existing) => existing !== item && existing.parentSaleItemId !== item.id
+			);
+			return;
+		}
 		item._removed = true;
 		if (item.itemType === SaleItemType.LENS_PAIR) {
 			for (const child of editableItems) {
@@ -226,6 +234,22 @@
 			editingId = null;
 			editorKind = null;
 		}
+	}
+
+	function restoreItem(item: EditableItem) {
+		const targetId = item.id;
+		item._removed = false;
+		for (const child of editableItems) {
+			if (child.parentSaleItemId === targetId) {
+				child._removed = false;
+			}
+		}
+		editableItems = [...editableItems];
+	}
+
+	function removeChild(child: EditableItem) {
+		child._removed = true;
+		editableItems = [...editableItems];
 	}
 
 	// ── Submit ───────────────────────────────────────────────────────────────
@@ -323,6 +347,8 @@
 		rangeWarnings={lensRangeWarnings}
 		onToggleEditor={toggleEditor}
 		onRemove={removeItem}
+		onRestore={restoreItem}
+		onRemoveChild={removeChild}
 		onAdd={startAdd}
 		onApplyLens={handleApplyLens}
 		onCommitProduct={handleCommitProduct}

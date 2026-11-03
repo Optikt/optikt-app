@@ -1,153 +1,153 @@
 <script lang="ts">
 	/**
-	 * Flat item row for the commercial-document editor.
-	 * Mirrors the redesign mockup: hairline row, type tag + meta, qty badge,
-	 * discount amount, line total and hover actions. No chevron: clicking the
-	 * row toggles the inline editor rendered by the parent.
+	 * White card row for a commercial-document item (parent).
+	 * Whole row opens the editor; trash is always visible and removal is
+	 * restorable. No chevron buttons: clicking the row is the affordance.
 	 */
-	import { Pencil, Trash2 } from '@lucide/svelte';
+	import { ChevronRight, Undo2, Trash2 } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import InfoTooltip from '$lib/components/ui/InfoTooltip.svelte';
 	import { formatPrice } from '$lib/utils';
-	import { ITEM_TONES, BADGE_TONES } from './tones';
+	import { ITEM_KIND_ICONS, BADGE_TONES } from './tones';
 	import { itemTotals, type DocumentItemView } from './itemView';
 
 	interface Props {
 		item: DocumentItemView;
 		open?: boolean;
-		onToggle: () => void;
-		onEdit?: () => void;
+		/** Row tooltip (defaults reflect the removed state). */
+		tooltip?: string;
+		onOpen: () => void;
 		onRemove?: () => void;
-		disabled?: boolean;
+		onRestore?: () => void;
 	}
 
-	let { item, open = false, onToggle, onEdit, onRemove, disabled = false }: Props = $props();
+	let { item, open = false, tooltip, onOpen, onRemove, onRestore }: Props = $props();
 
-	const tone = $derived(ITEM_TONES[item.tone]);
-	const ToneIcon = $derived(tone.icon);
+	const KindIcon = $derived(ITEM_KIND_ICONS[item.kind].icon);
+	const chipClass = $derived(ITEM_KIND_ICONS[item.kind].chipClass);
 	const totals = $derived(itemTotals(item));
-
-	function toggle() {
-		onToggle();
-	}
+	const rowTooltip = $derived(
+		tooltip ??
+			(item.removed ? 'Quitado: se eliminará al guardar' : 'Clic para editar este artículo')
+	);
 </script>
 
-<div class="group relative transition-colors" class:bg-surface-container-low={open}>
+{#snippet rowTrigger({ props }: { props: Record<string, unknown> })}
 	<div
-		class="flex cursor-pointer items-center gap-3 px-5 py-3 transition hover:bg-surface-container-low/70 dark:hover:bg-slate-800/60"
-		onclick={toggle}
+		{...props}
+		role="button"
+		tabindex="0"
+		aria-label={item.title}
+		onclick={onOpen}
 		onkeydown={(event) => {
 			if (event.key === 'Enter' || event.key === ' ') {
 				event.preventDefault();
-				toggle();
+				onOpen();
 			}
 		}}
-		role="button"
-		tabindex="0"
-		aria-expanded={open}
+		class={`group mx-4 mb-2 cursor-pointer rounded-xl bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(21,35,70,0.06),0_2px_8px_rgba(21,35,70,0.06)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-px hover:shadow-[0_2px_4px_rgba(21,35,70,0.08),0_8px_18px_rgba(21,35,70,0.1)] ${
+			item.removed ? 'opacity-60' : ''
+		} ${open ? 'bg-info-container/40' : ''}`}
 	>
-		<span
-			class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] {tone.iconClass}"
-		>
-			<ToneIcon class="h-[18px] w-[18px]" />
-		</span>
+		<div class="flex items-center gap-3">
+			<span class={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${chipClass}`}>
+				<KindIcon class="h-4 w-4" />
+			</span>
 
-		<div class="min-w-0 flex-1">
-			<div class="truncate text-[13.5px] font-semibold text-brand-navy dark:text-white">
-				{item.title}
-			</div>
-			<div
-				class="mt-0.5 flex items-center gap-1.5 overflow-hidden text-[11.5px] text-slate-500 dark:text-slate-400"
-			>
-				<span
-					class="shrink-0 rounded px-1.5 py-px text-[9px] font-extrabold tracking-[0.06em] uppercase {tone.badgeClass}"
-				>
-					{item.typeLabel}
-				</span>
+			<div class="min-w-0 flex-1">
+				<div class="block truncate text-sm font-semibold text-on-surface">
+					{item.title}
+				</div>
 				{#if item.subtitle}
-					<span class="truncate">{item.subtitle}</span>
+					<div class="truncate text-[12px] text-on-surface-variant">{item.subtitle}</div>
 				{/if}
-				{#if item.isNew}
-					<span
-						class="shrink-0 rounded-full px-1.5 py-px text-[9px] font-bold tracking-wide uppercase {BADGE_TONES.success}"
-						>Nuevo</span
-					>
-				{/if}
-				{#each item.badges ?? [] as badge (badge.label)}
-					<span class="inline-flex shrink-0 items-center gap-0.5">
-						<span
-							class="rounded-full px-1.5 py-px text-[9px] font-bold tracking-wide uppercase {BADGE_TONES[
-								badge.tone ?? 'neutral'
-							]}">{badge.label}</span
-						>
-						{#if badge.tooltip}
-							<InfoTooltip text={badge.tooltip} />
-						{/if}
-					</span>
+				{#each item.subtitleLines ?? [] as line (line)}
+					<div class="text-[12px] text-on-surface">{line}</div>
 				{/each}
 			</div>
-		</div>
 
-		<div class="flex shrink-0 items-center gap-2.5">
-			<span
-				class="rounded-md bg-surface-container-high px-1.5 py-0.5 text-[11px] font-bold text-slate-500 tabular-nums dark:bg-slate-700 dark:text-slate-300"
-			>
-				×{item.quantity}
-			</span>
-			{#if totals.discount > 0}
-				<span class="text-[11px] font-bold text-rose-600 tabular-nums dark:text-rose-400">
-					−{formatPrice(totals.discount)}
-				</span>
-			{/if}
-			<span
-				class="min-w-[72px] text-right text-sm font-bold text-brand-navy tabular-nums dark:text-white"
-			>
-				{formatPrice(totals.net)}
-			</span>
+			<div class="flex shrink-0 items-center gap-2.5">
+				{#if (item.quantity ?? 1) > 1 && !item.removed}
+					<span
+						class="rounded-[4px] bg-surface-container-high px-1.5 py-px text-[12px] font-bold text-on-surface-variant tabular-nums"
+					>
+						×{item.quantity}
+					</span>
+				{/if}
 
-			{#if onEdit || onRemove}
-				<div
-					class="flex items-center gap-0.5 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
-					class:opacity-100={open}
-				>
-					{#if onEdit}
-						{#snippet editTrigger({ props }: { props: Record<string, unknown> })}
-							<button
-								{...props}
-								type="button"
-								onclick={(event) => {
-									event.stopPropagation();
-									if (!disabled) onEdit?.();
-								}}
-								aria-disabled={disabled}
-								aria-label="Editar ítem"
-								class="flex h-7 w-7 items-center justify-center rounded-[7px] text-slate-400 transition hover:bg-white hover:text-brand-navy hover:shadow-sm aria-disabled:opacity-30 dark:hover:bg-slate-700 dark:hover:text-white"
+				<div class="min-w-[90px] text-right">
+					{#each item.badges ?? [] as badge (badge.label)}
+						<span class="mb-0.5 flex items-center justify-end gap-1">
+							<span
+								class="rounded-[4px] px-1.5 py-px text-[9px] font-bold tracking-wide uppercase {BADGE_TONES[
+									badge.tone ?? 'neutral'
+								]}"
 							>
-								<Pencil class="h-[15px] w-[15px]" />
-							</button>
-						{/snippet}
-						<TriggerTooltip text="Editar ítem" trigger={editTrigger} />
+								{badge.label}
+							</span>
+							{#if badge.tooltip}
+								<InfoTooltip text={badge.tooltip} />
+							{/if}
+						</span>
+					{/each}
+					<div class="text-[15px] font-semibold text-on-surface tabular-nums">
+						{#if item.removed}<s class="font-medium">{formatPrice(totals.net)}</s
+							>{:else}{formatPrice(totals.net)}{/if}
+					</div>
+					{#if totals.discount > 0 && !item.removed}
+						<div class="text-[12px] font-medium text-error tabular-nums">
+							−{formatPrice(totals.discount)}
+						</div>
 					{/if}
-					{#if onRemove}
+				</div>
+
+				{#if item.removed}
+					{#snippet restoreTrigger({ props }: { props: Record<string, unknown> })}
+						<button
+							{...props}
+							type="button"
+							onclick={(event) => {
+								event.stopPropagation();
+								onRestore?.();
+							}}
+							class="flex h-[30px] items-center gap-1.5 rounded-lg border border-outline-variant bg-white px-2 text-[12px] font-semibold text-on-surface-variant transition hover:bg-surface-container-low"
+						>
+							<Undo2 class="h-3.5 w-3.5" /> Restaurar
+						</button>
+					{/snippet}
+					<TriggerTooltip text="Restaurar el artículo" side="left" trigger={restoreTrigger} />
+				{:else if onRemove}
+					<div class="flex items-center gap-0.5">
 						{#snippet removeTrigger({ props }: { props: Record<string, unknown> })}
 							<button
 								{...props}
 								type="button"
 								onclick={(event) => {
 									event.stopPropagation();
-									if (!disabled) onRemove?.();
+									onRemove?.();
 								}}
-								aria-disabled={disabled}
-								aria-label="Quitar ítem"
-								class="flex h-7 w-7 items-center justify-center rounded-[7px] text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 aria-disabled:opacity-30 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
+								aria-label="Quitar"
+								class="flex h-[34px] w-[34px] items-center justify-center rounded-lg text-on-surface-variant transition hover:bg-error-container hover:text-error"
 							>
-								<Trash2 class="h-[15px] w-[15px]" />
+								<Trash2 class="h-4 w-4" />
 							</button>
 						{/snippet}
-						<TriggerTooltip text="Quitar ítem" trigger={removeTrigger} />
-					{/if}
-				</div>
-			{/if}
+						<TriggerTooltip
+							text="Quitar artículo (podrás restaurarlo)"
+							side="left"
+							trigger={removeTrigger}
+						/>
+
+						<span
+							class="grid h-6 w-5 place-items-center text-outline transition-colors group-hover:translate-x-[3px] group-hover:text-brand-blue"
+						>
+							<ChevronRight class="h-[18px] w-[18px]" />
+						</span>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
-</div>
+{/snippet}
+
+<TriggerTooltip text={rowTooltip} side="top" trigger={rowTrigger} />

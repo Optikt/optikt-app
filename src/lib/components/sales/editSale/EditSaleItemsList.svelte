@@ -1,26 +1,28 @@
 <script lang="ts">
-	import { tick } from 'svelte';
-	import { Plus } from '@lucide/svelte';
-	import { SaleItemType } from '$lib/shared/enums/lensTypes';
+	import { tick, untrack } from 'svelte';
+	import { ChevronDown, Plus } from '@lucide/svelte';
 	import DocumentItemRow from '$lib/components/commercialDocument/DocumentItemRow.svelte';
+	import DocumentChildRow from '$lib/components/commercialDocument/DocumentChildRow.svelte';
+	import { formatPrice } from '$lib/utils';
+	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import {
-		formatRxSummary,
-		type DocumentItemBadge,
-		type DocumentItemTone,
+		rxRowLine,
+		type DocumentChildView,
 		type DocumentItemView
 	} from '$lib/components/commercialDocument/itemView';
+	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
-	import { ADD_ITEM_KINDS, type AddItemKind } from './addItemKinds';
+	import { getCachedLensItem } from '../catalogCache.svelte';
 	import EditSaleLensEditor from './EditSaleLensEditor.svelte';
 	import EditSaleProductEditor from './EditSaleProductEditor.svelte';
 	import EditSaleFreeEditor from './EditSaleFreeEditor.svelte';
+	import { ADD_ITEM_KINDS, type AddItemKind } from './addItemKinds';
 	import {
 		mapTreatmentsForEdit,
 		type EditableItem,
 		type EditLensTreatment
 	} from '../editSaleDraft';
-
-	export type EditorKind = 'lens' | 'product' | 'free';
+	import type { EditorKind } from './editSaleViews';
 
 	interface Props {
 		activeItems: EditableItem[];
@@ -31,9 +33,11 @@
 		saving: boolean;
 		treatments: SupplierTreatment[];
 		rangeWarnings?: Record<string, string[]>;
-		onToggleEditor: (item: EditableItem) => void;
+		onToggleEditor: (item: EditableItem, focusTreatments?: boolean) => void;
 		onRemove: (item: EditableItem) => void;
+		onRestore: (item: EditableItem) => void;
 		onAdd: (kind: AddItemKind) => void;
+		onRemoveChild: (child: EditableItem) => void;
 		onApplyLens: (saved: EditableItem, treatments: EditLensTreatment[], brandName?: string) => void;
 		onCommitProduct: (item: EditableItem) => void;
 		onCommitFree: (item: EditableItem) => void;
@@ -50,116 +54,147 @@
 		rangeWarnings = {},
 		onToggleEditor,
 		onRemove,
+		onRestore,
 		onAdd,
+		onRemoveChild,
 		onApplyLens,
 		onCommitProduct,
 		onCommitFree
 	}: Props = $props();
 
 	let menuOpen = $state(false);
-	let root = $state<HTMLElement>();
+	let menuRoot = $state<HTMLElement>();
 
-	function toneFor(item: EditableItem): DocumentItemTone {
+	// ── View-model mapping ──────────────────────────────────────────────────
+	const FACTORY_TREATMENTS = (lens: ReturnType<typeof getCachedLensItem>): string[] => {
+		if (!lens) return [];
+		const parts: string[] = [];
+		if (lens.hasAr) parts.push('Antirreflejo');
+		if (lens.hasBluecut) parts.push('Blue Block');
+		if (lens.isPhotochromic) parts.push('Fotocromático');
+		return parts;
+	};
+
+	function kindFor(item: EditableItem): DocumentItemView['kind'] {
 		if (item.itemType === SaleItemType.LENS_PAIR) return 'crystal';
 		if (item.itemType === SaleItemType.FREE_ITEM) return 'free';
 		return 'product';
 	}
 
-	function typeLabelFor(item: EditableItem): string {
-		if (item.itemType === SaleItemType.LENS_PAIR) return 'CRISTAL';
-		if (item.itemType === SaleItemType.FREE_ITEM) return 'ÍTEM LIBRE';
-		return 'PRODUCTO';
+	function hasRx(item: EditableItem, eye: 'od' | 'os'): boolean {
+		const fields =
+			eye === 'od'
+				? [item.odSphere, item.odCylinder, item.odAxis, item.odAddition]
+				: [item.osSphere, item.osCylinder, item.osAxis, item.osAddition];
+		return fields.some((value) => value != null);
 	}
 
-	function treatmentsOf(item: EditableItem): EditableItem[] {
-		if (!item.id) return [];
-		return activeItems.filter(
-			(child) => child.parentSaleItemId === item.id && child.itemType === SaleItemType.TREATMENT
-		);
-	}
-
-	function hasRx(item: EditableItem): boolean {
-		return [
-			item.odSphere,
-			item.odCylinder,
-			item.odAxis,
-			item.odAddition,
-			item.osSphere,
-			item.osCylinder,
-			item.osAxis,
-			item.osAddition
-		].some((value) => value != null);
+	function eyeLine(item: EditableItem, label: 'OD' | 'OI', eye: 'od' | 'os'): string {
+		return rxRowLine(label, !hasRx(item, eye), {
+			sphere: eye === 'od' ? item.odSphere : item.osSphere,
+			cylinder: eye === 'od' ? item.odCylinder : item.osCylinder,
+			axis: eye === 'od' ? item.odAxis : item.osAxis,
+			addition: eye === 'od' ? item.odAddition : item.osAddition
+		});
 	}
 
 	function subtitleFor(item: EditableItem): string | undefined {
 		if (item.itemType === SaleItemType.LENS_PAIR) {
-			const parts = [
-				hasRx(item)
-					? formatRxSummary({
-							od: {
-								sphere: item.odSphere,
-								cylinder: item.odCylinder,
-								axis: item.odAxis,
-								addition: item.odAddition
-							},
-							oi: {
-								sphere: item.osSphere,
-								cylinder: item.osCylinder,
-								axis: item.osAxis,
-								addition: item.osAddition
-							}
-						})
-					: 'Sin receta'
-			];
-			const names = treatmentsOf(item)
-				.map((treatment) => treatment.snapshotName)
-				.filter((name): name is string => Boolean(name));
-			if (names.length > 0) parts.push(names.join(', '));
-			return parts.join(' · ');
+			const factory = item.lensCatalogItemId
+				? FACTORY_TREATMENTS(getCachedLensItem(item.lensCatalogItemId))
+				: [];
+			const parts = [item.snapshotBrand];
+			if (factory.length > 0) parts.push(`Incluye ${factory.join(', ')}`);
+			return parts.filter(Boolean).join(' · ') || undefined;
 		}
 		if (item.itemType === SaleItemType.FREE_ITEM) {
-			return item.notes || item.freeItemCategory || 'Servicio o fórmula';
+			const parts = [item.freeItemCategory, item.freeItemDescription, item.notes];
+			const clean = parts.filter((part): part is string => Boolean(part));
+			if (item.freeItemDescription && item.freeItemCategory) return clean.join(' · ');
+			return clean.join(' · ') || 'Servicio o fórmula';
 		}
 		return [item.snapshotSku, item.snapshotBrand].filter(Boolean).join(' · ') || undefined;
 	}
 
-	function badgesFor(item: EditableItem): DocumentItemBadge[] {
+	function badgesFor(item: EditableItem): DocumentItemView['badges'] {
 		const warnings = item.id ? rangeWarnings[item.id] : undefined;
 		if (!warnings?.length) return [];
 		return [{ label: 'Rango', tone: 'warning', tooltip: warnings.join(' · ') }];
 	}
 
 	function toView(item: EditableItem): DocumentItemView {
-		const title = item.snapshotName
-			? item.snapshotName
-			: item.itemType === SaleItemType.LENS_PAIR
-				? 'Nuevo cristal'
-				: item.itemType === SaleItemType.FREE_ITEM
-					? (item.freeItemDescription ?? 'Nuevo ítem libre')
-					: 'Nuevo producto';
+		const title =
+			item.snapshotName ??
+			(item.itemType === SaleItemType.FREE_ITEM
+				? (item.freeItemDescription ?? 'Nuevo ítem libre')
+				: item.itemType === SaleItemType.LENS_PAIR
+					? 'Nuevo cristal'
+					: 'Nuevo producto');
+
+		// Full prescription per eye (never truncated); collapsed to one line only
+		// when neither eye carries values.
+		const subtitleLines: string[] = [];
+		if (item.itemType === SaleItemType.LENS_PAIR) {
+			if (hasRx(item, 'od') || hasRx(item, 'os')) {
+				subtitleLines.push(eyeLine(item, 'OD', 'od'));
+				subtitleLines.push(eyeLine(item, 'OI', 'os'));
+			} else {
+				subtitleLines.push('Sin receta');
+			}
+		}
 
 		return {
 			id: item.id ?? '',
 			title,
-			typeLabel: typeLabelFor(item),
 			subtitle: subtitleFor(item),
-			tone: toneFor(item),
+			subtitleLines,
+			kind: kindFor(item),
 			quantity: item.quantity,
 			unitPrice: item.unitPrice,
 			discount: item.discount ?? 0,
 			discountType: item.discountType,
 			badges: badgesFor(item),
-			isNew: creating && editingId === item.id
+			isNew: !item.id,
+			removed: item._removed === true
 		};
 	}
 
+	// ── Treatment children ───────────────────────────────────────────────────
+	/**
+	 * Display convention: new rows store qty = eyes with rx and a per-eye
+	 * unitPrice; legacy rows store qty=1 with a pair (×2) unitPrice.
+	 */
+	function childView(parent: EditableItem, child: EditableItem): DocumentChildView | null {
+		const perEye = child.quantity > 1 ? child.unitPrice : child.unitPrice / 2;
+		const eyes = child.quantity > 1 ? child.quantity : 2;
+		if (perEye <= 0) return null;
+		const isAr = child.snapshotTreatmentCategory?.toUpperCase() === 'AR';
+		return {
+			key: child.id ?? `${parent.id}-${child.supplierTreatmentId}-${child.snapshotName}`,
+			title: child.snapshotName ?? 'Tratamiento',
+			kind: 'treatment',
+			tag: isAr ? 'Antirreflejo' : 'Adicional',
+			quantity: eyes,
+			unitPrice: perEye,
+			unitPriceLabel: `${formatPrice(perEye)} c/u`
+		};
+	}
+
+	function childItemsOf(item: EditableItem): EditableItem[] {
+		if (!item.id || item._removed) return [];
+		return activeItems.filter(
+			(child) => child.parentSaleItemId === item.id && child.itemType === SaleItemType.TREATMENT
+		);
+	}
+
+	// ── Add menu ─────────────────────────────────────────────────────────────
 	function selectKind(kind: AddItemKind) {
 		menuOpen = false;
 		onAdd(kind);
 	}
 
 	function onWindowPointerDown(event: PointerEvent) {
-		if (menuOpen && root && !root.contains(event.target as Node)) menuOpen = false;
+		if (menuOpen && menuRoot && !menuRoot.contains(event.target as Node)) menuOpen = false;
 	}
 
 	function onWindowKeydown(event: KeyboardEvent) {
@@ -169,116 +204,142 @@
 	$effect(() => {
 		if (!editingId) return;
 		void tick().then(() => {
-			const row = document.querySelector(`[data-item-id="${editingId}"]`);
-			row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+			untrack(() => {
+				const row = document.querySelector(`[data-item-id="${editingId}"]`);
+				row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+			});
 		});
 	});
 </script>
 
 <svelte:window onpointerdown={onWindowPointerDown} onkeydown={onWindowKeydown} />
 
-<div class="sec-head flex items-center gap-2 px-5 pt-4 pb-2.5">
-	<span
-		class="text-[11px] font-extrabold tracking-[0.1em] text-slate-400 uppercase dark:text-slate-500"
-	>
-		Artículos
-	</span>
-	<span
-		class="rounded-full bg-surface-container-high px-1.5 py-px text-[11px] font-bold text-slate-400 dark:bg-slate-700 dark:text-slate-400"
-	>
-		{mainItems.length}
-	</span>
-</div>
+<section class="relative">
+	<!-- Live region for remove / restore announcements -->
+	<p class="sr-only" aria-live="polite">
+		{mainItems.filter((item) => !item._removed).length}
+		artículo(s), {mainItems.filter((item) => item._removed).length} quitado(s).
+	</p>
 
-{#if mainItems.length === 0}
-	<div class="px-5 py-9 text-center text-[13px] text-slate-400 dark:text-slate-500">
-		Sin artículos todavía — agrega el primero
-	</div>
-{:else}
-	<div>
-		{#each mainItems as item (item.id)}
-			{@const view = toView(item)}
-			<div
-				data-item-id={item.id}
-				class="border-b border-outline-variant/60 dark:border-slate-700"
-				class:shadow-[inset_3px_0_0_var(--color-brand-blue)]={editingId === item.id}
-			>
-				<DocumentItemRow
-					item={view}
-					open={editingId === item.id}
+	<!-- Sticky section header: count + add menu -->
+	<div class="sticky top-0 z-[4] flex items-center gap-2 bg-surface-drawer px-4 pt-3.5 pb-2">
+		<h2 class="text-[11px] font-bold tracking-[0.08em] text-brand-navy uppercase">Artículos</h2>
+		<span
+			class="rounded-[4px] bg-brand-navy px-[7px] text-[12px] font-bold text-white tabular-nums"
+		>
+			{mainItems.filter((item) => !item._removed).length}
+		</span>
+
+		<div class="relative ml-auto" bind:this={menuRoot}>
+			{#snippet addTrigger({ props }: { props: Record<string, unknown> })}
+				<button
+					{...props}
+					type="button"
 					disabled={saving}
-					onToggle={() => onToggleEditor(item)}
-					onEdit={() => onToggleEditor(item)}
-					onRemove={() => onRemove(item)}
-				/>
-			</div>
+					onclick={() => (menuOpen = !menuOpen)}
+					aria-expanded={menuOpen}
+					aria-haspopup="menu"
+					class="flex h-9 items-center gap-2 rounded-lg bg-brand-navy px-3.5 text-[13px] font-semibold text-white transition hover:bg-brand-navy-dark disabled:opacity-50"
+				>
+					<Plus class="h-3.5 w-3.5" /> Agregar
+					<ChevronDown
+						class="h-3.5 w-3.5 transition-transform duration-200 {menuOpen ? 'rotate-180' : ''}"
+					/>
+				</button>
+			{/snippet}
+			<TriggerTooltip
+				text="Agregar un cristal, producto o ítem libre"
+				side="bottom"
+				trigger={addTrigger}
+			/>
 
-			{#if editingId === item.id && editorKind}
-				<div class="bg-surface-container-low px-5 py-3.5 pl-[72px] dark:bg-slate-900/40">
-					{#if editorKind === 'lens'}
-						<EditSaleLensEditor
-							{item}
-							mode={creating ? 'add' : 'edit'}
-							editTreatments={mapTreatmentsForEdit(activeItems, item.id)}
-							{treatments}
-							onApply={onApplyLens}
-						/>
-					{:else if editorKind === 'product'}
-						<EditSaleProductEditor
-							{item}
-							mode={creating ? 'add' : 'edit'}
-							onCommit={onCommitProduct}
-						/>
-					{:else}
-						<EditSaleFreeEditor {item} mode={creating ? 'add' : 'edit'} onCommit={onCommitFree} />
-					{/if}
+			{#if menuOpen}
+				<div
+					class="absolute top-[calc(100%+6px)] right-0 z-10 w-[310px] rounded-xl bg-white p-1.5 shadow-[0_8px_24px_rgba(21,35,70,0.16),0_24px_56px_rgba(21,35,70,0.22)]"
+					role="menu"
+				>
+					{#each ADD_ITEM_KINDS as option (option.kind)}
+						{@const Icon = option.icon}
+						<button
+							type="button"
+							role="menuitem"
+							onclick={() => selectKind(option.kind)}
+							class="flex w-full items-center gap-3 rounded-lg p-2 text-left transition hover:bg-info-container"
+						>
+							<span
+								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e6ecf4] text-brand-navy"
+							>
+								<Icon class="h-4 w-4" />
+							</span>
+							<span class="min-w-0">
+								<span class="block text-sm font-semibold text-on-surface">{option.label}</span>
+								<span class="block text-[12px] text-on-surface-variant">{option.hint}</span>
+							</span>
+						</button>
+					{/each}
 				</div>
 			{/if}
-		{/each}
+		</div>
 	</div>
-{/if}
 
-<div class="relative mx-5 mt-3 mb-5" bind:this={root}>
-	<button
-		type="button"
-		onclick={() => {
-			if (!saving) menuOpen = !menuOpen;
-		}}
-		disabled={saving}
-		aria-expanded={menuOpen}
-		aria-haspopup="menu"
-		class="flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-dashed border-outline-variant bg-transparent text-[13px] font-semibold text-slate-500 transition hover:border-brand-blue hover:bg-brand-blue/5 hover:text-brand-blue-dark disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-brand-blue dark:hover:text-brand-blue-light"
-	>
-		<Plus class="h-[15px] w-[15px]" />
-		Agregar artículo
-	</button>
+	<!-- Rows -->
+	{#if mainItems.length === 0}
+		<p class="px-4 py-9 text-center text-[13px] text-on-surface-variant">
+			Sin artículos todavía — agrega el primero
+		</p>
+	{:else}
+		<div>
+			{#each mainItems as item, index (item.id ?? `new-${index}`)}
+				<div data-item-id={item.id ?? `new-${index}`}>
+					<DocumentItemRow
+						item={toView(item)}
+						open={editingId === item.id}
+						onOpen={() => onToggleEditor(item)}
+						onRemove={() => onRemove(item)}
+						onRestore={() => onRestore(item)}
+					/>
 
-	{#if menuOpen}
-		<div
-			class="absolute inset-x-0 bottom-[calc(100%+6px)] z-20 rounded-xl border border-outline-variant/60 bg-white p-1.5 shadow-xl shadow-slate-900/15 dark:border-slate-600 dark:bg-slate-800"
-			role="menu"
-		>
-			{#each ADD_ITEM_KINDS as option (option.kind)}
-				{@const Icon = option.icon}
-				<button
-					type="button"
-					role="menuitem"
-					onclick={() => selectKind(option.kind)}
-					class="flex w-full items-center gap-3 rounded-lg p-2.5 text-left transition hover:bg-surface-container dark:hover:bg-slate-700"
-				>
-					<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {option.tone}">
-						<Icon class="h-4 w-4" />
-					</span>
-					<span class="min-w-0">
-						<span class="block text-[13px] font-semibold text-brand-navy dark:text-white">
-							{option.label}
-						</span>
-						<span class="block text-[11.5px] text-slate-500 dark:text-slate-400">
-							{option.hint}
-						</span>
-					</span>
-				</button>
+					{#each childItemsOf(item) as child, childIndex (child.id)}
+						{@const view = childView(item, child)}
+						{#if view}
+							<DocumentChildRow
+								child={view}
+								last={childIndex === childItemsOf(item).length - 1}
+								onOpen={() => onToggleEditor(item, true)}
+								onRemove={() => onRemoveChild(child)}
+							/>
+						{/if}
+					{/each}
+
+					{#if editingId === item.id && editorKind}
+						<div class="mb-2 rounded-xl bg-surface-container-low px-4 py-3.5 pl-[60px]">
+							{#if editorKind === 'lens'}
+								<EditSaleLensEditor
+									{item}
+									mode={creating ? 'add' : 'edit'}
+									editTreatments={mapTreatmentsForEdit(activeItems, item.id)}
+									{treatments}
+									onApply={onApplyLens}
+								/>
+							{:else if editorKind === 'product'}
+								<EditSaleProductEditor
+									{item}
+									mode={creating ? 'add' : 'edit'}
+									onCommit={onCommitProduct}
+								/>
+							{:else}
+								<EditSaleFreeEditor
+									{item}
+									mode={creating ? 'add' : 'edit'}
+									onCommit={onCommitFree}
+								/>
+							{/if}
+						</div>
+					{/if}
+				</div>
 			{/each}
 		</div>
 	{/if}
-</div>
+
+	<div class="h-3"></div>
+</section>

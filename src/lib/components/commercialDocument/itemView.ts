@@ -3,11 +3,12 @@ import { DiscountType } from '$lib/shared/enums';
 
 /**
  * Domain-agnostic view model for a commercial-document item row.
- * Sale and quote adapters map their own items onto this shape so the
+ * Sale and quote adapters map their own items onto this shapes so the
  * presentational components stay reusable.
  */
 
-export type DocumentItemTone = 'crystal' | 'product' | 'free' | 'treatment';
+/** Kind of item: drives the neutral icon chip (no colored type badges). */
+export type DocumentItemKind = 'crystal' | 'product' | 'free' | 'treatment';
 
 export type DocumentBadgeTone = 'neutral' | 'info' | 'warning' | 'success' | 'danger';
 
@@ -21,16 +22,33 @@ export interface DocumentItemBadge {
 export interface DocumentItemView {
 	id: string;
 	title: string;
-	/** Short type tag shown in the meta line (CRISTAL, PRODUCTO, ÍTEM LIBRE). */
-	typeLabel: string;
+	/** Single meta line (SKU · brand, category · description, lab + «Incluye …»). */
 	subtitle?: string;
-	tone: DocumentItemTone;
+	/**-Untruncated line per eye (OD / OI) — the prescription the optician verifies. */
+	subtitleLines?: string[];
+	kind: DocumentItemKind;
 	quantity: number;
 	unitPrice: number;
 	discount?: number;
 	discountType?: string;
 	badges?: DocumentItemBadge[];
 	isNew?: boolean;
+	/** Removed-state: row stays, dimmed and struck through, restorable. */
+	removed?: boolean;
+}
+
+export interface DocumentChildView {
+	/** Stable key for the keyed each. */
+	key: string;
+	title: string;
+	kind: DocumentItemKind;
+	/** Secondary tag, e.g. «ANTIRREFLEJO» / «ADICIONAL». */
+	tag: string;
+	/** Count of prescription-ready eyes (or generic quantity). */
+	quantity: number;
+	unitPrice: number;
+	/** Unit price text (e.g. "USD 30 c/u"). */
+	unitPriceLabel: string;
 }
 
 export interface DocumentItemTotals {
@@ -93,4 +111,19 @@ export function formatRxSummary(rx: {
 	};
 }): string {
 	return `${eyeSummary('OD', rx.od)} · ${eyeSummary('OI', rx.oi)}`;
+}
+
+/** Untruncated per-eye row line: "OD −2.25 −0.50 ×90" / "OI sin receta". */
+export function rxRowLine(
+	label: 'OD' | 'OI',
+	disabled: boolean,
+	eye: {
+		sphere?: number | null;
+		cylinder?: number | null;
+		axis?: number | null;
+		addition?: number | null;
+	}
+): string {
+	if (disabled) return `${label} sin receta`;
+	return eyeSummary(label, eye);
 }
