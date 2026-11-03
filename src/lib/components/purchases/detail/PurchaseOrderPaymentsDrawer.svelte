@@ -10,6 +10,7 @@
 	import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import { formatPrice } from '$lib/utils';
+	import { CurrencyCode, getCurrencySymbol } from '$lib/shared/enums';
 
 	interface Props {
 		open: boolean;
@@ -51,6 +52,17 @@
 	}: Props = $props();
 
 	let drawerResetCount = $state(0);
+
+	const isNativeSettlement = $derived(
+		settlementCurrency != null && settlementCurrency !== CurrencyCode.USD_BCV
+	);
+	const pendingBalanceDisplay = $derived(
+		pendingBalanceUsd == null
+			? null
+			: isNativeSettlement
+				? `${pendingBalanceUsd.toFixed(2)} ${getCurrencySymbol(settlementCurrency!)}`
+				: formatPrice(pendingBalanceUsd)
+	);
 </script>
 
 <SlideOver
@@ -72,8 +84,8 @@
 				<div>
 					<div class="flex items-center gap-2">
 						<h2 class="text-lg font-semibold text-brand-navy">Registrar pago</h2>
-						{#if pendingBalanceUsd != null}
-							<AppBadge variant="info">Saldo: {formatPrice(pendingBalanceUsd)}</AppBadge>
+						{#if pendingBalanceDisplay != null}
+							<AppBadge variant="info">Saldo: {pendingBalanceDisplay}</AppBadge>
 						{/if}
 					</div>
 					<p class="text-xs text-on-surface-variant">

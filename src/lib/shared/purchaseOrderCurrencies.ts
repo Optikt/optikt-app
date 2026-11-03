@@ -64,6 +64,40 @@ export function getSourceCurrencySymbol(sourceCurrency: string): string {
 }
 
 // ============================================================================
+// SETTLEMENT GROSS (delivery-note total in the settlement currency)
+// ============================================================================
+
+export interface SettlementGrossItemLike {
+	quantity: number;
+	unitPurchasePrice: number;
+	unitPurchasePriceAlt?: number | null;
+	appliesIva: boolean;
+	ivaRate: number;
+}
+
+/**
+ * Gross amount the supplier invoices, in the order's settlement currency.
+ *
+ * Native settlements keep prices in the source currency, so we must add IVA
+ * explicitly (alt prices are stored pre-tax). USD-BCV settlements already
+ * store a tax-included `unitPurchasePrice`.
+ */
+export function calculateSettlementGrossAmount(
+	items: SettlementGrossItemLike[],
+	isNativeSettlement: boolean
+): number {
+	const total = items.reduce((sum, item) => {
+		if (!isNativeSettlement) {
+			return sum + Number(item.unitPurchasePrice ?? 0) * Number(item.quantity ?? 0);
+		}
+		const unit = Number(item.unitPurchasePriceAlt ?? item.unitPurchasePrice ?? 0);
+		const taxMultiplier = item.appliesIva && item.ivaRate ? 1 + Number(item.ivaRate ?? 0) / 100 : 1;
+		return sum + unit * taxMultiplier * Number(item.quantity ?? 0);
+	}, 0);
+	return round2(total);
+}
+
+// ============================================================================
 // COST NORMALIZATION (source price → USD-BCV)
 // ============================================================================
 

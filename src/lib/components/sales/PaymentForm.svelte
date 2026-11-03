@@ -105,6 +105,7 @@
 			settlementSymbol={model.values.settlementSymbol}
 			exchangeVariance={model.values.exchangeVariance}
 			liveEarlyPaymentSuggestion={model.values.liveEarlyPaymentSuggestion}
+			prontoPagoInfo={model.values.prontoPagoInfo}
 			canSubmit={model.canSubmit}
 			drawerSubmitLabel={model.drawerSubmitLabel}
 			submitLabel={model.submitLabel}
@@ -114,6 +115,7 @@
 			onBcvRateInput={(value) => (sel.bcvRateInput = value)}
 			onSpecificRateInput={(value) => (sel.specificRateInput = value)}
 			onUseRemainingBalance={model.useRemainingBalance}
+			onApplyProntoPago={model.applyProntoPago}
 			onReference={(value) => (sel.reference = value)}
 			onNotes={(value) => (sel.notes = value)}
 			onSubmit={model.handleSubmit}
@@ -130,8 +132,10 @@
 		bind:benefitAmountInput={model.purchase.benefitAmountInput}
 		bind:benefitNoteInput={model.purchase.benefitNoteInput}
 		submitting={model.submitting}
-		resolvedUsdDisplay={model.values.resolvedUsdDisplay}
-		{pendingBalanceUsd}
+		appliedDisplay={model.values.appliedDisplay}
+		pendingDisplay={model.values.pendingDisplay}
+		isNativeSettlement={model.values.isNativeSettlement}
+		settlementSymbol={model.values.settlementSymbol}
 		overpaymentDisplay={model.values.overpaymentDisplay}
 		onConfirmOverpayment={model.confirmOverpayment}
 		onCancelOverpayment={model.cancelOverpayment}

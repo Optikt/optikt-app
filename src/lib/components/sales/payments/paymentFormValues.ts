@@ -4,11 +4,14 @@ import { formatPrice } from '$lib/utils';
 import {
 	computeAmountAppliedToDebt,
 	computeExchangeVariance,
-	computeLiveEarlyPaymentSuggestion,
 	computePurchaseNormalized,
 	computePurchaseReverseNative,
 	computeShowPurchasePreview
 } from './purchasePayment';
+import {
+	computeLiveEarlyPaymentSuggestion,
+	computeProntoPagoInfo
+} from './purchaseOrderProntoPago';
 import {
 	computeAutoSpecificRate,
 	computeEffectiveBcvRate,
@@ -27,6 +30,7 @@ import {
 	computeSaleForwardUsd,
 	computeSaleReverseNative,
 	computeSelectedCurrency,
+	computeSettlementRateToVes,
 	computeSettlementSymbol,
 	computeSpecificRateLabel,
 	type PaymentFormKind,
@@ -84,11 +88,24 @@ export function computePaymentFormValues(inputs: PaymentFormValueInputs) {
 	const selectedCurrency = computeSelectedCurrency(sel.currencyKey);
 	const rateType = computeRateType(sel.rail, sel.currencyKey);
 	const purchaseCurrencyCode = computePurchaseCurrencyCode(sel.rail);
-	const needsSpecificRate = computeNeedsSpecificRate(sel.rail, sel.currencyKey);
-	const specificRateLabel = computeSpecificRateLabel(sel.rail, selectedCurrency);
-	const autoSpecificRate = computeAutoSpecificRate(
+	const needsSpecificRate = computeNeedsSpecificRate(
+		kind,
 		sel.rail,
 		sel.currencyKey,
+		props.settlementCurrency
+	);
+	const specificRateLabel = computeSpecificRateLabel(
+		kind,
+		sel.rail,
+		sel.currencyKey,
+		selectedCurrency,
+		props.settlementCurrency
+	);
+	const autoSpecificRate = computeAutoSpecificRate(
+		kind,
+		sel.rail,
+		sel.currencyKey,
+		props.settlementCurrency,
 		inputs.eurRate,
 		inputs.usdtRate,
 		inputs.paypalRate
@@ -129,6 +146,16 @@ export function computePaymentFormValues(inputs: PaymentFormValueInputs) {
 		specificRateValue,
 		needsSpecificRate
 	});
+	const settlementRateToVes = computeSettlementRateToVes({
+		kind,
+		settlementCurrency: props.settlementCurrency,
+		purchaseCurrencyCode,
+		specificRateValue,
+		bcvRate: activeBcvRate,
+		eurRate: inputs.eurRate,
+		usdtRate: inputs.usdtRate,
+		paypalRate: inputs.paypalRate
+	});
 
 	const forwardUsd = kind === 'sale' ? saleForwardUsd : purchaseNormalized.amountUsdBcv;
 	const reverseNative = kind === 'sale' ? saleReverseNative : purchaseReverseNative;
@@ -142,23 +169,31 @@ export function computePaymentFormValues(inputs: PaymentFormValueInputs) {
 
 	const amountAppliedToDebt = computeAmountAppliedToDebt({
 		isNativeSettlement,
-		purchaseCurrencyCode,
-		specificRateValue,
-		settlementCurrency: props.settlementCurrency,
-		resolvedNativeAmount
+		purchaseNormalizedAmountBs: purchaseNormalized.amountBs,
+		settlementRateToVes
 	});
 	const exchangeVariance = computeExchangeVariance({
 		isNativeSettlement,
 		amountAppliedToDebt,
-		debtTotalUsd: props.debtTotalUsd,
+		settlementDebtAmount: Number(props.purchaseOrder?.settlementDebtAmount ?? 0),
+		settlementDebtAmountUsdBcvAtOrder: Number(
+			props.purchaseOrder?.settlementDebtAmountUsdBcvAtOrder ?? 0
+		),
 		resolvedAmountUsd
 	});
 
 	const debtBalanceUsd =
 		kind === 'sale' ? (props.remainingBcvUsd ?? 0) : (props.pendingBalanceUsd ?? 0);
-	const overpaymentAmount = Math.max(0, resolvedAmountUsd - debtBalanceUsd);
-	const pendingAfterPayment = Math.max(0, debtBalanceUsd - resolvedAmountUsd);
+	const comparisonAmount = isNativeSettlement ? (amountAppliedToDebt ?? 0) : resolvedAmountUsd;
+	const overpaymentAmount = Math.max(0, comparisonAmount - debtBalanceUsd);
+	const pendingAfterPayment = Math.max(0, debtBalanceUsd - comparisonAmount);
 	const restLabelClass = computeRestLabelClass(overpaymentAmount, pendingAfterPayment);
+	const appliedDisplay = isNativeSettlement
+		? `${(amountAppliedToDebt ?? 0).toFixed(2)} ${settlementSymbol}`
+		: formatPrice(resolvedAmountUsd);
+	const pendingDisplay = isNativeSettlement
+		? `${debtBalanceUsd.toFixed(2)} ${settlementSymbol}`
+		: formatPrice(debtBalanceUsd);
 
 	const hasActiveEarlyPaymentBenefit = (props.earlyPaymentBenefits ?? []).some(
 		(benefit) => !benefit.voidedAt
@@ -169,7 +204,16 @@ export function computePaymentFormValues(inputs: PaymentFormValueInputs) {
 		pendingBalanceUsd: props.pendingBalanceUsd,
 		debtTotalUsd: props.debtTotalUsd,
 		purchaseOrder: props.purchaseOrder as PurchaseOrder | undefined,
-		resolvedAmountUsd,
+		paymentAmount: comparisonAmount,
+		paymentDate: sel.paymentDate
+	});
+	const prontoPagoInfo = computeProntoPagoInfo({
+		kind,
+		hasActiveEarlyPaymentBenefit,
+		isFullyPaid: props.isFullyPaid,
+		pendingBalanceUsd: props.pendingBalanceUsd,
+		debtTotalUsd: props.debtTotalUsd,
+		purchaseOrder: props.purchaseOrder as PurchaseOrder | undefined,
 		paymentDate: sel.paymentDate
 	});
 	const showPurchasePreview = computeShowPurchasePreview({
@@ -197,8 +241,14 @@ export function computePaymentFormValues(inputs: PaymentFormValueInputs) {
 		specificRateValue
 	});
 
-	const hasValidAmounts = resolvedAmountUsd > 0 && resolvedNativeAmount > 0;
-	const hasValidRate = activeBcvRate > 0 && (!needsSpecificRate || specificRateValue > 0);
+	const hasValidAmounts =
+		resolvedAmountUsd > 0 &&
+		resolvedNativeAmount > 0 &&
+		(!isNativeSettlement || (amountAppliedToDebt ?? 0) > 0);
+	const hasValidRate =
+		activeBcvRate > 0 &&
+		(!needsSpecificRate || specificRateValue > 0) &&
+		(!isNativeSettlement || settlementRateToVes > 0);
 
 	return {
 		effectiveBcvRate,
@@ -226,12 +276,17 @@ export function computePaymentFormValues(inputs: PaymentFormValueInputs) {
 		nativeFieldValue,
 		amountAppliedToDebt,
 		exchangeVariance,
+		settlementRateToVes,
 		debtBalanceUsd,
+		comparisonAmount,
 		overpaymentAmount,
 		pendingAfterPayment,
+		appliedDisplay,
+		pendingDisplay,
 		restLabelClass,
 		hasActiveEarlyPaymentBenefit,
 		liveEarlyPaymentSuggestion,
+		prontoPagoInfo,
 		showPurchasePreview,
 		resolvedUsdDisplay,
 		overpaymentDisplay,

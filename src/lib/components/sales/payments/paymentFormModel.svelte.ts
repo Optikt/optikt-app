@@ -9,6 +9,7 @@ import { computePaymentFormValues, type PaymentFormValues } from './paymentFormV
 import {
 	createPurchaseSubmitApi,
 	submitPurchasePayment,
+	computeDeliveryAmountForAppliedDebt,
 	type PurchaseSubmitSnapshot
 } from './purchasePayment';
 import { submitSalePayment } from './salePaymentSubmit';
@@ -127,17 +128,31 @@ export class PaymentFormModel {
 		const props = this.#props();
 		if (props.kind !== 'purchase' || !this.values.isNativeSettlement || this.sel.currencyKey)
 			return;
-		const map: Record<string, string> = {
-			EUR_BCV: 'EUR_BCV',
-			USDT: 'USDT',
-			USD_PAYPAL: 'PAYPAL'
+		const map: Record<string, { key: string; rail: PaymentMethod; rate: number }> = {
+			EUR_BCV: {
+				key: 'EUR_BCV',
+				rail: PaymentMethod.EFECTIVO_EUR,
+				rate: this.#store.rates.find((r) => r.code === 'EUR')?.value ?? 0
+			},
+			USDT: {
+				key: 'USDT',
+				rail: PaymentMethod.BINANCE_USDT,
+				rate: this.#store.rates.find((r) => r.sourceKey === 'usdt')?.value ?? 0
+			},
+			USD_PAYPAL: {
+				key: 'PAYPAL',
+				rail: PaymentMethod.PAYPAL,
+				rate: this.#store.rates.find((r) => r.code === 'PAYPAL')?.value ?? 0
+			}
 		};
-		const key = map[props.settlementCurrency!];
-		if (!key) return;
-		this.sel.currencyKey = key;
-		this.sel.rail = PaymentMethod.TRANSFERENCIA_BS;
+		const preset = map[props.settlementCurrency!];
+		if (!preset) return;
+		this.sel.currencyKey = preset.key;
+		this.sel.rail = preset.rail;
+		this.sel.lastEditedAmount = 'native';
 		const orderRate = props.purchaseOrder?.sourceRateToVes;
-		if (orderRate != null && orderRate > 0) this.sel.specificRateInput = String(orderRate);
+		const rate = preset.rate > 0 ? preset.rate : (orderRate ?? 0);
+		if (rate > 0) this.sel.specificRateInput = rate.toFixed(2);
 	};
 
 	// ----- Selection handlers -----
@@ -159,6 +174,30 @@ export class PaymentFormModel {
 
 	useRemainingBalance = () => {
 		this.sel.useRemainingBalance(this.#props().kind, this.values.debtBalanceUsd, formatInputValue);
+	};
+
+	/** Pre-fills the amount with the net payment after the pronto pago discount. */
+	applyProntoPago = () => {
+		const info = this.values.prontoPagoInfo;
+		if (!info || info.recommendedPayment <= 0) return;
+		if (this.values.isNativeSettlement) {
+			if (!this.sel.rail) return;
+			// recommendedPayment is in settlement units; the amount field is in
+			// the rail's delivery currency, so convert via the amortization math.
+			this.sel.lastEditedAmount = 'native';
+			this.sel.nativeAmountInput = formatInputValue(
+				computeDeliveryAmountForAppliedDebt({
+					railCurrency: this.values.purchaseCurrencyCode,
+					appliedDebt: info.recommendedPayment,
+					settlementRateToVes: this.values.settlementRateToVes,
+					bcvRate: this.values.activeBcvRate,
+					specificRateValue: this.values.specificRateValue
+				})
+			);
+		} else {
+			this.sel.lastEditedAmount = 'usd';
+			this.sel.usdBcvAmountInput = formatInputValue(info.recommendedPayment);
+		}
 	};
 
 	// ----- Purchase flow -----
@@ -197,6 +236,12 @@ export class PaymentFormModel {
 			resolvedAmountUsd: this.values.resolvedAmountUsd,
 			resolvedNativeAmount: this.values.resolvedNativeAmount,
 			liveEarlyPaymentSuggestion: this.values.liveEarlyPaymentSuggestion,
+			comparisonAmount: this.values.comparisonAmount,
+			settlementRateToVes: this.values.settlementRateToVes,
+			settlementDebtAmount: Number(props.purchaseOrder?.settlementDebtAmount ?? 0),
+			settlementDebtAmountUsdBcvAtOrder: Number(
+				props.purchaseOrder?.settlementDebtAmountUsdBcvAtOrder ?? 0
+			),
 			pendingAddPayload: this.purchase.pendingAddPayload,
 			pendingBenefitSuggestion: this.purchase.pendingBenefitSuggestion,
 			benefitAmountInput: this.purchase.benefitAmountInput,

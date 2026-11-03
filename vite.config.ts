@@ -44,6 +44,9 @@ export default defineConfig({
 				'src/lib/components/sales/editSaleDraft.ts',
 				'src/lib/components/sales/editSaleValidation.ts',
 				'src/lib/components/sales/payments/paymentFormValues.ts',
+				'src/lib/components/sales/payments/paymentFormDerived.ts',
+				'src/lib/components/sales/payments/purchasePayment.ts',
+				'src/lib/components/sales/payments/purchaseOrderProntoPago.ts',
 				'src/lib/utils/format.ts',
 				'src/lib/utils/index.ts',
 				'src/lib/components/ui/chart/chart-utils.ts'

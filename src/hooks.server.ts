@@ -1,10 +1,21 @@
-import type { Handle, HandleServerError, HandleValidationError } from '@sveltejs/kit';
+import type { Handle, HandleServerError, HandleValidationError, ServerInit } from '@sveltejs/kit';
 import * as auth from '$lib/server/auth';
+import { startExchangeRatesPoller } from '$lib/server/exchangeRates/poller';
 import { registerPdfBrowserShutdown } from '$lib/server/pdf';
 import { logger } from '$lib/utils/logger';
 import { buildValidationMessage } from '$lib/utils/validationError';
 
 registerPdfBrowserShutdown();
+
+/**
+ * Runs once per server boot, after SvelteKit populates `$env/dynamic/private`
+ * (inside `Server.init`). Starting the poller from `instrumentation.server.ts`
+ * instead read an empty env at import time in production builds — the poller
+ * silently never started and rates froze until a manual refresh.
+ */
+export const init: ServerInit = () => {
+	startExchangeRatesPoller();
+};
 
 const handleAuth: Handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);

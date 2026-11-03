@@ -12,8 +12,10 @@
 		benefitAmountInput: string;
 		benefitNoteInput: string;
 		submitting: boolean;
-		resolvedUsdDisplay: string;
-		pendingBalanceUsd?: number;
+		appliedDisplay: string;
+		pendingDisplay: string;
+		isNativeSettlement: boolean;
+		settlementSymbol: string;
 		overpaymentDisplay: string;
 		onConfirmOverpayment: () => void;
 		onCancelOverpayment: () => void;
@@ -30,8 +32,10 @@
 		benefitAmountInput = $bindable(),
 		benefitNoteInput = $bindable(),
 		submitting,
-		resolvedUsdDisplay,
-		pendingBalanceUsd,
+		appliedDisplay,
+		pendingDisplay,
+		isNativeSettlement,
+		settlementSymbol,
 		overpaymentDisplay,
 		onConfirmOverpayment,
 		onCancelOverpayment,
@@ -45,7 +49,7 @@
 	bind:open={showOverpaymentModal}
 	title="Pago supera el saldo"
 	message={pendingAddPayload != null
-		? `Este pago de ${resolvedUsdDisplay} supera el saldo pendiente de ${formatPrice(pendingBalanceUsd ?? 0)} en ${overpaymentDisplay}. ¿Registrar de todas formas?`
+		? `Este pago de ${appliedDisplay} supera el saldo pendiente de ${pendingDisplay}${isNativeSettlement ? '' : ` en ${overpaymentDisplay}`}. ¿Registrar de todas formas?`
 		: ''}
 	confirmLabel="Registrar igual"
 	confirmColor="yellow"
@@ -78,17 +82,23 @@
 			{#if pendingBenefitSuggestion}
 				<p class="rounded-xl bg-info-container/40 px-3 py-2 text-xs text-on-surface-variant">
 					Si lo aplicas al saldo, el pago se registrará por
-					{formatPrice(pendingBenefitSuggestion.currentBalance - Number(benefitAmountInput || 0))}
+					{isNativeSettlement
+						? `${(pendingBenefitSuggestion.currentBalance - Number(benefitAmountInput || 0)).toFixed(2)} ${settlementSymbol}`
+						: formatPrice(
+								pendingBenefitSuggestion.currentBalance - Number(benefitAmountInput || 0)
+							)}
 					para completar esta orden sin sobrepagarla.
 					{#if pendingBenefitSuggestion.overpayment > 0.01}
 						El monto actual excede ese pago neto por
-						{formatPrice(pendingBenefitSuggestion.overpayment)}.
+						{isNativeSettlement
+							? `${pendingBenefitSuggestion.overpayment.toFixed(2)} ${settlementSymbol}`
+							: formatPrice(pendingBenefitSuggestion.overpayment)}.
 					{/if}
 				</p>
 			{/if}
 			<label class="block space-y-2">
 				<span class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase">
-					Monto del beneficio USD
+					Monto del beneficio {isNativeSettlement ? settlementSymbol : 'USD BCV'}
 				</span>
 				<input
 					bind:value={benefitAmountInput}

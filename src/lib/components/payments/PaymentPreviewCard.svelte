@@ -93,7 +93,9 @@
 				<span
 					>· {formatDateOnly(liveEarlyPaymentSuggestion.deadline, {
 						dateStyle: 'short'
-					})} · {formatPrice(liveEarlyPaymentSuggestion.amount)}</span
+					})} · {isNativeSettlement
+						? `${liveEarlyPaymentSuggestion.amount.toFixed(2)} ${settlementSymbol}`
+						: formatPrice(liveEarlyPaymentSuggestion.amount)}</span
 				>
 			</div>
 		{/if}

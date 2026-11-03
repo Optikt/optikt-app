@@ -35,8 +35,12 @@ vite.config.ts.timestamp-*
 /stitch-prompts
 
 .codebase-memory/
-.opencode/
+.opencode/*
+!.opencode/codebase-index.json
 .agents/
 
 # Mockups y previews (designs/) no van en el repo
 designs/
+
+# Mockup html pesado: CodeQL lo señaliza; vive local, no en el repo
+docs/rework-edit-sale/redesign-drawer-modificar-orden.html
