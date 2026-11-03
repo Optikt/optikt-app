@@ -445,10 +445,18 @@ describe('hasChangesForSale', () => {
 	const originals = [originalFor(draft({ id: '1' })), originalFor(draft({ id: '2' }))];
 
 	it('detects each change trigger', () => {
-		expect(hasChangesForSale(sale, '2026-09-02', '', 0, 'FIXED', clean, originals)).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', 'nota', 0, 'FIXED', clean, originals)).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 5, 'FIXED', clean, originals)).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'PERCENTAGE', clean, originals)).toBe(true);
+		expect(hasChangesForSale(sale, '2026-09-02', '', 0, 'FIXED', false, clean, originals)).toBe(
+			true
+		);
+		expect(hasChangesForSale(sale, '2026-09-01', 'nota', 0, 'FIXED', false, clean, originals)).toBe(
+			true
+		);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 5, 'FIXED', false, clean, originals)).toBe(
+			true
+		);
+		expect(
+			hasChangesForSale(sale, '2026-09-01', '', 0, 'PERCENTAGE', false, clean, originals)
+		).toBe(true);
 		expect(
 			hasChangesForSale(
 				sale,
@@ -456,16 +464,57 @@ describe('hasChangesForSale', () => {
 				'',
 				0,
 				'FIXED',
+				false,
 				[draft({ id: '1', _removed: true })],
 				originals
 			)
 		).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', [draft()], originals)).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', clean, originals)).toBe(false);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', false, [draft()], originals)).toBe(
+			true
+		);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', false, clean, originals)).toBe(
+			false
+		);
+	});
+
+	it('detects the Cashea switch', () => {
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', true, clean, originals)).toBe(
+			true
+		);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', false, clean, originals)).toBe(
+			false
+		);
+		/** A sale persisted with Cashea enabled also detects the toggle off. */
+		expect(
+			hasChangesForSale(
+				{ ...sale, isCashea: true },
+				'2026-09-01',
+				'',
+				0,
+				'FIXED',
+				false,
+				clean,
+				originals
+			)
+		).toBe(true);
+		expect(
+			hasChangesForSale(
+				{ ...sale, isCashea: true },
+				'2026-09-01',
+				'',
+				0,
+				'FIXED',
+				true,
+				clean,
+				originals
+			)
+		).toBe(false);
 	});
 
 	it('detects in-place price edits of existing items', () => {
 		const edited = [draft({ id: '1', unitPrice: 150 }), draft({ id: '2' })];
-		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', edited, originals)).toBe(true);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', false, edited, originals)).toBe(
+			true
+		);
 	});
 });

@@ -133,8 +133,16 @@
 	// ── Derived ─────────────────────────────────────────────────────────────
 	let hasChanges = $derived.by(() => {
 		return (
-			hasChangesForSale(sale, saleDate, notes, discount, discountType, editableItems, items) ||
-			measuresChanged
+			hasChangesForSale(
+				sale,
+				saleDate,
+				notes,
+				discount,
+				discountType,
+				isCashea,
+				editableItems,
+				items
+			) || measuresChanged
 		);
 	});
 	let activeItems = $derived(editableItems.filter((item) => !item._removed));

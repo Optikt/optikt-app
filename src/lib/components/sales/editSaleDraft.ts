@@ -157,11 +157,18 @@ export function haveItemsChanged(
 }
 
 export function hasChangesForSale(
-	sale: { saleDate: string; notes: string | null; discount: number; discountType: string },
+	sale: {
+		saleDate: string;
+		notes: string | null;
+		discount: number;
+		discountType: string;
+		isCashea?: boolean | null;
+	},
 	saleDate: string,
 	notes: string,
 	discount: number,
 	discountType: string,
+	isCashea: boolean,
 	editableItems: EditableItem[],
 	originalItems: SaleItemWithDetails[]
 ): boolean {
@@ -170,6 +177,7 @@ export function hasChangesForSale(
 		notes !== (sale.notes ?? '') ||
 		discount !== sale.discount ||
 		discountType !== sale.discountType ||
+		isCashea !== (sale.isCashea ?? false) ||
 		editableItems.some((i) => i._removed) ||
 		editableItems.some((i) => !i.id) ||
 		haveItemsChanged(originalItems, editableItems)
