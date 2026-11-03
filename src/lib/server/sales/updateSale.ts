@@ -7,7 +7,8 @@ import {
 	saleItems,
 	products,
 	lensCatalogItems,
-	inventoryMovements
+	inventoryMovements,
+	prescriptions
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
@@ -136,8 +137,32 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		};
 	}
 
+	// Prescription measures (DP / nasal) patch: update the sale's current lens
+	// prescription within the same transaction (§ fields added for the editor UI).
+	async function currentPrescriptionId(txn: Parameters<Parameters<typeof db.transaction>[0]>[0]) {
+		const [row] = await txn
+			.select({ prescriptionId: saleItems.prescriptionId })
+			.from(saleItems)
+			.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)))
+			.orderBy(saleItems.createdAt)
+			.limit(1);
+		return row?.prescriptionId ?? null;
+	}
+
 	// All writes in a single transaction
 	const updatedSale = await db.transaction(async (tx) => {
+		if (data.prescription) {
+			const prescId = await currentPrescriptionId(tx);
+			if (prescId) {
+				const patch: Record<string, unknown> = { updatedAt: nowISO() };
+				for (const key of ['dp', 'npRight', 'npLeft'] as const) {
+					const value = data.prescription[key];
+					if (value !== undefined) patch[key] = value;
+				}
+				await tx.update(prescriptions).set(patch).where(eq(prescriptions.id, prescId));
+			}
+		}
+
 		if (hasItemChanges) {
 			// ── 1. Revert all existing SALE_OUT inventory movements ──────────
 			const saleOutMovements = await tx

@@ -353,6 +353,10 @@ export interface UpdateSaleDraft {
 	removedCount: number;
 	activeItems: EditableItem[];
 	originalItems: SaleItemWithDetails[];
+	/** Prescription seed at open time (from the sale detail read). */
+	prescription?: { dp: number | null; npRight: number | null; npLeft: number | null } | null;
+	/** Prescription patch: sent only when it differs from the seed. */
+	prescriptionPatch?: { dp: number | null; npRight: number | null; npLeft: number | null } | null;
 }
 
 export function buildUpdateSalePayload(
@@ -397,6 +401,26 @@ export function buildUpdateSalePayload(
 		haveItemsChanged(draft.originalItems, draft.activeItems)
 	) {
 		payload.items = draft.activeItems.map(({ _removed, ...input }) => input);
+	}
+
+	if (draft.prescriptionPatch) {
+		const patch = draft.prescriptionPatch;
+		const seed = draft.prescription ?? null;
+		const changed =
+			!seed ||
+			seed.dp !== patch.dp ||
+			seed.npRight !== patch.npRight ||
+			seed.npLeft !== patch.npLeft;
+		if (changed) {
+			// The provider patch schema is partial: drop nulls, only real values.
+			const cleanPatch: Record<string, number> = {};
+			if (patch.dp != null) cleanPatch.dp = patch.dp;
+			if (patch.npRight != null) cleanPatch.npRight = patch.npRight;
+			if (patch.npLeft != null) cleanPatch.npLeft = patch.npLeft;
+			if (Object.keys(cleanPatch).length > 0) {
+				payload.prescription = cleanPatch as typeof payload.prescription;
+			}
+		}
 	}
 
 	return payload;

@@ -100,9 +100,18 @@ export function collectLensRangeWarnings(
 	return warnings;
 }
 
+export interface PrescriptionMeasures {
+	/** Per-eye pupilar distances as seen by the editor (dp total persists from the OD eye). */
+	odDp: number | null;
+	osDp: number | null;
+	odDnp: number | null;
+	osDnp: number | null;
+}
+
 export function lensEditorDraftFromEditableItem(
 	item: EditableItem,
-	treatments: EditLensTreatment[] = []
+	treatments: EditLensTreatment[] = [],
+	measures?: PrescriptionMeasures
 ): LensEditorDraft {
 	const odHasValues = [
 		item.odSphere,
@@ -131,7 +140,9 @@ export function lensEditorDraftFromEditableItem(
 			cylinder: item.odCylinder ?? null,
 			axis: item.odAxis ?? null,
 			addition: item.odAddition ?? null,
-			altura: item.odAltura ?? null
+			altura: item.odAltura ?? null,
+			dp: measures?.odDp ?? null,
+			dnp: measures?.odDnp ?? null
 		},
 		oi: {
 			enabled: oiHasValues || !odHasValues,
@@ -139,7 +150,9 @@ export function lensEditorDraftFromEditableItem(
 			cylinder: item.osCylinder ?? null,
 			axis: item.osAxis ?? null,
 			addition: item.osAddition ?? null,
-			altura: item.osAltura ?? null
+			altura: item.osAltura ?? null,
+			dp: measures?.osDp ?? null,
+			dnp: measures?.osDnp ?? null
 		},
 		treatments: lensEditorTreatmentsFromEdit(treatments)
 	};

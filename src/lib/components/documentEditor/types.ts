@@ -27,6 +27,10 @@ export interface LensEditorEyeDraft {
 	axis: number | null;
 	addition: number | null;
 	altura: number | null;
+	/** Pupilar distance (per eye in the editor; persisted as the prescription DP). */
+	dp: number | null;
+	/** Naso-pupilar distance (mm, per eye). */
+	dnp: number | null;
 }
 
 export interface LensEditorTreatment {
@@ -60,9 +64,13 @@ export interface LensEditorFieldErrors {
 	odAxis?: string;
 	odAddition?: string;
 	odAltura?: string;
+	odDp?: string;
+	odDnp?: string;
 	osSphere?: string;
 	osCylinder?: string;
 	osAxis?: string;
 	osAddition?: string;
 	osAltura?: string;
+	osDp?: string;
+	osDnp?: string;
 }

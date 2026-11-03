@@ -5,6 +5,7 @@ import { DiscountType } from '$lib/shared/enums';
 import {
 	createEmptyLensEditorDraft,
 	evaluateLensEditorRange,
+	formatOpticalInput,
 	hasLensEditorErrors,
 	treatmentTotal,
 	validateLensEditorDraft
@@ -20,6 +21,8 @@ function eye(overrides: Partial<LensEditorEyeDraft> = {}): LensEditorEyeDraft {
 		axis: null,
 		addition: null,
 		altura: null,
+		dp: null,
+		dnp: null,
 		...overrides
 	};
 }
@@ -164,5 +167,23 @@ describe('treatmentTotal', () => {
 				}
 			])
 		).toBe(20);
+	});
+});
+
+describe('formatOpticalInput', () => {
+	it('formats quarter increments with explicit sign', () => {
+		expect(formatOpticalInput('0.25', 'esf')).toBe('+0.25');
+		expect(formatOpticalInput('-1.3', 'cil')).toBe('-1.25');
+		expect(formatOpticalInput('2', 'add')).toBe('+2.00');
+	});
+
+	it('clamps the axis to 0-180 and rounds mm to integers', () => {
+		expect(formatOpticalInput('185', 'eje')).toBe('180');
+		expect(formatOpticalInput('-5', 'eje')).toBe('0');
+		expect(formatOpticalInput('31.6', 'mm')).toBe('32');
+	});
+
+	it('keeps empty input empty', () => {
+		expect(formatOpticalInput('', 'esf')).toBe('');
 	});
 });

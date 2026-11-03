@@ -63,7 +63,9 @@ describe('lensEditorDraftFromEditableItem', () => {
 			cylinder: -0.5,
 			axis: 90,
 			addition: null,
-			altura: null
+			altura: null,
+			dp: null,
+			dnp: null
 		});
 		expect(draft.oi.enabled).toBe(false);
 		expect(draft.oi.sphere).toBeNull();
@@ -83,7 +85,9 @@ describe('editableItemFromLensEditorDraft', () => {
 			cylinder: -1,
 			axis: 180,
 			addition: 2,
-			altura: 18
+			altura: 18,
+			dp: 61,
+			dnp: 32
 		};
 		draft.oi = {
 			enabled: false,
@@ -91,7 +95,9 @@ describe('editableItemFromLensEditorDraft', () => {
 			cylinder: null,
 			axis: null,
 			addition: null,
-			altura: null
+			altura: null,
+			dp: null,
+			dnp: null
 		};
 
 		const result = editableItemFromLensEditorDraft(base, draft);

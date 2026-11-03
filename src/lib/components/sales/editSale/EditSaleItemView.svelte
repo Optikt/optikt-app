@@ -9,6 +9,7 @@
 	import EditSaleProductEditor from './EditSaleProductEditor.svelte';
 	import EditSaleFreeEditor from './EditSaleFreeEditor.svelte';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import type { PrescriptionMeasures } from './editSaleLensAdapter';
 	import {
 		mapTreatmentsForEdit,
 		type EditableItem,
@@ -23,7 +24,14 @@
 		kind: EditorKind;
 		creating: boolean;
 		treatments: SupplierTreatment[];
-		onApplyLens: (saved: EditableItem, treatments: EditLensTreatment[], brandName?: string) => void;
+		/** Per-eye DP/DNP seed from the sale prescription (edition round-trip). */
+		measures?: PrescriptionMeasures;
+		onApplyLens: (
+			saved: EditableItem,
+			treatments: EditLensTreatment[],
+			brandName: string | undefined,
+			measures?: PrescriptionMeasures
+		) => void;
 		onCommitProduct: (item: EditableItem) => void;
 		onCommitFree: (item: EditableItem) => void;
 		onBack: () => void;
@@ -35,6 +43,7 @@
 		kind,
 		creating,
 		treatments,
+		measures,
 		onApplyLens,
 		onCommitProduct,
 		onCommitFree,
@@ -71,6 +80,7 @@
 					mode={creating ? 'add' : 'edit'}
 					editTreatments={mapTreatmentsForEdit(activeItems, item.id)}
 					{treatments}
+					{measures}
 					onApply={onApplyLens}
 				/>
 			{:else if kind === 'product'}

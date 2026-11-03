@@ -23,7 +23,7 @@ import {
 import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 import { ALL_CUSTOMER_GENDERS } from '$lib/shared/enums/customerGenders';
-import { AxisSchema, AlturaSchema } from '$lib/schemas/prescriptions';
+import { AxisSchema, AlturaSchema, DpSchema, NpSchema } from '$lib/schemas/prescriptions';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
@@ -331,7 +331,15 @@ export const UpdateSaleSchema = z.object({
 	discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
 	snapshotTaxRate: CoercedNumber.min(0).optional(),
 	/** Full replacement of sale items (if provided) */
-	items: z.array(SaleItemSchema).optional()
+	items: z.array(SaleItemSchema).optional(),
+	/** Prescription measures (DP / nasal) patch for the sale's lens prescription. */
+	prescription: z
+		.object({
+			dp: DpSchema.optional(),
+			npRight: NpSchema.optional(),
+			npLeft: NpSchema.optional()
+		})
+		.optional()
 });
 
 // ============================================================================

@@ -16,7 +16,8 @@
 	import {
 		editTreatmentsFromLensEditor,
 		filterCompatibleTreatments,
-		lensEditorDraftFromEditableItem
+		lensEditorDraftFromEditableItem,
+		type PrescriptionMeasures
 	} from './editSaleLensAdapter';
 
 	interface Props {
@@ -24,20 +25,25 @@
 		mode: 'add' | 'edit';
 		editTreatments: EditLensTreatment[];
 		treatments: SupplierTreatment[];
-		/** Returns the updated item list or applies through the parent callback. */
+		/** Per-eye DP/DNP seed from the sale prescription (edition round-trip). */
+		measures?: PrescriptionMeasures;
+		/** Applies the draft through the parent callback with the measures snapshot. */
 		onApply: (
 			savedItem: EditableItem,
 			treatments: EditLensTreatment[],
-			brandName: string | undefined
+			brandName: string | undefined,
+			measures?: PrescriptionMeasures
 		) => void;
 	}
 
-	let { item, mode, editTreatments, treatments, onApply }: Props = $props();
+	let { item, mode, editTreatments, treatments, measures, onApply }: Props = $props();
 
 	const lensBase = untrack(() => ({ ...item }));
 	let lensDraft = $state<LensEditorDraft>(
 		untrack(() =>
-			item.id ? lensEditorDraftFromEditableItem(item, editTreatments) : createEmptyLensEditorDraft()
+			item.id
+				? lensEditorDraftFromEditableItem(item, editTreatments, measures)
+				: createEmptyLensEditorDraft()
 		)
 	);
 
@@ -108,8 +114,19 @@
 		onApply(
 			savedItem,
 			editTreatmentsFromLensEditor(compatible),
-			context.selectedLens?.supplier?.name ?? lensBase.snapshotBrand
+			context.selectedLens?.supplier?.name ?? lensBase.snapshotBrand,
+			measuresFromDraft()
 		);
+	}
+
+	/** Measures snapshot (per-eye DP/DNP) carried for the payload patch. */
+	function measuresFromDraft(): PrescriptionMeasures {
+		return {
+			odDp: lensDraft.od.dp,
+			osDp: lensDraft.oi.dp,
+			odDnp: lensDraft.od.dnp,
+			osDnp: lensDraft.oi.dnp
+		};
 	}
 </script>
 

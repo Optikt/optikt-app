@@ -304,6 +304,7 @@ describe('buildUpdateSalePayload', () => {
 		discountType: DiscountType.FIXED
 	};
 	const base = {
+		prescriptionPatch: null,
 		saleDate: '2026-09-01',
 		notes: '',
 		isCashea: false,
@@ -347,6 +348,41 @@ describe('buildUpdateSalePayload', () => {
 		expect(payload.notes).toBe('nota');
 		expect(payload.isCashea).toBe(true);
 		expect(typeof payload.saleDate).toBe('string');
+	});
+	it('sends a prescription patch only when it differs from the seed', () => {
+		const localSale = {
+			id: 'sale-1',
+			saleDate: '2026-09-01T10:00:00.000Z',
+			notes: null,
+			isCashea: false,
+			discount: 0,
+			discountType: DiscountType.FIXED
+		};
+		const localBase = {
+			prescription: { dp: 62, npRight: 31, npLeft: 32 },
+			prescriptionPatch: null,
+			saleDate: '2026-09-01',
+			notes: '',
+			isCashea: false,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			reason: 'Corrección',
+			removedCount: 0,
+			activeItems: [draft({ id: '1' })],
+			originalItems: [originalFor(draft({ id: '1' }))]
+		};
+
+		const changed = buildUpdateSalePayload(localSale, {
+			...localBase,
+			prescriptionPatch: { dp: 60, npRight: 30, npLeft: 31 }
+		});
+		expect(changed.prescription).toEqual({ dp: 60, npRight: 30, npLeft: 31 });
+
+		const same = buildUpdateSalePayload(localSale, {
+			...localBase,
+			prescriptionPatch: { dp: 62, npRight: 31, npLeft: 32 }
+		});
+		expect(same.prescription).toBeUndefined();
 	});
 });
 

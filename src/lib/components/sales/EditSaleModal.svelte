@@ -6,7 +6,7 @@
 	import { DiscountType } from '$lib/shared/enums';
 	import { ALL_FREE_ITEM_CATEGORIES, SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import type { SupplierTreatment, Prescription } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
 	import { fly } from 'svelte/transition';
@@ -39,16 +39,55 @@
 		sale: SaleWithRelations;
 		items: SaleItemWithDetails[];
 		treatments: SupplierTreatment[];
+		/** Sale prescription row (DP / nasal measures source for lens pairs). */
+		prescription?: Prescription | null;
 		onSuccess?: () => void;
 	}
 
-	let { open = $bindable(), sale, items, treatments = [], onSuccess }: Props = $props();
+	let {
+		open = $bindable(),
+		sale,
+		items,
+		treatments = [],
+		prescription = null,
+		onSuccess
+	}: Props = $props();
 
 	let saving = $state(false);
 	let submitError = $state('');
 	let confirmDiscard = $state(false);
 
 	// Clear the reason error as soon as the user types again.
+
+	// ── Prescription measures (per-eye DP/DNP) — patched to the server save ─
+	function measuresFromSeed(): Measures {
+		return {
+			odDp: prescription?.dp ?? null,
+			osDp: prescription?.dp ?? null,
+			odDnp: prescription?.npRight ?? null,
+			osDnp: prescription?.npLeft ?? null
+		};
+	}
+
+	type Measures = {
+		odDp: number | null;
+		osDp: number | null;
+		odDnp: number | null;
+		osDnp: number | null;
+	};
+
+	let measures = $state<Measures>(measuresFromSeed());
+
+	const measuresChanged = $derived.by(() => {
+		const seed = {
+			dp: prescription?.dp ?? null,
+			npRight: prescription?.npRight ?? null,
+			npLeft: prescription?.npLeft ?? null
+		};
+		return (
+			measures.odDp !== seed.dp || measures.odDnp !== seed.npRight || measures.osDnp !== seed.npLeft
+		);
+	});
 
 	// ── Meta bar ────────────────────────────────────────────────────────────
 	let saleDate = $state('');
@@ -92,9 +131,12 @@
 	}
 
 	// ── Derived ─────────────────────────────────────────────────────────────
-	let hasChanges = $derived(
-		hasChangesForSale(sale, saleDate, notes, discount, discountType, editableItems, items)
-	);
+	let hasChanges = $derived.by(() => {
+		return (
+			hasChangesForSale(sale, saleDate, notes, discount, discountType, editableItems, items) ||
+			measuresChanged
+		);
+	});
 	let activeItems = $derived(editableItems.filter((item) => !item._removed));
 	let mainItems = $derived(activeItems.filter((item) => item.itemType !== SaleItemType.TREATMENT));
 	let removedCount = $derived(editableItems.filter((item) => item._removed).length);
@@ -116,6 +158,7 @@
 		submitError = '';
 		confirmDiscard = false;
 		editableItems = items.map(existingItemToInput);
+		measures = measuresFromSeed();
 		editingId = null;
 		editorKind = null;
 		creating = false;
@@ -214,9 +257,16 @@
 	function handleApplyLens(
 		savedItem: EditableItem,
 		editTreatments: EditLensTreatment[],
-		brandName: string | undefined
+		brandName: string | undefined,
+		newMeasures?: {
+			odDp: number | null;
+			osDp: number | null;
+			odDnp: number | null;
+			osDnp: number | null;
+		}
 	) {
 		const wasNew = creating;
+		if (newMeasures) measures = newMeasures;
 		editableItems = applyLensEdit(editableItems, editingId, savedItem, editTreatments, brandName);
 		finishEditing();
 		toast.success(wasNew ? 'Cristal agregado' : 'Cristal actualizado');
@@ -313,7 +363,17 @@
 			reason,
 			removedCount,
 			activeItems,
-			originalItems: items
+			originalItems: items,
+			prescription: {
+				dp: prescription?.dp ?? null,
+				npRight: prescription?.npRight ?? null,
+				npLeft: prescription?.npLeft ?? null
+			},
+			prescriptionPatch: {
+				dp: measures.odDp,
+				npRight: measures.odDnp,
+				npLeft: measures.osDnp
+			}
 		});
 
 		try {

@@ -348,6 +348,7 @@
 	{sale}
 	{items}
 	treatments={data.allTreatments}
+	prescription={data.prescription}
 	onSuccess={handleEditSuccess}
 />
 

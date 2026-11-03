@@ -10,7 +10,7 @@ import {
 	OptionalCylinderSchema,
 	OptionalSphereSchema
 } from '$lib/schemas/common/optical';
-import { AlturaSchema, AxisSchema } from '$lib/schemas/prescriptions';
+import { AlturaSchema, AxisSchema, DpSchema, NpSchema } from '$lib/schemas/prescriptions';
 import { DiscountType } from '$lib/shared/enums';
 
 import {
@@ -49,6 +49,8 @@ function validateEye(
 	const axis = firstIssue(AxisSchema.safeParse(eye.axis ?? undefined));
 	const addition = firstIssue(OptionalAdditionSchema.safeParse(eye.addition ?? undefined));
 	const altura = firstIssue(AlturaSchema.safeParse(eye.altura ?? undefined));
+	const dp = firstIssue(DpSchema.safeParse(eye.dp ?? undefined));
+	const dnp = firstIssue(NpSchema.safeParse(eye.dnp ?? undefined));
 
 	const hasSphere = eye.sphere != null;
 	const hasCylinder = eye.cylinder != null;
@@ -64,6 +66,8 @@ function validateEye(
 		if (axis) errors.odAxis = axis;
 		if (addition) errors.odAddition = addition;
 		if (altura) errors.odAltura = altura;
+		if (dp) errors.odDp = dp;
+		if (dnp) errors.odDnp = dnp;
 		if (missingSphereOrCylinder) errors.odSphere = 'Esfera o cilindro requerido';
 		if (missingAxis) errors.odAxis = 'Eje requerido con cilindro';
 		if (missingAddition) errors.odAddition = 'Adición requerida';
@@ -73,6 +77,8 @@ function validateEye(
 		if (axis) errors.osAxis = axis;
 		if (addition) errors.osAddition = addition;
 		if (altura) errors.osAltura = altura;
+		if (dp) errors.osDp = dp;
+		if (dnp) errors.osDnp = dnp;
 		if (missingSphereOrCylinder) errors.osSphere = 'Esfera o cilindro requerido';
 		if (missingAxis) errors.osAxis = 'Eje requerido con cilindro';
 		if (missingAddition) errors.osAddition = 'Adición requerida';
@@ -151,6 +157,44 @@ export function evaluateLensEditorRange(
 	);
 }
 
+export type OpticalInputKind = 'esf' | 'cil' | 'add' | 'eje' | 'mm';
+
+/** Blur formatting for the rx grid inputs (mockup §8.5). */
+export function formatOpticalInput(value: string, kind: OpticalInputKind): string {
+	const trimmed = value.trim();
+	if (trimmed === '') return '';
+	const n = Number(trimmed);
+	if (!Number.isFinite(n)) return '';
+	if (kind === 'eje') return String(Math.min(180, Math.max(0, Math.round(n))));
+	if (kind === 'mm') return String(Math.round(n));
+	const quarter = Math.round(n * 4) / 4;
+	return `${quarter > 0 ? '+' : ''}${quarter.toFixed(2)}`;
+}
+
+/** Arrow-key delta per input kind (±0.25 dióptrias, ±1 eje/mm). */
+export function opticalStepDelta(kind: OpticalInputKind): number {
+	return kind === 'esf' || kind === 'cil' || kind === 'add' ? 0.25 : 1;
+}
+
+/** Eyes with an active (enabled) switch; treatment children bill per eye. */
+export function eyesWithRx(eye: LensEditorEyeDraft): number {
+	return eye.enabled ? 1 : 0;
+}
+
+export function eyesWithRxPair(od: LensEditorEyeDraft, oi: LensEditorEyeDraft): number {
+	return Math.max(1, eyesWithRx(od) + eyesWithRx(oi));
+}
+
+/**
+ * True when a progressive/bifocal eye carries a graduation but is missing
+ * soft-measure inputs (altura / naso-pupilar). Amber hint, never a blocker.
+ */
+export function missingSoftMeasures(eye: LensEditorEyeDraft, requiresAddition: boolean): boolean {
+	if (!requiresAddition || !eye.enabled) return false;
+	const hasGraduation = eye.sphere != null || eye.cylinder != null;
+	return hasGraduation && (eye.altura == null || eye.dnp == null);
+}
+
 function createEmptyLensEyeDraft(): LensEditorEyeDraft {
 	return {
 		enabled: true,
@@ -158,7 +202,9 @@ function createEmptyLensEyeDraft(): LensEditorEyeDraft {
 		cylinder: null,
 		axis: null,
 		addition: null,
-		altura: null
+		altura: null,
+		dp: null,
+		dnp: null
 	};
 }
 
