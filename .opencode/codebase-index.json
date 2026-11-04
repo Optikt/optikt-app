@@ -1,0 +1,8 @@
+{
+	"embeddingProvider": "custom",
+	"customProvider": {
+		"baseUrl": "{env:OPTIKT_GPU_OLLAMA_URL}",
+		"model": "nomic-embed-text",
+		"dimensions": 768
+	}
+}

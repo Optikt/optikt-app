@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
+	import { untrack } from 'svelte';
 	import { TriangleAlert, Eye, Package, Loader2 } from '@lucide/svelte';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -26,11 +27,14 @@
 		value: string;
 		/** Label */
 		label?: string;
+		/** Snapshot label of the currently selected item: seeds the input before
+		 *  the RPC round-trip lands the real catalog option (no empty flash). */
+		snapshotLabel?: string;
 		/** Callback when selection changes, passes unit price */
 		onselect?: (id: string, unitPrice: number) => void;
 	}
 
-	let { kind, value = '', label, onselect }: Props = $props();
+	let { kind, value = '', label, snapshotLabel = '', onselect }: Props = $props();
 
 	interface SelectOption {
 		id: string;
@@ -45,7 +49,27 @@
 		inventoryMode?: string;
 	}
 
-	let options = $state<SelectOption[]>([]);
+	// Load the currently-selected item so the combobox shows its label.
+	/** Seed option straight from the saved snapshot: instant display at mount. */
+	const initialId = untrack(() => value);
+	function seedOption(): SelectOption[] {
+		if (!initialId || !snapshotLabel) return [];
+		return [
+			{
+				id: initialId,
+				label: snapshotLabel,
+				name: snapshotLabel,
+				sku: '',
+				brand: '',
+				stock: null,
+				price: 0,
+				productType: '',
+				source: undefined
+			}
+		];
+	}
+
+	let options = $state<SelectOption[]>(seedOption());
 	let searching = $state(false);
 	let loadedValue = $state('');
 
@@ -101,7 +125,12 @@
 	function handleQueryChange(query: string) {
 		clearTimeout(searchTimer);
 		if (query.trim().length < 2) {
-			options = [];
+			// Keep the CURRENT selection (and the mount seed) when clearing the
+			// search: resetting to the seed alone would blank the input and drop
+			// the stock/on-demand chips after the user changed the item.
+			const currentOption = options.find((opt) => opt.id === value);
+			const seed = seedOption().filter((opt) => opt.id !== currentOption?.id);
+			options = currentOption ? [currentOption, ...seed] : seed;
 			return;
 		}
 		searchTimer = setTimeout(() => void runSearch(query.trim()), 250);
@@ -143,9 +172,19 @@
 </script>
 
 <div>
-	{#if label}
-		<p class="mb-1 text-sm font-medium text-on-surface-variant">{label}</p>
-	{/if}
+	<div class="mb-1 flex min-h-6 items-center justify-between gap-2">
+		<span class="block text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase">
+			{label ?? (kind === 'product' ? 'Producto' : 'Cristal')}
+		</span>
+		{#if isOnDemand}
+			<span
+				class="inline-flex h-6 items-center gap-1 rounded-[4px] bg-info-container px-2 text-[12px] font-semibold whitespace-nowrap text-on-info-container"
+			>
+				<Package class="h-3.5 w-3.5 shrink-0" />
+				Se pedirá al proveedor
+			</span>
+		{/if}
+	</div>
 
 	<SearchCombobox
 		{options}
@@ -206,14 +245,7 @@
 		{/snippet}
 	</SearchCombobox>
 
-	{#if isOnDemand}
-		<div
-			class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
-		>
-			<Package class="h-4 w-4 shrink-0" />
-			<span>Se pedirá al proveedor</span>
-		</div>
-	{:else if hasStockWarning}
+	{#if hasStockWarning}
 		{#if kind === 'lens'}
 			<div
 				class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"

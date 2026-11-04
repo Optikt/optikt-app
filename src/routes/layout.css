@@ -69,6 +69,9 @@ html:root {
 	--color-surface-container: #efedf1;
 	--color-surface-container-high: #eae7eb;
 	--color-surface-container-highest: #e4e2e5;
+	/* ── Drawer editor tints (blue-grey derived from navy; white cards pop) ─ */
+	--color-surface-drawer: #edf1f6;
+	--color-surface-drawer-strip: #dfe7f0;
 
 	/* ── On-colors (text on surfaces) ───────────────────────────────────── */
 	--color-on-surface: #1b1b1e;

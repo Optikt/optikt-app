@@ -1,14 +1,20 @@
 <script lang="ts">
 	import { CalendarClock, CirclePlus, Landmark, PiggyBank } from '@lucide/svelte';
 	import { AppBadge, PurchaseOrderDueBadge } from '$lib/components/ui';
+	import PurchaseOrderProntoPagoModal from './PurchaseOrderProntoPagoModal.svelte';
 	import { getPurchaseOrderDetailContext } from '$lib/context/purchaseOrderDetail';
 	import {
 		CurrencyCode,
 		PURCHASE_PAYMENT_METHOD_LABELS,
 		PurchasePaymentMethod,
+		PurchasePaymentTerms,
 		PurchaseSourceCurrency,
 		getPurchasePaymentTermsLabel
 	} from '$lib/shared/enums';
+	import type {
+		PurchaseOrderBalanceSummary,
+		PurchaseOrderDueStatus
+	} from '$lib/shared/purchaseOrderCredit';
 	import { getCurrencySymbol } from '$lib/shared/enums';
 	import { formatDateOnly, formatPrice } from '$lib/utils';
 	import { formatAltAmount } from '$lib/utils/purchaseOrderDetail';
@@ -16,10 +22,20 @@
 	interface Props {
 		onRegisterPayment?: () => void;
 		onViewPayments?: () => void;
+		onBenefitRegistered?: (payload: {
+			earlyPaymentBenefits: import('$lib/server/db/schema').PurchaseOrderEarlyPaymentBenefit[];
+			balance: PurchaseOrderBalanceSummary;
+			dueStatus: PurchaseOrderDueStatus;
+		}) => void;
 	}
 
-	let { onRegisterPayment = () => {}, onViewPayments = () => {} }: Props = $props();
+	let {
+		onRegisterPayment = () => {},
+		onViewPayments = () => {},
+		onBenefitRegistered
+	}: Props = $props();
 	const ctx = getPurchaseOrderDetailContext();
+	let showProntoPagoModal = $state(false);
 
 	const purchaseOrder = $derived(ctx.purchaseOrder());
 	const balance = $derived(ctx.balance());
@@ -72,6 +88,29 @@
 			netTax: formatPrice(summary.netTaxAmount)
 		};
 	});
+
+	// ----- Pronto pago -----
+	const prontoPagoPercent = $derived(Number(purchaseOrder.earlyPaymentDiscountPercent ?? 0));
+	const prontoPagoDeadline = $derived(purchaseOrder.earlyPaymentDiscountDeadline);
+	const hasActiveBenefit = $derived(
+		ctx.earlyPaymentBenefits().some((benefit) => benefit.appliedToBalance && !benefit.voidedAt)
+	);
+	const prontoPagoEligible = $derived(
+		isConfirmed &&
+			(purchaseOrder.paymentTerms as PurchasePaymentTerms) === PurchasePaymentTerms.CREDIT &&
+			prontoPagoPercent > 0 &&
+			Boolean(prontoPagoDeadline) &&
+			!balance.isSettlementFullyPaid &&
+			!hasActiveBenefit
+	);
+	const hasQualifyingPayment = $derived(
+		Boolean(prontoPagoDeadline) &&
+			ctx
+				.payments()
+				.some(
+					(payment) => !payment.voidedAt && payment.paymentDate.slice(0, 10) <= prontoPagoDeadline!
+				)
+	);
 
 	// ----- Saldo -----
 	const isNativeCurrency = $derived(balance.settlementCurrency !== CurrencyCode.USD_BCV);
@@ -237,6 +276,27 @@
 				</p>
 			</div>
 
+			{#if prontoPagoEligible}
+				<div class="rounded-lg bg-brand-gold/10 px-2.5 py-2 ring-1 ring-brand-gold/30">
+					<p class="text-[10px] font-semibold text-brand-gold">
+						Pronto pago {prontoPagoPercent}%{#if prontoPagoDeadline}
+							· hasta {prontoPagoDeadline}{/if}
+					</p>
+					{#if hasQualifyingPayment}
+						<p class="mt-0.5 text-[11px] leading-4 text-white/70">
+							Hay pagos con fecha dentro del plazo sin descuento aplicado.
+						</p>
+					{/if}
+					<button
+						type="button"
+						onclick={() => (showProntoPagoModal = true)}
+						class="mt-1.5 w-full rounded-lg bg-brand-gold/90 px-2.5 py-1.5 text-[10px] font-semibold tracking-wide text-brand-navy uppercase transition-colors hover:bg-brand-gold"
+					>
+						Registrar pronto pago
+					</button>
+				</div>
+			{/if}
+
 			{#if recentPayments.length > 0}
 				<div class="space-y-1.5">
 					<div class="flex items-center justify-between gap-2">
@@ -296,3 +356,10 @@
 		</div>
 	{/if}
 </div>
+
+<PurchaseOrderProntoPagoModal
+	bind:open={showProntoPagoModal}
+	{purchaseOrder}
+	{balance}
+	onRegistered={onBenefitRegistered}
+/>

@@ -2,6 +2,7 @@ import { getContext, setContext } from 'svelte';
 import type { PurchaseOrderSummary } from '$lib/components/purchases/purchaseOrderDraft';
 import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
 import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
+import type { PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
 import type {
 	PurchaseOrderItemWithProduct,
 	PurchaseOrderWithRelations
@@ -15,6 +16,7 @@ export type PurchaseOrderDetailContext = {
 	purchaseOrder: () => PurchaseOrderWithRelations;
 	items: () => PurchaseOrderItemWithProduct[];
 	payments: () => PurchaseOrderPaymentWithUsers[];
+	earlyPaymentBenefits: () => PurchaseOrderEarlyPaymentBenefit[];
 	balance: () => PurchaseOrderBalanceSummary;
 	dueStatus: () => PurchaseOrderDueStatus;
 	auditHistory: () => ChangeHistoryWithUser[];

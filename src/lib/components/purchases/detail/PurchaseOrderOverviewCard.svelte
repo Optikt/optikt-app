@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FileText } from '@lucide/svelte';
+	import { FileText, Settings } from '@lucide/svelte';
 	import { AppBadge } from '$lib/components/ui';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
 	import { PurchasePaymentTerms } from '$lib/shared/enums';
@@ -15,9 +15,10 @@
 
 	interface Props {
 		purchaseOrder: PurchaseOrderWithRelations;
+		onEditCreditTerms?: () => void;
 	}
 
-	let { purchaseOrder }: Props = $props();
+	let { purchaseOrder, onEditCreditTerms }: Props = $props();
 
 	const documentLabel = $derived(
 		purchaseOrder.documentType === 'DELIVERY_NOTE' ? 'Nota de entrega' : 'Factura'
@@ -115,17 +116,31 @@
 			{:else}
 				<AppBadge variant="neutral">Contado</AppBadge>
 			{/if}
+			{#if onEditCreditTerms && isCredit && purchaseOrder.status !== 'CANCELLED'}
+				<button
+					type="button"
+					onclick={onEditCreditTerms}
+					title="Editar condiciones de pago y pronto pago"
+					class="ml-auto rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-navy"
+				>
+					<Settings class="h-4 w-4" />
+				</button>
+			{/if}
 		</div>
-		{#if isCredit}
+		{#if isCredit || hasEarlyPayment}
 			<div class="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-				<div class="space-y-0.5">
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
-						Vencimiento
-					</p>
-					<p class="text-sm font-semibold text-brand-navy tabular-nums">
-						{purchaseOrder.creditDueDate ? formatDateOnly(purchaseOrder.creditDueDate) : '—'}
-					</p>
-				</div>
+				{#if isCredit}
+					<div class="space-y-0.5">
+						<p
+							class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+						>
+							Vencimiento
+						</p>
+						<p class="text-sm font-semibold text-brand-navy tabular-nums">
+							{purchaseOrder.creditDueDate ? formatDateOnly(purchaseOrder.creditDueDate) : '—'}
+						</p>
+					</div>
+				{/if}
 				{#if hasEarlyPayment}
 					<div class="space-y-0.5">
 						<p

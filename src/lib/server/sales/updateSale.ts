@@ -1,5 +1,6 @@
 import { toSaleTotalsLine } from '$lib/remote/sales/helpers';
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
+import { findSaleById, getSalePrescription } from '$lib/server/db/queries/sales/reads';
+import type { Prescription } from '$lib/server/db/schema';
 import { findCustomerById } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import {
@@ -7,7 +8,8 @@ import {
 	saleItems,
 	products,
 	lensCatalogItems,
-	inventoryMovements
+	inventoryMovements,
+	prescriptions
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
@@ -18,6 +20,7 @@ import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { nowISO } from '$lib/dates';
 import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
+import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { UpdateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
@@ -96,6 +99,15 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		return { success: false as const, error: 'La venta debe tener al menos un artículo' };
 	}
 
+	// Treatments must belong to the same supplier as their parent lens (same rule
+	// as createSale). This keeps edited sales consistent when the lens changes.
+	if (hasItemChanges) {
+		const treatmentError = await validateTreatmentItems(data.items!);
+		if (treatmentError) {
+			return { success: false as const, error: treatmentError.error };
+		}
+	}
+
 	let newSubtotal = existing.subtotal;
 
 	const newDiscount = data.discount ?? existing.discount;
@@ -126,8 +138,43 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		};
 	}
 
+	// Prescription measures (DP / nasal) patch. The target row is resolved once
+	// (before the transaction) as pre-validation — a sale without a prescription
+	// row must NOT silently drop the patch. The same `getSalePrescription` join
+	// (inner → prescriptionId IS NOT NULL, ordered like the sale detail read)
+	// picks the row both here and in the resolver below.
+	let prescriptionBefore: Prescription | null = null;
+	if (data.prescription) {
+		prescriptionBefore = await getSalePrescription(data.id);
+		if (!prescriptionBefore) {
+			return {
+				success: false as const,
+				error:
+					'No se pueden guardar las medidas: esta venta no tiene una receta asociada. Edita la graduación del cristal.'
+			};
+		}
+	}
+
 	// All writes in a single transaction
-	const updatedSale = await db.transaction(async (tx) => {
+	const txResult = await db.transaction(async (tx) => {
+		let patchedPrescription: Prescription | null = null;
+		if (data.prescription) {
+			const prescId = (await getSalePrescription(data.id, tx))?.id;
+			if (prescId) {
+				const patch: Record<string, unknown> = { updatedAt: nowISO() };
+				for (const key of ['dp', 'npRight', 'npLeft'] as const) {
+					const value = data.prescription[key];
+					if (value !== undefined) patch[key] = value;
+				}
+				const [after] = await tx
+					.update(prescriptions)
+					.set(patch)
+					.where(eq(prescriptions.id, prescId))
+					.returning();
+				patchedPrescription = after ?? null;
+			}
+		}
+
 		if (hasItemChanges) {
 			// ── 1. Revert all existing SALE_OUT inventory movements ──────────
 			const saleOutMovements = await tx
@@ -257,13 +304,11 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 				.where(eq(sales.id, data.id))
 				.returning();
 
-			return updated;
+			return { sale: updated, prescription: patchedPrescription };
 		}
 
 		// ── Header-only update (no item changes) ───────────────────────────
-		const headerUpdate: Record<string, unknown> = {
-			updatedAt: nowISO()
-		};
+		const headerUpdate: Record<string, unknown> = {};
 		if (data.customerId) headerUpdate.customerId = data.customerId;
 		/** saleDate alias → createdAt (modal already composes day + preserved time) */
 		if (data.saleDate) headerUpdate.createdAt = data.saleDate;
@@ -279,14 +324,36 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 			headerUpdate.total = newTotal;
 		}
 
+		// A no-op save (reason only) must not touch the sale row at all:
+		// `updatedAt` only bumps when a real field changes.
+		if (Object.keys(headerUpdate).length === 0) {
+			return { sale: existing, prescription: patchedPrescription };
+		}
+		headerUpdate.updatedAt = nowISO();
+
 		const [updated] = await tx
 			.update(sales)
 			.set(headerUpdate)
 			.where(eq(sales.id, data.id))
 			.returning();
 
-		return updated;
+		return { sale: updated, prescription: patchedPrescription };
 	});
+
+	const updatedSale = txResult.sale;
+
+	// Prescription audit (best-effort, after transaction succeeds): the DP/NP patch
+	// does NOT land on the sale row, so the sale logUpdate above would never show it.
+	if (txResult.prescription && prescriptionBefore) {
+		await auditService.logUpdate(
+			'prescription',
+			txResult.prescription.id,
+			prescriptionBefore,
+			txResult.prescription,
+			{ ...ctx, reason: data.reason },
+			{ excludeFields: ['updatedAt', 'createdAt', 'deletedAt'] }
+		);
+	}
 
 	if (!updatedSale) {
 		return { success: false as const, error: 'Error al actualizar la venta' };
