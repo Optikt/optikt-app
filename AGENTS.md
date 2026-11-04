@@ -50,8 +50,7 @@ Global patterns or repo-wide conventions go to the root `AGENTS.md`, not to a do
 
 ### Index
 
-Core domains (docs expected to exist): `sales`, `payments`, `receivables`, `purchases`, `cash`, `inventory`, `products`, `lenses`, `materials`, `brands`, `customers`, `quotes`.
-Secondary (docs may not exist yet): `suppliers`, `prescriptions`, `users`, `reports`, `dashboard`, `notifications-rates`, `backups`, `history`, `support`, `printing`, `trash`, `settings`, plus the `shared` doc (UI base, commercial document, schemas/common, audit, utils).
+Todos los dominios tienen doc en `docs/agents/<id>.md`. Batch core (reglas más profundas): `sales`, `payments`, `receivables`, `purchases`, `cash`, `inventory`, `products`, `lenses`, `materials`, `brands`, `customers`, `quotes`. Batch secundario: `suppliers`, `prescriptions`, `users`, `reports`, `dashboard`, `notifications-rates`, `backups`, `history`, `support`, `printing`, `trash`, `settings` — y `shared` para lo cross-cutting (UI base, documento comercial, schemas/common, audit, utils).
 
 Mapping exceptions (everything under its own name unless listed):
 
@@ -99,7 +98,7 @@ Rules:
 
 ## Import Policy — No Barrels
 
-- Import directly from the defining module (`./form/lensFormPricing`, `$lib/components/inventory/count/countSummary`). Never add new `index.ts` barrels.
+- Import directly from the defining module (`./form/lensFormPricing`, `$lib/components/inventory/count/countSummary`). Never add new `index.ts` barrels. **Never import from a barrel path** (`.../index.ts`) either — existing barrels are legacy consumables only; import the defining file.
 - Why: Vite dev loads/parses every module re-exported by a barrel (slower startup + HMR); barrels hide dependency weight, invite circular imports through `index`, and weaken Knip dead-code detection. Prod tree-shaking is usually fine with pure ESM, but dev speed and explicit graphs are not.
 - Exception: a barrel may exist **temporarily** as compat shim when splitting a module with legacy importers (see `dt1-split-protocol`); it must be removed in the follow-up migration PR.
 - Precedent: `@lucide/svelte` explicit imports, never barrels (project conventions).
