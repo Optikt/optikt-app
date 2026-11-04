@@ -25,7 +25,10 @@
 		"db:bootstrap": "node scripts/bootstrap.js",
 		"svelte:doctor": "svelte-doctor check",
 		"check:unused": "lilmolly",
-		"knip": "DATABASE_URL=postgresql://dummy knip"
+		"knip": "DATABASE_URL=postgresql://dummy knip",
+		"agents:docs": "node scripts/check-agents-docs.mjs --selftest",
+		"agents:coverage": "node scripts/check-agents-docs.mjs --coverage",
+		"agents:check": "node scripts/check-agents-docs.mjs"
 	},
 	"devDependencies": {
 		"@eslint/compat": "latest",
