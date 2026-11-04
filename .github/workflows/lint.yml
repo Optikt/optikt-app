@@ -62,5 +62,10 @@ jobs:
           else
             BASE="${{ github.event.before }}"
           fi
-          node scripts/check-agents-docs.mjs "$BASE" || exit 0
+          # El checkout shallow no trae la ref del base: fetch explícito
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=150 origin "+refs/heads/${BASE}:refs/remotes/origin/${BASE}"
+          fi
+          # Warnings de drift = exit 0; falla de infra (resolución del base/diff) deja el job en rojo
+          node scripts/check-agents-docs.mjs "$BASE"
 

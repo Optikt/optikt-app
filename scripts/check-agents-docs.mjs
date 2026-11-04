@@ -9,8 +9,8 @@
  *   node scripts/check-agents-docs.mjs --selftest    Verifica el mapeo con fixtures + valida estructura del JSON.
  *   node scripts/check-agents-docs.mjs --coverage    Lista archivos src/** que no caen en ningún dominio.
  *
- * Comportamiento en CI: SIEMPRE exit 0 salvo crash; emite ::warning:: annotations de GitHub.
- * Advertencia (warning) ≠ errores de bloqueo (error/ bloqueo): este check es un recordatorio, no un gate.
+ * Comportamiento en CI: warnings de drift con ::warning:: y exit 0; falla de infraestructura (no poder resolver el base
+ * o el diff) termina el job con error para que se note (el workflow hace fetch del base explícito antes de llamarnos).
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -86,15 +86,49 @@ function listSrcFiles() {
 	}
 }
 
+/** Resuelve una ref legible: si 'main' no existe localmente, prueba 'origin/main' (checkout shallow de CI). */
+function resolveBaseRef(base) {
+	for (const ref of [base, base.includes('/') ? base : `origin/${base}`]) {
+		try {
+			execSync(`git rev-parse --verify --quiet "${ref}^{commit}"`, {
+				cwd: repoRoot,
+				stdio: 'pipe'
+			});
+			return ref;
+		} catch {
+			// siguiente candidato
+		}
+	}
+	return null;
+}
+
 function gitChangedFiles(base) {
-	const range = base.includes('...') ? base : `${base}...HEAD`;
+	const resolved = resolveBaseRef(base);
+	let mergeBase = null;
+	if (resolved) {
+		try {
+			mergeBase = execSync(`git merge-base "${resolved}" HEAD`, {
+				cwd: repoRoot,
+				encoding: 'utf8'
+			}).trim();
+		} catch {
+			// falla con shallow checkouts sin historial compartido: sin merge-base usable
+		}
+	}
+	if (!mergeBase) {
+		console.error(
+			`[check-agents-docs] ERROR de infra: no se pudo resolver el base '${base}' (checkout shallow sin la ref).\n` +
+				`  En CI, ejecuta antes: git fetch --no-tags --depth=150 origin "${base}:refs/remotes/origin/${base}"`
+		);
+		process.exit(1);
+	}
 	try {
-		return execSync(`git diff --name-only ${range}`, { cwd: repoRoot, encoding: 'utf8' })
+		return execSync(`git diff --name-only ${mergeBase}...HEAD`, { cwd: repoRoot, encoding: 'utf8' })
 			.split('\n')
 			.filter(Boolean);
 	} catch (err) {
 		console.error(
-			`[check-agents-docs] No se pudo calcular el diff contra '${base}': ${err.message.trim()}`
+			`[check-agents-docs] ERROR de infra: no se pudo calcular el diff contra '${base}': ${err.message.trim()}`
 		);
 		process.exit(1);
 	}
