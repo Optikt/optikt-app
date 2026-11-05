@@ -34,3 +34,40 @@ jobs:
 
       - name: Lint (ESLint)
         run: pnpm eslint .
+
+  agents-docs:
+    name: AGENTS.md domain docs sync
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Suficiente historial para diff contra el base del PR / commit anterior
+          fetch-depth: 200
+
+      # Estructura del mapeo + fixtures: siempre
+      - name: Selftest del índice de dominios
+        run: node scripts/check-agents-docs.mjs --selftest
+
+      - name: Diff vs base
+        if: >-
+          github.event_name == 'pull_request' ||
+          (github.event_name == 'push' &&
+            github.event.before != '0000000000000000000000000000000000000000')
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.ref }}"
+          else
+            # push: event.before puede no venir en el checkout shallow; HEAD~1 es equivalente y siempre resolve
+            BASE="HEAD~1"
+          fi
+          # El checkout shallow no trae la ref del base: fetch explícito
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=150 origin "+refs/heads/${BASE}:refs/remotes/origin/${BASE}"
+          fi
+          # Warnings de drift = exit 0; falla de infra (resolución del base/diff) deja el job en rojo
+          node scripts/check-agents-docs.mjs "$BASE"
+

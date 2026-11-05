@@ -1,0 +1,372 @@
+{
+	"$comment": [
+		"Fuente única de verdad: dominio -> globs de rutas. Sintaxis estilo git ignore: sin wildcard es prefijo de ruta ('src/lib/components/ui' cubre la carpeta); '*' no cruza '/'; '**' cruza todo.",
+		"Lo consume scripts/check-agents-docs.mjs (CI) y el índice del root AGENTS.md.",
+		"Resolución: gana el glob de MAYOR especificidad; empates → orden declarado. 'shared' va al final a propósito: solo se asigna si ningún dominio específico matchea.",
+		"Documentación de cada dominio: docs/agents/<id>.md (ver docs/agents/_TEMPLATE.md)."
+	],
+	"domains": [
+		{
+			"id": "sales",
+			"description": "Ventas: POS, items, pagos de venta, ciclo de vida, actualización",
+			"globs": [
+				"src/lib/components/sales/**",
+				"src/routes/(app)/sales/**",
+				"src/lib/remote/sales/**",
+				"src/lib/server/sales/**",
+				"src/lib/server/db/queries/sales/**",
+				"src/lib/schemas/sales*",
+				"src/lib/server/db/schema/sales.ts",
+				"src/lib/shared/saleTotals*",
+				"src/lib/shared/saleItemCosts*",
+				"src/lib/shared/saleItemValues.ts",
+				"src/lib/shared/tickera*",
+				"src/lib/shared/ticketRate*"
+			]
+		},
+		{
+			"id": "payments",
+			"description": "Pagos transversales: factory de pagos venta/compra, componentes de pago",
+			"globs": [
+				"src/lib/components/payments/**",
+				"src/lib/server/payments/**",
+				"src/lib/shared/payments/**"
+			]
+		},
+		{
+			"id": "receivables",
+			"description": "Cuentas por cobrar",
+			"globs": [
+				"src/lib/remote/receivables.remote.ts",
+				"src/lib/server/db/queries/receivables.ts",
+				"src/routes/(app)/receivables/**"
+			]
+		},
+		{
+			"id": "purchases",
+			"description": "Órdenes de compra: ciclo de vida, items, pagos de compra, plan de créditos",
+			"globs": [
+				"src/lib/components/purchases/**",
+				"src/routes/(app)/purchases/**",
+				"src/lib/remote/purchaseOrders/**",
+				"src/lib/server/db/queries/purchaseOrders/**",
+				"src/lib/server/db/queries/purchaseOrder*/*",
+				"src/lib/server/db/queries/purchaseOrder*.*",
+				"src/lib/schemas/purchaseOrder*",
+				"src/lib/server/db/schema/purchaseOrders.ts",
+				"src/lib/shared/purchaseOrder*"
+			]
+		},
+		{
+			"id": "cash",
+			"description": "Caja: gastos, flujo diario, reporte",
+			"globs": [
+				"src/lib/components/cash/**",
+				"src/routes/(app)/cash/**",
+				"src/lib/remote/cash.remote.ts",
+				"src/lib/server/db/queries/cash/**",
+				"src/lib/schemas/cash*",
+				"src/lib/server/db/schema/cashExpenses.ts",
+				"src/lib/server/db/queries/cash*",
+				"src/lib/shared/expenseCalculations*"
+			]
+		},
+		{
+			"id": "inventory",
+			"description": "Inventario: lotes, movimientos FIFO, conteos, ajustes manuales, reversión de lotes",
+			"globs": [
+				"src/lib/components/inventory/**",
+				"src/routes/(app)/inventory/**",
+				"src/lib/remote/inventory*",
+				"src/lib/remote/inventoryCount.remote.ts",
+				"src/lib/server/inventory/**",
+				"src/lib/server/db/queries/inventoryLots.ts",
+				"src/lib/server/db/queries/inventoryMovements.ts",
+				"src/lib/server/db/queries/inventoryCount/**",
+				"src/lib/server/db/queries/fifoConsumption.ts",
+				"src/lib/schemas/inventory*",
+				"src/lib/server/db/schema/inventoryCount.ts",
+				"src/lib/server/db/schema/inventoryLots.ts",
+				"src/lib/server/db/schema/inventoryMovements.ts"
+			]
+		},
+		{
+			"id": "products",
+			"description": "Productos y catálogo de búsqueda",
+			"globs": [
+				"src/lib/components/products/**",
+				"src/routes/(app)/products/**",
+				"src/lib/remote/products.remote.ts",
+				"src/lib/remote/catalog.remote.ts",
+				"src/lib/server/db/queries/products.ts",
+				"src/lib/schemas/products*",
+				"src/lib/schemas/catalog*",
+				"src/lib/server/db/schema/products.ts"
+			]
+		},
+		{
+			"id": "lenses",
+			"description": "Cristales: catálogo, tecnologías, materiales de lentes, pendientes",
+			"globs": [
+				"src/lib/components/lenses/**",
+				"src/routes/(app)/lenses/**",
+				"src/lib/remote/lenses/**",
+				"src/lib/server/db/queries/lenses/**",
+				"src/lib/schemas/lenses*",
+				"src/lib/server/db/schema/lenses.ts"
+			]
+		},
+		{
+			"id": "materials",
+			"description": "Materiales de armazón (base de productos)",
+			"globs": [
+				"src/lib/components/materials/**",
+				"src/routes/(app)/materials/**",
+				"src/lib/remote/materials.remote.ts",
+				"src/lib/server/db/queries/materials.ts",
+				"src/lib/schemas/materials*",
+				"src/lib/server/db/schema/materials.ts"
+			]
+		},
+		{
+			"id": "brands",
+			"description": "Marcas, accesorios incluidos y proveedores por marca",
+			"globs": [
+				"src/lib/components/brands/**",
+				"src/lib/components/accessories/**",
+				"src/routes/(app)/brands/**",
+				"src/lib/remote/brands.remote.ts",
+				"src/lib/remote/brandAccessories.remote.ts",
+				"src/lib/server/db/queries/brands.ts",
+				"src/lib/server/db/queries/brandAccessories/**",
+				"src/lib/schemas/brands*",
+				"src/lib/schemas/brandAccessories*",
+				"src/lib/server/db/schema/brands.ts",
+				"src/lib/server/db/schema/brandAccessories.ts"
+			]
+		},
+		{
+			"id": "customers",
+			"description": "Clientes e historial de cliente",
+			"globs": [
+				"src/lib/components/customers/**",
+				"src/routes/(app)/customers/**",
+				"src/lib/remote/customers*",
+				"src/lib/server/db/queries/customers.ts",
+				"src/lib/server/db/queries/customerHistory.ts",
+				"src/lib/server/customerReference.ts",
+				"src/lib/schemas/customers*",
+				"src/lib/server/db/schema/customers.ts"
+			]
+		},
+		{
+			"id": "quotes",
+			"description": "Cotizaciones: ciclo de vida y conversión a venta",
+			"globs": [
+				"src/lib/components/quotes/**",
+				"src/routes/(app)/quotes/**",
+				"src/lib/remote/quotes/**",
+				"src/lib/server/quotes/**",
+				"src/lib/server/db/queries/quotes.ts",
+				"src/lib/schemas/quotes*",
+				"src/lib/server/db/schema/quotes.ts"
+			]
+		},
+		{
+			"id": "suppliers",
+			"description": "Proveedores y vínculo marca-proveedor",
+			"globs": [
+				"src/lib/components/suppliers/**",
+				"src/routes/(app)/suppliers/**",
+				"src/lib/remote/suppliers.remote.ts",
+				"src/lib/server/db/queries/suppliers.ts",
+				"src/lib/server/db/queries/brandSuppliers.ts",
+				"src/lib/schemas/suppliers*",
+				"src/lib/schemas/brandSuppliers*",
+				"src/lib/server/db/schema/suppliers.ts",
+				"src/lib/server/db/schema/brandSuppliers.ts"
+			]
+		},
+		{
+			"id": "prescriptions",
+			"description": "Prescripciones ópticas",
+			"globs": [
+				"src/lib/components/prescriptions/**",
+				"src/lib/remote/prescriptions.remote.ts",
+				"src/lib/schemas/prescriptions*",
+				"src/lib/server/db/schema/prescriptions.ts",
+				"src/lib/shared/prescriptionSnapshot*"
+			]
+		},
+		{
+			"id": "users",
+			"description": "Usuarios, autenticación, sesiones y guards",
+			"globs": [
+				"src/lib/components/users/**",
+				"src/lib/components/forms/**",
+				"src/routes/(auth)/**",
+				"src/routes/(app)/users/**",
+				"src/lib/remote/users/**",
+				"src/lib/remote/profile.remote.ts",
+				"src/lib/server/auth*",
+				"src/lib/server/guards.ts",
+				"src/lib/server/actionContext.ts",
+				"src/lib/server/db/queries/users.ts",
+				"src/lib/server/db/queries/sessions.ts",
+				"src/lib/schemas/users*",
+				"src/lib/server/db/schema/users.ts",
+				"src/lib/server/db/schema/sessions.ts",
+				"src/lib/remote/auth.remote.ts",
+				"src/lib/schemas/auth.ts",
+				"src/lib/shared/user-deletion-rules*",
+				"src/lib/shared/enums/roles.ts"
+			]
+		},
+		{
+			"id": "reports",
+			"description": "Reportes y charts",
+			"globs": [
+				"src/lib/components/reports/**",
+				"src/routes/(app)/reports/**",
+				"src/lib/remote/reports.remote.ts",
+				"src/lib/server/db/queries/reports.ts",
+				"src/lib/schemas/reports*",
+				"src/lib/server/db/queries/reports*"
+			]
+		},
+		{
+			"id": "dashboard",
+			"description": "Dashboard principal",
+			"globs": [
+				"src/lib/components/dashboard/**",
+				"src/routes/(app)/dashboard/**",
+				"src/lib/server/db/queries/dashboard.ts"
+			]
+		},
+		{
+			"id": "notifications-rates",
+			"description": "Notificaciones y tasas de cambio (poller, SSE)",
+			"globs": [
+				"src/lib/remote/notifications.remote.ts",
+				"src/lib/remote/exchangeRates.remote.ts",
+				"src/lib/server/notifications/**",
+				"src/lib/server/exchangeRates/**",
+				"src/routes/(app)/api/exchange-rates/**",
+				"src/lib/schemas/notifications*",
+				"src/lib/server/db/queries/notifications.ts",
+				"src/lib/server/db/schema/notifications.ts"
+			]
+		},
+		{
+			"id": "backups",
+			"description": "Backups (Dokploy cron + webhook + UI)",
+			"globs": [
+				"src/lib/components/backups/**",
+				"src/routes/(app)/backups/**",
+				"src/routes/api/internal/backup-webhook/**",
+				"src/lib/remote/backups.remote.ts"
+			]
+		},
+		{
+			"id": "history",
+			"description": "Historial de cambios de entidades",
+			"globs": [
+				"src/lib/components/history/**",
+				"src/lib/remote/history.remote.ts",
+				"src/lib/server/db/queries/changeHistory.ts",
+				"src/lib/server/db/schema/changeHistory.ts"
+			]
+		},
+		{
+			"id": "support",
+			"description": "Tickets de soporte",
+			"globs": [
+				"src/lib/components/support/**",
+				"src/routes/(app)/support/**",
+				"src/lib/remote/supportTickets*",
+				"src/lib/server/db/queries/supportTickets.ts",
+				"src/lib/schemas/supportTickets*",
+				"src/lib/server/db/schema/supportTickets.ts"
+			]
+		},
+		{
+			"id": "printing",
+			"description": "Impresión y PDF de documentos",
+			"globs": [
+				"src/routes/(print)/**",
+				"src/routes/api/pdf/**",
+				"src/lib/components/pdf/**",
+				"src/lib/remote/printing.remote.ts",
+				"src/lib/server/pdf.ts",
+				"src/lib/schemas/printing*",
+				"src/lib/server/pdf*"
+			]
+		},
+		{
+			"id": "trash",
+			"description": "Papelera / elementos eliminados",
+			"globs": [
+				"src/routes/(app)/trash/**",
+				"src/lib/remote/trash.remote.ts",
+				"src/lib/server/db/queries/deletedItems.ts",
+				"src/lib/server/db/schema/deletedItems.ts"
+			]
+		},
+		{
+			"id": "settings",
+			"description": "Configuración global del sistema",
+			"globs": [
+				"src/routes/(app)/settings/**",
+				"src/routes/(app)/config/**",
+				"src/lib/components/config/**",
+				"src/lib/remote/settings.remote.ts",
+				"src/lib/server/db/queries/settings.ts",
+				"src/lib/schemas/settings*",
+				"src/lib/server/db/schema/settings.ts"
+			]
+		},
+		{
+			"id": "shared",
+			"description": "Cross-cutting: UI base, layout, documento comercial compartido, schemas comunes, utils, audit, search",
+			"globs": [
+				"src/lib/components/ui/**",
+				"src/lib/components/layout/**",
+				"src/lib/components/commercialDocument/**",
+				"src/lib/components/documentEditor/**",
+				"src/lib/components/branding/**",
+				"src/lib/components/background/**",
+				"src/lib/components/index.ts",
+				"src/lib/remote/index.ts",
+				"src/lib/remote/search.remote.ts",
+				"src/lib/schemas/search.ts",
+				"src/lib/schemas/common/**",
+				"src/lib/schemas/index.ts",
+				"src/lib/schemas/common.spec.ts",
+				"src/lib/server/audit/**",
+				"src/lib/server/documentTotals.ts",
+				"src/lib/server/treatmentValidation.ts",
+				"src/lib/server/db/index.ts",
+				"src/lib/server/db/types.ts",
+				"src/lib/server/db/search.ts",
+				"src/lib/server/db/schema/utils.ts",
+				"src/lib/server/db/schema/index.ts",
+				"src/lib/server/db/queries/index.ts",
+				"src/lib/actions/**",
+				"src/lib/context/**",
+				"src/lib/dates.ts",
+				"src/lib/dates.spec.ts",
+				"src/lib/index.ts",
+				"src/lib/shared/**",
+				"src/lib/types/**",
+				"src/lib/utils/**",
+				"src/lib/stores/**",
+				"src/lib/testing/**",
+				"src/routes/(app)/+layout.*",
+				"src/routes/+*",
+				"src/routes/layout.css",
+				"src/*",
+				"src/hooks.*"
+			]
+		}
+	]
+}
