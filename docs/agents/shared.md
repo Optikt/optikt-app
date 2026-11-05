@@ -9,7 +9,7 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 
 ## Scope
 
-- `src/lib/components/ui/**` (102 componentes base), `layout/**`, `commercialDocument/**`, `documentEditor/**`, `forms/**` (solo barrel/login→users), `branding/**`, `background/**`
+- `src/lib/components/ui/**` (102 componentes base), `layout/**`, `commercialDocument/**`, `documentEditor/**`, `branding/**`, `background/**` (nota: `components/forms/**` = login, pertenece a `users`)
 - `src/lib/schemas/common/**` (contacts/dates/identity/numbers/optical/pagination) + `schemas/search.ts` + `schemas/index.ts`
 - `src/lib/server/audit/**`, `documentTotals.ts`, `treatmentValidation.ts`, `server/db/{index,types,search}.ts`, `server/db/schema/{utils,index}.ts`
 - `src/lib/actions/**`, `context/**`, `dates.ts`, `utils/**`, `stores/**`, `types/**`

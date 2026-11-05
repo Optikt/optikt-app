@@ -55,12 +55,14 @@ jobs:
       - name: Diff vs base
         if: >-
           github.event_name == 'pull_request' ||
-          (github.event_name == 'push' && github.event.before != '0000000000000000000000')
+          (github.event_name == 'push' &&
+            github.event.before != '0000000000000000000000000000000000000000')
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="${{ github.event.pull_request.base.ref }}"
           else
-            BASE="${{ github.event.before }}"
+            # push: event.before puede no venir en el checkout shallow; HEAD~1 es equivalente y siempre resolve
+            BASE="HEAD~1"
           fi
           # El checkout shallow no trae la ref del base: fetch explícito
           if [ "${{ github.event_name }}" = "pull_request" ]; then

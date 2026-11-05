@@ -69,7 +69,7 @@ Mapping exceptions (everything under its own name unless listed):
 | `src/lib/server/db/queries/deletedItems.ts`, `src/lib/server/db/schema/deletedItems.ts` | `trash` |
 | `src/lib/server/db/queries/changeHistory.ts`, `src/lib/server/db/schema/changeHistory.ts` | `history` |
 | Lógica pura en `src/lib/shared/`: `saleTotals*`, `saleItemCosts*`, `saleItemValues`, `tickera*`, `ticketRate*` → `sales`; `purchaseOrder*` → `purchases`; `payments/**` → `payments`; `expenseCalculations*` → `cash`; `prescriptionSnapshot*` → `prescriptions` | = dominio de destino |
-| Cross-cutting (`components/ui`, `layout`, `commercialDocument`, `documentEditor`, `forms`, `branding`, `background`, `schemas/common`, `audit`, `documentTotals`, `dates`, `utils`, `stores`, `types`, `hooks`): | `shared` (`docs/agents/shared.md`) |
+| Cross-cutting (`components/ui`, `layout`, `commercialDocument`, `documentEditor`, `branding`, `background`, `schemas/common`, `audit`, `documentTotals`, `dates`, `utils`, `stores`, `types`, `hooks`): | `shared` (`docs/agents/shared.md`) — nota: `components/forms/**` (login) va a `users` |
 
 ## Tooltips (bits-ui)
 

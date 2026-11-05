@@ -136,7 +136,7 @@ function gitChangedFiles(base) {
 
 function warn(msg) {
 	console.log(`::warning::${msg}`);
-	console.log(`  W: ${msg}`);
+	if (!process.env.CI) console.log(`  W: ${msg}`);
 }
 
 // ---------------------------------------------------------------- selftest

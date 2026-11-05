@@ -9,7 +9,7 @@ Lista de cuentas por cobrar (saldo de clientes) + registro de pago. Fuente de ve
 
 ## Scope
 
-`remote/receivables.remote.ts`, `queries/receivables.ts`, `routes/(app)/receivables/**`, `schemas/receivables*`.
+`remote/receivables.remote.ts`, `queries/receivables.ts`, `routes/(app)/receivables/**`.
 
 Owner rules: el pago reutiliza tal cual `addPayment` del dominio `sales` (validaciones, tx pago+recálculo, audit); la semántica de estados de venta es del doc `sales`.
 

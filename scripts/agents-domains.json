@@ -1,8 +1,8 @@
 {
 	"$comment": [
-		"Fuente única de verdad: dominio -> globs de rutas (sintaxis estilo git ignore: '=' sin wildcard es prefijo de ruta; '*' no cruza '/'; '**' cruza todo).",
+		"Fuente única de verdad: dominio -> globs de rutas. Sintaxis estilo git ignore: sin wildcard es prefijo de ruta ('src/lib/components/ui' cubre la carpeta); '*' no cruza '/'; '**' cruza todo.",
 		"Lo consume scripts/check-agents-docs.mjs (CI) y el índice del root AGENTS.md.",
-		"Reglas de resolución: los dominios se evalúan en orden declarado; el primer pattern que matchea gana. 'shared' va al final el propósito del orden.",
+		"Resolución: gana el glob de MAYOR especificidad; empates → orden declarado. 'shared' va al final a propósito: solo se asigna si ningún dominio específico matchea.",
 		"Documentación de cada dominio: docs/agents/<id>.md (ver docs/agents/_TEMPLATE.md)."
 	],
 	"domains": [
@@ -39,8 +39,7 @@
 			"globs": [
 				"src/lib/remote/receivables.remote.ts",
 				"src/lib/server/db/queries/receivables.ts",
-				"src/routes/(app)/receivables/**",
-				"src/lib/schemas/receivables*"
+				"src/routes/(app)/receivables/**"
 			]
 		},
 		{
@@ -218,7 +217,9 @@
 				"src/lib/server/db/schema/users.ts",
 				"src/lib/server/db/schema/sessions.ts",
 				"src/lib/remote/auth.remote.ts",
-				"src/lib/schemas/auth.ts"
+				"src/lib/schemas/auth.ts",
+				"src/lib/shared/user-deletion-rules*",
+				"src/lib/shared/enums/roles.ts"
 			]
 		},
 		{
