@@ -24,7 +24,7 @@ UI super-admin para historial/estado de backups de PostgreSQL + trigger manual v
 
 ## Patrones locales
 
-- Página `/backups` con commands (`useCommand`), badge de estado y tabla paginada; sidebar lo expone solo en `SUPER_ADMIN_ITEMS`.
+- Página `/backups` con handlers async planos (`fetchAll`/`handleRunBackup`, sin hook de commands), badge de estado y lista plana de hasta 50 filas (`listBackupHistory({limit:50})`, `DataGrid` sin props de paginación); sidebar lo expone solo en `SUPER_ADMIN_ITEMS`.
 - `parseSize` es util local del webhook (+server.ts) — no reutilizar para otros formatos sin decisión.
 
 ## Testing
@@ -35,4 +35,4 @@ UI super-admin para historial/estado de backups de PostgreSQL + trigger manual v
 
 - 🟡 Sin dedupe: si Dokploy re-lanza el webhook, se duplican notificaciones de backup.
 - 🟡 El payload del webhook no persiste `timestamp` (el spec lo menciona pero el evento no lo guarda) y no valida con Zod (solo exige filename).
-- 🟠 El insert fallará si la DB está caída (best-effort de `publishNotification` implica catch acá pero no lo hace) — el webhook respondería 500; tolerable pero sin retry de parte del remitente.
+- 🟡 Si la DB está caída el webhook **responde 200 igual**: `publishNotification` traga el error (`notifications/service.ts:29-45`) y la notificación se pierde en silencio — sin retry del remitente. Además el spec `backup-dokploy-spec.md:318` menciona `useCommand()`, que no existe en el código.
