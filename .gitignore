@@ -37,6 +37,10 @@ vite.config.ts.timestamp-*
 .codebase-memory/
 .opencode/*
 !.opencode/codebase-index.json
+!.opencode/agents/
+!.opencode/commands/
+!.opencode/skills/
+!.opencode/plugins/
 .agents/
 
 # Mockups y previews (designs/) no van en el repo
@@ -44,3 +48,6 @@ designs/
 
 # Mockup html pesado: CodeQL lo señaliza; vive local, no en el repo
 docs/rework-edit-sale/redesign-drawer-modificar-orden.html
+
+# Config local con credenciales (keys de MCP): no versionar
+.cursor/mcp.json
