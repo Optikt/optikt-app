@@ -478,6 +478,7 @@
 			{saving}
 			{hasChanges}
 			hasItems={activeItems.length > 0}
+			editing={view === 'editor'}
 			onClose={() => {
 				if (guardClose()) open = false;
 			}}
