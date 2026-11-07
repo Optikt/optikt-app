@@ -147,6 +147,9 @@ export const lensCatalogItems = pgTable(
 		// --- Inventory ---
 		inventoryMode: lensInventoryModeEnum('inventory_mode').notNull().default('ON_DEMAND'),
 		stock: integer(),
+		/** Cobertura de conteo físico: último conteo CERRADO que verificó el lente */
+		lastCountedAt: timestamp('last_counted_at', { withTimezone: true, mode: 'string' }),
+		lastCountSessionId: integer('last_count_session_id'),
 		notes: varchar(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })

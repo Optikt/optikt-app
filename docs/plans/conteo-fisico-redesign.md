@@ -6,6 +6,71 @@
 
 ---
 
+## ⏱️ ESTADO DE IMPLEMENTACIÓN (checkpoint 2026-11-07 · sesión de arranque)
+
+### Fase 0 · Verificación — ✅ completada (partes primeras + subagentes)
+- Kit inventariado: `SlideOver` (bindable open, `header`/`footer` snippets, sizeIs md/lg/xl, `coverGuard`, esc, focus), `SegmentedToggle` (value/options/onchange), `PageHeader`, `EmptyState`, `ConfirmModal` (bits-ui dialog), `TriggerTooltip` (portal, title+text+items, side), `InfoTooltip`, `SearchCombobox` (single-select), `DataGrid`, badges, `ui/dialog`/`ui/popover` (bits-ui), `downloadCsv` (export-to-csv) ya en repo.
+- Servidor verificado: `applyManualAdjustment` (inventoryLots.ts:261) reutilizable con `{lotId, quantityDelta, notes, createdById}` (actualiza lote+`products.stock`; el stock de lentes hay que actualizarlo aparte); `getActiveLotsFifo`/`getActiveLensLotsFifo`; `createInventoryMovement`; settings singleton (`getSettings`/`updateSettings` sin executor); migraciones con `DATABASE_URL=dummy pnpm db:generate`; factories de testing en `src/lib/testing/integration/factories.ts` (`createInventoryCountSession/Line`).
+- Preguntas 17 respondidas y agregadas a la sección 2.
+
+### Fase 0/1 escalado — área de datos y servidor — escrita (VERIFICAR con `pnpm check` antes de mergear)
+
+**Migraciones**
+- `drizzle/0048_count_redesign.sql` — tablas/columnas nuevas + **backfill** de `last_counted_at` desde sesiones APPLIED y de responsables en sesiones OPEN.
+- `drizzle/0049_count_close_coverage.sql` — `coverage_after`/`coverage_never_after`.
+- Schema actualizado: `settings` (+`count_cycle_days/​count_diff_threshold_units/​count_diff_threshold_usd/​count_quick_oldest_limit`), `products`/`lens_catalog_items` (+`last_counted_at`/`last_count_session_id`), `inventory_count_sessions` (+`scope_dim/scope_values/scope_n/scope_kind/coverage_before(_never)_(after)`), `inventory_count_lines` (+`recounted_stock/recounted_by_id/recounted_at/adjustment_movement_id/adjustment_reason/adjustment_reason_text`), **tabla nueva** `inventory_count_responsibles`.
+
+**Dominio compartido**
+- `src/lib/shared/inventoryCount.ts` — math del ciclo/semáforo (D1 «nueva verde»), umbrales unidades+USD, `computeCountStats`, regla de cierre nueva, labels/constantes, formatters. (Sin spec unit todavía → pendiente.)
+- `src/lib/schemas/inventoryCount.ts` — Zod del nuevo alcance (dim/values/quick/n), línea, recuento, ajustes, participantes, settings.
+
+**Queries (`src/lib/server/db/queries/inventoryCount/`)**
+- `shared.ts` — elegibilidad, snapshot por alcance (`createSnapshotLines`), agregados por sesión (con recuento final), etiquetas de alcance (legacy + nueva).
+- `sessions.ts` — `createSession` (nueva cobertura antes/al abrir + responsables), `applySession` (**nueva regla de cierre** + `lastCountedAt` + cobertura después), cancelación, `getSessions/getSessionById/getCountCycleConfig`.
+- `lines.ts` — `getSessionLines` (joins marca/proveedor/labels), `upsertCountLine` (ligero, reset de recuento/ajuste per invariantes), `recountCountLine`, `confirmZeroStockBatch`.
+- `coverage.ts` — `getCoverage` (resumen + grupos 3 dims + opciones combobox), `buildCoverageGroups`, `previewScope`.
+- `adjustments.ts` — ajuste vinculado reutilizando `applyManualAdjustment`, lote FIFO activo, actualiza `lensCatalogItems.stock` en lentes, `applyAdjustmentsBatch` (solo bajo umbral).
+- `responsibles.ts` — lista/sync/baja lógica, `canUserParticipateOnSession`, `requireWriteAccess`, opciones de usuarios.
+- `costs.ts` — mapa `lineId → costo FIFO` (umbral USD + impacto).
+- `types.ts` — DTOs (CountSessionSummary/Detail/LineRow/…).
+
+**Remote (`src/lib.remote/` → `src/lib/remote/inventoryCount.remote.ts`)**
+- Escrito completo: getActiveSession, getSessions, getSessionById, getCountConfig, getCoverageData, previewCountScope, listCountOptions, listCountResponsibles, getDiffCosts, createSession, upsertCountLine, recountCountLine, confirmZeroStock, applyLineAdjustment, applyAdjustmentsBatch, setSessionResponsibles, cancelSession, applySession, updateCountSettings. Guards: A/M/S para lecturas; escritura de línea valida participante activo vía `requireWriteAccess`.
+- ⚠️ Pendiente de pasar `pnpm check` + rechequear firma real de `listResponsibleOptions`, `requireWriteAccess` y tipos (algunas partes fueron escritas apuradas).
+
+** Loads actualizados**
+- `+page.server.ts` (lista): activa+sésions+cobertura+config+opciones responsibles(A/M)+canManage+user.
+- `[id]/+page.server.ts`: sesión completa+costs+canCount (manager o responsable activo).
+
+### Fase 2+ — UI: PRIMITIVOS Y PIEZAS CREADOS (WIP; verificar compile)
+Nuevos (todos en `src/lib/components/inventory/count/`):
+- `ui/MultiCombobox.svelte` (multiselección con chips quitables, createLabel, teclado ↓Enter Backspace Esc),
+  `ui/CountSegmented.svelte` (thumb navy + tooltips por opción), `ui/CountLabel.svelte`, `ui/CountButton.svelte`
+  (variantes gold/navy/ghost; `aria-disabled` + tooltip de motivo), `ui/CoverageBar.svelte` (segmentada con tooltips),
+  `ui/TrafficDot.svelte`, `ui/DiffBadge.svelte` (▲▼ ▲ sobra/falta), `ui/StatusIcon.svelte` (estado de fila con tooltip),
+  `ui/ResponsibleStack.svelte` (pila de avatares + editar).
+- `CycleCard.svelte`, `GroupsCoverageCard.svelte`, `HistoryList.svelte`, `NewCountPanel.svelte` (drawer, vista previa viva+responsables+externos),
+  `CycleSettingsPanel.svelte` (plazo, umbral unidades, **umbral USD (D3, default 0)**, N «más atrasados» (D2) = 50/configurable), `SessionHeaderBar.svelte` (navy + barras diagonales + stepper + progreso + ⋯ cancelar), `SummaryStrip.svelte`.
+- `CountBoard.svelte` — fase ① hoja (grupos por marca + input+Enter+↑↓ + grupo Stock 0 colapsado + ficha móvil).
+  ⚠️_aún sin `pnpm check`._
+
+**Eliminados** (UI vieja completa): CountListHeader/CountListMetrics/CountHistoryTable/CountCreateModal/CountSessionHeader/
+CountSummaryMetrics/CountLinesTable/CountLineMobileCard/CountLineEditRow/CountActionModals, countList/countSummary/countAdjustments (+specs),
+sessions.int.spec (a re-scribir con nuevas reglas).
+
+### ⚠️ PENDIENTE INMEDIATO (siguiente bizquez de trabajo)
+1. Pasar `pnpm check` y **corregir en masa** los errores de tipos/compile en backend+WIP (probables: tipos de `coverage.options`,
+   firma de `listResponsibleOptions/requireWriteAccess`, sugar en `shared.ts`, materia pendiente).
+2. **Reescribir las 2 páginas** (`/inventory/count/+page.svelte` y `[id]/+page.svelte`) con el nuevo modelo —
+   la página de detalle quedó a medio escribir (WIP no confiable); lista = ~80 % escrita.
+3. **Fase ② Revisar**: lista por impacto + recuento obligatorio + «Aplicar todo (N)» con motivo + panel «Ajustar stock» (motivos repo + Otros con texto obligatorio).
+4. **Fase ③ Informe**: KPIs, cobertura antes→después, desglose por marca/proveedor/tipo, Imprimir/PDF(print)/Excel(downloadCsv), informe de canceladas mínimo.
+5. Virtualización de la hoja de conteo (req: 2.000+ ítems fluidos) — hito dado de baja en este paso.
+6. Specs nuevos de `shared/inventoryCount.ts` + specs de queries (integración con Testcontainers) + actualizar `e2e/inventory-count.test.ts`.
+7. Pasar lint+check en verde y un **único commit por fase**.
+
+---
+
 ## 0. Documentos fuente (jerarquía de verdad: repo > prompt > mockup)
 
 | Documento | Ubicación |

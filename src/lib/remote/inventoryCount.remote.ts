@@ -1,137 +1,332 @@
+/**
+ * Conteo Físico — remote functions (SvelteKit `$app/server`).
+ * Lecturas: A/M/S · Conteo: A/M o responsable activo · Ajustes, cierre,
+ * cancelación, responsables y config del ciclo: A/M.
+ */
 import { command, query } from '$app/server';
+import { eq } from 'drizzle-orm';
+
+import { db } from '$lib/server/db';
+import { inventoryCountLines } from '$lib/server/db/schema';
 import {
+	ApplyAdjustmentsBatchSchema,
+	ApplyCountLineAdjustmentSchema,
 	CancelInventoryCountSessionSchema,
-	CreateInventoryCountSessionSchema,
-	GetSessionLinesSchema,
+	ConfirmZeroStockSchema,
+	CreateCountSessionSchema,
+	GetDiffCostsSchema,
 	GetSessionsSchema,
-	SetInventoryCountLineAdjustmentStatusSchema,
+	ListCountOptionsSchema,
+	PreviewCountScopeSchema,
+	RecountCountLineSchema,
 	SessionIdSchema,
-	UpsertInventoryCountLineSchema
+	SetSessionResponsiblesSchema,
+	UpdateCountSettingsSchema,
+	UpsertCountLineSchema
 } from '$lib/schemas/inventoryCount';
+import type { InventoryCountScopeKind } from '$lib/schemas/inventoryCount';
 import {
-	applySession as applyInventoryCountSession,
-	cancelSession as cancelInventoryCountSession,
-	createSession as createInventoryCountSession,
-	getActiveSession as getActiveInventoryCountSession,
-	getSessionById as getInventoryCountSessionById,
-	getSessions as getInventoryCountSessions
+	applySession as applyCountSessionDb,
+	cancelSession as cancelCountSessionDb,
+	createSession as createCountSessionDb,
+	getActiveSession as getActiveCountSessionDb,
+	getCountCycleConfig,
+	getSessionById as getCountSessionByIdDb,
+	getSessions as getCountSessionsDb
 } from '$lib/server/db/queries/inventoryCount/sessions';
 import {
-	getSessionLines as getInventoryCountSessionLines,
-	setLineAdjustmentStatus as updateInventoryCountLineAdjustmentStatus,
-	upsertCountLine as saveInventoryCountLine
+	confirmZeroStockBatch,
+	recountCountLine,
+	upsertCountLine
 } from '$lib/server/db/queries/inventoryCount/lines';
-import type {
-	InventoryCountSessionDetail,
-	InventoryCountSessionSummary,
-	InventoryCountLineRow
-} from '$lib/server/db/queries/inventoryCount/types';
+import {
+	applyAdjustmentsBatch,
+	applyCountLineAdjustment
+} from '$lib/server/db/queries/inventoryCount/adjustments';
+import { getCoverage, previewScope } from '$lib/server/db/queries/inventoryCount/coverage';
+import { buildLineCostMap } from '$lib/server/db/queries/inventoryCount/costs';
+import {
+	listResponsibleOptions,
+	requireWriteAccess,
+	syncSessionResponsibles
+} from '$lib/server/db/queries/inventoryCount/responsibles';
+import { isAdminRole } from '$lib/server/db/queries/inventoryCount/shared';
+import { updateSettings } from '$lib/server/db/queries/settings';
 import { requireRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
+import { UserRole, AdjustmentReason } from '$lib/shared/enums';
 import { getErrorMessage } from '$lib/utils';
+
+function kindFor(data: {
+	dim: string;
+	quick?: 'OLDEST' | 'NEVER' | null;
+}): InventoryCountScopeKind {
+	if (data.quick === 'OLDEST') return 'QUICK_OLDEST';
+	if (data.quick === 'NEVER') return 'QUICK_NEVER';
+	return data.dim as InventoryCountScopeKind;
+}
+
+/** El enum del repo y el literal del Zod comparten valores; se mapea explícito. */
+function mapReason(
+	reason: 'OTHER' | 'PHYSICAL_COUNT' | 'DAMAGE' | 'SAMPLE' | 'CUSTOMER_RETURN' | 'ENTRY_ERROR'
+): AdjustmentReason {
+	const table: Record<string, AdjustmentReason> = {
+		PHYSICAL_COUNT: AdjustmentReason.PHYSICAL_COUNT,
+		DAMAGE: AdjustmentReason.DAMAGE,
+		SAMPLE: AdjustmentReason.SAMPLE,
+		CUSTOMER_RETURN: AdjustmentReason.CUSTOMER_RETURN,
+		ENTRY_ERROR: AdjustmentReason.ENTRY_ERROR,
+		OTHER: AdjustmentReason.OTHER
+	};
+	return table[reason] ?? AdjustmentReason.PHYSICAL_COUNT;
+}
+
+async function sessionIdForLine(lineId: number): Promise<number> {
+	const [row] = await db
+		.select({ sessionId: inventoryCountLines.sessionId })
+		.from(inventoryCountLines)
+		.where(eq(inventoryCountLines.id, lineId))
+		.limit(1);
+	if (!row) throw new Error('La línea de conteo no existe');
+	return row.sessionId;
+}
+
+function ok<T>(data: T): { success: true; data: T } {
+	return { success: true, data };
+}
+
+function fail(error: unknown): { success: false; error: string } {
+	return { success: false, error: getErrorMessage(error) };
+}
+
+/** Regla de conteo: ADMIN/MANAGER siempre; un SELLER solo si es responsable activo. */
+async function requireCountWriteAccess(
+	userId: string,
+	role: string,
+	sessionId: number
+): Promise<void> {
+	if (isAdminRole(role)) return;
+	await requireWriteAccess(sessionId, userId, false);
+}
+
+// ── Lecturas ───────────────────────────────────────────────────────────────
 
 export const getActiveSession = query((async () => {
 	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
-	return getActiveInventoryCountSession();
-}) as () => Promise<InventoryCountSessionSummary | null>);
+	return getActiveCountSessionDb();
+}) as () => ReturnType<typeof getActiveCountSessionDb>);
 
-export const getSessions = query(
-	GetSessionsSchema,
-	async (data): Promise<InventoryCountSessionSummary[]> => {
+export const getSessions = query(GetSessionsSchema, async (data) => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+	return getCountSessionsDb(data);
+});
+
+export const getSessionById = query(SessionIdSchema, async (data) => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+	return getCountSessionByIdDb(data.id);
+});
+
+/** Config del ciclo (settings singleton). */
+export const getCountConfig = query((async () => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+	return getCountCycleConfig();
+}) as () => ReturnType<typeof getCountCycleConfig>);
+
+/** Cobertura: resumen del ciclo + grupos por dimensión + opciones de combobox. */
+export const getCoverageData = query((async () => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+	const config = await getCountCycleConfig();
+	return getCoverage(config.cycleDays);
+}) as () => ReturnType<typeof getCoverage>);
+
+export const listCountOptions = query(
+	ListCountOptionsSchema,
+	async (data): Promise<ReturnType<typeof getCoverage>['options']['BRAND']> => {
 		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
-		return getInventoryCountSessions({
-			limit: data.limit,
-			scopeType: data.scopeType,
-			openedOn: data.openedOn
-		});
+		const coverage = await getCoverage((await getCountCycleConfig()).cycleDays);
+		return coverage.options[data.dim];
 	}
 );
 
-export const getSessionById = query(
-	SessionIdSchema,
-	async (data): Promise<InventoryCountSessionDetail | null> => {
-		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
-		return getInventoryCountSessionById(data.id);
-	}
-);
+export const previewCountScope = query(PreviewCountScopeSchema, async (data) => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+	const config = await getCountCycleConfig();
+	return previewScope(
+		{
+			kind: data.quick ? (data.quick === 'OLDEST' ? 'QUICK_OLDEST' : 'QUICK_NEVER') : kindFor(data),
+			dim: data.dim,
+			values: data.values,
+			n: data.n ?? null
+		},
+		config
+	);
+});
 
-export const getSessionLines = query(
-	GetSessionLinesSchema,
-	async (data): Promise<InventoryCountLineRow[]> => {
-		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
-		return getInventoryCountSessionLines(data.sessionId, data.filter);
-	}
-);
+/** Opciones de responsables (usuarios del sistema) — solo A/M. */
+export const listCountResponsibles = query((async () => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	return listResponsibleOptions();
+}) as () => ReturnType<typeof listResponsibleOptions>);
 
-export const createSession = command(CreateInventoryCountSessionSchema, async (data) => {
+/** Costo FIFO por línea con diferencia (orden Revisar por impacto). Solo A/M. */
+export const getDiffCosts = query(GetDiffCostsSchema, async (data) => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	const lines = await db
+		.select()
+		.from(inventoryCountLines)
+		.where(eq(inventoryCountLines.sessionId, data.sessionId));
+	const map = await buildLineCostMap(lines);
+	const record: Record<string, number | null> = {};
+	for (const [lineId, cost] of map) record[String(lineId)] = cost;
+	return record;
+});
+
+// ── Escrituras ─────────────────────────────────────────────────────────────
+
+export const createSessionCmd = command(CreateCountSessionSchema, async (data) => {
 	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
-
 	try {
-		const session = await createInventoryCountSession({
-			...data,
-			scopeValue: data.scopeValue ?? null,
+		const session = await createCountSessionDb({
+			scopeKind: kindFor(data),
+			scopeDim: data.dim,
+			scopeValues: data.values,
+			scopeN: data.n ?? null,
 			notes: data.notes ?? null,
-			openedById: user.id
+			openedById: user.id,
+			responsibles: data.responsibles.map((entry) => ({
+				userId: entry.userId ?? null,
+				displayName: entry.displayName,
+				isExternal: entry.isExternal
+			}))
 		});
-
-		return { success: true as const, session };
+		return ok(session);
 	} catch (error) {
-		return { success: false as const, error: getErrorMessage(error) };
+		return fail(error);
 	}
 });
 
-export const upsertCountLine = command(UpsertInventoryCountLineSchema, async (data) => {
+export const upsertCountLineCmd = command(UpsertCountLineSchema, async (data) => {
 	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
-
 	try {
-		const line = await saveInventoryCountLine({
-			...data,
+		const sessionId = await sessionIdForLine(data.lineId);
+		await requireCountWriteAccess(user.id, user.role, sessionId);
+		const line = await upsertCountLine({
+			lineId: data.lineId,
+			countedStock: data.countedStock,
 			notes: data.notes ?? null,
 			userId: user.id
 		});
-
-		return { success: true as const, line };
+		return ok(line);
 	} catch (error) {
-		return { success: false as const, error: getErrorMessage(error) };
+		return fail(error);
 	}
 });
 
-export const setLineAdjustmentStatus = command(
-	SetInventoryCountLineAdjustmentStatusSchema,
-	async (data) => {
-		const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
-
-		try {
-			const line = await updateInventoryCountLineAdjustmentStatus({
-				...data,
-				userId: user.id
-			});
-
-			return { success: true as const, line };
-		} catch (error) {
-			return { success: false as const, error: getErrorMessage(error) };
-		}
-	}
-);
-
-export const applySession = command(SessionIdSchema, async (data) => {
+export const recountCountLineCmd = command(RecountCountLineSchema, async (data) => {
 	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
-
 	try {
-		const session = await applyInventoryCountSession(data.id, user.id);
-		return { success: true as const, session };
+		const sessionId = await sessionIdForLine(data.lineId);
+		await requireCountWriteAccess(user.id, user.role, sessionId);
+		const line = await recountCountLine({
+			lineId: data.lineId,
+			recountedStock: data.recountedStock,
+			userId: user.id
+		});
+		return ok(line);
 	} catch (error) {
-		return { success: false as const, error: getErrorMessage(error) };
+		return fail(error);
 	}
 });
 
-export const cancelSession = command(CancelInventoryCountSessionSchema, async (data) => {
-	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
-
+export const confirmZeroStock = command(ConfirmZeroStockSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 	try {
-		const session = await cancelInventoryCountSession(data.id, user.id, data.reason);
-		return { success: true as const, session };
+		await requireCountWriteAccess(user.id, user.role, data.sessionId);
+		const updated = await confirmZeroStockBatch(data.sessionId, user.id);
+		return ok(updated);
 	} catch (error) {
-		return { success: false as const, error: getErrorMessage(error) };
+		return fail(error);
+	}
+});
+
+export const applyLineAdjustmentCmd = command(ApplyCountLineAdjustmentSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	try {
+		const sessionId = await sessionIdForLine(data.lineId);
+		await requireCountWriteAccess(user.id, user.role, sessionId);
+		const line = await applyCountLineAdjustment({
+			lineId: data.lineId,
+			reason: mapReason(data.reason),
+			reasonText: data.reasonText ?? null,
+			userId: user.id
+		});
+		return ok(line);
+	} catch (error) {
+		return fail(error);
+	}
+});
+
+export const applyAdjustmentsBatchCmd = command(ApplyAdjustmentsBatchSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	try {
+		await requireCountWriteAccess(user.id, user.role, data.sessionId);
+		const applied = await applyAdjustmentsBatch(
+			data.sessionId,
+			mapReason(data.reason),
+			data.reasonText ?? null,
+			user.id
+		);
+		return ok(applied);
+	} catch (error) {
+		return fail(error);
+	}
+});
+
+export const setSessionResponsibles = command(SetSessionResponsiblesSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	try {
+		const rows = await syncSessionResponsibles(data.sessionId, data.entries, user.id);
+		return ok(rows);
+	} catch (error) {
+		return fail(error);
+	}
+});
+
+export const cancelSessionCmd = command(CancelInventoryCountSessionSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	try {
+		const session = await cancelCountSessionDb(data.id, user.id, data.reason);
+		return ok(session);
+	} catch (error) {
+		return fail(error);
+	}
+});
+
+export const applySessionCmd = command(SessionIdSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	try {
+		const session = await applyCountSessionDb(data.id, user.id);
+		return ok(session);
+	} catch (error) {
+		return fail(error);
+	}
+});
+
+export const updateCountSettings = command(UpdateCountSettingsSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	try {
+		const settings = await updateSettings({
+			countCycleDays: data.cycleDays,
+			countDiffThresholdUnits: data.diffThresholdUnits,
+			countDiffThresholdUsd: data.diffThresholdUsd,
+			countQuickOldestLimit: data.quickOldestLimit
+		});
+		return ok({
+			cycleDays: settings.countCycleDays,
+			diffThresholdUnits: settings.countDiffThresholdUnits,
+			diffThresholdUsd: settings.countDiffThresholdUsd,
+			quickOldestLimit: settings.countQuickOldestLimit
+		});
+	} catch (error) {
+		return fail(error);
 	}
 });
