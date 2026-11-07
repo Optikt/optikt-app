@@ -1,59 +1,38 @@
 /**
- * Inventory count query internals (private helpers + row types).
- * Split from queries/inventoryCount.ts (DT1 phase 4) — logic unchanged, verbatim move.
+ * Conteo Físico — internals privados compartidos: elegibilidad de ítems,
+ * resolución del alcance (snapshot de líneas), agregados de sesión y etiquetas.
+ * Se consume desde sessions.ts, lines.ts, coverage.ts y adjustments.ts.
  */
-import type {
-	InventoryCountLineFilter,
-	InventoryCountSessionSummary,
-	InventoryCountSnapshotInput
-} from './types';
-import { and, asc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 
+import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
-
 import {
 	inventoryCountLines,
 	inventoryMovements,
-	lensCatalogItems,
 	products,
 	users,
+	brands,
+	suppliers,
+	lensCatalogItems,
 	type InventoryCountSession
 } from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
 import { UserRole } from '$lib/shared/enums';
+import { getProductTypeLabel } from '$lib/shared/enums/productTypes';
+import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+import { daysSince } from '$lib/shared/inventoryCount';
+import type { InventoryCountScopeDim, InventoryCountScopeKind } from '$lib/schemas/inventoryCount';
+import type { CountSessionSummary, ScopeSelection } from './types';
 
-export type InventoryCountUserRow = {
-	id: string;
-	fullName: string;
-	role: UserRole;
-};
+export type CountUserRow = { id: string; fullName: string; role: UserRole };
 
-export type SessionLineSummaryRow = {
-	sessionId: number;
-	totalLines: number;
-	countedLines: number;
-	positiveDifferences: number;
-	negativeDifferences: number;
-	matchedLines: number;
-};
-
-export type SnapshotRow = {
-	itemType: 'PRODUCT' | 'LENS';
-	productId: string | null;
-	lensCatalogItemId: string | null;
-	systemStock: number;
-};
+// ── Guardas y normalización ────────────────────────────────────────────────
 
 export function requireOpenSession(
 	session: InventoryCountSession | null
 ): asserts session is InventoryCountSession {
-	if (!session) {
-		throw new Error('Sesión de conteo no encontrada');
-	}
-
-	if (session.status !== 'OPEN') {
-		throw new Error('La sesión ya no está abierta');
-	}
+	if (!session) throw new Error('Sesión de conteo no encontrada');
+	if (session.status !== 'OPEN') throw new Error('La sesión ya no está abierta');
 }
 
 export function normalizeSessionNotes(notes?: string | null): string | null {
@@ -61,206 +40,170 @@ export function normalizeSessionNotes(notes?: string | null): string | null {
 	return value ? value : null;
 }
 
-export function buildSessionLineFilter(filter: InventoryCountLineFilter): SQL | undefined {
-	if (filter === 'COUNTED') {
-		return isNotNull(inventoryCountLines.countedStock);
-	}
-
-	if (filter === 'PENDING') {
-		return isNull(inventoryCountLines.countedStock);
-	}
-
-	if (filter === 'WITH_DIFF') {
-		return sql`${inventoryCountLines.countedStock} is not null and ${inventoryCountLines.difference} != 0`;
-	}
-
-	return undefined;
+export function isAdminRole(role: string): boolean {
+	return role === UserRole.ADMIN || role === UserRole.MANAGER;
 }
 
-export async function getUserMap(userIds: Array<string | null | undefined>, executor: DbOrTx) {
+// ── SQL helpers de líneas ───────────────────────────────────────────────────
+
+/** Conteo válido de una línea: recuento (Revisar) si existe; si no, conteo primario. */
+export const FINAL_COUNT_SQL = sql`coalesce(${inventoryCountLines.recountedStock}, ${inventoryCountLines.countedStock})`;
+/** Diferencia final: conteo final − stock del sistema (snapshot). */
+export const FINAL_DIFF_SQL = sql`coalesce(${inventoryCountLines.recountedStock}, ${inventoryCountLines.countedStock}) - ${inventoryCountLines.systemStock}`;
+
+export async function getUserMap(
+	userIds: Array<string | null | undefined>,
+	executor: DbOrTx
+): Promise<Map<string, CountUserRow>> {
 	const uniqueUserIds = [...new Set(userIds.filter((userId): userId is string => Boolean(userId)))];
-
-	if (uniqueUserIds.length === 0) {
-		return new Map<string, InventoryCountUserRow>();
-	}
-
+	if (uniqueUserIds.length === 0) return new Map();
 	const rows = await executor
 		.select({ id: users.id, fullName: users.fullName, role: users.role })
 		.from(users)
 		.where(inArray(users.id, uniqueUserIds));
-
 	return new Map(rows.map((row) => [row.id, row]));
 }
 
-export async function getSessionLineSummaryMap(sessionIds: number[], executor: DbOrTx) {
-	if (sessionIds.length === 0) {
-		return new Map<number, SessionLineSummaryRow>();
-	}
+// ── Elegibilidad de ítems (compartida por snapshot y cobertura) ────────────
 
-	const rows = await executor
-		.select({
-			sessionId: inventoryCountLines.sessionId,
-			totalLines: sql<number>`count(*)`.mapWith(Number),
-			countedLines:
-				sql<number>`count(*) filter (where ${inventoryCountLines.countedStock} is not null)`.mapWith(
-					Number
-				),
-			positiveDifferences:
-				sql<number>`count(*) filter (where ${inventoryCountLines.countedStock} is not null and ${inventoryCountLines.difference} > 0)`.mapWith(
-					Number
-				),
-			negativeDifferences:
-				sql<number>`count(*) filter (where ${inventoryCountLines.countedStock} is not null and ${inventoryCountLines.difference} < 0)`.mapWith(
-					Number
-				),
-			matchedLines:
-				sql<number>`count(*) filter (where ${inventoryCountLines.countedStock} is not null and ${inventoryCountLines.difference} = 0)`.mapWith(
-					Number
-				)
-		})
-		.from(inventoryCountLines)
-		.where(inArray(inventoryCountLines.sessionId, sessionIds))
-		.groupBy(inventoryCountLines.sessionId);
-
-	return new Map(rows.map((row) => [row.sessionId, row]));
-}
-
-export async function enrichSessions(
-	sessions: InventoryCountSession[],
-	executor: DbOrTx
-): Promise<InventoryCountSessionSummary[]> {
-	if (sessions.length === 0) {
-		return [];
-	}
-
-	const [userMap, summaryMap] = await Promise.all([
-		getUserMap(
-			sessions.flatMap((session) => [
-				session.openedById,
-				session.appliedById,
-				session.cancelledById
-			]),
-			executor
-		),
-		getSessionLineSummaryMap(
-			sessions.map((session) => session.id),
-			executor
+/** Producto elegible: no borrado y (stock > 0 o con algún movimiento). */
+export function productEligibilityFilter(): SQL {
+	return sql`(
+		coalesce(${products.stock}, 0) > 0
+		or exists (
+			select 1 from ${inventoryMovements}
+			where ${inventoryMovements.productId} = ${products.id}
 		)
-	]);
-
-	return sessions.map((session) => {
-		const summary = summaryMap.get(session.id);
-		const totalLines = summary?.totalLines ?? 0;
-		const countedLines = summary?.countedLines ?? 0;
-
-		return {
-			...session,
-			openedByName: userMap.get(session.openedById)?.fullName ?? null,
-			appliedByName: session.appliedById
-				? (userMap.get(session.appliedById)?.fullName ?? null)
-				: null,
-			cancelledByName: session.cancelledById
-				? (userMap.get(session.cancelledById)?.fullName ?? null)
-				: null,
-			totalLines,
-			countedLines,
-			pendingLines: Math.max(totalLines - countedLines, 0),
-			positiveDifferences: summary?.positiveDifferences ?? 0,
-			negativeDifferences: summary?.negativeDifferences ?? 0,
-			matchedLines: summary?.matchedLines ?? 0
-		};
-	});
+	)`;
 }
 
-export async function selectProductSnapshotRows(
-	scopeValue: string | null | undefined,
-	executor: DbOrTx
-): Promise<SnapshotRow[]> {
-	const conditions: SQL[] = [
-		isNull(products.deletedAt),
-		sql`(
-			coalesce(${products.stock}, 0) > 0
-			or exists (
-				select 1
-				from ${inventoryMovements}
-				where ${inventoryMovements.productId} = ${products.id}
-			)
-		)`
-	];
+/** Lente elegible: no borrado, modo STOCK y (stock > 0 o con algún movimiento). */
+export function lensEligibilityFilter(): SQL {
+	return sql`(
+		coalesce(${lensCatalogItems.stock}, 0) > 0
+		or exists (
+			select 1 from ${inventoryMovements}
+			where ${inventoryMovements.lensCatalogItemId} = ${lensCatalogItems.id}
+		)
+	)`;
+}
 
-	if (scopeValue) {
-		conditions.push(eq(products.type, scopeValue));
-	}
+// ── Snapshot: selección de ítems por alcance ───────────────────────────────
+
+interface SnapshotOptionRow extends SnapshotRow {
+	lastCountedAt: string | null;
+}
+
+interface SnapshotRow {
+	itemType: 'PRODUCT' | 'LENS';
+	productId: string | null;
+	lensCatalogItemId: string | null;
+	systemStock: number;
+}
+
+async function selectProductSnapshotRows(
+	values: string[],
+	executor: DbOrTx,
+	options: { byBrand?: boolean; bySupplier?: boolean; byType?: boolean } = {}
+): Promise<SnapshotOptionRow[]> {
+	const conditions: SQL[] = [isNull(products.deletedAt), productEligibilityFilter()];
+	if (options.byBrand) conditions.push(inArray(products.brandId, values));
+	if (options.bySupplier) conditions.push(inArray(products.supplierId, values));
+	if (options.byType) conditions.push(inArray(products.type, values));
 
 	const rows = await executor
 		.select({
 			productId: products.id,
-			systemStock: sql<number>`coalesce(${products.stock}, 0)`.mapWith(Number)
+			systemStock: sql<number>`coalesce(${products.stock}, 0)`.mapWith(Number),
+			lastCountedAt: products.lastCountedAt
 		})
 		.from(products)
 		.where(and(...conditions))
 		.orderBy(asc(products.name));
 
 	return rows.map((row) => ({
-		itemType: 'PRODUCT',
+		itemType: 'PRODUCT' as const,
 		productId: row.productId,
 		lensCatalogItemId: null,
-		systemStock: row.systemStock
+		systemStock: row.systemStock,
+		lastCountedAt: row.lastCountedAt
 	}));
 }
 
-export async function selectLensSnapshotRows(executor: DbOrTx): Promise<SnapshotRow[]> {
+async function selectLensSnapshotRows(
+	values: string[],
+	executor: DbOrTx
+): Promise<SnapshotOptionRow[]> {
 	const rows = await executor
 		.select({
-			lensCatalogItemId: lensCatalogItems.id,
-			systemStock: sql<number>`coalesce(${lensCatalogItems.stock}, 0)`.mapWith(Number)
+			lensId: lensCatalogItems.id,
+			systemStock: sql<number>`coalesce(${lensCatalogItems.stock}, 0)`.mapWith(Number),
+			lastCountedAt: lensCatalogItems.lastCountedAt
 		})
 		.from(lensCatalogItems)
 		.where(
 			and(
 				isNull(lensCatalogItems.deletedAt),
 				eq(lensCatalogItems.inventoryMode, 'STOCK'),
-				sql`(
-					coalesce(${lensCatalogItems.stock}, 0) > 0
-					or exists (
-						select 1
-						from ${inventoryMovements}
-						where ${inventoryMovements.lensCatalogItemId} = ${lensCatalogItems.id}
-					)
-				)`
+				lensEligibilityFilter(),
+				values.length > 0 ? inArray(lensCatalogItems.supplierId, values) : undefined
 			)
 		)
 		.orderBy(asc(lensCatalogItems.name));
 
 	return rows.map((row) => ({
-		itemType: 'LENS',
+		itemType: 'LENS' as const,
 		productId: null,
-		lensCatalogItemId: row.lensCatalogItemId,
-		systemStock: row.systemStock
+		lensCatalogItemId: row.lensId,
+		systemStock: row.systemStock,
+		lastCountedAt: row.lastCountedAt
 	}));
 }
 
+async function selectAllSnapshotRows(executor: DbOrTx): Promise<SnapshotOptionRow[]> {
+	const [productRows, lensRows] = await Promise.all([
+		selectProductSnapshotRows([], executor),
+		selectLensSnapshotRows([], executor)
+	]);
+	return [...productRows, ...lensRows];
+}
+
+/**
+ * Construye e inserta las líneas snapshot de la sesión según el alcance.
+ * La elegibilidad es la misma que siempre: no borrados y (stock > 0 o con movimientos).
+ * Devuelve la cantidad de líneas insertadas.
+ */
 export async function createSnapshotLines(
 	sessionId: number,
-	data: InventoryCountSnapshotInput,
+	scope: ScopeSelection,
 	executor: DbOrTx
-) {
-	let rows: SnapshotRow[];
+): Promise<number> {
+	let rows: SnapshotOptionRow[];
 
-	if (data.scopeType === 'ALL') {
-		const [productsRows, lensRows] = await Promise.all([
-			selectProductSnapshotRows(null, executor),
-			selectLensSnapshotRows(executor)
+	if (scope.kind === 'QUICK_OLDEST') {
+		rows = pickMostStale(await selectAllSnapshotRows(executor), scope.n);
+	} else if (scope.kind === 'QUICK_NEVER') {
+		rows = (await selectAllSnapshotRows(executor)).filter((row) => row.lastCountedAt == null);
+	} else if (scope.kind === 'BRAND') {
+		rows = await selectProductSnapshotRows(scope.values, executor, { byBrand: true });
+	} else if (scope.kind === 'SUPPLIER') {
+		const [productRows, lensRows] = await Promise.all([
+			selectProductSnapshotRows(scope.values, executor, { bySupplier: true }),
+			selectLensSnapshotRows(scope.values, executor)
 		]);
-		rows = [...productsRows, ...lensRows];
-	} else if (data.scopeType === 'PRODUCT_CATEGORY') {
-		rows = await selectProductSnapshotRows(data.scopeValue ?? null, executor);
+		rows = [...productRows, ...lensRows];
+	} else if (scope.kind === 'TYPE') {
+		rows = await selectProductSnapshotRows(scope.values, executor, { byType: true });
 	} else {
-		rows = await selectLensSnapshotRows(executor);
+		rows = await selectAllSnapshotRows(executor);
 	}
 
 	if (rows.length === 0) {
 		throw new Error('No hay ítems elegibles para este conteo');
+	}
+
+	if (scope.kind === 'QUICK_OLDEST' && scope.n != null) {
+		rows = rows.slice(0, scope.n);
 	}
 
 	await executor.insert(inventoryCountLines).values(
@@ -270,8 +213,280 @@ export async function createSnapshotLines(
 			productId: row.productId,
 			lensCatalogItemId: row.lensCatalogItemId,
 			systemStock: row.systemStock,
-			createdAt: nowISO(),
-			updatedAt: nowISO()
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString()
 		}))
+	);
+
+	return rows.length;
+}
+
+/** «Los N más atrasados»: toda el inventario ordenado por días desde el último conteo. */
+function pickMostStale(rows: SnapshotOptionRow[], n: number | null): SnapshotOptionRow[] {
+	const age = (row: { lastCountedAt: string | null }): number =>
+		daysSince(row.lastCountedAt) ?? Number.MAX_SAFE_INTEGER;
+	const sorted = [...rows].sort((a, b) => age(b) - age(a));
+	return n == null ? sorted : sorted.slice(0, n);
+}
+
+// ── Agregados por sesión ─────────────────────────────────────────────────────
+
+export interface SessionLineSummary {
+	totalLines: number;
+	verifiedLines: number;
+	pendingLines: number;
+	positiveDifferences: number;
+	negativeDifferences: number;
+	matchedLines: number;
+}
+
+export async function getSessionLineSummaryMap(
+	sessionIds: number[],
+	executor: DbOrTx
+): Promise<Map<number, SessionLineSummary>> {
+	if (sessionIds.length === 0) return new Map();
+
+	const rows = await executor
+		.select({
+			sessionId: inventoryCountLines.sessionId,
+			totalLines: sql<number>`count(*)`.mapWith(Number),
+			verifiedLines: sql<number>`count(*) filter (where ${FINAL_COUNT_SQL} is not null)`.mapWith(
+				Number
+			),
+			positiveDifferences:
+				sql<number>`count(*) filter (where ${FINAL_COUNT_SQL} is not null and ${FINAL_DIFF_SQL} > 0)`.mapWith(
+					Number
+				),
+			negativeDifferences:
+				sql<number>`count(*) filter (where ${FINAL_COUNT_SQL} is not null and ${FINAL_DIFF_SQL} < 0)`.mapWith(
+					Number
+				),
+			matchedLines:
+				sql<number>`count(*) filter (where ${FINAL_COUNT_SQL} is not null and ${FINAL_DIFF_SQL} = 0)`.mapWith(
+					Number
+				)
+		})
+		.from(inventoryCountLines)
+		.where(inArray(inventoryCountLines.sessionId, sessionIds))
+		.groupBy(inventoryCountLines.sessionId);
+
+	return new Map(
+		rows.map((row) => [
+			row.sessionId,
+			{ ...row, pendingLines: Math.max(row.totalLines - row.verifiedLines, 0) }
+		])
+	);
+}
+
+// ── Etiquetas del alcance ───────────────────────────────────────────────────
+
+/** Resuelve los ids del alcance a etiquetas (nombres de marca/proveedor o tipo). */
+export async function resolveScopeValueLabels(
+	dim: InventoryCountScopeDim,
+	values: string[],
+	executor: DbOrTx
+): Promise<string[]> {
+	if (values.length === 0) return [];
+	if (dim === 'TYPE') return values.map((value) => getProductTypeLabel(value));
+	if (dim === 'BRAND') {
+		const rows = await executor
+			.select({ id: brands.id, name: brands.name })
+			.from(brands)
+			.where(inArray(brands.id, values));
+		const map = new Map(rows.map((row) => [row.id, row.name]));
+		return values.map((id) => map.get(id) ?? id);
+	}
+	if (dim === 'SUPPLIER') {
+		const rows = await executor
+			.select({ id: suppliers.id, name: suppliers.name })
+			.from(suppliers)
+			.where(inArray(suppliers.id, values));
+		const map = new Map(rows.map((row) => [row.id, row.name]));
+		return values.map((id) => map.get(id) ?? id);
+	}
+	return values;
+}
+
+/** Etiqueta legible del alcance (sesiones legacy y nuevas). */
+export function buildScopeLabel(
+	kind: InventoryCountScopeKind,
+	dim: InventoryCountScopeDim,
+	valueLabels: string[],
+	n: number | null
+): string {
+	if (kind === 'QUICK_OLDEST') return `Los ${n ?? 0} más atrasados`;
+	if (kind === 'QUICK_NEVER') return 'Solo nunca contados';
+	if (dim === 'ALL' || valueLabels.length === 0) return 'Todo el inventario';
+	const dimName = dim === 'BRAND' ? 'Marca' : dim === 'SUPPLIER' ? 'Proveedor' : 'Tipo';
+	if (valueLabels.length === 1) return `${dimName}: ${valueLabels[0]}`;
+	return `${dimName}: ${valueLabels[0]} + ${valueLabels.length - 1}`;
+}
+
+function legacyLabelFor(session: InventoryCountSession): string | null {
+	// Sesiones anteriores al rediseño: scopeType = ALL | PRODUCT_CATEGORY | LENS
+	if (session.scopeKind != null) return null;
+	if (session.scopeType === 'LENS') return 'Solo lentes STOCK';
+	if (session.scopeType === 'PRODUCT_CATEGORY') {
+		return session.scopeValue
+			? `Solo productos - ${getProductTypeLabel(session.scopeValue)}`
+			: 'Solo productos';
+	}
+	return 'Todo el inventario';
+}
+
+export async function scopeLabelForSession(
+	session: InventoryCountSession,
+	executor: DbOrTx
+): Promise<string> {
+	const legacy = legacyLabelFor(session);
+	if (legacy) return legacy;
+
+	const kind = (session.scopeKind ?? 'ALL') as InventoryCountScopeKind;
+	const dim = (session.scopeDim ?? 'ALL') as InventoryCountScopeDim;
+	const valueLabels = await resolveScopeValueLabels(dim, session.scopeValues ?? [], executor);
+	return buildScopeLabel(kind, dim, valueLabels, session.scopeN);
+}
+
+// ── Cobertura: filas de ítems elegibles con metadata y movimientos ──────────
+
+export interface CoverageItemRow {
+	itemType: 'PRODUCT' | 'LENS';
+	productId: string | null;
+	lensCatalogItemId: string | null;
+	name: string;
+	typeLabel: string;
+	brandName: string;
+	supplierName: string;
+	stock: number;
+	lastCountedAt: string | null;
+	createdAt: string | null;
+	/** Movimientos desde el último conteo cerrado (todos, si nunca se contó). */
+	movementsSince: number;
+}
+
+/** Todos los ítems elegibles con su semáforo, agrupado luego en cobertura. */
+export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageItemRow[]> {
+	const [productRows, lensRows] = await Promise.all([
+		executor
+			.select({
+				id: products.id,
+				name: products.name,
+				type: products.type,
+				brandName: brands.name,
+				supplierName: suppliers.name,
+				stock: sql<number>`coalesce(${products.stock}, 0)`.mapWith(Number),
+				lastCountedAt: products.lastCountedAt,
+				createdAt: products.createdAt,
+				movementsSince: sql<number>`(
+					select count(*) from ${inventoryMovements}
+					where ${inventoryMovements.productId} = ${products.id}
+						and (${products.lastCountedAt} is null or ${inventoryMovements.createdAt} > ${products.lastCountedAt})
+				)`.mapWith(Number)
+			})
+			.from(products)
+			.leftJoin(brands, eq(products.brandId, brands.id))
+			.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+			.where(and(isNull(products.deletedAt), productEligibilityFilter()))
+			.orderBy(asc(products.name)),
+		executor
+			.select({
+				id: lensCatalogItems.id,
+				name: lensCatalogItems.name,
+				type: lensCatalogItems.type,
+				supplierName: suppliers.name,
+				stock: sql<number>`coalesce(${lensCatalogItems.stock}, 0)`.mapWith(Number),
+				lastCountedAt: lensCatalogItems.lastCountedAt,
+				createdAt: lensCatalogItems.createdAt,
+				movementsSince: sql<number>`(
+					select count(*) from ${inventoryMovements}
+					where ${inventoryMovements.lensCatalogItemId} = ${lensCatalogItems.id}
+						and (${lensCatalogItems.lastCountedAt} is null or ${inventoryMovements.createdAt} > ${lensCatalogItems.lastCountedAt})
+				)`.mapWith(Number)
+			})
+			.from(lensCatalogItems)
+			.leftJoin(suppliers, eq(lensCatalogItems.supplierId, suppliers.id))
+			.where(
+				and(
+					isNull(lensCatalogItems.deletedAt),
+					eq(lensCatalogItems.inventoryMode, 'STOCK'),
+					lensEligibilityFilter()
+				)
+			)
+			.orderBy(asc(lensCatalogItems.name))
+	]);
+
+	const productItems = productRows.map((row): CoverageItemRow => ({
+		itemType: 'PRODUCT',
+		productId: row.id,
+		lensCatalogItemId: null,
+		name: row.name,
+		typeLabel: getProductTypeLabel(row.type),
+		brandName: row.brandName ?? '—',
+		supplierName: row.supplierName ?? '—',
+		stock: row.stock,
+		lastCountedAt: row.lastCountedAt,
+		createdAt: row.createdAt,
+		movementsSince: row.movementsSince
+	}));
+
+	const lensItems = lensRows.map((row): CoverageItemRow => ({
+		itemType: 'LENS',
+		productId: null,
+		lensCatalogItemId: row.id,
+		name: row.name,
+		typeLabel: getLensTypeLabel(row.type),
+		brandName: '—',
+		supplierName: row.supplierName ?? '—',
+		stock: row.stock,
+		lastCountedAt: row.lastCountedAt,
+		createdAt: row.createdAt,
+		movementsSince: row.movementsSince
+	}));
+
+	return [...productItems, ...lensItems];
+}
+
+// ── Enriquecimiento de sesiones (lista / detalle) ─────────────────────────
+
+export async function enrichSessions(
+	sessions: InventoryCountSession[],
+	executor: DbOrTx
+): Promise<CountSessionSummary[]> {
+	if (sessions.length === 0) return [];
+
+	const [userMap, summaryMap] = await Promise.all([
+		getUserMap(
+			sessions.flatMap((s) => [s.openedById, s.appliedById, s.cancelledById]),
+			executor
+		),
+		getSessionLineSummaryMap(
+			sessions.map((s) => s.id),
+			executor
+		)
+	]);
+
+	return Promise.all(
+		sessions.map(async (session) => {
+			const scopeLabel = await scopeLabelForSession(session, executor);
+			const summary = summaryMap.get(session.id);
+
+			return {
+				...session,
+				openedByName: userMap.get(session.openedById)?.fullName ?? null,
+				appliedByName: session.appliedById
+					? (userMap.get(session.appliedById)?.fullName ?? null)
+					: null,
+				cancelledByName: session.cancelledById
+					? (userMap.get(session.cancelledById)?.fullName ?? null)
+					: null,
+				scopeLabel,
+				totalLines: summary?.totalLines ?? 0,
+				verifiedLines: summary?.verifiedLines ?? 0,
+				pendingLines: summary?.pendingLines ?? 0,
+				positiveDifferences: summary?.positiveDifferences ?? 0,
+				negativeDifferences: summary?.negativeDifferences ?? 0,
+				matchedLines: summary?.matchedLines ?? 0
+			} satisfies CountSessionSummary;
+		})
 	);
 }
