@@ -55,20 +55,22 @@ export interface CountLineRow extends InventoryCountLine {
 	/** SKU del producto o tipo de lente. */
 	itemCode: string | null;
 	/** Etiqueta del tipo para agrupar por «Tipo». */
-	typeLabel: string | null;
-	brandName: string | null;
-	supplierName: string | null;
+	typeLabel: string;
+	brandName: string;
+	supplierName: string;
 	countedByName: string | null;
 	recountedByName: string | null;
 	/** Legacy: quién marcó el checkbox «Hecho» antes del rediseño. */
 	adjustmentCompletedByName: string | null;
 }
 
-export type CountLineClient = CountLineRow;
 export type InventoryCountSessionDetail = CountSessionSummary & {
 	responsibles: ResponsibleRow[];
-	lines: CountLineClient[];
+	lines: CountLineRow[];
 };
+
+export type CountSessionDetail = InventoryCountSessionDetail;
+export type CountLineClient = CountLineRow;
 
 export interface GetSessionsOptions {
 	limit?: number;

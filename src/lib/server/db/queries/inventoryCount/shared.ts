@@ -5,7 +5,6 @@
  */
 import { and, asc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 
-import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
 	inventoryCountLines,

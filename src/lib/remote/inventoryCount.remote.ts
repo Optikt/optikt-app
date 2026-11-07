@@ -43,7 +43,12 @@ import {
 	applyAdjustmentsBatch,
 	applyCountLineAdjustment
 } from '$lib/server/db/queries/inventoryCount/adjustments';
-import { getCoverage, previewScope } from '$lib/server/db/queries/inventoryCount/coverage';
+import {
+	getCoverage,
+	previewScope,
+	type CoverageOptionRow,
+	type CoverageData
+} from '$lib/server/db/queries/inventoryCount/coverage';
 import { buildLineCostMap } from '$lib/server/db/queries/inventoryCount/costs';
 import {
 	listResponsibleOptions,
@@ -136,11 +141,11 @@ export const getCoverageData = query((async () => {
 	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 	const config = await getCountCycleConfig();
 	return getCoverage(config.cycleDays);
-}) as () => ReturnType<typeof getCoverage>);
+}) as () => Promise<CoverageData>);
 
 export const listCountOptions = query(
 	ListCountOptionsSchema,
-	async (data): Promise<ReturnType<typeof getCoverage>['options']['BRAND']> => {
+	async (data): Promise<CoverageOptionRow[]> => {
 		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 		const coverage = await getCoverage((await getCountCycleConfig()).cycleDays);
 		return coverage.options[data.dim];
@@ -312,7 +317,7 @@ export const applySessionCmd = command(SessionIdSchema, async (data) => {
 });
 
 export const updateCountSettings = command(UpdateCountSettingsSchema, async (data) => {
-	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	requireRole(UserRole.ADMIN, UserRole.MANAGER);
 	try {
 		const settings = await updateSettings({
 			countCycleDays: data.cycleDays,

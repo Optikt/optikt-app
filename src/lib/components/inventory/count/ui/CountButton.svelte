@@ -27,8 +27,6 @@
 		type = 'button'
 	}: Props = $props();
 
-	let softDisabled = $derived(disabled === true && !disabledTooltip);
-
 	const variantClasses: Record<string, string> = {
 		gold: 'bg-brand-gold text-brand-navy hover:bg-brand-gold-dark',
 		navy: 'bg-brand-navy text-white hover:bg-brand-navy-dark',

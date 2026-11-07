@@ -1,19 +1,16 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { replaceState } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { Settings, Plus, Play } from '@lucide/svelte';
 	import { getInventoryCountContext } from '$lib/context';
 	import {
 		createSessionCmd,
-		previewCountScope,
-		updateCountSettings as saveCountSettings,
-		applySession
+		updateCountSettings as saveCountSettings
 	} from '$lib/remote/inventoryCount.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { formatCountScopeLabel } from '$lib/shared/inventoryCount';
 	import CycleCard from '$lib/components/inventory/count/CycleCard.svelte';
 	import GroupsCoverageCard from '$lib/components/inventory/count/GroupsCoverageCard.svelte';
 	import HistoryList from '$lib/components/inventory/count/HistoryList.svelte';
@@ -21,7 +18,6 @@
 	import CycleSettingsPanel from '$lib/components/inventory/count/CycleSettingsPanel.svelte';
 	import CountTabs from '$lib/components/inventory/count/ui/CountSegmented.svelte';
 	import CountButton from '$lib/components/inventory/count/ui/CountButton.svelte';
-	import SlideOver from '$lib/components/ui/SlideOver.svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import type { CoverageData } from '$lib/server/db/queries/inventoryCount/coverage';
 	import type { CountCycleConfig } from '$lib/shared/inventoryCount';
@@ -36,7 +32,6 @@
 
 	let { data } = $props();
 
-	const initialActive = untrack(() => data.activeSession);
 	const initialConfig = untrack(() => data.config);
 	const coverageSnapshot = untrack(() => data.coverage) as CoverageData;
 	const initialSessions = untrack(() => data.sessions) as CountSessionSummary[];
@@ -54,13 +49,13 @@
 
 	function getPageState(): { tab: string | null; dim: string | null } {
 		if (typeof window === 'undefined') return { tab: null, dim: null };
-		const params = new URLSearchParams(window.location.search);
+		const params = new SvelteURLSearchParams(window.location.search);
 		return { tab: params.get('tab'), dim: params.get('dim') };
 	}
 
 	function syncUrlState(next: { tab?: string; dim?: string }): void {
 		if (typeof window === 'undefined') return;
-		const params = new URLSearchParams(window.location.search);
+		const params = new SvelteURLSearchParams(window.location.search);
 		if (next.tab) params.set('tab', next.tab);
 		if (next.dim) params.set('dim', next.dim);
 		window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
@@ -116,7 +111,7 @@
 		responsibles: Tag[];
 		responsibleExternal: string[];
 		notes: string;
-	}): void {
+	}): Promise<void> {
 		if (isSubmitting) return;
 		isSubmitting = true;
 		try {
@@ -151,7 +146,7 @@
 		}
 	}
 
-	async function onSettingsSave(next: CountCycleConfig): void {
+	async function onSettingsSave(next: CountCycleConfig): Promise<void> {
 		const response = await saveCountSettings(next);
 		if (!response.success) {
 			toast.error(response.error);
@@ -163,7 +158,7 @@
 		await invalidate();
 	}
 
-	async function invalidate(): void {
+	async function invalidate(): Promise<void> {
 		// Re-fetch cobertura tras cambios de settings (recarga de datos).
 		await goto(resolve('/inventory/count'), {
 			replaceState: true,
@@ -263,7 +258,7 @@
 		<GroupsCoverageCard
 			{dim}
 			{groups}
-			{selected}
+			selectedValues={selected}
 			onDimChange={(next: CoverageDim) => {
 				dim = next;
 				selected = [];
@@ -281,13 +276,13 @@
 <NewCountPanel
 	bind:open={showNew}
 	{options}
-	{summary}
+	coverageSummary={summary}
 	{config}
 	responsibleOptions={initialUsers.map((option) => ({
 		userId: option.userId,
 		displayName: option.displayName
 	}))}
-	{preloadScope}
+	preload={preloadScope}
 	onSubmit={createCount}
 	onClose={() => (showNew = false)}
 />

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { ArrowRight } from '@lucide/svelte';
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import AppBadge from '$lib/components/ui/badges/AppBadge.svelte';
 	import { statusLabelFor, statusVariantFor } from '$lib/shared/inventoryCount';

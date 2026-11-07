@@ -58,9 +58,18 @@ Nuevos (todos en `src/lib/components/inventory/count/`):
 CountSummaryMetrics/CountLinesTable/CountLineMobileCard/CountLineEditRow/CountActionModals, countList/countSummary/countAdjustments (+specs),
 sessions.int.spec (a re-scribir con nuevas reglas).
 
-### ⚠️ PENDIENTE INMEDIATO (siguiente bizquez de trabajo)
-1. Pasar `pnpm check` y **corregir en masa** los errores de tipos/compile en backend+WIP (probables: tipos de `coverage.options`,
-   firma de `listResponsibleOptions/requireWriteAccess`, sugar en `shared.ts`, materia pendiente).
+### ✅ Fase 2-3 UI — COMPLETA (commit 3 de la rama)
+
+- **Página Cobertura** (`/inventory/count`): header con pestañas Cobertura|Historial (URL state ?tab/?dim), tarjeta de ciclo con CoverageBar+leyenda+último ciclo, atajos D2 (N configurable), strip de sesión en curso, tabla por dimensión Marca|Proveedor|Tipo con selección + barra fija → drawer Nuevo conteo con datos precargados, combobox multi con responsables (usuarios + externos) y vista previa viva, drawer Ajustes del ciclo (plazo/umbral unidades/**umbral USD default 0 (D3)**/N «más atrasados»), Historial con fila-clic a informe.
+- **Página Sesión** (`/inventory/count/[id]`): header navy con diagonales + steppers ①②③ + progreso + CTA de fase con tooltip de bloqueo + ⋯ cancelar + avatares de responsables (drawer de edición), franja de resumen con tooltips, hoja de conteo con grupos por marca + input numérico con Enter/Esc + grupo «Stock 0» colapsado con «Confirmar los N en 0» + ficha móvil (Ficha|Lista), banner solo lectura para SELLER no asignado, **fase Revisar**: lista por impacto con recuento obligatorio sobre umbral (unidades/USD) + «Aplicar todo (N)» con motivo (repo + Otros), **drawer Ajustar stock** con dirección/impacto/motivo+texto libre y movimiento vinculado, **fase Informe**: KPIs, cobertura antes→después, desglose por marca/proveedor/tipo con mini-barras, detalle de diferencias, Imprimir/PDF(vía impresión)/Excel(CSV BOM), informe mínimo de canceladas, cierre con applySession (toast+y limpia contexto global).
+-Validación: `pnpm check` 0 errores · `pnpm lint` verde · Vitest 985/985 (spec nuevo `shared/inventoryCount.spec.ts` con 13 tests de semáforo/umbral/cierre).
+
+### ⚠️ PENDIENTE (siguiente tanda)
+1. Virtualización de la hoja para 2.000+ ítems (recorte consciente de este hito).
+2. `DATABASE_URL` + navegadores de Playwright en el entorno para correr integration/e2 (migraciones + e2e actualizado a flujo nuevo «Revisar → / Cerrar conteo»).
+3. Ajustes de estilo fino vs mockup (captura-a-captura) y recorridos a11y/teclado finos (Fase 7).
+
+---
 2. **Reescribir las 2 páginas** (`/inventory/count/+page.svelte` y `[id]/+page.svelte`) con el nuevo modelo —
    la página de detalle quedó a medio escribir (WIP no confiable); lista = ~80 % escrita.
 3. **Fase ② Revisar**: lista por impacto + recuento obligatorio + «Aplicar todo (N)» con motivo + panel «Ajustar stock» (motivos repo + Otros con texto obligatorio).

@@ -120,7 +120,11 @@ export function trafficStateFor(
 }
 
 /** Ítem sin conteo que aún disfruta la regla «nace verde». */
-export function isNewUnverified(input: TrafficInput, cycleDays: number, nowMs: number): boolean {
+export function isNewUnverified(
+	input: TrafficInput,
+	cycleDays: number,
+	nowMs: number = Date.now()
+): boolean {
 	return input.lastCountedAt == null && isBrandNewUninput(input, cycleDays, nowMs);
 }
 
@@ -138,7 +142,7 @@ export function trafficStateByMedianAge(
 
 export interface CountLineCore {
 	id: number;
-	itemType: 'PRODUCT' | 'LENS';
+	itemType: string;
 	systemStock: number;
 	countedStock: number | null;
 	recountedStock: number | null;
@@ -223,7 +227,7 @@ export interface CountSessionStats {
 export function computeCountStats(
 	lines: CountLineCore[],
 	config: Pick<CountCycleConfig, 'diffThresholdUnits' | 'diffThresholdUsd'>,
-	costByLineId: Map<number, number> = new Map()
+	costByLineId: Map<number, number | null> = new Map()
 ): CountSessionStats {
 	const stats: CountSessionStats = {
 		total: lines.length,

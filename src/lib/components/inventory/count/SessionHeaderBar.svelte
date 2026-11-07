@@ -1,16 +1,13 @@
 <script lang="ts">
-	import { ArrowLeft, Settings } from '@lucide/svelte';
+	import { ArrowLeft } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import ResponsibleStack from './ui/ResponsibleStack.svelte';
 	import CountButton from './ui/CountButton.svelte';
-	import type { CountCycleConfig } from '$lib/shared/inventoryCount';
 
 	interface Props {
-		sessionId: number;
-		phase: 1 | 2 | 3;
-		/** 'r' revisar, 'c' cerrar, 'v' volver a cobertura. */
 		title: string;
 		scope: string;
+		phase: 1 | 2 | 3;
 		progress: { verified: number; total: number };
 		responsibles: Array<{
 			id: number;
@@ -19,29 +16,25 @@
 			isExternal: boolean;
 		}>;
 		canManage: boolean;
-		/** Motivo por el que el CTA dorado está deshabilitado (tooltip). */
-		ctaDisabledReason?: string | null;
 		ctaLabel: string;
+		ctaDisabledReason?: string | null;
 		onBack: () => void;
-		onPhaseCta: () => void;
+		onOpenPhase: () => void;
 		onOpenResponsibles: () => void;
 		onCancel?: () => void;
-		/** ADMIN/MANAGER: botón solo lectura tooltip si no puede cerrar. */
-		config?: CountCycleConfig;
 	}
 
 	let {
-		sessionId,
-		phase,
 		title,
 		scope,
+		phase,
 		progress,
 		responsibles,
 		canManage,
-		ctaDisabledReason = null,
 		ctaLabel,
+		ctaDisabledReason = null,
 		onBack,
-		onPhaseCta,
+		onOpenPhase,
 		onOpenResponsibles,
 		onCancel
 	}: Props = $props();
@@ -108,7 +101,7 @@
 							class={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
 								phase === step ? 'bg-brand-blue text-brand-navy' : 'text-[#aab4cf] hover:text-white'
 							}`}
-							onclick={() => phase !== step && onPhaseCta()}
+							onclick={() => phase !== step && onOpenPhase()}
 						>
 							{step}
 							{labels[index]}
@@ -138,7 +131,7 @@
 		class="!px-3 !py-1.5"
 		disabled={Boolean(ctaDisabledReason)}
 		disabledTooltip={ctaDisabledReason ?? undefined}
-		onclick={onPhaseCta}
+		onclick={onOpenPhase}
 	>
 		{#snippet child()}{ctaLabel}{/snippet}
 	</CountButton>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CheckSquare, Square, Search } from '@lucide/svelte';
+	import { CheckSquare, Square } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import CountSegmented from './ui/CountSegmented.svelte';
 	import CountLabel from './ui/CountLabel.svelte';

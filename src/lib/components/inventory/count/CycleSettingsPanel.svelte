@@ -50,7 +50,7 @@
 				<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase">
 					Plazo del ciclo (días)
 				</span>
-				<InfoTooltip tooltip="Plazo|Cada ítem debería contarse dentro de este plazo." />
+				<InfoTooltip text="Plazo|Cada ítem debería contarse dentro de este plazo." />
 			</span>
 			<input
 				type="number"
@@ -66,7 +66,7 @@
 				<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase">
 					Umbral de diferencia (unidades)
 				</span>
-				<InfoTooltip tooltip="Umbral|Desde aquí la diferencia se marca en rojo y exige recuento." />
+				<InfoTooltip text="Umbral|Desde aquí la diferencia se marca en rojo y exige recuento." />
 			</span>
 			<input
 				type="number"
@@ -83,7 +83,7 @@
 					Umbral de diferencia (USD · 0 = desactivado)
 				</span>
 				<InfoTooltip
-					tooltip="Umbral USD|También marca en rojo si |dif × costo| supera este valor (costo FIFO). 0 lo desactiva."
+					text="Umbral USD|También marca en rojo si |dif × costo| supera este valor (costo FIFO). 0 lo desactiva."
 				/>
 			</span>
 			<input
@@ -100,7 +100,7 @@
 				<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase">
 					«Más atrasados» · N
 				</span>
-				<InfoTooltip tooltip="Atajo|Cuántos ítems toma «Los más atrasados» (25, 50, 100…)." />
+				<InfoTooltip text="Atajo|Cuántos ítems toma «Los más atrasados» (25, 50, 100…)." />
 			</span>
 			<input
 				type="number"

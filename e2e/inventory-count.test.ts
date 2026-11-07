@@ -49,10 +49,15 @@ test.describe('conteo físico → cerrar sesión', () => {
 		await loginAsAdmin(page);
 
 		await page.goto(`/inventory/count/${sessionId}`);
-		await page.getByRole('button', { name: 'Cerrar sesión' }).click();
-		await page.getByRole('button', { name: 'Cerrar sesión de conteo' }).click();
+		await expect(page.getByText(`Conteo #${sessionId}`)).toBeVisible();
 
-		await expect(page.getByText('Sesión de conteo cerrada')).toBeVisible();
-		await expect(page.getByText('Informe de conteo físico')).toBeVisible();
+		// Fase ① → Revisar (la línea sembrada ya está contada: no hay pendientes)
+		await page.getByRole('button', { name: 'Revisar →' }).click();
+
+		// Fase ② → Cerrar conteo
+		await page.getByRole('button', { name: 'Cerrar conteo' }).click();
+
+		await expect(page.getByText('Conteo cerrado')).toBeVisible();
+		await expect(page.getByText(`Informe #${sessionId}`)).toBeVisible();
 	});
 });

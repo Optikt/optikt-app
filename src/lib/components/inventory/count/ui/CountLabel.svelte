@@ -13,6 +13,6 @@
 <span class={`inline-flex items-center gap-1 ${className}`}>
 	<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase">{text}</span>
 	{#if tooltip}
-		<InfoTooltip {tooltip} />
+		<InfoTooltip text={tooltip} />
 	{/if}
 </span>

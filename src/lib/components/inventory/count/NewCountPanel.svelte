@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { SlideOver } from '$lib/components/ui';
-	import InfoTooltip from '$lib/components/ui/InfoTooltip.svelte';
 	import CountLabel from './ui/CountLabel.svelte';
 	import CountSegmented from './ui/CountSegmented.svelte';
 	import CountButton from './ui/CountButton.svelte';
@@ -68,7 +67,6 @@
 	});
 
 	// Preload llega en cada apertura del panel (Contar selección / atajos).
-	// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 	$effect(() => {
 		if (open && preload) {
 			dim = preload.dim;
@@ -95,17 +93,24 @@
 		// remote previewCountScope (dinámica de previewScope): ver remote/inventoryCount.remote
 		const { previewCountScope } = await import('$lib/remote/inventoryCount.remote');
 		try {
-			const { session: _unused, ...rest } = {};
-			void _unused;
 			preview = await previewCountScope({
 				dim: dim as never,
 				values: values.map((tag) => tag.key),
-				quick: quick,
-				n: quick === 'OLDEST' ? config.quickOldestLimit : null
+				quick: quick ?? undefined,
+				n: quick === 'OLDEST' ? config.quickOldestLimit : undefined
 			});
 		} catch {
 			preview = null;
 		}
+	}
+
+	function reset(): void {
+		dim = 'ALL';
+		values = [];
+		quick = null;
+		notes = '';
+		responsibles = [];
+		preview = null;
 	}
 
 	function canStart(): boolean {
@@ -154,7 +159,7 @@
 				/>
 			</div>
 			<CountSegmented
-				{dim}
+				value={dim}
 				ariaLabel="Alcance"
 				options={[
 					{ value: 'ALL', label: 'Todo' },
@@ -253,7 +258,7 @@
 				value={responsibles}
 				placeholder="Buscar usuario o escribir un nombre…"
 				createLabel="→ como persona externa"
-				tagVariants
+				{tagVariants}
 				onchange={(tags) => {
 					responsibles = tags;
 				}}
