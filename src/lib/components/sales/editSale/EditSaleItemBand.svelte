@@ -5,11 +5,13 @@
 	interface Props {
 		title: string;
 		isNew: boolean;
+		/** Blocking messages from the editor: hover on «Hecho» lists them. */
+		missing?: string[];
 		onBack: () => void;
 		onDone: () => void;
 	}
 
-	let { title, isNew, onBack, onDone }: Props = $props();
+	let { title, isNew, missing = [], onBack, onDone }: Props = $props();
 </script>
 
 <div class="sticky top-0 z-[2] flex items-center gap-2.5 bg-brand-blue px-4 py-2.5 text-brand-navy">
@@ -46,7 +48,9 @@
 		</button>
 	{/snippet}
 	<TriggerTooltip
-		text="Aplica los cambios a la orden. Aún no se guarda"
+		title={missing.length > 0 ? 'Falta completar:' : undefined}
+		items={missing}
+		text={missing.length === 0 ? 'Aplica los cambios a la orden. Aún no se guarda' : undefined}
 		side="bottom"
 		trigger={doneTrigger}
 	/>

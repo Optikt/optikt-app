@@ -12,9 +12,11 @@
 		item: EditableItem;
 		mode: 'add' | 'edit';
 		onCommit: (item: EditableItem) => void;
+		/** Unique blocking messages for the band's «Hecho» tooltip. */
+		onMissing?: (labels: string[]) => void;
 	}
 
-	let { item, mode, onCommit }: Props = $props();
+	let { item, mode, onCommit, onMissing }: Props = $props();
 
 	let productId = $state(untrack(() => item.productId ?? ''));
 	let quantity = $state(untrack(() => item.quantity));
@@ -35,6 +37,20 @@
 		productId ? getCachedProducts().find((candidate) => candidate.id === productId) : undefined
 	);
 
+	/** Unique blocking messages for the band's «Hecho» tooltip (mirrors commit). */
+	const missing = $derived.by(() => {
+		const labels: string[] = [];
+		if (!productId) labels.push('Selecciona un producto del catálogo.');
+		if (!SaleItemUnitPriceSchema.safeParse(unitPrice).success) {
+			labels.push('Precio debe ser mayor o igual a 0');
+		}
+		return labels;
+	});
+
+	$effect(() => {
+		onMissing?.(missing);
+	});
+
 	function selectProduct(id: string, catalogPrice: number) {
 		error = '';
 		productId = id;
@@ -47,12 +63,8 @@
 	}
 
 	function commit() {
-		if (!productId) {
-			error = 'Selecciona un producto del catálogo.';
-			return;
-		}
-		if (!SaleItemUnitPriceSchema.safeParse(unitPrice).success) {
-			error = 'Precio debe ser mayor o igual a 0';
+		if (missing.length > 0) {
+			error = missing[0];
 			return;
 		}
 		const found = getCachedProducts().find((candidate) => candidate.id === productId);

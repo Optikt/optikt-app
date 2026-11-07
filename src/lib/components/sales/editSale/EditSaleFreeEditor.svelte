@@ -10,9 +10,11 @@
 	interface Props {
 		item: EditableItem;
 		onCommit: (item: EditableItem) => void;
+		/** Unique blocking messages for the band's «Hecho» tooltip. */
+		onMissing?: (labels: string[]) => void;
 	}
 
-	let { item, onCommit }: Props = $props();
+	let { item, onCommit, onMissing }: Props = $props();
 
 	let name = $state(untrack(() => item.freeItemDescription ?? item.snapshotName ?? ''));
 	let note = $state(untrack(() => item.notes ?? ''));
@@ -27,18 +29,26 @@
 	let discountType = $state<string>(untrack(() => item.discountType ?? DiscountType.FIXED));
 	let error = $state('');
 
+	/** Unique blocking messages for the band's «Hecho» tooltip (mirrors commit). */
+	const missing = $derived.by(() => {
+		const labels: string[] = [];
+		if (name.trim().length < 3) labels.push('Describe el ítem (mínimo 3 caracteres).');
+		if (!(unitPrice > 0)) labels.push('Indica un precio unitario mayor a 0.');
+		return labels;
+	});
+
+	$effect(() => {
+		onMissing?.(missing);
+	});
+
 	/** Exposed for the item band's «Hecho» button. */
 	export function apply() {
 		commit();
 	}
 
 	function commit() {
-		if (name.trim().length < 3) {
-			error = 'Describe el ítem (mínimo 3 caracteres).';
-			return;
-		}
-		if (unitPrice <= 0) {
-			error = 'Indica un precio unitario mayor a 0.';
+		if (missing.length > 0) {
+			error = missing[0];
 			return;
 		}
 		onCommit({
