@@ -75,13 +75,11 @@
 	// ── Missing-anything hint + save enablement ─────────────────────────────
 	const reasonMissing = $derived(!reason.trim());
 	const missingHint = $derived(
-		editing
-			? ''
-			: !hasItems
-				? 'Debe quedar al menos un artículo'
-				: hasChanges && reasonMissing
-					? 'Falta el motivo de la modificación'
-					: ''
+		!hasItems
+			? 'Debe quedar al menos un artículo'
+			: hasChanges && reasonMissing
+				? 'Falta el motivo de la modificación'
+				: ''
 	);
 	const canSave = $derived(hasChanges && hasItems && !reasonMissing && !saving);
 
@@ -227,7 +225,7 @@
 
 		<!-- Actions -->
 		<div class="flex flex-col items-end gap-1.5">
-			{#if missingHint}
+			{#if !editing && missingHint}
 				<p class="text-[12px] font-semibold text-brand-gold-light" role="status">{missingHint}</p>
 			{/if}
 			<div class="flex items-center gap-2.5">
@@ -272,7 +270,7 @@
 					<TriggerTooltip text={saveTooltip} side="top" trigger={saveTrigger} />
 				{/if}
 			</div>
-			{#if reasonError || submitError}
+			{#if !editing && (reasonError || submitError)}
 				<p class="text-[11px] text-[#ffb4ab]" role="alert">{reasonError || submitError}</p>
 			{/if}
 		</div>

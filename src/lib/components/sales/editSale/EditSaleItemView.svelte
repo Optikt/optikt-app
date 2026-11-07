@@ -16,7 +16,8 @@
 		type EditLensTreatment
 	} from '../editSaleDraft';
 	import type { EditorKind } from './editSaleViews';
-	import { logger } from '$lib/utils';
+	import { logger } from '$lib/utils/logger';
+	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		item: EditableItem;
@@ -63,8 +64,9 @@
 	function done() {
 		const api = kind === 'lens' ? lensApi : kind === 'product' ? productApi : freeApi;
 		if (!api) {
-			/** La banda «Hecho» nunca debe caer en un nulo: el editor no montó. */
+			// El editor no montó: «Hecho» no debe caer en un nulo silencioso.
 			logger.error(`Editor ${kind} sin bind:this: «Hecho» no puede aplicar`);
+			toast.error('No se pudo aplicar el borrador: cierra y reabre el editor');
 			return;
 		}
 		api.apply();
