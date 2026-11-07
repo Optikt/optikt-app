@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { logger } from '$lib/utils';
 	import { LensCatalogSource } from '$lib/shared/enums';
 	import ItemSelect from '../ItemSelect.svelte';
 	import LensEditorPanel from '$lib/components/documentEditor/LensEditorPanel.svelte';
@@ -117,7 +118,12 @@
 
 	/** Exposed for the item band's «Hecho» button: runs the guarded panel flow. */
 	export function apply() {
-		panelApi?.requestApply();
+		if (!panelApi) {
+			/** Un binding roto no debe volver a ser un silencio sin feedback. */
+			logger.error('LensEditorPanel no montado: «Hecho» no puede aplicar el borrador');
+			return;
+		}
+		panelApi.requestApply();
 	}
 
 	function commitDraft() {
@@ -168,6 +174,7 @@
 {/snippet}
 
 <LensEditorPanel
+	bind:this={panelApi}
 	bind:draft={lensDraft}
 	lensType={context.selectedLens?.type ?? ''}
 	ranges={context.selectedLens?.ranges ?? []}

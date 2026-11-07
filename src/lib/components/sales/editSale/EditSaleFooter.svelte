@@ -17,6 +17,9 @@
 		saving: boolean;
 		hasChanges: boolean;
 		hasItems: boolean;
+		/** An item editor is open on top: «Hecho» owns saving there, so the
+		 *  order-level reason input and «Guardar cambios» stay out of view. */
+		editing?: boolean;
 		onClose: () => void;
 		onSubmit: () => void;
 	}
@@ -33,6 +36,7 @@
 		saving,
 		hasChanges,
 		hasItems,
+		editing = false,
 		onClose,
 		onSubmit
 	}: Props = $props();
@@ -71,11 +75,13 @@
 	// ── Missing-anything hint + save enablement ─────────────────────────────
 	const reasonMissing = $derived(!reason.trim());
 	const missingHint = $derived(
-		!hasItems
-			? 'Debe quedar al menos un artículo'
-			: hasChanges && reasonMissing
-				? 'Falta el motivo de la modificación'
-				: ''
+		editing
+			? ''
+			: !hasItems
+				? 'Debe quedar al menos un artículo'
+				: hasChanges && reasonMissing
+					? 'Falta el motivo de la modificación'
+					: ''
 	);
 	const canSave = $derived(hasChanges && hasItems && !reasonMissing && !saving);
 
@@ -117,7 +123,7 @@
 <footer
 	class="shrink-0 bg-brand-navy px-5 pt-2.5 pb-3 text-white shadow-[0_-8px_24px_rgba(21,35,70,0.18)]"
 >
-	{#if hasChanges}
+	{#if hasChanges && !editing}
 		<div class="relative mb-2" class:reason-in={reasonAnim && !reduceMotion}>
 			{#snippet reasonTrigger({ props }: { props: Record<string, unknown> })}
 				<span class="relative block w-full">
@@ -262,7 +268,9 @@
 						{/if}
 					</button>
 				{/snippet}
-				<TriggerTooltip text={saveTooltip} side="top" trigger={saveTrigger} />
+				{#if !editing}
+					<TriggerTooltip text={saveTooltip} side="top" trigger={saveTrigger} />
+				{/if}
 			</div>
 			{#if reasonError || submitError}
 				<p class="text-[11px] text-[#ffb4ab]" role="alert">{reasonError || submitError}</p>

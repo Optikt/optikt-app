@@ -16,6 +16,7 @@
 		type EditLensTreatment
 	} from '../editSaleDraft';
 	import type { EditorKind } from './editSaleViews';
+	import { logger } from '$lib/utils';
 
 	interface Props {
 		item: EditableItem;
@@ -60,9 +61,13 @@
 	const isNew = $derived(creating);
 
 	function done() {
-		if (kind === 'lens') lensApi?.apply();
-		else if (kind === 'product') productApi?.apply();
-		else freeApi?.apply();
+		const api = kind === 'lens' ? lensApi : kind === 'product' ? productApi : freeApi;
+		if (!api) {
+			/** La banda «Hecho» nunca debe caer en un nulo: el editor no montó. */
+			logger.error(`Editor ${kind} sin bind:this: «Hecho» no puede aplicar`);
+			return;
+		}
+		api.apply();
 	}
 </script>
 
