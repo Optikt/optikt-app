@@ -129,8 +129,16 @@ await db.transaction(async (tx) => {
 
 ## Instructions
 
-Project conventions, Svelte patterns, and design principles are in `.github/instructions/`.
-Toast reference is available as a prompt in `.github/prompts/toast-usage.prompt.md`.
+Project conventions, Svelte patterns, and design principles are in `.github/instructions/`. Los tres archivos de convenciones (`project-conventions`, `svelte-patterns`, `design-ui`) se cargan automáticamente vía `instructions` en `opencode.json`; `svelte-doctor.instructions.md` se lee bajo demanda. Toast reference is available as a prompt in `.github/prompts/toast-usage.prompt.md`.
+
+## OpenCode tooling
+
+- **Gate rápido:** tool `optikt_verify` (namespace `optikt`) o `/verify`. Corre `eslint` + `pnpm check` + solo los proyectos de vitest afectados por los archivos cambiados, y devuelve PASS/FAIL por gate.
+- **Comandos:** `/verify`, `/db` (prepara migración Drizzle sin aplicarla), `/review-money` (auditoría de dinero).
+- **Subagentes:** `money-reviewer`, `drizzle-guardian`, `svelte-reviewer` (revisan, no editan) y `test-author` (solo escribe pruebas).
+- **Skills de dominio:** `optikt-money`, `optikt-db`, `optikt-svelte-remote`, `optikt-testing`. Se advierten solas y se cargan cuando aplican.
+- **MCPs:** `svelte` (docs Svelte 5/SvelteKit), `context7` (docs al día de Drizzle/Tailwind/bits-ui/Zod), `playwright` (navegador real + screenshots). `postgres` está configurado pero `disabled`: apúntalo solo a una base de **desarrollo** antes de activarlo.
+
 
 ## Svelte MCP server
 

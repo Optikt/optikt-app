@@ -1,10 +1,40 @@
 {
 	"$schema": "https://opencode.ai/config.json",
-	"plugin": ["open-codebase-index"],
+	"plugins": ["open-codebase-index"],
 	"mcp": {
-		"svelte": {
-			"type": "remote",
-			"url": "https://mcp.svelte.dev/mcp"
+		"servers": {
+			"svelte": {
+				"type": "remote",
+				"url": "https://mcp.svelte.dev/mcp"
+			},
+			"context7": {
+				"type": "remote",
+				"url": "https://mcp.context7.com/mcp"
+			},
+			"playwright": {
+				"type": "local",
+				"command": ["npx", "-y", "@playwright/mcp@latest", "--headless", "--isolated"]
+			},
+			"postgres": {
+				"type": "local",
+				"command": ["npx", "-y", "@microsoft/postgres-mcp@latest", "run"],
+				"disabled": true
+			}
 		}
-	}
+	},
+	"formatter": true,
+	"instructions": [
+		".github/instructions/project-conventions.instructions.md",
+		".github/instructions/svelte-patterns.instructions.md",
+		".github/instructions/design-ui.instructions.md"
+	],
+	"permissions": [
+		{ "action": "shell", "resource": "*drizzle-kit push*", "effect": "ask" },
+		{ "action": "shell", "resource": "*drizzle-kit migrate*", "effect": "ask" },
+		{ "action": "shell", "resource": "pnpm db:push *", "effect": "ask" },
+		{ "action": "shell", "resource": "pnpm db:migrate *", "effect": "ask" },
+		{ "action": "shell", "resource": "git push *", "effect": "ask" },
+		{ "action": "shell", "resource": "rm -rf *", "effect": "deny" },
+		{ "action": "external_directory", "resource": "*", "effect": "ask" }
+	]
 }
