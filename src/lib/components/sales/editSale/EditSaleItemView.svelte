@@ -56,6 +56,10 @@
 	let productApi: EditSaleProductEditor | undefined = $state();
 	let freeApi: EditSaleFreeEditor | undefined = $state();
 
+	/** Blocking messages pushed up by whichever editor is mounted: drives the
+	 *  band's «Hecho» tooltip so hover lists what's missing. */
+	let missing = $state<string[]>([]);
+
 	const title = $derived(
 		kind === 'lens' ? 'Cristal' : kind === 'product' ? 'Producto' : 'Ítem libre'
 	);
@@ -74,7 +78,7 @@
 </script>
 
 <div class="flex min-h-full flex-col bg-surface-drawer">
-	<EditSaleItemBand {title} {isNew} {onBack} onDone={done} />
+	<EditSaleItemBand {title} {isNew} {onBack} onDone={done} {missing} />
 
 	<div class="flex flex-col gap-3 px-4 pt-3.5 pb-4">
 		{#if kind === 'lens'}
@@ -85,6 +89,7 @@
 				{treatments}
 				{measures}
 				onApply={onApplyLens}
+				onMissing={(labels) => (missing = labels)}
 			/>
 		{:else if kind === 'product'}
 			<EditSaleProductEditor
@@ -92,9 +97,15 @@
 				{item}
 				mode={creating ? 'add' : 'edit'}
 				onCommit={onCommitProduct}
+				onMissing={(labels) => (missing = labels)}
 			/>
 		{:else}
-			<EditSaleFreeEditor bind:this={freeApi} {item} onCommit={onCommitFree} />
+			<EditSaleFreeEditor
+				bind:this={freeApi}
+				{item}
+				onCommit={onCommitFree}
+				onMissing={(labels) => (missing = labels)}
+			/>
 		{/if}
 	</div>
 </div>

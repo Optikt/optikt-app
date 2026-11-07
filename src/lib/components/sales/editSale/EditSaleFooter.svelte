@@ -223,57 +223,60 @@
 			</div>
 		</div>
 
-		<!-- Actions -->
-		<div class="flex flex-col items-end gap-1.5">
-			{#if !editing && missingHint}
-				<p class="text-[12px] font-semibold text-brand-gold-light" role="status">{missingHint}</p>
-			{/if}
-			<div class="flex items-center gap-2.5">
-				{#snippet cancelTrigger({ props }: { props: Record<string, unknown> })}
-					<button
-						{...props}
-						type="button"
-						onclick={onClose}
-						disabled={saving}
-						class="h-9 rounded-lg border border-white/40 bg-transparent px-4 text-[13px] font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
-					>
-						Cancelar
-					</button>
-				{/snippet}
-				<TriggerTooltip text={cancelTooltip} side="top" trigger={cancelTrigger} />
+		<!-- Actions: order-level save lives only in the list view — while an item
+		     editor is open, «Hecho» owns the flow and Cancelar/Guardar stay hidden. -->
+		{#if !editing}
+			<div class="flex flex-col items-end gap-1.5">
+				{#if missingHint}
+					<p class="text-[12px] font-semibold text-brand-gold-light" role="status">
+						{missingHint}
+					</p>
+				{/if}
+				<div class="flex items-center gap-2.5">
+					{#snippet cancelTrigger({ props }: { props: Record<string, unknown> })}
+						<button
+							{...props}
+							type="button"
+							onclick={onClose}
+							disabled={saving}
+							class="h-9 rounded-lg border border-white/40 bg-transparent px-4 text-[13px] font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
+						>
+							Cancelar
+						</button>
+					{/snippet}
+					<TriggerTooltip text={cancelTooltip} side="top" trigger={cancelTrigger} />
 
-				{#snippet saveTrigger({ props }: { props: Record<string, unknown> })}
-					<button
-						{...props}
-						type="button"
-						onclick={() => {
-							if (canSave) onSubmit();
-						}}
-						aria-disabled={!canSave}
-						class={`inline-flex h-9 min-w-[150px] items-center justify-center gap-2 rounded-lg px-4 text-[13px] font-bold text-brand-navy transition ${
-							canSave
-								? 'bg-brand-gold hover:bg-brand-gold-dark'
-								: 'cursor-not-allowed bg-white/14 text-white/50'
-						}`}
-					>
-						{#if saving}
-							<span
-								class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-navy/30 border-t-brand-navy"
-							></span>
-							Guardando...
-						{:else}
-							Guardar cambios
-						{/if}
-					</button>
-				{/snippet}
-				{#if !editing}
+					{#snippet saveTrigger({ props }: { props: Record<string, unknown> })}
+						<button
+							{...props}
+							type="button"
+							onclick={() => {
+								if (canSave) onSubmit();
+							}}
+							aria-disabled={!canSave}
+							class={`inline-flex h-9 min-w-[150px] items-center justify-center gap-2 rounded-lg px-4 text-[13px] font-bold text-brand-navy transition ${
+								canSave
+									? 'bg-brand-gold hover:bg-brand-gold-dark'
+									: 'cursor-not-allowed bg-white/14 text-white/50'
+							}`}
+						>
+							{#if saving}
+								<span
+									class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-navy/30 border-t-brand-navy"
+								></span>
+								Guardando...
+							{:else}
+								Guardar cambios
+							{/if}
+						</button>
+					{/snippet}
 					<TriggerTooltip text={saveTooltip} side="top" trigger={saveTrigger} />
+				</div>
+				{#if reasonError || submitError}
+					<p class="text-[11px] text-[#ffb4ab]" role="alert">{reasonError || submitError}</p>
 				{/if}
 			</div>
-			{#if !editing && (reasonError || submitError)}
-				<p class="text-[11px] text-[#ffb4ab]" role="alert">{reasonError || submitError}</p>
-			{/if}
-		</div>
+		{/if}
 	</div>
 
 	<!-- Total row -->

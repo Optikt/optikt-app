@@ -44,6 +44,9 @@
 		onAddTreatment: (id: string) => void;
 		onRemoveTreatment: (idx: number) => void;
 		onApply: () => void;
+		/** Pushes the unique blocking messages (per-eye incl.) upward so the
+		 *  band's «Hecho» tooltip can list what's missing on hover. */
+		onMissing?: (labels: string[]) => void;
 	}
 
 	let {
@@ -57,22 +60,25 @@
 		lensSelector,
 		onAddTreatment,
 		onRemoveTreatment,
-		onApply
+		onApply,
+		onMissing
 	}: Props = $props();
 
 	const showAddition = $derived(lensType !== '' && lensType !== LensType.MONOFOCAL);
 	const errors = $derived(validateLensEditorDraft(draft, { requiresAddition: showAddition }));
 	const hasErrors = $derived(hasLensEditorErrors(errors));
 	const rangeEvaluation = $derived(evaluateLensEditorRange(draft, ranges));
-	const fieldErrors = $derived(
-		[
-			errors.lensCatalogItemId,
-			errors.unitPrice,
-			errors.quantity,
-			errors.discount,
-			errors.prescription
-		].filter((message): message is string => Boolean(message))
-	);
+	/** Unique blocking messages: header AND per-eye fields (deduped — both eyes
+	 *  share «Esfera o cilindro requerido»). Drives the error line AND the
+	 *  band tooltip; without the eye fields the alert stayed empty on a new lens. */
+	const fieldErrors = $derived([
+		...new Set(Object.values(errors).filter((message): message is string => Boolean(message)))
+	]);
+
+	/** Push blocking messages upward so the «Hecho» tooltip lists what's missing. */
+	$effect(() => {
+		onMissing?.(fieldErrors);
+	});
 
 	const eyes = $derived(eyesWithRxPair(draft.od, draft.oi));
 

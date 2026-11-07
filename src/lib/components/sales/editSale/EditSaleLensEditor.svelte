@@ -35,9 +35,11 @@
 			brandName: string | undefined,
 			applyInfo?: { measures: PrescriptionMeasures; eyesWithRx: number }
 		) => void;
+		/** Forwarded to the panel: unique blocking messages for the band tooltip. */
+		onMissing?: (labels: string[]) => void;
 	}
 
-	let { item, editTreatments, treatments, measures, onApply }: Props = $props();
+	let { item, editTreatments, treatments, measures, onApply, onMissing }: Props = $props();
 
 	/** Mount-time snapshot: placeholders always carry a local id, so editing an
 	 *  existing item and adding a fresh one both seed through the adapter. */
@@ -193,4 +195,5 @@
 	onAddTreatment={addTreatment}
 	onRemoveTreatment={removeTreatment}
 	onApply={commitDraft}
+	{onMissing}
 />
