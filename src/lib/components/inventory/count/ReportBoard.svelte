@@ -166,7 +166,7 @@
 				{session.appliedAt ? new Date(session.appliedAt).toLocaleString() : ''}
 			</span>
 			<ResponsibleStack {responsibles} tooltipTitle="Responsables del conteo" />
-			<span class="ml-auto flex gap-2">
+			<span class="ml-auto flex gap-2 print:hidden">
 				<button
 					type="button"
 					class="rounded-lg bg-brand-navy px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-navy-dark"
@@ -281,3 +281,16 @@
 		</div>
 	{/if}
 </section>
+
+<style>
+	@media print {
+		/* El shell ya está oculto globalmente (navbar/sidebar). Limpia fondos y sobra espacio. */
+		:global(body) {
+			background: #fff;
+		}
+		section {
+			box-shadow: none !important;
+			border: 1px solid #e2e8f0;
+		}
+	}
+</style>

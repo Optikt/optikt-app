@@ -321,9 +321,9 @@ export function buildScopeLabel(
 	return `${dimName}: ${valueLabels[0]} + ${valueLabels.length - 1}`;
 }
 
-function legacyLabelFor(session: InventoryCountSession): string | null {
+function legacyLabelFor(session: InventoryCountSession): string {
 	// Sesiones anteriores al rediseño: scopeType = ALL | PRODUCT_CATEGORY | LENS
-	if (session.scopeKind != null) return null;
+	if (session.scopeKind != null) return 'Todo el inventario';
 	if (session.scopeType === 'LENS') return 'Solo lentes STOCK';
 	if (session.scopeType === 'PRODUCT_CATEGORY') {
 		return session.scopeValue
@@ -447,13 +447,94 @@ export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageIte
 
 // ── Enriquecimiento de sesiones (lista / detalle) ─────────────────────────
 
+/** Une etiquetas en el formato del scope dim («Marca: X + N-1»). */
+function joinDimLabel(dimName: string, valueLabels: string[]): string {
+	if (valueLabels.length === 0) return dimName;
+	if (valueLabels.length === 1) return `${dimName}: ${valueLabels[0]}`;
+	return `${dimName}: ${valueLabels[0]} + ${valueLabels.length - 1}`;
+}
+
+/**
+ * Resuelve etiquetas de alcance para TODAS las sesiones en lote
+ * (una consulta por catálogo, nunca una por sesión).
+ */
+async function resolveScopeLabelsBatch(
+	sessions: InventoryCountSession[],
+	executor: DbOrTx
+): Promise<Map<number, string>> {
+	const labels = new Map<number, string>();
+	const pending: Array<{ session: InventoryCountSession; dim: InventoryCountScopeDim }> = [];
+	const brandIds = new Set<string>();
+	const supplierIds = new Set<string>();
+
+	for (const session of sessions) {
+		if (session.scopeKind == null) {
+			labels.set(session.id, legacyLabelFor(session));
+			continue;
+		}
+		const dim = (session.scopeDim ?? 'ALL') as InventoryCountScopeDim;
+		const values = session.scopeValues ?? [];
+		if (session.scopeKind === 'QUICK_OLDEST') {
+			labels.set(session.id, `Los ${session.scopeN ?? 0} más atrasados`);
+			continue;
+		}
+		if (session.scopeKind === 'QUICK_NEVER') {
+			labels.set(session.id, 'Solo nunca contados');
+			continue;
+		}
+		if (dim === 'ALL' || values.length === 0) {
+			labels.set(session.id, 'Todo el inventario');
+			continue;
+		}
+		if (dim === 'TYPE') {
+			labels.set(
+				session.id,
+				joinDimLabel(
+					'Tipo',
+					values.map((v) => getProductTypeLabel(v))
+				)
+			);
+			continue;
+		}
+		if (dim === 'BRAND') values.forEach((v) => brandIds.add(v));
+		else values.forEach((v) => supplierIds.add(v));
+		pending.push({ session, dim });
+	}
+
+	const nameById = new Map<string, string>();
+	if (brandIds.size > 0) {
+		const rows = await executor
+			.select({ id: brands.id, name: brands.name })
+			.from(brands)
+			.where(inArray(brands.id, [...brandIds]));
+		rows.forEach((row) => nameById.set(row.id, row.name));
+	}
+	if (supplierIds.size > 0) {
+		const rows = await executor
+			.select({ id: suppliers.id, name: suppliers.name })
+			.from(suppliers)
+			.where(inArray(suppliers.id, [...supplierIds]));
+		rows.forEach((row) => nameById.set(row.id, row.name));
+	}
+
+	for (const pendingEntry of pending) {
+		const valueLabels = (pendingEntry.session.scopeValues ?? []).map((v) => nameById.get(v) ?? v);
+		labels.set(
+			pendingEntry.session.id,
+			joinDimLabel(pendingEntry.dim === 'BRAND' ? 'Marca' : 'Proveedor', valueLabels)
+		);
+	}
+
+	return labels;
+}
+
 export async function enrichSessions(
 	sessions: InventoryCountSession[],
 	executor: DbOrTx
 ): Promise<CountSessionSummary[]> {
 	if (sessions.length === 0) return [];
 
-	const [userMap, summaryMap] = await Promise.all([
+	const [userMap, summaryMap, labelMap] = await Promise.all([
 		getUserMap(
 			sessions.flatMap((s) => [s.openedById, s.appliedById, s.cancelledById]),
 			executor
@@ -461,31 +542,30 @@ export async function enrichSessions(
 		getSessionLineSummaryMap(
 			sessions.map((s) => s.id),
 			executor
-		)
+		),
+		resolveScopeLabelsBatch(sessions, executor)
 	]);
 
-	return Promise.all(
-		sessions.map(async (session) => {
-			const scopeLabel = await scopeLabelForSession(session, executor);
-			const summary = summaryMap.get(session.id);
+	return sessions.map((session) => {
+		const scopeLabel = labelMap.get(session.id) ?? 'Todo el inventario';
+		const summary = summaryMap.get(session.id);
 
-			return {
-				...session,
-				openedByName: userMap.get(session.openedById)?.fullName ?? null,
-				appliedByName: session.appliedById
-					? (userMap.get(session.appliedById)?.fullName ?? null)
-					: null,
-				cancelledByName: session.cancelledById
-					? (userMap.get(session.cancelledById)?.fullName ?? null)
-					: null,
-				scopeLabel,
-				totalLines: summary?.totalLines ?? 0,
-				verifiedLines: summary?.verifiedLines ?? 0,
-				pendingLines: summary?.pendingLines ?? 0,
-				positiveDifferences: summary?.positiveDifferences ?? 0,
-				negativeDifferences: summary?.negativeDifferences ?? 0,
-				matchedLines: summary?.matchedLines ?? 0
-			} satisfies CountSessionSummary;
-		})
-	);
+		return {
+			...session,
+			openedByName: userMap.get(session.openedById)?.fullName ?? null,
+			appliedByName: session.appliedById
+				? (userMap.get(session.appliedById)?.fullName ?? null)
+				: null,
+			cancelledByName: session.cancelledById
+				? (userMap.get(session.cancelledById)?.fullName ?? null)
+				: null,
+			scopeLabel,
+			totalLines: summary?.totalLines ?? 0,
+			verifiedLines: summary?.verifiedLines ?? 0,
+			pendingLines: summary?.pendingLines ?? 0,
+			positiveDifferences: summary?.positiveDifferences ?? 0,
+			negativeDifferences: summary?.negativeDifferences ?? 0,
+			matchedLines: summary?.matchedLines ?? 0
+		} satisfies CountSessionSummary;
+	});
 }

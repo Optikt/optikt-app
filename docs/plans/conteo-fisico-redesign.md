@@ -64,10 +64,18 @@ sessions.int.spec (a re-scribir con nuevas reglas).
 - **Página Sesión** (`/inventory/count/[id]`): header navy con diagonales + steppers ①②③ + progreso + CTA de fase con tooltip de bloqueo + ⋯ cancelar + avatares de responsables (drawer de edición), franja de resumen con tooltips, hoja de conteo con grupos por marca + input numérico con Enter/Esc + grupo «Stock 0» colapsado con «Confirmar los N en 0» + ficha móvil (Ficha|Lista), banner solo lectura para SELLER no asignado, **fase Revisar**: lista por impacto con recuento obligatorio sobre umbral (unidades/USD) + «Aplicar todo (N)» con motivo (repo + Otros), **drawer Ajustar stock** con dirección/impacto/motivo+texto libre y movimiento vinculado, **fase Informe**: KPIs, cobertura antes→después, desglose por marca/proveedor/tipo con mini-barras, detalle de diferencias, Imprimir/PDF(vía impresión)/Excel(CSV BOM), informe mínimo de canceladas, cierre con applySession (toast+y limpia contexto global).
 -Validación: `pnpm check` 0 errores · `pnpm lint` verde · Vitest 985/985 (spec nuevo `shared/inventoryCount.spec.ts` con 13 tests de semáforo/umbral/cierre).
 
+### ✅ Tanda 2 — rendimiento, virtualización, móvil, tests (commit 4)
+
+- **Queries**: `enrichSessions` resuelve etiquetas de alcance **en lote** (una consulta por catálogo, nunca N+1 por sesión); `resolveScopeLabelsBatch` centraliza legacy+nuevo.
+- **Virtualización**: la hoja de conteo (`CountBoard` modo lista escritorio) renderiza una **ventana** de filas (ROW_H 52 / GROUP_H 33 + overscan 10) con posicionamiento absoluto, overlay de «grupo actual» y cursor de teclado ↑↓/Enter/Escorable que scrollea y enfoca vía `[data-line-idx]`.
+- **Móvil**: tarjetas de Cobertura por grupo (`sm:hidden`) con checkbox+nombre+apertura+semáforo; la tabla de escritorio pasa a `max-sm:hidden`.
+- **Estados**: banner de solo lectura (SELLER no asignado), empty states en hoja/revisión/cobertura/historial, rollbacks optimistas con toasts.
+- **Tests**: spec de integración nueva `queries/inventoryCount/sessions.int.spec.ts` (Testcontainers): regla de cierre (stock 0 no bloquea/pendientes bloquean/recuentos bloquean) + `lastCountedAt` solo verificados + rechazos de rol/estado + baja lógica de responsables + ajuste individual/lote vinculado + reset de derivados + snapshot por marca con unicidad OPEN.
+- **Impresión**: `print:hidden` en exportes + `@media print` del informe (el shell ya se oculta globalmente).
+
 ### ⚠️ PENDIENTE (siguiente tanda)
-1. Virtualización de la hoja para 2.000+ ítems (recorte consciente de este hito).
-2. `DATABASE_URL` + navegadores de Playwright en el entorno para correr integration/e2 (migraciones + e2e actualizado a flujo nuevo «Revisar → / Cerrar conteo»).
-3. Ajustes de estilo fino vs mockup (captura-a-captura) y recorridos a11y/teclado finos (Fase 7).
+1. `DATABASE_URL` + navegadores de Playwright en el entorno para correr integration/e2 (migraciones + e2e actualizado a flujo nuevo «Revisar → / Cerrar conteo»). La suite .int nueva y el e2e están listos para CI.
+2. Ajustes de estilo fino vs mockup (captura-a-captura) y recorridos a11y/teclado finos (Fase 7). Virtualización ya implementada (ver Tanda 2).
 
 ---
 2. **Reescribir las 2 páginas** (`/inventory/count/+page.svelte` y `[id]/+page.svelte`) con el nuevo modelo —

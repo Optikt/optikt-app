@@ -80,7 +80,7 @@
 			Sin grupos eligibles para esta dimensión
 		</p>
 	{:else}
-		<div class="divide-y divide-outline-variant/40">
+		<div class="divide-y divide-outline-variant/40 max-sm:hidden">
 			{#each groups[dim]! as group (group.value)}
 				<button
 					type="button"
@@ -137,6 +137,40 @@
 			{/each}
 		</div>
 	{/if}
+
+	<!-- Tarjetas para teléfono -->
+	<div class="divide-y divide-outline-variant/40 sm:hidden">
+		{#each groups[dim]! as group (group.value)}
+			<button
+				type="button"
+				class="flex w-full flex-wrap items-start gap-3 border-t border-outline-variant/40 px-3 py-3 text-left transition-colors hover:bg-surface-container-low"
+				onclick={() => onToggleRow(group.value)}
+				aria-pressed={selectedValues.includes(group.value)}
+			>
+				<span class="mt-0.5 inline-flex items-center" aria-hidden="true">
+					{#if selectedValues.includes(group.value)}
+						<CheckSquare class="h-4 w-4 text-brand-navy" />
+					{:else}
+						<Square class="h-4 w-4 text-outline-variant" />
+					{/if}
+				</span>
+				<span class="min-w-0 flex-1">
+					<span class="block truncate text-sm font-semibold text-brand-navy">{group.name}</span>
+					<span class="block text-xs text-on-surface-variant">
+						{group.itemCount} ítems · {group.verifiedPercent} % verificado ·
+						{group.medianAgeDays == null ? 'nunca' : `mediana ${formatAgo(group.medianAgeDays)}`}
+					</span>
+				</span>
+				<TrafficDot
+					state={group.trafficState}
+					title={TRAFFIC_STATE_LABELS[group.trafficState]}
+					hint={group.trafficState === 'none'
+						? 'Ningún ítem del grupo fue contado todavía.'
+						: TRAFFIC_STATE_HINTS[group.trafficState]}
+				/>
+			</button>
+		{/each}
+	</div>
 
 	{#if selectedValues.length > 0}
 		<div
