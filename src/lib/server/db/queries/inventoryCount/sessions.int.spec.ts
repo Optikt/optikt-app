@@ -58,7 +58,9 @@ describe('applySession (nueva regla de cierre)', () => {
 		await createInventoryCountLine({
 			sessionId: session.id,
 			itemType: 'PRODUCT',
-			systemStock: 0
+			systemStock: 0,
+			countedStock: null,
+			difference: null
 		});
 
 		const result = await applySession(session.id, admin.id);
@@ -73,7 +75,9 @@ describe('applySession (nueva regla de cierre)', () => {
 		await createInventoryCountLine({
 			sessionId: session.id,
 			itemType: 'PRODUCT',
-			systemStock: 3
+			systemStock: 3,
+			countedStock: null,
+			difference: null
 		});
 
 		await expect(applySession(session.id, admin.id)).rejects.toThrow('ítem(s) con stock');
@@ -140,6 +144,8 @@ describe('participantes y responsables', () => {
 	it('alta/baja lógica conserva lo contado', async () => {
 		const admin = await createUser({ role: UserRole.ADMIN });
 		const seller = await createUser({ role: UserRole.SELLER });
+
+		await productFixture();
 
 		const detail = await createSession({
 			scopeKind: 'ALL',

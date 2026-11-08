@@ -2,13 +2,20 @@
  * Conteo Físico — cobertura: resumen del ciclo (semáforo), grupos por
  * marca / proveedor / tipo, opciones de alcance y vista previa viva.
  */
-import { isNull, asc } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
-import { brands, suppliers } from '$lib/server/db/schema';
+import {
+	suppliers,
+	products,
+	inventoryMovements,
+	lensCatalogItems,
+	brands
+} from '$lib/server/db/schema';
 import { ALL_PRODUCT_TYPES } from '$lib/shared/enums';
 import { getProductTypeLabel } from '$lib/shared/enums/productTypes';
+import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 import {
 	daysSince,
 	summarizeCoverage,
@@ -17,7 +24,8 @@ import {
 	type CountCycleConfig,
 	type CoverageSummary
 } from '$lib/shared/inventoryCount';
-import { selectCoverageItems, type CoverageItemRow } from './shared';
+
+import { productEligibilityFilter, lensEligibilityFilter } from './shared';
 import type { ScopeSelection } from './types';
 
 export type CoverageDim = 'BRAND' | 'SUPPLIER' | 'TYPE';
@@ -218,4 +226,103 @@ export async function previewScope(
 		oldestAgeDays: countedAges.length ? Math.max(...countedAges) : null,
 		neverCounted: items.filter((item) => item.lastCountedAt == null).length
 	};
+}
+
+// ── Cobertura: filas de ítems elegibles con metadata y movimientos ──────────
+
+export interface CoverageItemRow {
+	itemType: 'PRODUCT' | 'LENS';
+	productId: string | null;
+	lensCatalogItemId: string | null;
+	name: string;
+	typeLabel: string;
+	brandName: string;
+	supplierName: string;
+	stock: number;
+	lastCountedAt: string | null;
+	createdAt: string | null;
+	/** Movimientos desde el último conteo cerrado (todos, si nunca se contó). */
+	movementsSince: number;
+}
+
+/** Todos los ítems elegibles con su semáforo, agrupado luego en cobertura. */
+export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageItemRow[]> {
+	const [productRows, lensRows] = await Promise.all([
+		executor
+			.select({
+				id: products.id,
+				name: products.name,
+				type: products.type,
+				brandName: brands.name,
+				supplierName: suppliers.name,
+				stock: sql<number>`coalesce(${products.stock}, 0)`.mapWith(Number),
+				lastCountedAt: products.lastCountedAt,
+				createdAt: products.createdAt,
+				movementsSince: sql<number>`(
+					select count(*) from ${inventoryMovements}
+					where ${inventoryMovements.productId} = ${products.id}
+						and (${products.lastCountedAt} is null or ${inventoryMovements.createdAt} > ${products.lastCountedAt})
+				)`.mapWith(Number)
+			})
+			.from(products)
+			.leftJoin(brands, eq(products.brandId, brands.id))
+			.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+			.where(and(isNull(products.deletedAt), productEligibilityFilter()))
+			.orderBy(asc(products.name)),
+		executor
+			.select({
+				id: lensCatalogItems.id,
+				name: lensCatalogItems.name,
+				type: lensCatalogItems.type,
+				supplierName: suppliers.name,
+				stock: sql<number>`coalesce(${lensCatalogItems.stock}, 0)`.mapWith(Number),
+				lastCountedAt: lensCatalogItems.lastCountedAt,
+				createdAt: lensCatalogItems.createdAt,
+				movementsSince: sql<number>`(
+					select count(*) from ${inventoryMovements}
+					where ${inventoryMovements.lensCatalogItemId} = ${lensCatalogItems.id}
+						and (${lensCatalogItems.lastCountedAt} is null or ${inventoryMovements.createdAt} > ${lensCatalogItems.lastCountedAt})
+				)`.mapWith(Number)
+			})
+			.from(lensCatalogItems)
+			.leftJoin(suppliers, eq(lensCatalogItems.supplierId, suppliers.id))
+			.where(
+				and(
+					isNull(lensCatalogItems.deletedAt),
+					eq(lensCatalogItems.inventoryMode, 'STOCK'),
+					lensEligibilityFilter()
+				)
+			)
+			.orderBy(asc(lensCatalogItems.name))
+	]);
+
+	const productItems = productRows.map((row): CoverageItemRow => ({
+		itemType: 'PRODUCT',
+		productId: row.id,
+		lensCatalogItemId: null,
+		name: row.name,
+		typeLabel: getProductTypeLabel(row.type),
+		brandName: row.brandName ?? '—',
+		supplierName: row.supplierName ?? '—',
+		stock: row.stock,
+		lastCountedAt: row.lastCountedAt,
+		createdAt: row.createdAt,
+		movementsSince: row.movementsSince
+	}));
+
+	const lensItems = lensRows.map((row): CoverageItemRow => ({
+		itemType: 'LENS',
+		productId: null,
+		lensCatalogItemId: row.id,
+		name: row.name,
+		typeLabel: getLensTypeLabel(row.type),
+		brandName: '—',
+		supplierName: row.supplierName ?? '—',
+		stock: row.stock,
+		lastCountedAt: row.lastCountedAt,
+		createdAt: row.createdAt,
+		movementsSince: row.movementsSince
+	}));
+
+	return [...productItems, ...lensItems];
 }

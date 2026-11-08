@@ -176,12 +176,11 @@ export const ListCountOptionsSchema = z.object({
 	dim: z.enum(INVENTORY_COUNT_DIMENSION_VALUES)
 });
 
-export const PreviewCountScopeSchema = CreateCountSessionSchema.pick({
-	dim: true,
-	values: true,
-	quick: true,
-	n: true
-});
+/**
+ * Vista previa del alcance: misma forma que el alcance de CreateCountSession
+ * sin los refinements (Zod4 no permite `.pick()` sobre schemas con refine).
+ */
+export const PreviewCountScopeSchema = z.object(CountScopeValuesShape);
 
 export const GetDiffCostsSchema = z.object({
 	sessionId: CoercedInteger.min(1, 'Sesión inválida')

@@ -15,17 +15,8 @@
 		upsertCountLineCmd
 	} from '$lib/remote/inventoryCount.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import {
-		ADJUSTMENT_REASON_LABELS,
-		AdjustmentReason,
-		ALL_ADJUSTMENT_REASONS
-	} from '$lib/shared/enums';
-	import {
-		computeCountStats,
-		lineDiff,
-		formatUsd,
-		type CountCycleConfig
-	} from '$lib/shared/inventoryCount';
+	import { ADJUSTMENT_REASON_LABELS, AdjustmentReason } from '$lib/shared/enums';
+	import { computeCountStats, lineDiff, type CountCycleConfig } from '$lib/shared/inventoryCount';
 	import type {
 		InventoryCountSessionDetail,
 		CountLineRow,
@@ -34,11 +25,12 @@
 	import SessionHeaderBar from '$lib/components/inventory/count/SessionHeaderBar.svelte';
 	import SummaryStrip from '$lib/components/inventory/count/SummaryStrip.svelte';
 	import CountBoard from '$lib/components/inventory/count/CountBoard.svelte';
+	import AdjustStockDrawer from '$lib/components/inventory/count/AdjustStockDrawer.svelte';
+	import ResponsiblesDrawer from '$lib/components/inventory/count/ResponsiblesDrawer.svelte';
+
 	import ReviewBoard from '$lib/components/inventory/count/ReviewBoard.svelte';
 	import ReportBoard from '$lib/components/inventory/count/ReportBoard.svelte';
-	import SlideOver from '$lib/components/ui/SlideOver.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
-	import MultiCombobox from '$lib/components/inventory/count/ui/MultiCombobox.svelte';
 
 	interface Tag {
 		key: string;
@@ -83,19 +75,6 @@
 	);
 
 	const stats = $derived(computeCountStats(lines, config, costByLineId));
-
-	function canAdjustSummary(): 'in' | 'out' {
-		if (!adjustTarget) return 'out';
-		return (lineDiff(adjustTarget) ?? 0) > 0 ? 'in' : 'out';
-	}
-
-	const pendingTagVariants = $derived.by(() => {
-		const map: Record<string, 'navy' | 'warning'> = {};
-		for (const tag of pendingResponsibleTags) {
-			map[tag.key] = userOptions.some((option) => option.userId === tag.key) ? 'navy' : 'warning';
-		}
-		return map;
-	});
 
 	const canCloseNow = $derived(
 		lines.length > 0 && stats.pendingCounting === 0 && stats.recountsPending === 0
@@ -486,148 +465,24 @@
 		/>
 	{/if}
 
-	<!-- Drawer: Ajustar stock (dentro de la sesión) -->
-	<SlideOver open={adjustTarget != null} onclose={closeAdjust} size="md">
-		{#snippet header({ onclose })}
-			<div class="flex items-center justify-between border-b border-outline-variant/30 px-4 py-3">
-				<h2 class="font-heading text-lg font-semibold text-brand-navy">Ajustar stock</h2>
-				<button
-					type="button"
-					aria-label="Cerrar"
-					class="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-low"
-					onclick={onclose}
-				>
-					✕
-				</button>
-			</div>
-		{/snippet}
+	<AdjustStockDrawer
+		target={adjustTarget}
+		unitCost={costByLineId.get(adjustTarget?.id ?? -1) ?? null}
+		isBusy={isAdjusting}
+		bind:reason={adjustReason}
+		bind:reasonText={adjustReasonText}
+		onclose={closeAdjust}
+		onApply={(line) => void applyAdjust(line)}
+	/>
 
-		{#if adjustTarget}
-			<div class="space-y-3 px-4 py-4">
-				<div>
-					<b class="text-brand-navy">{adjustTarget.itemName}</b>
-					<span class="block font-mono text-xs text-outline">{adjustTarget.itemCode ?? ''}</span>
-				</div>
-				{#if canAdjustSummary() === 'in'}
-					<div
-						class="rounded-lg bg-warning-container px-3 py-2.5 text-sm font-medium text-on-warning-container"
-					>
-						Entrada de {Math.abs(lineDiff(adjustTarget) ?? 0)} u · {formatUsd(
-							(lineDiff(adjustTarget) ?? 0) * (costByLineId.get(adjustTarget.id) ?? 0)
-						)}
-					</div>
-				{:else}
-					<div
-						class="rounded-lg bg-error-container px-3 py-2.5 text-sm font-medium text-on-error-container"
-					>
-						Salida de {Math.abs(lineDiff(adjustTarget) ?? 0)} u · {formatUsd(
-							(lineDiff(adjustTarget) ?? 0) * (costByLineId.get(adjustTarget.id) ?? 0)
-						)}
-					</div>
-				{/if}
-
-				<label class="block">
-					<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase"
-						>Motivo</span
-					>
-					<select
-						bind:value={adjustReason}
-						class="mt-1 w-full rounded-lg border border-outline-variant/40 bg-white px-3 py-2 text-sm"
-					>
-						{#each ALL_ADJUSTMENT_REASONS as option (option)}
-							<option value={option}>{ADJUSTMENT_REASON_LABELS[option]}</option>
-						{/each}
-					</select>
-				</label>
-				{#if adjustReason === AdjustmentReason.OTHER}
-					<label class="block">
-						<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase"
-							>Descripción</span
-						>
-						<input
-							type="text"
-							bind:value={adjustReasonText}
-							class="mt-1 w-full rounded-lg border border-outline-variant/40 bg-white px-3 py-2 text-sm"
-							placeholder="Describe el motivo"
-							aria-label="Texto del motivo"
-						/>
-					</label>
-				{/if}
-				<p class="text-xs text-on-surface-variant">
-					Se vincula un movimiento de inventario a esta línea del conteo.
-				</p>
-			</div>
-		{/if}
-
-		{#snippet footer()}
-			<div class="flex justify-end gap-2 border-t border-outline-variant/30 px-4 py-3">
-				<button
-					type="button"
-					class="rounded-lg px-3 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container"
-					onclick={closeAdjust}
-				>
-					Cancelar
-				</button>
-				<button
-					type="button"
-					aria-disabled={isAdjusting}
-					class="rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-brand-navy transition-colors hover:bg-brand-gold-dark aria-disabled:opacity-60"
-					onclick={() => adjustTarget && void applyAdjust(adjustTarget)}
-				>
-					Aplicar ajuste
-				</button>
-			</div>
-		{/snippet}
-	</SlideOver>
-
-	<!-- Drawer: Responsables de la sesión -->
-	<SlideOver bind:open={showResponsibles} onclose={() => (showResponsibles = false)} size="md">
-		{#snippet header({ onclose })}
-			<div class="flex items-center justify-between border-b border-outline-variant/30 px-4 py-3">
-				<h2 class="font-heading text-lg font-semibold text-brand-navy">Responsables del conteo</h2>
-				<button
-					type="button"
-					aria-label="Cerrar"
-					class="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-low"
-					onclick={onclose}
-				>
-					✕
-				</button>
-			</div>
-		{/snippet}
-
-		<div class="space-y-3 px-4 py-4">
-			<MultiCombobox
-				options={userOptions.map((option) => ({ id: option.userId, name: option.displayName }))}
-				value={pendingResponsibleTags}
-				placeholder="Buscar usuario o escribir un nombre…"
-				createLabel="como persona externa"
-				tagVariants={pendingTagVariants}
-				onchange={(tags) => {
-					pendingResponsibleTags = tags;
-				}}
-				oncreate={(name) => pendingResponsibleTags.push({ key: name, label: name })}
-			/>
-			<p class="text-sm text-on-surface-variant">
-				Los usuarios activos pueden ver e interactuar con el conteo (ADMIN/MANAGER siempre). Las
-				personas externas solo se registran en el informe. Quitar a alguien no borra lo que ya
-				contó.
-			</p>
-		</div>
-
-		{#snippet footer()}
-			<div class="flex justify-end border-t border-outline-variant/30 px-4 py-3">
-				<button
-					type="button"
-					aria-disabled={isSubmitting}
-					class="rounded-lg bg-brand-navy px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-dark aria-disabled:opacity-60"
-					onclick={() => void saveResponsibles()}
-				>
-					Listo
-				</button>
-			</div>
-		{/snippet}
-	</SlideOver>
+	<ResponsiblesDrawer
+		bind:open={showResponsibles}
+		{userOptions}
+		bind:pendingResponsibleTags
+		isBusy={isSubmitting}
+		onClose={() => (showResponsibles = false)}
+		onSave={() => void saveResponsibles()}
+	/>
 
 	<!-- Modal: Cancelar sesión -->
 	<ConfirmModal

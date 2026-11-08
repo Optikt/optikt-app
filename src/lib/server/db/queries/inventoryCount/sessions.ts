@@ -35,10 +35,9 @@ import {
 	enrichSessions,
 	requireOpenSession,
 	normalizeSessionNotes,
-	isAdminRole,
-	selectCoverageItems
+	isAdminRole
 } from './shared';
-import { getCoverage } from './coverage';
+import { getCoverage, selectCoverageItems } from './coverage';
 import { listSessionResponsibles } from './responsibles';
 import { getSessionLines } from './lines';
 import { buildLineCostMap } from './costs';
@@ -331,12 +330,19 @@ export async function applySession(
 		if (line.lensCatalogItemId) verifiedItemIds.add(line.lensCatalogItemId);
 	}
 	const after = summarizeCoverage(
-		items.map((item) => ({
-			lastCountedAt: verifiedItemIds.has(item.productId ?? item.lensCatalogItemId ?? '—')
-				? coveredNow
-				: item.lastCountedAt,
-			createdAt: item.createdAt
-		})),
+		items.map(
+			(item: {
+				lastCountedAt: string | null;
+				createdAt: string | null;
+				productId: string | null;
+				lensCatalogItemId: string | null;
+			}) => ({
+				lastCountedAt: verifiedItemIds.has(item.productId ?? item.lensCatalogItemId ?? '—')
+					? coveredNow
+					: item.lastCountedAt,
+				createdAt: item.createdAt
+			})
+		),
 		config.cycleDays
 	);
 
