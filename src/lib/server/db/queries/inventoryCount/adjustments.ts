@@ -42,6 +42,11 @@ export async function applyCountLineAdjustment(
 	const line = await requireLineById(data.lineId, executor);
 	await requireOpenForAdjustment(line, executor);
 
+	// D12.6: motivo «Otros» exige texto libero (regla de negocio en server).
+	if (data.reason === AdjustmentReason.OTHER && !data.reasonText?.trim()) {
+		throw new Error('Escribe el motivo');
+	}
+
 	const final = line.recountedStock ?? line.countedStock;
 	if (final == null) throw new Error('La línea todavía no está contada');
 	const diff = final - line.systemStock;
