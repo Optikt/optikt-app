@@ -119,6 +119,35 @@ describe('difference classification', () => {
 	});
 });
 
+describe('stats de ajustes y umbrales', () => {
+	it('ajustes aplicados y pendientes se separan por movimiento vinculado', () => {
+		const linked = line({ id: 1, systemStock: 5, countedStock: 6, adjustmentMovementId: 'mov-1' });
+		const free = line({ id: 2, systemStock: 5, countedStock: 6 });
+		const stats = computeCountStats([linked, free], CONFIG);
+		expect(stats.adjustmentsApplied).toBe(1);
+		expect(stats.adjustmentsPending).toBe(1);
+		expect(stats.surplusUnits).toBe(2);
+	});
+
+	it('umbral USD activo exige recuento con costo alto aunque unidades sean bajas', () => {
+		const expensive = line({ id: 1, systemStock: 400, countedStock: 401 });
+		const cfg = { ...CONFIG, diffThresholdUsd: 80 };
+		expect(requiresRecount(expensive, cfg, 90)).toBe(true);
+		expect(requiresRecount(expensive, cfg, null)).toBe(false);
+	});
+
+	it('stats con líneas contadas y ajustes en cero', () => {
+		const stats = computeCountStats(
+			[line({ id: 1, systemStock: 5, countedStock: 5, recountedStock: 5 })],
+			CONFIG
+		);
+		expect(stats.verified).toBe(1);
+		expect(stats.matchCount).toBe(1);
+		expect(stats.progressPercent).toBe(100);
+		expect(stats.varianceLabel).toBe('Sin variación neta');
+	});
+});
+
 describe('new closure rule', () => {
 	it('blocks with pending counting lines (stock > 0)', () => {
 		const stats = computeCountStats(
