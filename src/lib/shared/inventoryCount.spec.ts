@@ -11,7 +11,15 @@ import {
 	requiresRecount,
 	summarizeCoverage,
 	trafficStateByMedianAge,
-	trafficStateFor
+	trafficStateFor,
+	formatUsd,
+	formatCountScopeLabel,
+	formatAgo,
+	statusLabelFor,
+	statusVariantFor,
+	isLineVerified,
+	lineMatchesFilter,
+	lineMatchesSearch
 } from './inventoryCount';
 import type { CountLineCore } from './inventoryCount';
 
@@ -143,5 +151,60 @@ describe('new closure rule', () => {
 			CONFIG
 		);
 		expect(canCloseSession(stats)).toBe(true);
+	});
+});
+
+describe('formatting y helpers restantes', () => {
+	it('formatUsd', () => {
+		expect(formatUsd(0)).toBe('$0');
+		expect(formatUsd(-90)).toBe('−$90');
+	});
+
+	it('formatAgo', () => {
+		expect(formatAgo(null)).toBe('nunca');
+		expect(formatAgo(45)).toBe('hace 45 d');
+	});
+
+	it('session status labels/variantes', () => {
+		expect(statusLabelFor('OPEN')).toBe('Abierta');
+		expect(statusVariantFor('OPEN')).toBe('warning');
+		expect(statusVariantFor('APPLIED')).toBe('success');
+		expect(statusVariantFor('CANCELLED')).toBe('neutral');
+	});
+
+	it('formatCountScopeLabel by dim', () => {
+		expect(
+			formatCountScopeLabel({ kind: 'QUICK_OLDEST', dim: 'ALL', valueLabels: [], n: 50 })
+		).toBe('Los 50 más atrasados');
+		expect(
+			formatCountScopeLabel({ kind: 'BRAND', dim: 'BRAND', valueLabels: ['Ray-Ban'], n: null })
+		).toBe('Marca: Ray-Ban');
+		expect(formatCountScopeLabel({ kind: 'ALL', dim: 'ALL', valueLabels: [], n: null })).toBe(
+			'Todo el inventario'
+		);
+	});
+
+	it('isLineVerified usa recuento si existe', () => {
+		expect(isLineVerified(line({ systemStock: 4, countedStock: null, recountedStock: 3 }))).toBe(
+			true
+		);
+	});
+});
+
+describe('filter y búsqueda de líneas', () => {
+	it('lineMatchesFilter', () => {
+		expect(lineMatchesFilter(line({ countedStock: null }), 'PENDING')).toBe(true);
+		expect(lineMatchesFilter(line({ systemStock: 0, countedStock: null }), 'ZERO_STOCK')).toBe(
+			true
+		);
+		expect(lineMatchesFilter(line({ systemStock: 5, countedStock: 7 }), 'WITH_DIFF')).toBe(true);
+		expect(lineMatchesFilter(line({ countedStock: 5, recountedStock: null }), 'ALL')).toBe(true);
+	});
+
+	it('lineMatchesSearch', () => {
+		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: 'SKU-1' }, 'montura')).toBe(true);
+		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: 'SKU-1' }, 'sku-1')).toBe(true);
+		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: 'SKU-1' }, 'nope')).toBe(false);
+		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: null }, '')).toBe(true);
 	});
 });
