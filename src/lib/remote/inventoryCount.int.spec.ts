@@ -176,8 +176,8 @@ describe('Capa 3 · createSessionCmd', () => {
 			{
 				dim: 'BRAND',
 				values: [brand.id],
-				quick: null,
-				n: null,
+				quick: undefined,
+				n: undefined,
 				notes: 'Ciclo mensual',
 				responsibles: [
 					{ userId: sellerId.id, displayName: sellerId.fullName, isExternal: false },
@@ -204,14 +204,14 @@ describe('Capa 3 · createSessionCmd', () => {
 		await productFixture();
 		const first = await invoke<CommandResult<SessionDto>>(
 			createSessionCmd,
-			{ dim: 'ALL', values: [], quick: null, n: null, notes: null, responsibles: [] },
+			{ dim: 'ALL', values: [], quick: undefined, n: undefined, notes: null, responsibles: [] },
 			adminId
 		);
 		expect(first.success).toBe(true);
 
 		const second = await invoke<CommandResult<SessionDto>>(
 			createSessionCmd,
-			{ dim: 'ALL', values: [], quick: null, n: null, notes: null, responsibles: [] },
+			{ dim: 'ALL', values: [], quick: undefined, n: undefined, notes: null, responsibles: [] },
 			adminId
 		);
 		expect(second.success).toBe(false);
@@ -221,7 +221,7 @@ describe('Capa 3 · createSessionCmd', () => {
 		const adminId = await admin();
 		const result = await invoke<CommandResult<SessionDto>>(
 			createSessionCmd,
-			{ dim: 'BRAND', values: [], quick: null, n: null, notes: null, responsibles: [] },
+			{ dim: 'BRAND', values: [], quick: undefined, n: undefined, notes: null, responsibles: [] },
 			adminId
 		);
 		expect(result.success).toBe(false);
@@ -536,7 +536,7 @@ describe('Capa 3 · configuración y responsables', () => {
 
 		const open = await invoke<CommandResult<SessionDto>>(
 			createSessionCmd,
-			{ dim: 'ALL', values: [], quick: null, n: null, notes: null, responsibles: [] },
+			{ dim: 'ALL', values: [], quick: undefined, n: undefined, notes: null, responsibles: [] },
 			adminId
 		);
 		expect(open.success).toBe(true);
