@@ -12,7 +12,9 @@
 		confirmZeroStock,
 		recountCountLineCmd,
 		setSessionResponsibles,
-		upsertCountLineCmd
+		upsertCountLineCmd,
+		getSessionById,
+		listCountResponsibles
 	} from '$lib/remote/inventoryCount.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { ADJUSTMENT_REASON_LABELS, AdjustmentReason } from '$lib/shared/enums';
@@ -270,9 +272,7 @@
 	}
 
 	async function refreshLines(): Promise<void> {
-		const detail = await import('$lib/server/db/queries/inventoryCount/sessions').then((module) =>
-			module.getSessionById(session.id)
-		);
+		const detail = await getSessionById({ id: session.id });
 		if (!detail) {
 			toast.error('No se pudo recargar la sesión');
 			return;
@@ -392,7 +392,6 @@
 	);
 
 	async function loadResponsibleOptions(): Promise<void> {
-		const { listCountResponsibles } = await import('$lib/remote/inventoryCount.remote');
 		const response = await listCountResponsibles();
 		userOptions = response;
 	}
