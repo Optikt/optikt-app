@@ -465,12 +465,9 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 			difference: null
 		});
 
-		const blocked = await invoke<CommandResult<SessionDto>>(
-			applySessionCmd,
-			{ id: session.id },
-			sellerId
-		);
-		expect(blocked.success).toBe(false);
+		await expect(
+			invoke<CommandResult<SessionDto>>(applySessionCmd, { id: session.id }, sellerId)
+		).rejects.toThrow();
 
 		const closed = await invoke<CommandResult<SessionDto>>(
 			applySessionCmd,
