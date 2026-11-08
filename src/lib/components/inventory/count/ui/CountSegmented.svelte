@@ -19,9 +19,7 @@
 </script>
 
 <div
-	class="inline-flex gap-0.5 rounded-lg border border-outline-variant/30 bg-white p-1 shadow-sm {disabled
-		? 'opacity-60'
-		: ''}"
+	class="inline-flex gap-0.5 rounded-lg bg-surface-container p-0.5 {disabled ? 'opacity-60' : ''}"
 	role="group"
 	aria-label={ariaLabel}
 >
@@ -31,9 +29,9 @@
 				<button
 					{...props}
 					type="button"
-					class={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+					class={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors duration-150 ${
 						value === option.value
-							? 'bg-brand-navy text-white'
+							? 'bg-white text-brand-navy shadow-sm'
 							: 'text-on-surface-variant hover:text-brand-navy'
 					}`}
 					{disabled}

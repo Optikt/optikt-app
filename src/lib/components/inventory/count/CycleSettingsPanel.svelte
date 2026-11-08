@@ -29,7 +29,7 @@
 	);
 </script>
 
-<SlideOver bind:open onclose={onClose} size="md">
+<SlideOver bind:open onclose={onClose} size="md" bodyClass="p-4">
 	{#snippet header({ onclose })}
 		<div class="flex items-center justify-between border-b border-outline-variant/30 px-4 py-3">
 			<h2 class="font-heading text-lg font-semibold text-brand-navy">Ajustes del ciclo</h2>
@@ -44,7 +44,7 @@
 		</div>
 	{/snippet}
 
-	<div class="space-y-4 px-4 py-4">
+	<div class="space-y-4">
 		<label class="block">
 			<span class="flex items-center gap-2">
 				<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase">

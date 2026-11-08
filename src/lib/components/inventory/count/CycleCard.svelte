@@ -49,7 +49,7 @@
 	]);
 </script>
 
-<section class="rounded-xl bg-white p-4 shadow-[var(--ds-shadow-md)]">
+<section class="rounded-xl bg-white p-3.5 shadow-[var(--ds-shadow-md)]">
 	<CountLabel
 		text={`Ciclo · ${cycleDays} días · ${summary.itemCount} ítems`}
 		tooltip="Ciclo móvil|Porcentaje de ítems verificados en un conteo cerrado dentro del plazo. Ventas, compras y ajustes no lo reinician."

@@ -35,7 +35,7 @@
 	}
 </script>
 
-<section class="rm:overflow-hidden rounded-xl bg-white p-4 shadow-[var(--ds-shadow-md)]">
+<section class="rm:overflow-hidden rounded-xl bg-white p-3.5 shadow-[var(--ds-shadow-md)]">
 	<div class="flex flex-wrap items-center gap-2">
 		<CountSegmented
 			value={dim}

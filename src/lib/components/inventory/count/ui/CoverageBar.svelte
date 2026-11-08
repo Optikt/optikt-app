@@ -27,7 +27,7 @@
 </script>
 
 <div
-	class="flex gap-0.5 overflow-hidden rounded-md bg-surface-container"
+	class="flex min-w-[200px] flex-1 gap-0.5 overflow-hidden rounded-md bg-surface-container"
 	style={`height:${height}px`}
 >
 	{#each segments as segment (segment.key)}

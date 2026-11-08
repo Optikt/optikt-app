@@ -43,7 +43,7 @@
 	const activeSessionId = $derived(sessionCountContext.activeSession?.id ?? null);
 	const activeSession = $derived(sessions.find((s) => s.id === activeSessionId) ?? null);
 
-	let tab = $state<'cov' | 'his'>(untrack(() => getPageState().tab) as 'cov' | 'his');
+	let tab = $state<'cov' | 'his'>(untrack(() => (getPageState().tab === 'his' ? 'his' : 'cov')));
 	let dim = $state<CoverageDim>(untrack(() => (getPageState().dim as CoverageDim) ?? 'BRAND'));
 	let selected = $state<string[]>([]);
 
@@ -176,7 +176,7 @@
 	<title>Conteo físico · Optikt</title>
 </svelte:head>
 
-<div class="space-y-3 p-4 sm:p-6">
+<div class="mx-auto max-w-[1360px] space-y-3 p-4">
 	<header class="flex flex-wrap items-center gap-3">
 		<h1 class="font-heading text-2xl font-bold text-brand-navy sm:text-3xl">Conteo físico</h1>
 		<CountTabs

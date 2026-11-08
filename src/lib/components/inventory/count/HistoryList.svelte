@@ -12,7 +12,7 @@
 	let { sessions, onOpenSession }: Props = $props();
 </script>
 
-<section class="rounded-xl bg-white p-2 shadow-[var(--ds-shadow-md)]">
+<section class="rounded-xl bg-white p-3.5 shadow-[var(--ds-shadow-md)]">
 	{#if sessions.length === 0}
 		<EmptyState message="Sin conteos registrados todavía" />
 	{:else}

@@ -30,7 +30,7 @@
 	const direction = $derived(diff > 0 ? 'in' : 'out');
 </script>
 
-<SlideOver open={target != null} {onclose} size="md">
+<SlideOver open={target != null} {onclose} size="md" bodyClass="p-4">
 	{#snippet header({ onclose })}
 		<div class="flex items-center justify-between border-b border-outline-variant/30 px-4 py-3">
 			<h2 class="font-heading text-lg font-semibold text-brand-navy">Ajustar stock</h2>
@@ -46,7 +46,7 @@
 	{/snippet}
 
 	{#if target}
-		<div class="space-y-3 px-4 py-4">
+		<div class="space-y-3">
 			<div>
 				<b class="text-brand-navy">{target.itemName}</b>
 				<span class="block font-mono text-xs text-outline">{target.itemCode ?? ''}</span>

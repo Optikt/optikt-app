@@ -40,6 +40,7 @@
 	let search = $state('');
 	let open = $state(false);
 	let inputEl: HTMLInputElement | undefined = $state();
+	let root: HTMLDivElement | undefined = $state();
 	let highlighted = $state(0);
 
 	const query = $derived(search.trim().toLowerCase());
@@ -54,6 +55,20 @@
 		Boolean(createLabel && query && !options.some((o) => o.name.toLowerCase() === query))
 	);
 
+	// Cierra el dropdown al hacer clic fuera del control (los overlays nativos
+	// no se cierran solos y se superponen a otros campos del formulario).
+	$effect(() => {
+		if (!open || disabled) return;
+		function onPointerDown(event: PointerEvent): void {
+			if (!root) return;
+			if (event.target instanceof Node && !root.contains(event.target)) {
+				open = false;
+			}
+		}
+		document.addEventListener('pointerdown', onPointerDown, true);
+		return () => document.removeEventListener('pointerdown', onPointerDown, true);
+	});
+
 	function commit(next: Tag[]): void {
 		value = next;
 		onchange?.(next);
@@ -62,7 +77,9 @@
 	function select(option: { id: string; name: string }): void {
 		commit([...value, { key: option.id, label: option.name }]);
 		search = '';
+		// El dropdown permanece abierto tras elegir (selección múltiple).
 		open = true;
+		highlighted = 0;
 	}
 
 	function remove(tag: Tag): void {
@@ -77,6 +94,12 @@
 		if (!oncreate || !query) return;
 		oncreate(search.trim());
 		search = '';
+	}
+
+	function clearSearch(): void {
+		search = '';
+		open = false;
+		inputEl?.focus();
 	}
 
 	function keydown(event: KeyboardEvent): void {
@@ -106,9 +129,15 @@
 	}
 </script>
 
-<div class="relative" onclick={() => inputEl?.focus()} onfocusin={openDropdown} role="presentation">
+<div
+	class="relative"
+	bind:this={root}
+	onclick={() => inputEl?.focus()}
+	onfocusin={openDropdown}
+	role="presentation"
+>
 	<div
-		class={`flex min-h-[46px] flex-wrap items-center gap-1.5 rounded-lg border border-outline-variant/35 bg-white px-1.5 py-1.5 ${open ? 'ring-2 ring-brand-blue/30' : ''}`}
+		class={`relative flex min-h-[46px] flex-wrap items-center gap-1.5 rounded-lg border border-outline-variant/35 bg-white px-1.5 py-1.5 ${open ? 'ring-2 ring-brand-blue/30' : ''}`}
 	>
 		{#each value as tag (tag.key)}
 			<span
@@ -140,13 +169,23 @@
 			aria-expanded={open}
 			aria-haspopup="listbox"
 			aria-autocomplete="list"
-			class="min-w-[140px] flex-1 border-0 bg-transparent p-1 text-sm text-on-surface outline-none"
+			class="min-w-[140px] flex-1 border-0 bg-transparent p-1 pr-6 text-sm text-on-surface outline-none"
 			oninput={() => {
 				open = true;
 				highlighted = 0;
 			}}
 			onkeydown={keydown}
 		/>
+		{#if search || open}
+			<button
+				type="button"
+				aria-label="Limpiar y cerrar"
+				class="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-1 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-brand-navy"
+				onclick={clearSearch}
+			>
+				<X class="h-3.5 w-3.5" />
+			</button>
+		{/if}
 	</div>
 
 	{#if open && !disabled}

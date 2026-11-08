@@ -36,7 +36,7 @@
 	});
 </script>
 
-<SlideOver bind:open onclose={onClose} size="md">
+<SlideOver bind:open onclose={onClose} size="md" bodyClass="p-4">
 	{#snippet header(slotProps)}
 		<div class="flex items-center justify-between border-b border-outline-variant/30 px-4 py-3">
 			<h2 class="font-heading text-lg font-semibold text-brand-navy">Responsables del conteo</h2>
@@ -51,7 +51,7 @@
 		</div>
 	{/snippet}
 
-	<div class="space-y-3 px-4 py-4">
+	<div class="space-y-3">
 		<MultiCombobox
 			options={userOptions.map((option) => ({ id: option.userId, name: option.displayName }))}
 			value={pendingResponsibleTags}
