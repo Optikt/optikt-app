@@ -40,7 +40,7 @@ import {
 	createUser
 } from '$lib/testing/integration/factories';
 import { callRemote } from '$lib/testing/remoteHarness';
-import { lensCatalogItems } from '$lib/server/db/schema';
+import { lensMaterials, lensCatalogItems } from '$lib/server/db/schema';
 import type { User } from '$lib/server/db/schema';
 
 // ── Tipos locales (resultados de los remotes) ──────────────────────────────
@@ -641,7 +641,7 @@ describe('Capa 3 · dimensiones tipo/proveedor en snapshot y opciones', () => {
 		);
 		expect(result.success).toBe(true);
 		if (result.success && result.data) {
-			expect(result.data.scopeLabel).toContain('Frame');
+			expect(result.data.scopeLabel).toContain('Montura');
 			expect(result.data.lines.length).toBeGreaterThanOrEqual(1);
 			expect(result.data.lines.every((l) => l.brandName === brand.name)).toBe(true);
 		}
@@ -696,19 +696,19 @@ describe('Capa 3 · con lente STOCK (rama LENS en snapshot/ajustes/costos)', () 
 	it('snapshot de lente + ajuste de lente actualiza stock del item', async () => {
 		const adminId = await admin();
 		const supplier = await createSupplier();
-		const material = await createMaterial();
-		await db
-			.insert(lensCatalogItems)
-			.values({
-				supplierId: supplier.id,
-				name: `Lente Stock ${crypto.randomUUID()}`,
-				type: LensType.MONOFOCAL as never,
-				materialId: material.id,
-				inventoryMode: 'STOCK',
-				basePrice: 0,
-				stock: 3
-			})
+		const [lensMaterial] = await db
+			.insert(lensMaterials)
+			.values({ name: `Mat lente ${crypto.randomUUID()}`, code: `LM-${crypto.randomUUID()}` })
 			.returning();
+		await db.insert(lensCatalogItems).values({
+			supplierId: supplier.id,
+			name: `Lente Stock ${crypto.randomUUID()}`,
+			type: LensType.MONOFOCAL,
+			materialId: lensMaterial.id,
+			inventoryMode: 'STOCK',
+			basePrice: 0,
+			stock: 3
+		});
 
 		const result = await invoke<CommandResult<SessionDto>>(
 			createSessionCmd,
