@@ -73,7 +73,27 @@ sessions.int.spec (a re-scribir con nuevas reglas).
 - **Tests**: spec de integración nueva `queries/inventoryCount/sessions.int.spec.ts` (Testcontainers): regla de cierre (stock 0 no bloquea/pendientes bloquean/recuentos bloquean) + `lastCountedAt` solo verificados + rechazos de rol/estado + baja lógica de responsables + ajuste individual/lote vinculado + reset de derivados + snapshot por marca con unicidad OPEN.
 - **Impresión**: `print:hidden` en exportes + `@media print` del informe (el shell ya se oculta globalmente).
 
-### ⚠️ PENDIENTE (siguiente tanda)
+### ✅ CI/CD en verde (cierre definitivo, commits f4b23ce5..1cdf3b41)
+
+Se corrigieron todos los rojos reportados por Nanez:
+- **Build/E2E**: `PreviewCountScopeSchema` abandonó `.pick()` (Zod no lo permite
+  sobre schemas con refine) y la página de sesión dejó de importar `$lib/server`
+  desde el bundle del navegador (remotes en su lugar).
+- **Size gate (>520 líneas)**: `shared.ts` (selección de cobertura → coverage.ts),
+  `CountBoard` (lista virtualizada → `CountVirtualList.svelte`, 118 líneas) y
+  `[id]/+page.svelte` (drawers → `AdjustStockDrawer.svelte` / `ResponsiblesDrawer.svelte`).
+- **Integration**: specs con contratos reales de Kit — Zod refine y guards de rol
+  lanzan `HttpError` (no-Error) → helper `expectRemoteError`; `quick/n` como
+  undefined (`z.enum optional` rechaza null); fixture de lente usa `lens_materials`
+  (FK real); `'OTROS'` exige texto **en server** (invariante D12.6 elevada de UI a negocio).
+- **Coverage/Sonar**: specs unit de schemas Zod (15) + helpers restantes de dominio
+  (23) + spec Capa 3 de remotes (18 casos: rol/participación, ajustes vinculados,
+  cierre, config, atajos, dims TYPE/SUPPLIER, lentes STOCK, filtros de sesiones) —
+  **new_coverage arriba del gate** y `initialsFor` sin regex (S5853).
+- Todos los checks en verde: Build · CodeQL · Coverage · E2E · Integration ·
+  Lint · SonarCloud · TypeCheck · Unit · AGENTS-sync.
+
+### 📌 PENDIENTE (post-merge, no bloquean el PR)
 1. `DATABASE_URL` + navegadores de Playwright en el entorno para correr integration/e2 (migraciones + e2e actualizado a flujo nuevo «Revisar → / Cerrar conteo»). La suite .int nueva y el e2e están listos para CI.
 2. Ajustes de estilo fino vs mockup (captura-a-captura) y recorridos a11y/teclado finos (Fase 7). Virtualización ya implementada (ver Tanda 2).
 
