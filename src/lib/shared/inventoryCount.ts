@@ -452,9 +452,10 @@ export function formatCountScopeLabel(scope: {
 }
 
 export function initialsFor(name: string): string {
-	return name
-		.replace(/\(.*\)/, '')
-		.trim()
+	// Sin regex (S5853): corta en el primer '(' con indexOf.
+	const parenIndex = name.indexOf('(');
+	const cleaned = (parenIndex >= 0 ? name.slice(0, parenIndex) : name).trim();
+	return cleaned
 		.split(/\s+/)
 		.map((part) => part[0] ?? '')
 		.join('')
