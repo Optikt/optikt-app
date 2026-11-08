@@ -502,6 +502,47 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 		expect(listing[0]?.status).toBe('APPLIED');
 	});
 
+	it('getSessions filtra por status y openedOn (ramas de servidor)', async () => {
+		const adminId = await admin();
+		await productFixture();
+		const created = await invoke<CommandResult<SessionDto>>(
+			createSessionCmd,
+			{ dim: 'ALL', values: [], quick: 'OLDEST', n: 10, notes: null, responsibles: [] },
+			adminId
+		);
+		expect(created.success).toBe(true);
+		const openId = created.success && created.data ? created.data.id : 0;
+
+		const byStatus = await invoke<Array<{ id: number; status: string }>>(
+			getSessions,
+			{ limit: 10, status: 'OPEN' },
+			adminId
+		);
+		expect(byStatus.map((session) => session.id)).toContain(openId);
+
+		const byStatusMiss = await invoke<Array<{ id: number; status: string }>>(
+			getSessions,
+			{ limit: 10, status: 'APPLIED' },
+			adminId
+		);
+		expect(byStatusMiss.map((session) => session.id)).not.toContain(openId);
+
+		const today = new Date().toISOString().slice(0, 10);
+		const byDate = await invoke<Array<{ id: number }>>(
+			getSessions,
+			{ limit: 10, openedOn: today },
+			adminId
+		);
+		expect(byDate.length).toBeGreaterThanOrEqual(1);
+
+		const byOtherDay = await invoke<Array<{ id: number }>>(
+			getSessions,
+			{ limit: 10, openedOn: '2025-01-01' },
+			adminId
+		);
+		expect(byOtherDay.length).toBe(0);
+	});
+
 	it('cancelar: exige motivo (5-500) y rechaza a SELLER', async () => {
 		const adminId = await admin();
 		const sellerId = await seller();
