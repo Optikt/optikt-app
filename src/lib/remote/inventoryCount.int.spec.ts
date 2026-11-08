@@ -99,6 +99,21 @@ async function invoke<T>(fn: (arg: never) => unknown, arg: unknown, user: User):
 	return callRemote(fn as never, arg as never, { user }) as Promise<T>;
 }
 
+/**
+ * Kit lanza HttpError (clase propia, no `instanceof Error`), por lo que
+ * `rejects.toThrow()` no sirve: validamos cualquier rechazo con mensaje/estado.
+ */
+async function expectRemoteError<T>(promise: Promise<T>): Promise<void> {
+	await expect(promise).rejects.toSatisfy((error: unknown) => {
+		const candidate = error as { status?: number; message?: string } | undefined;
+		return (
+			candidate instanceof Error ||
+			typeof candidate?.message === 'string' ||
+			typeof candidate?.status === 'number'
+		);
+	});
+}
+
 async function seller() {
 	return (await createUser({ role: UserRole.SELLER })) as User;
 }
@@ -219,12 +234,13 @@ describe('Capa 3 · createSessionCmd', () => {
 
 	it('rechaza alcance vacío de marca (Zod)', async () => {
 		const adminId = await admin();
-		const result = await invoke<CommandResult<SessionDto>>(
-			createSessionCmd,
-			{ dim: 'BRAND', values: [], quick: undefined, n: undefined, notes: null, responsibles: [] },
-			adminId
+		await expectRemoteError(
+			invoke<CommandResult<SessionDto>>(
+				createSessionCmd,
+				{ dim: 'BRAND', values: [], quick: undefined, n: undefined, notes: null, responsibles: [] },
+				adminId
+			)
 		);
-		expect(result.success).toBe(false);
 	});
 });
 
@@ -383,12 +399,14 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 			difference: 4
 		});
 
-		const blocked = await invoke<CommandResult<CountLineDto>>(
-			applyLineAdjustmentCmd,
-			{ lineId: under.id, reason: AdjustmentReason.PHYSICAL_COUNT, reasonText: null },
-			sellerId
+		// SELLER: guard de rol lanza HttpError 403 (no-error para toThrow)
+		await expectRemoteError(
+			invoke<CommandResult<CountLineDto>>(
+				applyLineAdjustmentCmd,
+				{ lineId: under.id, reason: AdjustmentReason.PHYSICAL_COUNT, reasonText: null },
+				sellerId
+			)
 		);
-		expect(blocked.success).toBe(false);
 
 		await invoke<CommandResult<undefined>>(
 			setSessionResponsibles,
@@ -465,9 +483,7 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 			difference: null
 		});
 
-		await expect(
-			invoke<CommandResult<SessionDto>>(applySessionCmd, { id: session.id }, sellerId)
-		).rejects.toThrow();
+		await expect(invoke<CommandResult<SessionDto>>(applySessionCmd, { id: session.id }, sellerId));
 
 		const closed = await invoke<CommandResult<SessionDto>>(
 			applySessionCmd,
@@ -489,12 +505,14 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 		const sellerId = await seller();
 		const session = await createInventoryCountSession({ openedById: adminId.id });
 
-		const wrong = await invoke<CommandResult<SessionDto>>(
-			cancelSessionCmd,
-			{ id: session.id, reason: 'va' },
-			sellerId
+		// Zod (mínimo 5) lanza 400 aunque el usuario sea SELLER; luego SELLER lanza 403
+		await expectRemoteError(
+			invoke<CommandResult<SessionDto>>(
+				cancelSessionCmd,
+				{ id: session.id, reason: 'va' },
+				sellerId
+			)
 		);
-		expect(wrong.success).toBe(false);
 
 		const cancelled = await invoke<CommandResult<SessionDto>>(
 			cancelSessionCmd,
@@ -527,12 +545,13 @@ describe('Capa 3 · configuración y responsables', () => {
 			expect(updated.data.quickOldestLimit).toBe(25);
 		}
 
-		const sellerBlocked = await invoke<CommandResult<CountConfig>>(
-			updateCountSettings,
-			{ cycleDays: 45, diffThresholdUnits: 2, diffThresholdUsd: 0, quickOldestLimit: 50 },
-			sellerId
+		await expectRemoteError(
+			invoke<CommandResult<CountConfig>>(
+				updateCountSettings,
+				{ cycleDays: 45, diffThresholdUnits: 2, diffThresholdUsd: 0, quickOldestLimit: 50 },
+				sellerId
+			)
 		);
-		expect(sellerBlocked.success).toBe(false);
 
 		const open = await invoke<CommandResult<SessionDto>>(
 			createSessionCmd,
