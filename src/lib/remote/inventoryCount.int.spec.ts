@@ -483,7 +483,7 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 			difference: null
 		});
 
-		await expect(invoke<CommandResult<SessionDto>>(applySessionCmd, { id: session.id }, sellerId));
+		await expectRemoteError(invoke(applySessionCmd, { id: session.id }, sellerId));
 
 		const closed = await invoke<CommandResult<SessionDto>>(
 			applySessionCmd,
