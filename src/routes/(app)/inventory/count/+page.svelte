@@ -111,8 +111,8 @@
 		responsibles: Tag[];
 		responsibleExternal: string[];
 		notes: string;
-	}): Promise<void> {
-		if (isSubmitting) return;
+	}): Promise<boolean> {
+		if (isSubmitting) return false;
 		isSubmitting = true;
 		try {
 			const response = await createSessionCmd({
@@ -132,7 +132,7 @@
 			} as never);
 			if (!response.success) {
 				toast.error(response.error ?? 'No se pudo iniciar la sesión');
-				return;
+				return false;
 			}
 			const session = response.data;
 			sessions = [session, ...sessions];
@@ -140,8 +140,10 @@
 			showNew = false;
 			toast.success(`Conteo #${session.id} en curso`);
 			await goto(resolve(`/inventory/count/${session.id}`));
+			return true;
 		} catch (error) {
 			toast.error(getErrorMessage(error, 'No se pudo iniciar la sesión'));
+			return false;
 		} finally {
 			isSubmitting = false;
 		}

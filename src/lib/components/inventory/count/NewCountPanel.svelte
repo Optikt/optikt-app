@@ -29,6 +29,7 @@
 		/** true mientras createSession está en vuelo (deshabilita y muestra «Iniciando…»). */
 		submitting?: boolean;
 		onClose: () => void;
+		/** Crea la sesión; devuelve true si tuvo éxito (el panel resetea solo en ese caso). */
 		onSubmit: (scope: {
 			quick?: 'OLDEST' | 'NEVER';
 			n?: number;
@@ -37,7 +38,7 @@
 			responsibles: Tag[];
 			responsibleExternal: string[];
 			notes: string;
-		}) => void;
+		}) => boolean | Promise<boolean>;
 	}
 
 	let {
@@ -122,20 +123,26 @@
 		return Boolean(hasItems && responsibles.length >= 1);
 	}
 
-	function handleSubmit(): void {
-		if (!canStart()) return;
-		onSubmit({
-			quick: quick ?? undefined,
-			n: quick === 'OLDEST' ? config.quickOldestLimit : undefined,
-			dim,
-			values,
-			responsibles,
-			responsibleExternal: responsibles
-				.filter((tag) => !responsibleOptions.some((o) => o.userId === tag.key))
-				.map((tag) => tag.label),
-			notes
-		});
-		reset();
+	async function handleSubmit(): Promise<void> {
+		if (!canStart() || submitting) return;
+		let ok = false;
+		try {
+			ok = await onSubmit({
+				quick: quick ?? undefined,
+				n: quick === 'OLDEST' ? config.quickOldestLimit : undefined,
+				dim,
+				values,
+				responsibles,
+				responsibleExternal: responsibles
+					.filter((tag) => !responsibleOptions.some((o) => o.userId === tag.key))
+					.map((tag) => tag.label),
+				notes
+			});
+		} catch {
+			ok = false; // createCount ya toastea; aquí solo conservamos el formulario
+		}
+		// Reset solo en éxito: si falla, el usuario conserva lo que había elegido.
+		if (ok) reset();
 	}
 </script>
 
@@ -349,7 +356,7 @@
 			<CountButton
 				variant="gold"
 				disabled={!canStart() || submitting}
-				disabledTooltip={!canStart()
+				disabledTooltip={!canStart() && !submitting
 					? 'Falta algo|Elige qué contar y al menos un responsable.'
 					: undefined}
 				onclick={handleSubmit}
