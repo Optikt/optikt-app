@@ -17,7 +17,13 @@
 		listCountResponsibles
 	} from '$lib/remote/inventoryCount.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { splitTooltip } from '$lib/utils/tooltip';
+	import {
+		blockedToast,
+		phaseCtaAction,
+		phaseCtaLabel,
+		phaseCtaReason,
+		stepClickOutcome
+	} from '$lib/shared/countSessionPhase';
 	import { ADJUSTMENT_REASON_LABELS, AdjustmentReason } from '$lib/shared/enums';
 	import { computeCountStats, lineDiff, type CountCycleConfig } from '$lib/shared/inventoryCount';
 	import type {
@@ -83,23 +89,8 @@
 		lines.length > 0 && stats.pendingCounting === 0 && stats.recountsPending === 0
 	);
 
-	const ctaDisabledReason = $derived.by(() => {
-		if (phase === 1) {
-			return stats.pendingCounting > 0
-				? `Faltan ${stats.pendingCounting} por contar|Cuando no queden pendientes pasas a revisar diferencias.`
-				: null;
-		}
-		if (phase === 2) {
-			return stats.recountsPending > 0
-				? `Faltan ${stats.recountsPending} recuentos|Las diferencias sobre el umbral deben recontarse.`
-				: null;
-		}
-		return null;
-	});
-
-	const ctaLabel = $derived(
-		phase === 3 ? 'Volver a cobertura' : phase === 1 ? 'Revisar →' : 'Cerrar conteo'
-	);
+	const ctaDisabledReason = $derived(phaseCtaReason(phase, stats));
+	const ctaLabel = $derived(phaseCtaLabel(phase));
 
 	const diffRows = $derived.by(() => {
 		return lines
@@ -367,51 +358,24 @@
 	}
 
 	function handlePhaseCta(): void {
-		if (phase === 3) {
-			// Informe: el CTA es «Volver a cobertura» (spec 7.5).
-			onBack();
-			return;
-		}
-		if (phase === 1 && canCloseInPhase1()) {
-			phase = 2;
-			return;
-		}
-		if (phase === 2 && canCloseNow) {
-			void applyNow();
-			return;
-		}
-		// Bloqueado: feedback visible con el motivo (Título|Cuerpo).
-		notifyCtaBlocked();
+		const action = phaseCtaAction(phase, stats, canCloseNow);
+		if (action === 'back') onBack();
+		else if (action === 'review') phase = 2;
+		else if (action === 'close') void applyNow();
+		else notifyCtaBlocked();
 	}
 
-	/** Toast con el motivo de bloqueo del CTA (usa splitTooltip sobre `ctaDisabledReason`). */
+	/** Toast con el motivo de bloqueo del CTA (Título|Cuerpo). */
 	function notifyCtaBlocked(): void {
-		const tip = splitTooltip(ctaDisabledReason ?? undefined);
-		toast.info(tip.title ?? 'No disponible todavía', {
-			description: tip.text
-		});
+		const { title, description } = blockedToast(ctaDisabledReason);
+		toast.info(title, { description });
 	}
 
-	/**
-	 * Clic en un paso del stepper: navega entre fases sin cerrar la sesión
-	 * (el cierre es solo con el CTA; el mockup hace `if(p==3)break`).
-	 */
+	/** Clic en un paso del stepper: navega entre fases; nunca cierra la sesión. */
 	function handleStepClick(step: 1 | 2 | 3): void {
-		if (step === phase) return;
-		if (step === 3) return; // nunca cierra desde el stepper
-		if (step < phase) {
-			phase = step; // retroceso Contar ← Revisar (estado local)
-			return;
-		}
-		if (ctaDisabledReason) {
-			notifyCtaBlocked(); // avance bloqueado (pendientes o rol)
-			return;
-		}
-		phase = step;
-	}
-
-	function canCloseInPhase1(): boolean {
-		return phase === 1 && stats.pendingCounting === 0;
+		const outcome = stepClickOutcome(step, phase, ctaDisabledReason);
+		if (outcome.kind === 'blocked') notifyCtaBlocked();
+		else if (outcome.kind === 'phase') phase = outcome.phase;
 	}
 
 	function onBack(): void {
