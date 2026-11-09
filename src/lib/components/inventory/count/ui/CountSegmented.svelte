@@ -1,5 +1,6 @@
 <script lang="ts">
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
+	import { splitTooltip } from '$lib/utils/tooltip';
 
 	interface TabOption {
 		value: string;
@@ -24,7 +25,8 @@
 	aria-label={ariaLabel}
 >
 	{#each options as option (option.value)}
-		<TriggerTooltip text={option.tooltip} side="top">
+		{@const tip = splitTooltip(option.tooltip)}
+		<TriggerTooltip title={tip.title} text={tip.text} side="top">
 			{#snippet trigger({ props })}
 				<button
 					{...props}

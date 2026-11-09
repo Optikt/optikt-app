@@ -4,6 +4,7 @@
 	import CountSegmented from './ui/CountSegmented.svelte';
 	import CountButton from './ui/CountButton.svelte';
 	import MultiCombobox from './ui/MultiCombobox.svelte';
+	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import { formatAgo, type CountCycleConfig } from '$lib/shared/inventoryCount';
 	import type { ScopePreview } from '$lib/server/db/queries/inventoryCount/coverage';
 	import type { CoverageData } from '$lib/server/db/queries/inventoryCount/coverage';
@@ -25,10 +26,12 @@
 			values: Tag[];
 			quick: 'OLDEST' | 'NEVER' | null;
 		} | null;
+		/** true mientras createSession está en vuelo (deshabilita y muestra «Iniciando…»). */
+		submitting?: boolean;
 		onClose: () => void;
 		onSubmit: (scope: {
-			quick: 'OLDEST' | 'NEVER' | null;
-			n: number | null;
+			quick?: 'OLDEST' | 'NEVER';
+			n?: number;
 			dim: 'ALL' | 'BRAND' | 'SUPPLIER' | 'TYPE';
 			values: Tag[];
 			responsibles: Tag[];
@@ -44,6 +47,7 @@
 		config,
 		responsibleOptions,
 		preload = null,
+		submitting = false,
 		onClose,
 		onSubmit
 	}: Props = $props();
@@ -121,8 +125,8 @@
 	function handleSubmit(): void {
 		if (!canStart()) return;
 		onSubmit({
-			quick,
-			n: quick === 'OLDEST' ? config.quickOldestLimit : null,
+			quick: quick ?? undefined,
+			n: quick === 'OLDEST' ? config.quickOldestLimit : undefined,
 			dim,
 			values,
 			responsibles,
@@ -135,7 +139,7 @@
 	}
 </script>
 
-<SlideOver bind:open onclose={onClose} size="md">
+<SlideOver bind:open onclose={onClose} size="md" bodyClass="p-4">
 	{#snippet header({ onclose })}
 		<div class="flex items-center justify-between border-b border-outline-variant/30 px-4 py-3">
 			<h2 class="font-heading text-lg font-semibold text-brand-navy">Nuevo conteo</h2>
@@ -150,7 +154,7 @@
 		</div>
 	{/snippet}
 
-	<div class="space-y-4 px-4 py-4">
+	<div class="space-y-4">
 		<div>
 			<div class="mb-1.5 flex items-center gap-1">
 				<CountLabel
@@ -162,10 +166,27 @@
 				value={dim}
 				ariaLabel="Alcance"
 				options={[
-					{ value: 'ALL', label: 'Todo' },
-					{ value: 'BRAND', label: 'Marca' },
-					{ value: 'SUPPLIER', label: 'Proveedor' },
-					{ value: 'TYPE', label: 'Tipo' }
+					{
+						value: 'ALL',
+						label: 'Todo',
+						tooltip: 'Todo|Todo el inventario elegible, incluidos los que nunca se han contado.'
+					},
+					{
+						value: 'BRAND',
+						label: 'Marca',
+						tooltip: 'Marca|Una o varias marcas a la vez; nunca se cruza con proveedor ni tipo.'
+					},
+					{
+						value: 'SUPPLIER',
+						label: 'Proveedor',
+						tooltip: 'Proveedor|Uno o varios proveedores a la vez; incluye sus lentes con stock.'
+					},
+					{
+						value: 'TYPE',
+						label: 'Tipo',
+						tooltip:
+							'Tipo|Uno o varios tipos de producto a la vez; no se cruza con marca ni proveedor.'
+					}
 				]}
 				onchange={(value) => {
 					dim = value as typeof dim;
@@ -176,58 +197,79 @@
 
 			{#if dim === 'ALL'}
 				<div class="mt-3 space-y-2">
-					<button
-						type="button"
-						aria-pressed={quick == null}
-						class="opt flex w-full items-center gap-3 rounded-lg border border-outline-variant/40 px-3 py-2.5 text-left transition-colors {quick ==
-						null
-							? 'border-brand-blue bg-info-container'
-							: 'hover:bg-surface-container-low'}"
-						onclick={() => (quick = null)}
+					<TriggerTooltip
+						title="Todo el inventario"
+						text="Contar todos los ítems elegibles"
+						side="top"
 					>
-						<span class="flex-1">
-							<b class="text-sm text-brand-navy">Todo el inventario</b>
-							<span class="block text-xs text-on-surface-variant"
-								>Contar todos los ítems elegibles</span
+						{#snippet trigger({ props })}
+							<button
+								{...props}
+								type="button"
+								aria-pressed={quick == null}
+								class="opt flex w-full items-center gap-3 rounded-lg border border-outline-variant/40 px-3 py-2.5 text-left transition-colors {quick ==
+								null
+									? 'border-brand-blue bg-info-container'
+									: 'hover:bg-surface-container-low'}"
+								onclick={() => (quick = null)}
 							>
-						</span>
-						<span class="text-sm font-semibold text-brand-navy">{coverageSummary.itemCount}</span>
-					</button>
-					<button
-						type="button"
-						aria-pressed={quick === 'OLDEST'}
-						class="opt flex w-full items-center gap-3 rounded-lg border border-outline-variant/40 px-3 py-2.5 text-left transition-colors {quick ===
-						'OLDEST'
-							? 'border-brand-blue bg-info-container'
-							: 'hover:bg-surface-container-low'}"
-						onclick={() => (quick = 'OLDEST')}
+								<span class="flex-1">
+									<b class="text-sm text-brand-navy">Todo el inventario</b>
+								</span>
+								<span class="text-sm font-semibold text-brand-navy"
+									>{coverageSummary.itemCount}</span
+								>
+							</button>
+						{/snippet}
+					</TriggerTooltip>
+					<TriggerTooltip
+						title={`Los ${config.quickOldestLimit} más atrasados`}
+						text="Los de conteo más antiguo en todo el inventario"
+						side="top"
 					>
-						<span class="flex-1">
-							<b class="text-sm text-brand-navy">Los {config.quickOldestLimit} más atrasados</b>
-							<span class="block text-xs text-on-surface-variant"
-								>Los de conteo más antiguo en todo el inventario</span
+						{#snippet trigger({ props })}
+							<button
+								{...props}
+								type="button"
+								aria-pressed={quick === 'OLDEST'}
+								class="opt flex w-full items-center gap-3 rounded-lg border border-outline-variant/40 px-3 py-2.5 text-left transition-colors {quick ===
+								'OLDEST'
+									? 'border-brand-blue bg-info-container'
+									: 'hover:bg-surface-container-low'}"
+								onclick={() => (quick = 'OLDEST')}
 							>
-						</span>
-						<span class="text-sm font-semibold text-brand-navy">{config.quickOldestLimit}</span>
-					</button>
-					<button
-						type="button"
-						aria-pressed={quick === 'NEVER'}
-						class="opt flex w-full items-center gap-3 rounded-lg border border-outline-variant/40 px-3 py-2.5 text-left transition-colors {quick ===
-						'NEVER'
-							? 'border-brand-blue bg-info-container'
-							: 'hover:bg-surface-container-low'}"
-						onclick={() => (quick = 'NEVER')}
+								<span class="flex-1">
+									<b class="text-sm text-brand-navy">Los {config.quickOldestLimit} más atrasados</b>
+								</span>
+								<span class="text-sm font-semibold text-brand-navy">{config.quickOldestLimit}</span>
+							</button>
+						{/snippet}
+					</TriggerTooltip>
+					<TriggerTooltip
+						title="Solo nunca contados"
+						text="Jamás estuvieron en un conteo cerrado"
+						side="top"
 					>
-						<span class="flex-1">
-							<b class="text-sm text-brand-navy">Solo nunca contados</b>
-							<span class="block text-xs text-on-surface-variant"
-								>Jamás estuvieron en un conteo cerrado</span
+						{#snippet trigger({ props })}
+							<button
+								{...props}
+								type="button"
+								aria-pressed={quick === 'NEVER'}
+								class="opt flex w-full items-center gap-3 rounded-lg border border-outline-variant/40 px-3 py-2.5 text-left transition-colors {quick ===
+								'NEVER'
+									? 'border-brand-blue bg-info-container'
+									: 'hover:bg-surface-container-low'}"
+								onclick={() => (quick = 'NEVER')}
 							>
-						</span>
-						<span class="text-sm font-semibold text-brand-navy">{coverageSummary.neverCounted}</span
-						>
-					</button>
+								<span class="flex-1">
+									<b class="text-sm text-brand-navy">Solo nunca contados</b>
+								</span>
+								<span class="text-sm font-semibold text-brand-navy"
+									>{coverageSummary.neverCounted}</span
+								>
+							</button>
+						{/snippet}
+					</TriggerTooltip>
 				</div>
 			{:else}
 				<MultiCombobox
@@ -306,11 +348,13 @@
 			</button>
 			<CountButton
 				variant="gold"
-				disabled={!canStart()}
-				disabledTooltip="Falta algo|Elige qué contar y al menos un responsable."
+				disabled={!canStart() || submitting}
+				disabledTooltip={!canStart()
+					? 'Falta algo|Elige qué contar y al menos un responsable.'
+					: undefined}
 				onclick={handleSubmit}
 			>
-				{#snippet child()}Iniciar conteo{/snippet}
+				{#snippet child()}{submitting ? 'Iniciando…' : 'Iniciar conteo'}{/snippet}
 			</CountButton>
 		</div>
 	{/snippet}

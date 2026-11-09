@@ -17,6 +17,7 @@
 		listCountResponsibles
 	} from '$lib/remote/inventoryCount.remote';
 	import { getErrorMessage } from '$lib/utils';
+	import { splitTooltip } from '$lib/utils/tooltip';
 	import { ADJUSTMENT_REASON_LABELS, AdjustmentReason } from '$lib/shared/enums';
 	import { computeCountStats, lineDiff, type CountCycleConfig } from '$lib/shared/inventoryCount';
 	import type {
@@ -96,7 +97,9 @@
 		return null;
 	});
 
-	const ctaLabel = $derived(phase === 1 ? 'Revisar →' : 'Cerrar conteo');
+	const ctaLabel = $derived(
+		phase === 3 ? 'Volver a cobertura' : phase === 1 ? 'Revisar →' : 'Cerrar conteo'
+	);
 
 	const diffRows = $derived.by(() => {
 		return lines
@@ -364,11 +367,47 @@
 	}
 
 	function handlePhaseCta(): void {
+		if (phase === 3) {
+			// Informe: el CTA es «Volver a cobertura» (spec 7.5).
+			onBack();
+			return;
+		}
 		if (phase === 1 && canCloseInPhase1()) {
 			phase = 2;
-		} else if (phase === 2 && canCloseNow) {
-			void applyNow();
+			return;
 		}
+		if (phase === 2 && canCloseNow) {
+			void applyNow();
+			return;
+		}
+		// Bloqueado: feedback visible con el motivo (Título|Cuerpo).
+		notifyCtaBlocked();
+	}
+
+	/** Toast con el motivo de bloqueo del CTA (usa splitTooltip sobre `ctaDisabledReason`). */
+	function notifyCtaBlocked(): void {
+		const tip = splitTooltip(ctaDisabledReason ?? undefined);
+		toast.info(tip.title ?? 'No disponible todavía', {
+			description: tip.text
+		});
+	}
+
+	/**
+	 * Clic en un paso del stepper: navega entre fases sin cerrar la sesión
+	 * (el cierre es solo con el CTA; el mockup hace `if(p==3)break`).
+	 */
+	function handleStepClick(step: 1 | 2 | 3): void {
+		if (step === phase) return;
+		if (step === 3) return; // nunca cierra desde el stepper
+		if (step < phase) {
+			phase = step; // retroceso Contar ← Revisar (estado local)
+			return;
+		}
+		if (ctaDisabledReason) {
+			notifyCtaBlocked(); // avance bloqueado (pendientes o rol)
+			return;
+		}
+		phase = step;
 	}
 
 	function canCloseInPhase1(): boolean {
@@ -415,6 +454,8 @@
 		ctaDisabledReason={session.status === 'OPEN' ? ctaDisabledReason : null}
 		{onBack}
 		onOpenPhase={handlePhaseCta}
+		onCtaBlocked={notifyCtaBlocked}
+		onStepClick={handleStepClick}
 		onOpenResponsibles={openResponsibles}
 		onCancel={() => (cancelModal = true)}
 	/>

@@ -20,6 +20,10 @@
 		ctaDisabledReason?: string | null;
 		onBack: () => void;
 		onOpenPhase: () => void;
+		/** Toast con el motivo cuando el CTA está bloqueado (aria-disabled). */
+		onCtaBlocked?: () => void;
+		/** Clic en un paso del stepper (navega entre fases; nunca cierra). */
+		onStepClick: (step: 1 | 2 | 3) => void;
 		onOpenResponsibles: () => void;
 		onCancel?: () => void;
 	}
@@ -35,12 +39,20 @@
 		ctaDisabledReason = null,
 		onBack,
 		onOpenPhase,
+		onCtaBlocked,
+		onStepClick,
 		onOpenResponsibles,
 		onCancel
 	}: Props = $props();
 
-	const steps = [1, 2, 3];
+	const steps = [1, 2, 3] as const;
 	const labels = ['Contar', 'Revisar', 'Cerrar'];
+	// Spec 7.5 / mockup stT: qué hace cada paso.
+	const stepHints = [
+		'Ingresa lo contado ítem por ítem.',
+		'Recuenta y ajusta diferencias. Se habilita al contar todo.',
+		'Cierra y genera el informe. El cierre es con el botón de la derecha.'
+	];
 	const progressPercent = $derived(
 		progress.total === 0 ? 0 : Math.round((progress.verified / progress.total) * 100)
 	);
@@ -92,7 +104,7 @@
 	{#if phase !== 3}
 		<nav aria-label="Fases del conteo" class="flex gap-1">
 			{#each steps as step, index (step)}
-				<TriggerTooltip text={`${step} ${labels[index]!}`} side="bottom">
+				<TriggerTooltip title={`${step} ${labels[index]!}`} text={stepHints[index]} side="bottom">
 					{#snippet trigger({ props })}
 						<button
 							{...props}
@@ -101,7 +113,7 @@
 							class={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
 								phase === step ? 'bg-brand-blue text-brand-navy' : 'text-[#aab4cf] hover:text-white'
 							}`}
-							onclick={() => phase !== step && onOpenPhase()}
+							onclick={() => onStepClick(step)}
 						>
 							{step}
 							{labels[index]}
@@ -132,6 +144,7 @@
 		disabled={Boolean(ctaDisabledReason)}
 		disabledTooltip={ctaDisabledReason ?? undefined}
 		onclick={onOpenPhase}
+		onBlockedClick={onCtaBlocked}
 	>
 		{#snippet child()}{ctaLabel}{/snippet}
 	</CountButton>

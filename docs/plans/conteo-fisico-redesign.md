@@ -93,6 +93,41 @@ Se corrigieron todos los rojos reportados por Nanez:
 - Todos los checks en verde: Build · CodeQL · Coverage · E2E · Integration ·
   Lint · SonarCloud · TypeCheck · Unit · AGENTS-sync.
 
+### 🔧 Fix de los 8 defectos reportados tras la prueba manual de Nanez (2026-11-08)
+
+1. **«Cerrar conteo no hace nada»** — `ctaLabel` con rama fase 3 → «Volver a
+   cobertura»; `handlePhaseCta` con fase 3 → `onBack()`; clic bloqueado
+   (`onBlockedClick` → `notifyCtaBlocked`) ahora hace `toast.info` con el motivo
+   `Título|Cuerpo` (spec 7.5).
+2. **Padding doble del drawer** — `NewCountPanel` usa `bodyClass="p-4"` y se
+   quitó el `px-4 py-4` interno (antes: 24+16 px por lado).
+3. **Sin tooltips en las tabs del drawer** — las 4 opciones del segmented
+   (Todo/Marca/Proveedor/Tipo) llevan `tooltip`; `CountSegmented` e `InfoTooltip`
+   parsean `Título|Cuerpo` con `splitTooltip` (antes mostraban el `|` crudo —
+   también arregla `CountLabel`, `CycleSettingsPanel`, `CountTabs`, filtros).
+4. **Sin tooltips en los items del drawer** — las 3 tarjetas de atajo se envuelven
+   en `TriggerTooltip` y el subtítulo pasó del DOM al tooltip.
+5. **Botón «Iniciar conteo» parecía deshabilitado / sin feedback** — `CountButton`
+   solo usa la rama `aria-disabled` cuando `disabled && disabledTooltip` (antes
+   con solo `disabledTooltip`); añade `onBlockedClick`; el drawer muestra
+   «Iniciando…» con `submitting={isSubmitting}` mientras `createSession` corre.
+6. **Marca/proveedor = 0 items** — raíz: `filterScopeItems` comparaba
+   `scope.values` (ids, spec 12.3) contra nombres. Ahora `groupValueOf`
+   (brandId/supplierId/typeValue) alimenta `buildCoverageGroups` (el `value` del
+   grupo es el id de alcance), `filterScopeItems` y las opciones del combobox;
+   los ítems sin clave escopable (lentes en BRAND/TYPE) no forman grupo.
+7. **«Quick es inválido» / «n no cumple mínimo»** — la UI mandaba `null` donde
+   Zod espera `undefined` (`.optional()`); `createCount` y `handleSubmit` convierten
+   con `?? undefined` y los tipos de `onSubmit` pasaron a `quick?`/`n?`.
+8. **Stepper podía cerrar la sesión** — el stepper llamaba a `handlePhaseCta`
+   para cualquier paso; ahora `onStepClick` → `handleStepClick` navega entre
+   fases (retroceso incluido), nunca salta a 3 (el mockup hace `if(p==3)break`)
+   y el avance bloqueado muestra el motivo.
+
+Tests: spec unit `tooltip.spec.ts` (6 casos de `splitTooltip`); int spec con
+`group.value === brand.id` + `previewCountScope` por marca/proveedor/id
+inexistente (regresión del defecto 6).
+
 ### 📌 PENDIENTE (post-merge, no bloquean el PR)
 1. `DATABASE_URL` + navegadores de Playwright en el entorno para correr integration/e2 (migraciones + e2e actualizado a flujo nuevo «Revisar → / Cerrar conteo»). La suite .int nueva y el e2e están listos para CI.
 2. Ajustes de estilo fino vs mockup (captura-a-captura) y recorridos a11y/teclado finos (Fase 7). Virtualización ya implementada (ver Tanda 2).

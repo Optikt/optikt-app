@@ -104,8 +104,8 @@
 	}
 
 	async function createCount(scope: {
-		quick: 'OLDEST' | 'NEVER' | null;
-		n: number | null;
+		quick?: 'OLDEST' | 'NEVER';
+		n?: number;
 		dim: 'ALL' | 'BRAND' | 'SUPPLIER' | 'TYPE';
 		values: Tag[];
 		responsibles: Tag[];
@@ -118,8 +118,9 @@
 			const response = await createSessionCmd({
 				dim: scope.dim,
 				values: scope.values.map((tag) => tag.key),
-				quick: scope.quick,
-				n: scope.n,
+				// Zod: z.enum().optional() y CoercedInteger.optional() aceptan undefined, no null.
+				quick: scope.quick ?? undefined,
+				n: scope.n ?? undefined,
 				notes: scope.notes,
 				responsibles: [
 					...scope.responsibles.map((tag) => ({
@@ -283,6 +284,7 @@
 		displayName: option.displayName
 	}))}
 	preload={preloadScope}
+	submitting={isSubmitting}
 	onSubmit={createCount}
 	onClose={() => (showNew = false)}
 />

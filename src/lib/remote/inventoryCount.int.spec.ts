@@ -152,11 +152,13 @@ describe('Capa 3 · descubrimiento (config/cobertura/opciones)', () => {
 
 	it('getCoverageData/listCountOptions/previewCountScope devuelven forma completa', async () => {
 		const adminId = await admin();
-		await productFixture();
+		const { brand } = await productFixture();
 
 		const coverage = await invoke<CoverageData>(getCoverageData, undefined, adminId);
 		expect(coverage.summary.itemCount).toBeGreaterThanOrEqual(1);
 		expect(coverage.groups.BRAND.length).toBeGreaterThanOrEqual(1);
+		// El value del grupo es el id de alcance (spec 12.3), no el nombre.
+		expect(coverage.groups.BRAND.some((group) => group.value === brand.id)).toBe(true);
 		expect(coverage.options.TYPE.length).toBe(4);
 
 		const options = await invoke<CoverageOptionRow[]>(listCountOptions, { dim: 'BRAND' }, adminId);
@@ -168,6 +170,33 @@ describe('Capa 3 · descubrimiento (config/cobertura/opciones)', () => {
 			adminId
 		);
 		expect(previewAll.total).toBeGreaterThanOrEqual(1);
+	});
+
+	it('previewCountScope por marca/proveedor filtra por id de alcance (no por nombre)', async () => {
+		const adminId = await admin();
+		const { brand, supplier } = await productFixture();
+
+		const byBrand = await invoke<ScopePreview>(
+			previewCountScope,
+			{ dim: 'BRAND', values: [brand.id] },
+			adminId
+		);
+		expect(byBrand.total).toBeGreaterThanOrEqual(1);
+
+		const bySupplier = await invoke<ScopePreview>(
+			previewCountScope,
+			{ dim: 'SUPPLIER', values: [supplier.id] },
+			adminId
+		);
+		expect(bySupplier.total).toBeGreaterThanOrEqual(1);
+
+		// Un id que no existe no debe contar nada (antes los nombres pasaban el filtro).
+		const unknownId = await invoke<ScopePreview>(
+			previewCountScope,
+			{ dim: 'BRAND', values: [crypto.randomUUID()] },
+			adminId
+		);
+		expect(unknownId.total).toBe(0);
 	});
 
 	it('un SELLER también puede descubrir (lecturas A/M/S)', async () => {

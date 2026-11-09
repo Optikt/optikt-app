@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
+	import { splitTooltip } from '$lib/utils/tooltip';
 
 	interface Props {
 		variant?: 'gold' | 'navy' | 'ghost';
@@ -12,6 +13,8 @@
 		onclick?: () => void;
 		/** `disabled` de verdad (solo cuando la explicación no hace falta). */
 		disabled?: boolean;
+		/** Se invoca al hacer click estando deshabilitado (para dar feedback). */
+		onBlockedClick?: () => void;
 		class?: string;
 		type?: 'button' | 'submit';
 	}
@@ -23,9 +26,12 @@
 		title,
 		onclick,
 		disabled = false,
+		onBlockedClick,
 		class: className = '',
 		type = 'button'
 	}: Props = $props();
+
+	const blockedTip = $derived(splitTooltip(disabledTooltip));
 
 	const variantClasses: Record<string, string> = {
 		gold: 'bg-brand-gold text-brand-navy hover:bg-brand-gold-dark',
@@ -37,14 +43,15 @@
 	function handleClick(event: MouseEvent): void {
 		if (disabled) {
 			event.preventDefault();
+			onBlockedClick?.();
 			return;
 		}
 		onclick?.();
 	}
 </script>
 
-{#if disabledTooltip}
-	<TriggerTooltip {title} text={disabledTooltip}>
+{#if disabled && disabledTooltip}
+	<TriggerTooltip title={blockedTip.title ?? title} text={blockedTip.text}>
 		{#snippet trigger({ props })}
 			<button
 				{...props}

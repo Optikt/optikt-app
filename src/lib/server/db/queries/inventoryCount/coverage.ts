@@ -45,6 +45,17 @@ function groupNameOf(dim: CoverageDim, item: CoverageItemRow): string {
 	return item.typeLabel;
 }
 
+/**
+ * Clave de agrupación y de alcance por dimensión: **id crudo** (marca/proveedor)
+ * o valor de `ProductType` (spec 12.3: `scope.values` = ids, no etiquetas).
+ * `null` = ítem no escopable en esta dimensión (p. ej. lentes o productos sin marca en BRAND).
+ */
+function groupValueOf(dim: CoverageDim, item: CoverageItemRow): string | null {
+	if (dim === 'BRAND') return item.brandId;
+	if (dim === 'SUPPLIER') return item.supplierId;
+	return item.typeValue;
+}
+
 export function buildCoverageGroups(
 	dim: CoverageDim,
 	items: CoverageItemRow[],
@@ -52,14 +63,18 @@ export function buildCoverageGroups(
 ): CoverageGroupRow[] {
 	const groups = new Map<string, CoverageItemRow[]>();
 	for (const item of items) {
-		const name = groupNameOf(dim, item);
-		const bucket = groups.get(name) ?? [];
+		const value = groupValueOf(dim, item);
+		// Sin clave escopable (p. ej. lentes en BRAND/TYPE): no forman grupo,
+		// porque no pueden ser alcance de un conteo por dimensión.
+		if (value == null) continue;
+		const bucket = groups.get(value) ?? [];
 		bucket.push(item);
-		groups.set(name, bucket);
+		groups.set(value, bucket);
 	}
 
 	return [...groups.entries()]
-		.map(([name, bucket]) => {
+		.map(([value, bucket]) => {
+			const name = groupNameOf(dim, bucket[0]!);
 			const countedAges = bucket
 				.filter((item) => item.lastCountedAt != null)
 				.map((item) => itemAgeDays(item))
@@ -67,7 +82,7 @@ export function buildCoverageGroups(
 			const verifiedCount = countedAges.filter((age) => age <= cycleDays).length;
 			const medianAgeDays = medianOf(countedAges);
 			return {
-				value: name,
+				value,
 				name,
 				itemCount: bucket.length,
 				verifiedCount,
@@ -81,6 +96,7 @@ export function buildCoverageGroups(
 }
 
 export interface CoverageGroupRow {
+	/** Clave del alcance: id de marca/proveedor o valor de tipo (lo que viaja en `scope.values`). */
 	value: string;
 	name: string;
 	itemCount: number;
@@ -124,7 +140,7 @@ export async function getCoverage(cycleDays: number, executor: DbOrTx = db): Pro
 		SUPPLIER: await optionsForCatalogDim('SUPPLIER', groups.SUPPLIER, executor),
 		TYPE: ALL_PRODUCT_TYPES.map((type) => {
 			const name = getProductTypeLabel(type);
-			const group = groups.TYPE.find((row) => row.value === name);
+			const group = groups.TYPE.find((row) => row.value === type);
 			return {
 				id: type,
 				name,
@@ -146,20 +162,20 @@ async function optionsForCatalogDim(
 	groups: CoverageGroupRow[],
 	executor: DbOrTx
 ): Promise<CoverageOptionRow[]> {
-	const byName = new Map(groups.map((group) => [group.value, group]));
+	const byValue = new Map(groups.map((group) => [group.value, group]));
 	if (dim === 'BRAND') {
 		const rows = await executor
 			.select({ id: brands.id, name: brands.name })
 			.from(brands)
 			.where(isNull(brands.deletedAt))
 			.orderBy(asc(brands.name));
-		return rows.map((row) => toOption(row.id, row, byName));
+		return rows.map((row) => toOption(row.id, row, byValue));
 	}
 	const rows = await executor
 		.select({ id: suppliers.id, name: suppliers.name })
 		.from(suppliers)
 		.orderBy(asc(suppliers.name));
-	return rows.map((row) => toOption(row.id, row, byName));
+	return rows.map((row) => toOption(row.id, row, byValue));
 }
 
 type CatalogRow = { id: string; name: string };
@@ -167,9 +183,9 @@ type CatalogRow = { id: string; name: string };
 function toOption(
 	id: string,
 	row: CatalogRow,
-	byName: Map<string, CoverageGroupRow>
+	byValue: Map<string, CoverageGroupRow>
 ): CoverageOptionRow {
-	const group = byName.get(row.name);
+	const group = byValue.get(id);
 	return {
 		id,
 		name: row.name,
@@ -201,7 +217,12 @@ export function filterScopeItems(
 		return [...items].sort((a, b) => itemAgeDays(b) - itemAgeDays(a)).slice(0, limit);
 	}
 	if (scope.dim === 'ALL' || scope.kind === 'ALL') return items;
-	return items.filter((item) => scope.values.includes(groupNameOf(scopeToGroupDim(scope), item)));
+	const dim = scopeToGroupDim(scope);
+	// Filtra por id crudo: mismo contrato que createSnapshotLines (inArray por id/tipo).
+	return items.filter((item) => {
+		const value = groupValueOf(dim, item);
+		return value != null && scope.values.includes(value);
+	});
 }
 
 function scopeToGroupDim(scope: Pick<ScopeSelection, 'kind' | 'dim'>): CoverageDim {
@@ -238,6 +259,10 @@ export interface CoverageItemRow {
 	typeLabel: string;
 	brandName: string;
 	supplierName: string;
+	/** IDs crudos para filtrar alcance (marca/proveedor/tipo) por valor, no por etiqueta. */
+	brandId: string | null;
+	supplierId: string | null;
+	typeValue: string | null;
 	stock: number;
 	lastCountedAt: string | null;
 	createdAt: string | null;
@@ -253,6 +278,8 @@ export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageIte
 				id: products.id,
 				name: products.name,
 				type: products.type,
+				brandId: products.brandId,
+				supplierId: products.supplierId,
 				brandName: brands.name,
 				supplierName: suppliers.name,
 				stock: sql<number>`coalesce(${products.stock}, 0)`.mapWith(Number),
@@ -274,6 +301,7 @@ export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageIte
 				id: lensCatalogItems.id,
 				name: lensCatalogItems.name,
 				type: lensCatalogItems.type,
+				supplierId: lensCatalogItems.supplierId,
 				supplierName: suppliers.name,
 				stock: sql<number>`coalesce(${lensCatalogItems.stock}, 0)`.mapWith(Number),
 				lastCountedAt: lensCatalogItems.lastCountedAt,
@@ -302,6 +330,9 @@ export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageIte
 		lensCatalogItemId: null,
 		name: row.name,
 		typeLabel: getProductTypeLabel(row.type),
+		brandId: row.brandId,
+		supplierId: row.supplierId,
+		typeValue: row.type,
 		brandName: row.brandName ?? '—',
 		supplierName: row.supplierName ?? '—',
 		stock: row.stock,
@@ -316,6 +347,9 @@ export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageIte
 		lensCatalogItemId: row.id,
 		name: row.name,
 		typeLabel: getLensTypeLabel(row.type),
+		brandId: null,
+		supplierId: row.supplierId,
+		typeValue: null,
 		brandName: '—',
 		supplierName: row.supplierName ?? '—',
 		stock: row.stock,
