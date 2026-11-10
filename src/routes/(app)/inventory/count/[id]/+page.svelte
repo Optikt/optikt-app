@@ -21,13 +21,14 @@
 	import { createLineSaveQueue } from '$lib/shared/countLineSaveQueue';
 	import {
 		blockedToast,
+		buildDiffRows,
 		phaseCtaAction,
 		phaseCtaLabel,
 		phaseCtaReason,
 		stepClickOutcome
 	} from '$lib/shared/countSessionPhase';
 	import { ADJUSTMENT_REASON_LABELS, AdjustmentReason } from '$lib/shared/enums';
-	import { computeCountStats, lineDiff, type CountCycleConfig } from '$lib/shared/inventoryCount';
+	import { computeCountStats, type CountCycleConfig } from '$lib/shared/inventoryCount';
 	import type {
 		InventoryCountSessionDetail,
 		CountLineRow,
@@ -94,22 +95,7 @@
 	const ctaDisabledReason = $derived(phaseCtaReason(phase, stats));
 	const ctaLabel = $derived(phaseCtaLabel(phase));
 
-	const diffRows = $derived.by(() => {
-		return lines
-			.map((line) => {
-				const diff = lineDiff(line);
-				return { line, diff };
-			})
-			.filter(
-				(entry): entry is { line: CountLineRow; diff: number } =>
-					entry.diff != null && entry.diff !== 0
-			)
-			.sort((a, b) => {
-				const costA = costByLineId.get(a.line.id) ?? 0;
-				const costB = costByLineId.get(b.line.id) ?? 0;
-				return Math.abs(b.diff * costB) - Math.abs(a.diff * costA);
-			});
-	});
+	const diffRows = $derived(buildDiffRows(lines, costByLineId));
 
 	const batchAdjustable = $derived(
 		diffRows.filter(({ line, diff }) => {

@@ -6,6 +6,7 @@
  * nunca se dispara desde un paso del stepper).
  */
 import { splitTooltip } from '$lib/utils/tooltip';
+import { lineDiff, type CountLineCore } from './inventoryCount';
 
 export interface PhaseStats {
 	pendingCounting: number;
@@ -65,6 +66,23 @@ export function stepClickOutcome(
 	if (step === phase || step === 3) return { kind: 'noop' };
 	if (step < phase) return { kind: 'phase', phase: step };
 	return reason ? { kind: 'blocked' } : { kind: 'phase', phase: step };
+}
+
+/** Filas con diferencia (≠0) ordenadas por impacto |diff × costo| descendente. */
+export function buildDiffRows<Line extends CountLineCore>(
+	lines: Line[],
+	costByLineId: Map<number, number | null>
+): Array<{ line: Line; diff: number }> {
+	return lines
+		.map((line) => ({ line, diff: lineDiff(line) }))
+		.filter(
+			(entry): entry is { line: Line; diff: number } => entry.diff != null && entry.diff !== 0
+		)
+		.sort((a, b) => {
+			const costA = costByLineId.get(a.line.id) ?? 0;
+			const costB = costByLineId.get(b.line.id) ?? 0;
+			return Math.abs(b.diff * costB) - Math.abs(a.diff * costA);
+		});
 }
 
 /** Payload del toast de bloqueo: título + descripción del motivo `Título|Cuerpo`. */

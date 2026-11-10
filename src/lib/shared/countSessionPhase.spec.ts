@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	blockedToast,
+	buildDiffRows,
 	phaseCtaAction,
 	phaseCtaLabel,
 	phaseCtaReason,
@@ -96,5 +97,39 @@ describe('blockedToast', () => {
 
 	it('sin motivo devuelve un título por defecto', () => {
 		expect(blockedToast(null)).toEqual({ title: 'No disponible todavía' });
+	});
+});
+
+describe('buildDiffRows', () => {
+	const base = {
+		itemType: 'PRODUCT',
+		countedStock: null,
+		recountedStock: null,
+		adjustmentMovementId: null
+	};
+
+	it('filtra líneas sin diferencia y ordena por impacto |diff × costo| descendente', () => {
+		const lines = [
+			{ ...base, id: 1, systemStock: 10, countedStock: 10 }, // diff 0 → fuera
+			{ ...base, id: 2, systemStock: 5, countedStock: 7 }, // +2 × $10 = $20
+			{ ...base, id: 3, systemStock: 5, countedStock: 1 }, // −4 × $100 = $400
+			{ ...base, id: 4, systemStock: 5, countedStock: null } // sin conteo → fuera
+		];
+		const rows = buildDiffRows(
+			lines,
+			new Map([
+				[2, 10],
+				[3, 100]
+			])
+		);
+		expect(rows.map((r) => r.line.id)).toEqual([3, 2]);
+		expect(rows[0].diff).toBe(-4);
+		expect(rows[1].diff).toBe(2);
+	});
+
+	it('considera el recuento (final = recount ?? count)', () => {
+		const lines = [{ ...base, id: 9, systemStock: 4, countedStock: 9, recountedStock: 4 }];
+		const rows = buildDiffRows(lines, new Map());
+		expect(rows).toHaveLength(0); // recuento = sistema → sin diferencia
 	});
 });
