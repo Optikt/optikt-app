@@ -17,6 +17,9 @@
 		saving: boolean;
 		hasChanges: boolean;
 		hasItems: boolean;
+		/** An item editor is open on top: «Hecho» owns saving there, so the
+		 *  order-level reason input and «Guardar cambios» stay out of view. */
+		editing?: boolean;
 		onClose: () => void;
 		onSubmit: () => void;
 	}
@@ -33,6 +36,7 @@
 		saving,
 		hasChanges,
 		hasItems,
+		editing = false,
 		onClose,
 		onSubmit
 	}: Props = $props();
@@ -117,7 +121,7 @@
 <footer
 	class="shrink-0 bg-brand-navy px-5 pt-2.5 pb-3 text-white shadow-[0_-8px_24px_rgba(21,35,70,0.18)]"
 >
-	{#if hasChanges}
+	{#if hasChanges && !editing}
 		<div class="relative mb-2" class:reason-in={reasonAnim && !reduceMotion}>
 			{#snippet reasonTrigger({ props }: { props: Record<string, unknown> })}
 				<span class="relative block w-full">
@@ -219,55 +223,60 @@
 			</div>
 		</div>
 
-		<!-- Actions -->
-		<div class="flex flex-col items-end gap-1.5">
-			{#if missingHint}
-				<p class="text-[12px] font-semibold text-brand-gold-light" role="status">{missingHint}</p>
-			{/if}
-			<div class="flex items-center gap-2.5">
-				{#snippet cancelTrigger({ props }: { props: Record<string, unknown> })}
-					<button
-						{...props}
-						type="button"
-						onclick={onClose}
-						disabled={saving}
-						class="h-9 rounded-lg border border-white/40 bg-transparent px-4 text-[13px] font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
-					>
-						Cancelar
-					</button>
-				{/snippet}
-				<TriggerTooltip text={cancelTooltip} side="top" trigger={cancelTrigger} />
+		<!-- Actions: order-level save lives only in the list view — while an item
+		     editor is open, «Hecho» owns the flow and Cancelar/Guardar stay hidden. -->
+		{#if !editing}
+			<div class="flex flex-col items-end gap-1.5">
+				{#if missingHint}
+					<p class="text-[12px] font-semibold text-brand-gold-light" role="status">
+						{missingHint}
+					</p>
+				{/if}
+				<div class="flex items-center gap-2.5">
+					{#snippet cancelTrigger({ props }: { props: Record<string, unknown> })}
+						<button
+							{...props}
+							type="button"
+							onclick={onClose}
+							disabled={saving}
+							class="h-9 rounded-lg border border-white/40 bg-transparent px-4 text-[13px] font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
+						>
+							Cancelar
+						</button>
+					{/snippet}
+					<TriggerTooltip text={cancelTooltip} side="top" trigger={cancelTrigger} />
 
-				{#snippet saveTrigger({ props }: { props: Record<string, unknown> })}
-					<button
-						{...props}
-						type="button"
-						onclick={() => {
-							if (canSave) onSubmit();
-						}}
-						aria-disabled={!canSave}
-						class={`inline-flex h-9 min-w-[150px] items-center justify-center gap-2 rounded-lg px-4 text-[13px] font-bold text-brand-navy transition ${
-							canSave
-								? 'bg-brand-gold hover:bg-brand-gold-dark'
-								: 'cursor-not-allowed bg-white/14 text-white/50'
-						}`}
-					>
-						{#if saving}
-							<span
-								class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-navy/30 border-t-brand-navy"
-							></span>
-							Guardando...
-						{:else}
-							Guardar cambios
-						{/if}
-					</button>
-				{/snippet}
-				<TriggerTooltip text={saveTooltip} side="top" trigger={saveTrigger} />
+					{#snippet saveTrigger({ props }: { props: Record<string, unknown> })}
+						<button
+							{...props}
+							type="button"
+							onclick={() => {
+								if (canSave) onSubmit();
+							}}
+							aria-disabled={!canSave}
+							class={`inline-flex h-9 min-w-[150px] items-center justify-center gap-2 rounded-lg px-4 text-[13px] font-bold text-brand-navy transition ${
+								canSave
+									? 'bg-brand-gold hover:bg-brand-gold-dark'
+									: 'cursor-not-allowed bg-white/14 text-white/50'
+							}`}
+						>
+							{#if saving}
+								<span
+									class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-navy/30 border-t-brand-navy"
+								></span>
+								Guardando...
+							{:else}
+								Guardar cambios
+							{/if}
+						</button>
+					{/snippet}
+					<TriggerTooltip text={saveTooltip} side="top" trigger={saveTrigger} />
+				</div>
+				{#if reasonError || submitError}
+					<p class="text-[11px] text-[#ffb4ab]" role="alert">{reasonError || submitError}</p>
+				{/if}
 			</div>
-			{#if reasonError || submitError}
-				<p class="text-[11px] text-[#ffb4ab]" role="alert">{reasonError || submitError}</p>
-			{/if}
-		</div>
+		{/if}
 	</div>
 
 	<!-- Total row -->

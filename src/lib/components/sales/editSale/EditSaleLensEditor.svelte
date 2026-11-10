@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { logger } from '$lib/utils/logger';
 	import { LensCatalogSource } from '$lib/shared/enums';
 	import ItemSelect from '../ItemSelect.svelte';
 	import LensEditorPanel from '$lib/components/documentEditor/LensEditorPanel.svelte';
@@ -34,9 +35,11 @@
 			brandName: string | undefined,
 			applyInfo?: { measures: PrescriptionMeasures; eyesWithRx: number }
 		) => void;
+		/** Forwarded to the panel: unique blocking messages for the band tooltip. */
+		onMissing?: (labels: string[]) => void;
 	}
 
-	let { item, editTreatments, treatments, measures, onApply }: Props = $props();
+	let { item, editTreatments, treatments, measures, onApply, onMissing }: Props = $props();
 
 	/** Mount-time snapshot: placeholders always carry a local id, so editing an
 	 *  existing item and adding a fresh one both seed through the adapter. */
@@ -117,7 +120,13 @@
 
 	/** Exposed for the item band's «Hecho» button: runs the guarded panel flow. */
 	export function apply() {
-		panelApi?.requestApply();
+		if (!panelApi) {
+			// Un binding roto no debe volver a ser un silencio sin feedback.
+			logger.error('LensEditorPanel no montado: «Hecho» no puede aplicar el borrador');
+			toast.error('No se pudo aplicar el borrador: cierra y reabre el editor');
+			return;
+		}
+		panelApi.requestApply();
 	}
 
 	function commitDraft() {
@@ -168,6 +177,7 @@
 {/snippet}
 
 <LensEditorPanel
+	bind:this={panelApi}
 	bind:draft={lensDraft}
 	lensType={context.selectedLens?.type ?? ''}
 	ranges={context.selectedLens?.ranges ?? []}
@@ -185,4 +195,5 @@
 	onAddTreatment={addTreatment}
 	onRemoveTreatment={removeTreatment}
 	onApply={commitDraft}
+	{onMissing}
 />
