@@ -32,6 +32,7 @@ Owner rules: los materiales del producto son del dominio `materials` (referencia
 - ⚠️ `products.stock` = proyección de `SUM(inventory_lots.quantityAvailable)`. Se muta SOLO via `incrementProductStock`/`decrementProductStock` con `executor: DbOrTx`, dentro de transacciones (`queries/products.ts:369,387`). Nunca UPDATE directo de stock.
 - `currentPurchasePrice/currentSalePrice` provienen del lote más reciente (`schema/products.ts:44-47`). Cambiar precio de venta = `updateSalePriceCmd` (`products.remote.ts:361`).
 - El inventario es la fuente de verdad; si drift de stock, se corrige con ajustes del dominio `inventory`, no re-normalizando la columna.
+- Cobertura de conteo: `lastCountedAt`/`lastCountSessionId` (`schema/products.ts`) los escribe **solo** el cierre de sesión del dominio `inventory` (`applySession`), únicamente en líneas verificadas — alimentan la cobertura del ciclo. Ningún flujo de products los muta.
 
 **Entidades pendientes (inline-create del wizard)**
 

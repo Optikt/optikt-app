@@ -18,6 +18,7 @@ Owner rules: el perfil y autenticación pertenecen al dominio `users` — solo l
 - **Singleton**: `getSettings()` auto-crea la fila única si no existe en el primer acceso (`queries/settings.ts:14-21`); `updateSettings` garantiza existencia vía `getSettings`.
 - `defaultTaxRate`: 0..100, number, default 16 (`schema/settings.ts:16`).
 - `updateSettingsForm` mapea con `|| undefined` para no pisar campos no enviados (`settings.remote.ts:33-42`) — preservar esa semántica partial-update.
+- Campos de conteo físico (`countCycleDays` 30, `countDiffThresholdUnits` 2, `countDiffThresholdUsd` 0, `countQuickOldestLimit` 50 en `schema/settings.ts`): config del ciclo del dominio `inventory` — las reglas que derivan viven en `docs/agents/inventory.md` y `shared/inventoryCount.ts`; este dominio solo los persiste.
 
 ## Patrones locales
 
