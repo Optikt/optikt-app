@@ -30,7 +30,13 @@ export function requireOpenSession(
 	session: InventoryCountSession | null
 ): asserts session is InventoryCountSession {
 	if (!session) throw new Error('Sesión de conteo no encontrada');
-	if (session.status !== 'OPEN') throw new Error('La sesión ya no está abierta');
+	requireOpenSessionStatus(session.status);
+}
+
+/** Mismos mensajes que `requireOpenSession`, para lecturas que solo traen `status` (1 query). */
+export function requireOpenSessionStatus(status: string | null): void {
+	if (status == null) throw new Error('Sesión de conteo no encontrada');
+	if (status !== 'OPEN') throw new Error('La sesión ya no está abierta');
 }
 
 export function normalizeSessionNotes(notes?: string | null): string | null {

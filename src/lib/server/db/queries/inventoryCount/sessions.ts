@@ -37,7 +37,7 @@ import {
 	normalizeSessionNotes,
 	isAdminRole
 } from './shared';
-import { getCoverage, selectCoverageItems } from './coverage';
+import { coverageSummaryLite, selectCoverageItems } from './coverage';
 import { listSessionResponsibles } from './responsibles';
 import { getSessionLines } from './lines';
 import { buildLineCostMap } from './costs';
@@ -132,7 +132,9 @@ export async function createSession(
 	};
 
 	const config = await getCountCycleConfig();
-	const coverage = await getCoverage(config.cycleDays, executor);
+	// coverageBefore solo necesita el resumen: getCoverage completo (agrupados +
+	// opciones + COUNT por fila) costaba ~3 s en DB remota para obtener 2 números.
+	const coverage = await coverageSummaryLite(config.cycleDays, executor);
 	const now = new Date().toISOString();
 
 	const [session] = await executor
@@ -147,8 +149,8 @@ export async function createSession(
 			scopeN: data.scopeN,
 			notes: normalizeSessionNotes(data.notes),
 			openedById: data.openedById,
-			coverageBefore: coverage.summary.verifiedPercent,
-			coverageNeverBefore: coverage.summary.neverCounted,
+			coverageBefore: coverage.verifiedPercent,
+			coverageNeverBefore: coverage.neverCounted,
 			createdAt: now,
 			updatedAt: now
 		})

@@ -19,11 +19,21 @@
 		config: CountCycleConfig;
 		costByLineId: Map<number, number | null>;
 		canCount: boolean;
+		/** Líneas con un guard en vuelo (visual readonly mientras se guardan). */
+		savingLineIds?: Set<number>;
 		onSaveLine: (lineId: number, value: number) => void;
 		onConfirmZero: () => void;
 	}
 
-	let { lines, config, costByLineId, canCount, onSaveLine, onConfirmZero }: Props = $props();
+	let {
+		lines,
+		config,
+		costByLineId,
+		canCount,
+		savingLineIds = new Set(),
+		onSaveLine,
+		onConfirmZero
+	}: Props = $props();
 
 	let filter = $state<'ALL' | 'PENDING' | 'WITH_DIFF' | 'ZERO_STOCK'>('ALL');
 	let search = $state('');
@@ -370,8 +380,14 @@
 										aria-label="Contado {line.itemName}"
 										value={finalCount(line) ?? ''}
 										disabled={!canCount}
+										readonly={savingLineIds.has(line.id)}
+										aria-busy={savingLineIds.has(line.id)}
 										data-line-idx={virtualLine.lineIndex}
-										class="w-24 rounded-lg border border-outline-variant/40 bg-white px-2 py-1.5 text-right font-semibold tabular-nums focus:ring-2 focus:ring-brand-blue/50 focus:outline-none"
+										class="w-24 rounded-lg border border-outline-variant/40 bg-white px-2 py-1.5 text-right font-semibold tabular-nums focus:ring-2 focus:ring-brand-blue/50 focus:outline-none {savingLineIds.has(
+											line.id
+										)
+											? 'opacity-70'
+											: ''}"
 										oninput={(event) => {
 											const input = event.currentTarget as HTMLInputElement;
 											input.value = input.value.replace(/\D/g, '').slice(0, 4);

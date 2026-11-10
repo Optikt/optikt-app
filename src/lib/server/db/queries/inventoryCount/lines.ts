@@ -23,6 +23,7 @@ import {
 	FINAL_COUNT_SQL,
 	FINAL_DIFF_SQL,
 	requireOpenSession,
+	requireOpenSessionStatus,
 	normalizeSessionNotes
 } from './shared';
 import type { CountLineRow, UpsertCountLineInput, RecountLineInput } from './types';
@@ -143,13 +144,30 @@ export async function upsertCountLine(
 	data: UpsertCountLineInput,
 	executor: DbOrTx = db
 ): Promise<CountLineRow> {
-	const line = await requireLineById(data.lineId, executor);
-	const [session] = await executor
-		.select()
-		.from(inventoryCountSessions)
-		.where(eq(inventoryCountSessions.id, line.sessionId))
+	// 1) Lectura única: estado previo de la línea + status de la sesión (antes eran
+	//    3 queries: sessionIdForLine + requireLineById con joins + sesión).
+	const [line] = await executor
+		.select({
+			id: inventoryCountLines.id,
+			sessionId: inventoryCountLines.sessionId,
+			systemStock: inventoryCountLines.systemStock,
+			countedStock: inventoryCountLines.countedStock,
+			notes: inventoryCountLines.notes,
+			recountedStock: inventoryCountLines.recountedStock,
+			recountedById: inventoryCountLines.recountedById,
+			recountedAt: inventoryCountLines.recountedAt,
+			adjustmentMovementId: inventoryCountLines.adjustmentMovementId,
+			adjustmentCompleted: inventoryCountLines.adjustmentCompleted,
+			adjustmentCompletedById: inventoryCountLines.adjustmentCompletedById,
+			adjustmentCompletedAt: inventoryCountLines.adjustmentCompletedAt,
+			sessionStatus: inventoryCountSessions.status
+		})
+		.from(inventoryCountLines)
+		.leftJoin(inventoryCountSessions, eq(inventoryCountLines.sessionId, inventoryCountSessions.id))
+		.where(eq(inventoryCountLines.id, data.lineId))
 		.limit(1);
-	requireOpenSession(session ?? null);
+	if (!line) throw new Error('La línea de conteo no existe');
+	requireOpenSessionStatus(line.sessionStatus);
 
 	const known = line.countedStock ?? null;
 	const nextDiff = data.countedStock - line.systemStock;
@@ -163,7 +181,9 @@ export async function upsertCountLine(
 		data.notes === undefined ? line.notes : normalizeSessionNotes(data.notes ?? null);
 	const now = new Date().toISOString();
 
-	await executor
+	// 2) Update con guard atómico: si la sesión se cerró entre la lectura y este
+	//    write, el EXISTS filtra la fila y no se modifica nada (sin tx extra).
+	const updated = await executor
 		.update(inventoryCountLines)
 		.set({
 			countedStock: data.countedStock,
@@ -180,11 +200,23 @@ export async function upsertCountLine(
 			adjustmentCompletedAt: resetDerived ? null : line.adjustmentCompletedAt,
 			updatedAt: now
 		})
-		.where(eq(inventoryCountLines.id, line.id));
+		.where(
+			and(
+				eq(inventoryCountLines.id, line.id),
+				sql`exists (
+					select 1 from ${inventoryCountSessions}
+					where ${inventoryCountSessions.id} = ${inventoryCountLines.sessionId}
+						and ${inventoryCountSessions.status} = 'OPEN'
+				)`
+			)
+		)
+		.returning({ id: inventoryCountLines.id });
+	if (updated.length === 0) throw new Error('La sesión ya no está abierta');
 
-	const updated = await getLineById(line.id, executor);
-	if (!updated) throw new Error('No se pudo recargar la línea actualizada');
-	return updated;
+	// 3) DTO enriquecido (joins de marca/proveedor/usuarios) solo al final.
+	const full = await getLineById(line.id, executor);
+	if (!full) throw new Error('No se pudo recargar la línea actualizada');
+	return full;
 }
 
 // ── Recuento (fase Revisar) ─────────────────────────────────────────────────

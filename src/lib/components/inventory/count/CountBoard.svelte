@@ -9,14 +9,25 @@
 		config: CountCycleConfig;
 		costByLineId: Map<number, number | null>;
 		canCount: boolean;
+		/** Líneas con un guard en vuelo (visual readonly mientras se guardan). */
+		savingLineIds?: Set<number>;
 		onSaveLine: (lineId: number, value: number) => void;
 		onConfirmZero: () => void;
 		isMobile: boolean;
 		mode: 'ficha' | 'lista';
 	}
 
-	let { lines, config, costByLineId, canCount, onSaveLine, onConfirmZero, isMobile, mode }: Props =
-		$props();
+	let {
+		lines,
+		config,
+		costByLineId,
+		canCount,
+		savingLineIds = new Set(),
+		onSaveLine,
+		onConfirmZero,
+		isMobile,
+		mode
+	}: Props = $props();
 
 	// ── Ficha (teléfono) ─────────────────────────────────────────────────────
 
@@ -79,7 +90,13 @@
 				aria-label="Contado {fichaLine.itemName}"
 				value={finalCountHelper(fichaLine) ?? ''}
 				disabled={!canCount}
-				class="mx-auto mt-1 block w-40 rounded-xl border border-outline-variant/40 bg-white px-3 py-3 text-center text-4xl font-bold"
+				readonly={savingLineIds.has(fichaLine.id)}
+				aria-busy={savingLineIds.has(fichaLine.id)}
+				class="mx-auto mt-1 block w-40 rounded-xl border border-outline-variant/40 bg-white px-3 py-3 text-center text-4xl font-bold {savingLineIds.has(
+					fichaLine.id
+				)
+					? 'opacity-70'
+					: ''}"
 				oninput={(event) => {
 					const input = event.currentTarget as HTMLInputElement;
 					input.value = input.value.replace(/\D/g, '').slice(0, 4);
@@ -114,5 +131,13 @@
 		<p class="p-10 text-center text-sm text-on-surface-variant">Sin ítems en la ficha</p>
 	{/if}
 {:else}
-	<CountVirtualList {lines} {config} {costByLineId} {canCount} {onSaveLine} {onConfirmZero} />
+	<CountVirtualList
+		{lines}
+		{config}
+		{costByLineId}
+		{canCount}
+		{savingLineIds}
+		{onSaveLine}
+		{onConfirmZero}
+	/>
 {/if}

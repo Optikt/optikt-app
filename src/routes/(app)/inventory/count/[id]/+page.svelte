@@ -17,6 +17,8 @@
 		listCountResponsibles
 	} from '$lib/remote/inventoryCount.remote';
 	import { getErrorMessage } from '$lib/utils';
+	import { logger } from '$lib/utils/logger';
+	import { createLineSaveQueue } from '$lib/shared/countLineSaveQueue';
 	import {
 		blockedToast,
 		phaseCtaAction,
@@ -134,10 +136,13 @@
 		}
 	}
 
-	async function saveLine(lineId: number, value: number): Promise<void> {
-		if (isSubmitting) return;
-		isSubmitting = true;
-		try {
+	// Guard por línea (cola «último valor gana»): dos líneas se guardan en
+	// paralelo y las ediciones mientras una vuela no se descartan.
+	// El Set es reactivo ($state): la cola lo muta con add/delete.
+	const savingLineIds = $state<Set<number>>(new Set());
+	const lineSaves = createLineSaveQueue({
+		inFlight: savingLineIds,
+		send: async (lineId, value) => {
 			const response = await upsertCountLineCmd({ lineId, countedStock: value });
 			if (!response.success) {
 				toast.error(response.error);
@@ -146,10 +151,15 @@
 			lines = lines.map((candidate) =>
 				candidate.id === response.data.id ? response.data : candidate
 			);
+		}
+	});
+
+	async function saveLine(lineId: number, value: number): Promise<void> {
+		try {
+			await lineSaves.submit(lineId, value);
 		} catch (error) {
+			logger.error('No se pudo guardar el conteo', error);
 			toast.error(getErrorMessage(error, 'No se pudo guardar el conteo'));
-		} finally {
-			isSubmitting = false;
 		}
 	}
 
@@ -447,7 +457,8 @@
 			{lines}
 			{config}
 			{costByLineId}
-			canCount={data.canCount && !isSubmitting}
+			canCount={data.canCount}
+			{savingLineIds}
 			onSaveLine={saveLine}
 			onConfirmZero={confirmZero}
 			isMobile={isMobileView}

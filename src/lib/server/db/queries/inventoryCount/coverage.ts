@@ -236,7 +236,12 @@ export async function previewScope(
 	config: Pick<CountCycleConfig, 'quickOldestLimit'>,
 	executor: DbOrTx = db
 ): Promise<ScopePreview> {
-	const items = filterScopeItems(scope, await selectCoverageItems(executor), config);
+	// El preview no muestra movimientos: sin COUNT correlacionado por fila.
+	const items = filterScopeItems(
+		scope,
+		await selectCoverageItems(executor, { withMovements: false }),
+		config
+	);
 	const countedAges = items
 		.filter((item) => item.lastCountedAt != null)
 		.map((item) => itemAgeDays(item))
@@ -247,6 +252,44 @@ export async function previewScope(
 		oldestAgeDays: countedAges.length ? Math.max(...countedAges) : null,
 		neverCounted: items.filter((item) => item.lastCountedAt == null).length
 	};
+}
+
+/**
+ * Solo las edades de cobertura (2 columnas, con elegibilidad) para calcular el
+ * resumen: lo que `createSession` necesita para `coverage_before` — sin
+ * agrupados, sin opciones de combobox y sin el COUNT correlacionado por fila.
+ */
+export async function selectCoverageAges(
+	executor: DbOrTx
+): Promise<Array<{ lastCountedAt: string | null; createdAt: string | null }>> {
+	const [productRows, lensRows] = await Promise.all([
+		executor
+			.select({ lastCountedAt: products.lastCountedAt, createdAt: products.createdAt })
+			.from(products)
+			.where(and(isNull(products.deletedAt), productEligibilityFilter())),
+		executor
+			.select({
+				lastCountedAt: lensCatalogItems.lastCountedAt,
+				createdAt: lensCatalogItems.createdAt
+			})
+			.from(lensCatalogItems)
+			.where(
+				and(
+					isNull(lensCatalogItems.deletedAt),
+					eq(lensCatalogItems.inventoryMode, 'STOCK'),
+					lensEligibilityFilter()
+				)
+			)
+	]);
+	return [...productRows, ...lensRows];
+}
+
+/** Resumen de cobertura barato (coverage_before al crear una sesión). */
+export async function coverageSummaryLite(
+	cycleDays: number,
+	executor: DbOrTx
+): Promise<CoverageSummary> {
+	return summarizeCoverage(await selectCoverageAges(executor), cycleDays);
 }
 
 // ── Cobertura: filas de ítems elegibles con metadata y movimientos ──────────
@@ -271,7 +314,31 @@ export interface CoverageItemRow {
 }
 
 /** Todos los ítems elegibles con su semáforo, agrupado luego en cobertura. */
-export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageItemRow[]> {
+export async function selectCoverageItems(
+	executor: DbOrTx,
+	options: { withMovements?: boolean } = {}
+): Promise<CoverageItemRow[]> {
+	// movementsSince es un COUNT correlacionado por fila: solo la tabla de
+	// cobertura lo usa. El preview del drawer no lo muestra → se omite.
+	const withMovements = options.withMovements !== false;
+	const productMovements = withMovements
+		? {
+				movementsSince: sql<number>`(
+					select count(*) from ${inventoryMovements}
+					where ${inventoryMovements.productId} = ${products.id}
+						and (${products.lastCountedAt} is null or ${inventoryMovements.createdAt} > ${products.lastCountedAt})
+				)`.mapWith(Number)
+			}
+		: { movementsSince: sql<number>`0`.mapWith(Number) };
+	const lensMovements = withMovements
+		? {
+				movementsSince: sql<number>`(
+					select count(*) from ${inventoryMovements}
+					where ${inventoryMovements.lensCatalogItemId} = ${lensCatalogItems.id}
+						and (${lensCatalogItems.lastCountedAt} is null or ${inventoryMovements.createdAt} > ${lensCatalogItems.lastCountedAt})
+				)`.mapWith(Number)
+			}
+		: { movementsSince: sql<number>`0`.mapWith(Number) };
 	const [productRows, lensRows] = await Promise.all([
 		executor
 			.select({
@@ -285,11 +352,7 @@ export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageIte
 				stock: sql<number>`coalesce(${products.stock}, 0)`.mapWith(Number),
 				lastCountedAt: products.lastCountedAt,
 				createdAt: products.createdAt,
-				movementsSince: sql<number>`(
-					select count(*) from ${inventoryMovements}
-					where ${inventoryMovements.productId} = ${products.id}
-						and (${products.lastCountedAt} is null or ${inventoryMovements.createdAt} > ${products.lastCountedAt})
-				)`.mapWith(Number)
+				...productMovements
 			})
 			.from(products)
 			.leftJoin(brands, eq(products.brandId, brands.id))
@@ -306,11 +369,7 @@ export async function selectCoverageItems(executor: DbOrTx): Promise<CoverageIte
 				stock: sql<number>`coalesce(${lensCatalogItems.stock}, 0)`.mapWith(Number),
 				lastCountedAt: lensCatalogItems.lastCountedAt,
 				createdAt: lensCatalogItems.createdAt,
-				movementsSince: sql<number>`(
-					select count(*) from ${inventoryMovements}
-					where ${inventoryMovements.lensCatalogItemId} = ${lensCatalogItems.id}
-						and (${lensCatalogItems.lastCountedAt} is null or ${inventoryMovements.createdAt} > ${lensCatalogItems.lastCountedAt})
-				)`.mapWith(Number)
+				...lensMovements
 			})
 			.from(lensCatalogItems)
 			.leftJoin(suppliers, eq(lensCatalogItems.supplierId, suppliers.id))
