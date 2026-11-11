@@ -5,9 +5,6 @@
 	import { toast } from 'svelte-sonner';
 	import { getInventoryCountContext } from '$lib/context';
 	import {
-		clearLineAdjustmentCmd,
-		requestAdjustmentsBatchCmd,
-		requestLineAdjustmentCmd,
 		applySessionCmd,
 		cancelSessionCmd,
 		confirmZeroStock,
@@ -28,7 +25,7 @@
 		phaseCtaReason,
 		stepClickOutcome
 	} from '$lib/shared/countSessionPhase';
-	import { ADJUSTMENT_REASON_LABELS, AdjustmentReason } from '$lib/shared/enums';
+	import { AdjustmentReason } from '$lib/shared/enums';
 	import { computeCountStats, type CountCycleConfig } from '$lib/shared/inventoryCount';
 	import type {
 		InventoryCountSessionDetail,
@@ -39,6 +36,7 @@
 	import SummaryStrip from '$lib/components/inventory/count/SummaryStrip.svelte';
 	import CountBoard from '$lib/components/inventory/count/CountBoard.svelte';
 	import AdjustStockDrawer from '$lib/components/inventory/count/AdjustStockDrawer.svelte';
+	import { createAdjustmentActions } from '$lib/components/inventory/count/adjustmentActions';
 	import ResponsiblesDrawer from '$lib/components/inventory/count/ResponsiblesDrawer.svelte';
 
 	import ReviewBoard from '$lib/components/inventory/count/ReviewBoard.svelte';
@@ -207,84 +205,21 @@
 		adjustReasonText = '';
 	}
 
-	async function requestAdjust(line: CountLineRow): Promise<void> {
-		if (adjustReason === AdjustmentReason.OTHER && !adjustReasonText.trim()) {
-			toast.error('Escribe el motivo');
-			return;
+	// Acciones de ajuste (solicitar/lote/quitar) fuera de la página: size gate DT1.
+	const { requestAdjust, requestBatch, clearAdjust } = createAdjustmentActions({
+		// El id de sesión es constante en esta página (no cambia con refetch).
+		sessionId: untrack(() => session.id),
+		getReason: () => ({ reason: adjustReason, reasonText: adjustReasonText }),
+		replaceLine: (line) => {
+			lines = lines.map((candidate) => (candidate.id === line.id ? line : candidate));
+		},
+		refreshLines,
+		closeDrawer: closeAdjust,
+		isBusy: () => isAdjusting,
+		setBusy: (busy) => {
+			isAdjusting = busy;
 		}
-		if (isAdjusting) return;
-		isAdjusting = true;
-		try {
-			const response = await requestLineAdjustmentCmd({
-				lineId: line.id,
-				reason: adjustReason,
-				reasonText: adjustReason === AdjustmentReason.OTHER ? adjustReasonText.trim() : null
-			});
-			if (!response.success) {
-				toast.error(response.error);
-				return;
-			}
-			lines = lines.map((candidate) =>
-				candidate.id === response.data.id ? response.data : candidate
-			);
-			closeAdjust();
-			toast.success(`Ajuste listo para el cierre (${ADJUSTMENT_REASON_LABELS[adjustReason]})`);
-		} catch (error) {
-			logger.error('No se pudo solicitar el ajuste', error);
-			toast.error(getErrorMessage(error, 'No se pudo solicitar el ajuste'));
-		} finally {
-			isAdjusting = false;
-		}
-	}
-
-	async function requestBatch(): Promise<void> {
-		if (adjustReason === AdjustmentReason.OTHER && !adjustReasonText.trim()) {
-			toast.error('Escribe el motivo');
-			return;
-		}
-		if (isAdjusting) return;
-		isAdjusting = true;
-		try {
-			const response = await requestAdjustmentsBatchCmd({
-				sessionId: session.id,
-				reason: adjustReason,
-				reasonText: adjustReason === AdjustmentReason.OTHER ? adjustReasonText.trim() : null
-			});
-			if (!response.success) {
-				toast.error(response.error);
-				return;
-			}
-			await refreshLines();
-			closeAdjust();
-			toast.success(`${response.data} ajuste(s) listos para el cierre`);
-		} catch (error) {
-			logger.error('No se pudieron solicitar los ajustes', error);
-			toast.error(getErrorMessage(error, 'No se pudieron solicitar los ajustes'));
-		} finally {
-			isAdjusting = false;
-		}
-	}
-
-	async function clearAdjust(line: CountLineRow): Promise<void> {
-		if (isAdjusting) return;
-		isAdjusting = true;
-		try {
-			const response = await clearLineAdjustmentCmd({ lineId: line.id });
-			if (!response.success) {
-				toast.error(response.error);
-				return;
-			}
-			lines = lines.map((candidate) =>
-				candidate.id === response.data.id ? response.data : candidate
-			);
-			toast.success('Ajuste quitado');
-		} catch (error) {
-			logger.error('No se pudo quitar el ajuste', error);
-			toast.error(getErrorMessage(error, 'No se pudo quitar el ajuste'));
-		} finally {
-			isAdjusting = false;
-		}
-	}
+	});
 
 	async function refreshLines(): Promise<void> {
 		const detail = await getSessionById({ id: session.id });
