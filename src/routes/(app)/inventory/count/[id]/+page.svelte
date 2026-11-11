@@ -5,8 +5,9 @@
 	import { toast } from 'svelte-sonner';
 	import { getInventoryCountContext } from '$lib/context';
 	import {
-		applyAdjustmentsBatchCmd,
-		applyLineAdjustmentCmd,
+		clearLineAdjustmentCmd,
+		requestAdjustmentsBatchCmd,
+		requestLineAdjustmentCmd,
 		applySessionCmd,
 		cancelSessionCmd,
 		confirmZeroStock,
@@ -100,6 +101,7 @@
 	const batchAdjustable = $derived(
 		diffRows.filter(({ line, diff }) => {
 			if (line.adjustmentMovementId != null) return false;
+			if (line.adjustmentRequestedAt != null) return false;
 			const cost = costByLineId.get(line.id) ?? 0;
 			const usdHit =
 				config.diffThresholdUsd > 0 && Math.abs(diff * cost) >= config.diffThresholdUsd;
@@ -205,7 +207,7 @@
 		adjustReasonText = '';
 	}
 
-	async function applyAdjust(line: CountLineRow): Promise<void> {
+	async function requestAdjust(line: CountLineRow): Promise<void> {
 		if (adjustReason === AdjustmentReason.OTHER && !adjustReasonText.trim()) {
 			toast.error('Escribe el motivo');
 			return;
@@ -213,7 +215,7 @@
 		if (isAdjusting) return;
 		isAdjusting = true;
 		try {
-			const response = await applyLineAdjustmentCmd({
+			const response = await requestLineAdjustmentCmd({
 				lineId: line.id,
 				reason: adjustReason,
 				reasonText: adjustReason === AdjustmentReason.OTHER ? adjustReasonText.trim() : null
@@ -226,15 +228,16 @@
 				candidate.id === response.data.id ? response.data : candidate
 			);
 			closeAdjust();
-			toast.success(`Ajuste aplicado (${ADJUSTMENT_REASON_LABELS[adjustReason]})`);
+			toast.success(`Ajuste listo para el cierre (${ADJUSTMENT_REASON_LABELS[adjustReason]})`);
 		} catch (error) {
-			toast.error(getErrorMessage(error, 'No se pudo aplicar el ajuste'));
+			logger.error('No se pudo solicitar el ajuste', error);
+			toast.error(getErrorMessage(error, 'No se pudo solicitar el ajuste'));
 		} finally {
 			isAdjusting = false;
 		}
 	}
 
-	async function applyBatch(): Promise<void> {
+	async function requestBatch(): Promise<void> {
 		if (adjustReason === AdjustmentReason.OTHER && !adjustReasonText.trim()) {
 			toast.error('Escribe el motivo');
 			return;
@@ -242,7 +245,7 @@
 		if (isAdjusting) return;
 		isAdjusting = true;
 		try {
-			const response = await applyAdjustmentsBatchCmd({
+			const response = await requestAdjustmentsBatchCmd({
 				sessionId: session.id,
 				reason: adjustReason,
 				reasonText: adjustReason === AdjustmentReason.OTHER ? adjustReasonText.trim() : null
@@ -253,9 +256,31 @@
 			}
 			await refreshLines();
 			closeAdjust();
-			toast.success(`${response.data} ajuste(s) aplicados`);
+			toast.success(`${response.data} ajuste(s) listos para el cierre`);
 		} catch (error) {
-			toast.error(getErrorMessage(error, 'No se pudieron aplicar los ajustes'));
+			logger.error('No se pudieron solicitar los ajustes', error);
+			toast.error(getErrorMessage(error, 'No se pudieron solicitar los ajustes'));
+		} finally {
+			isAdjusting = false;
+		}
+	}
+
+	async function clearAdjust(line: CountLineRow): Promise<void> {
+		if (isAdjusting) return;
+		isAdjusting = true;
+		try {
+			const response = await clearLineAdjustmentCmd({ lineId: line.id });
+			if (!response.success) {
+				toast.error(response.error);
+				return;
+			}
+			lines = lines.map((candidate) =>
+				candidate.id === response.data.id ? response.data : candidate
+			);
+			toast.success('Ajuste quitado');
+		} catch (error) {
+			logger.error('No se pudo quitar el ajuste', error);
+			toast.error(getErrorMessage(error, 'No se pudo quitar el ajuste'));
 		} finally {
 			isAdjusting = false;
 		}
@@ -462,9 +487,10 @@
 			batchCount={batchAdjustable.length}
 			bind:reason={adjustReason}
 			bind:reasonText={adjustReasonText}
-			onApplyBatch={applyBatch}
+			onRequestBatch={requestBatch}
 			onRecount={recountLine}
 			onOpenAdjust={openAdjust}
+			onClearAdjust={clearAdjust}
 		/>
 	{/if}
 
@@ -475,7 +501,7 @@
 		bind:reason={adjustReason}
 		bind:reasonText={adjustReasonText}
 		onclose={closeAdjust}
-		onApply={(line) => void applyAdjust(line)}
+		onApply={(line) => void requestAdjust(line)}
 	/>
 
 	<ResponsiblesDrawer

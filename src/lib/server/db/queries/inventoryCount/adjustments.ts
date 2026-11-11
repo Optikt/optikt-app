@@ -1,11 +1,13 @@
 /**
- * Conteo Físico — ajuste de stock vinculado a la línea.
- * Reutiliza la lógica de ajuste manual (lotes, movimiento, contador de stock
- * en `inventoryLots.applyManualAdjustment`) y vincula el movimiento creado
- * con la línea. Reglas: solo sesión OPEN, diferencia ≠ 0 y sin ajuste previo
- * («Ajustado» significa que existe el movimiento vinculado).
+ * Conteo Físico — solicitud de ajuste vinculada a la línea.
+ * En la fase Revisar solo se MARCA la línea (motivo + solicitante); el
+ * movimiento de inventario se crea al cerrar la sesión (`applySession`, dentro
+ * de su transacción). Así cancelar la sesión descarta cualquier ajuste y nunca
+ * queda stock movido por un conteo que no se aplicó.
+ * Reglas: solo sesión OPEN, diferencia ≠ 0 y sin movimiento previo.
+ * «Ajustado» = existe el movimiento vinculado (siempre post-cierre).
  */
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
@@ -23,22 +25,27 @@ import { getCountCycleConfig } from './sessions';
 import { buildLineCostMap } from './costs';
 import type { CountLineRow } from './types';
 
-export interface ApplyCountLineAdjustmentInput {
+export interface RequestCountLineAdjustmentInput {
 	lineId: number;
 	reason: AdjustmentReason;
 	reasonText: string | null;
 	userId: string;
 }
 
-/** Ajusta el stock de una línea con diferencia y vincula el movimiento. */
-export async function applyCountLineAdjustment(
-	data: ApplyCountLineAdjustmentInput,
+/**
+ * Marca la línea con la solicitud de ajuste (sin crear movimiento). Un guardar
+ * repetido re-marca con el motivo actual. UPDATE con guard atómico `OPEN`:
+ * si la sesión se cerró entre la lectura y la escritura, no se modifica nada.
+ */
+export async function requestCountLineAdjustment(
+	data: RequestCountLineAdjustmentInput,
 	executor: DbOrTx = db
 ): Promise<CountLineRow> {
 	if (executor === db) {
-		return db.transaction((tx) => applyCountLineAdjustment(data, tx));
+		// Tx: el FOR UPDATE de la sesión debe sostenerse hasta el UPDATE (serializa
+		// con un cierre concurrente: si gana el cierre, este pedido falla).
+		return db.transaction((tx) => requestCountLineAdjustment(data, tx));
 	}
-
 	const line = await requireLineById(data.lineId, executor);
 	await requireOpenForAdjustment(line, executor);
 
@@ -55,54 +62,204 @@ export async function applyCountLineAdjustment(
 		throw new Error('Esta línea ya tiene un ajuste aplicado');
 	}
 
-	const notes = `Conteo físico: ${ADJUSTMENT_REASON_LABELS[data.reason]}${
-		data.reasonText ? ` — ${data.reasonText}` : ''
-	}`;
+	// Chequeo temprano de lotes (mismo criterio que la ejecución): es mejor
+	// fallar aquí que al cierre. Puede quedar obsoleto si el stock cambia después.
+	await requireAdjustmentLot(line, diff, executor);
 
-	let movementId: string;
-	if (line.itemType === 'PRODUCT' && line.productId != null) {
-		const lot = await findAdjustmentLot(await getActiveLotsFifo(line.productId, executor), diff);
-		const created = await applyManualAdjustment(
-			{ lotId: lot.id, quantityDelta: diff, notes, createdById: data.userId },
-			executor
-		);
-		movementId = created.movement.id;
-	} else if (line.itemType === 'LENS' && line.lensCatalogItemId != null) {
-		const lot = await findAdjustmentLot(
-			await getActiveLensLotsFifo(line.lensCatalogItemId, executor),
-			diff
-		);
-		const created = await applyManualAdjustment(
-			{ lotId: lot.id, quantityDelta: diff, notes, createdById: data.userId },
-			executor
-		);
-		movementId = created.movement.id;
-		// El ajuste manual actualiza el contador de productos, no el de lentes.
-		await executor
-			.update(lensCatalogItems)
-			.set({ stock: sql`coalesce(${lensCatalogItems.stock}, 0) + ${diff}` })
-			.where(eq(lensCatalogItems.id, line.lensCatalogItemId));
-	} else {
-		throw new Error('La línea no tiene un ítem ajustable');
+	const now = new Date().toISOString();
+	const requested = await executor
+		.update(inventoryCountLines)
+		.set({
+			adjustmentReason: data.reason,
+			adjustmentReasonText: data.reasonText ?? null,
+			adjustmentRequestedBy: data.userId,
+			adjustmentRequestedAt: now,
+			updatedAt: now
+		})
+		.where(
+			and(
+				eq(inventoryCountLines.id, line.id),
+				isNull(inventoryCountLines.adjustmentMovementId),
+				sql`exists (
+					select 1 from ${inventoryCountSessions}
+					where ${inventoryCountSessions.id} = ${inventoryCountLines.sessionId}
+						and ${inventoryCountSessions.status} = 'OPEN'
+				)`
+			)
+		)
+		.returning({ id: inventoryCountLines.id });
+	if (requested.length === 0) {
+		const fresh = await getLineById(line.id, executor);
+		if (fresh?.adjustmentMovementId != null) {
+			throw new Error('Esta línea ya tiene un ajuste aplicado');
+		}
+		throw new Error('La sesión ya no está abierta');
+	}
+
+	const updated = await getLineById(line.id, executor);
+	if (!updated) throw new Error('No se pudo recargar la línea solicitada');
+	return updated;
+}
+
+/** Quita la solicitud (la línea vuelve a «Ajustar»). Solo con sesión OPEN. */
+export async function clearLineAdjustmentRequest(
+	lineId: number,
+	executor: DbOrTx = db
+): Promise<CountLineRow> {
+	if (executor === db) {
+		return db.transaction((tx) => clearLineAdjustmentRequest(lineId, tx));
+	}
+	const line = await requireLineById(lineId, executor);
+	await requireOpenForAdjustment(line, executor);
+	if (line.adjustmentMovementId != null) {
+		throw new Error('Esta línea ya tiene el ajuste aplicado');
+	}
+	if (line.adjustmentRequestedAt == null) {
+		throw new Error('Esta línea no tiene un ajuste solicitado');
 	}
 
 	const now = new Date().toISOString();
-	await executor
+	const cleared = await executor
+		.update(inventoryCountLines)
+		.set({
+			adjustmentReason: null,
+			adjustmentReasonText: null,
+			adjustmentRequestedBy: null,
+			adjustmentRequestedAt: null,
+			updatedAt: now
+		})
+		.where(
+			and(
+				eq(inventoryCountLines.id, line.id),
+				isNull(inventoryCountLines.adjustmentMovementId),
+				sql`exists (
+					select 1 from ${inventoryCountSessions}
+					where ${inventoryCountSessions.id} = ${inventoryCountLines.sessionId}
+						and ${inventoryCountSessions.status} = 'OPEN'
+				)`
+			)
+		)
+		.returning({ id: inventoryCountLines.id });
+	if (cleared.length === 0) {
+		const fresh = await getLineById(line.id, executor);
+		if (fresh?.adjustmentMovementId != null)
+			throw new Error('Esta línea ya tiene el ajuste aplicado');
+		if (fresh?.adjustmentRequestedAt == null) {
+			throw new Error('Esta línea no tiene un ajuste solicitado');
+		}
+		throw new Error('La sesión ya no está abierta');
+	}
+
+	const updated = await getLineById(line.id, executor);
+	if (!updated) throw new Error('No se pudo recargar la línea');
+	return updated;
+}
+
+/**
+ * Crea el movimiento de una solicitud válida y vincula la línea.
+ * Solo la llama `applySession` (dentro de su transacción): no valida estado de
+ * sesión porque la sesión está en proceso de cierre. Líneas sin contar o cuya
+ * diferencia se anuló no son error → se omiten.
+ */
+export async function executeCountLineAdjustment(
+	line: InventoryCountLine,
+	userId: string,
+	executor: DbOrTx
+): Promise<void> {
+	if (executor === db) {
+		return db.transaction((tx) => executeCountLineAdjustment(line, userId, tx));
+	}
+	if (line.adjustmentRequestedAt == null || line.adjustmentMovementId != null) return;
+	const final = line.recountedStock ?? line.countedStock;
+	if (final == null) return;
+	const diff = final - line.systemStock;
+	if (diff === 0) return;
+
+	const reason = (line.adjustmentReason ?? '') as AdjustmentReason;
+	const label = ADJUSTMENT_REASON_LABELS[reason];
+	if (!label) throw new Error('La solicitud de ajuste no tiene un motivo válido');
+	const notes = `Conteo físico: ${label}${
+		line.adjustmentReasonText ? ` — ${line.adjustmentReasonText}` : ''
+	}`;
+
+	let movementId: string;
+	try {
+		if (line.itemType === 'PRODUCT' && line.productId != null) {
+			const lot = findAdjustmentLot(await getActiveLotsFifo(line.productId, executor), diff);
+			const created = await applyManualAdjustment(
+				{ lotId: lot.id, quantityDelta: diff, notes, createdById: userId },
+				executor
+			);
+			movementId = created.movement.id;
+		} else if (line.itemType === 'LENS' && line.lensCatalogItemId != null) {
+			const lot = findAdjustmentLot(
+				await getActiveLensLotsFifo(line.lensCatalogItemId, executor),
+				diff
+			);
+			const created = await applyManualAdjustment(
+				{ lotId: lot.id, quantityDelta: diff, notes, createdById: userId },
+				executor
+			);
+			movementId = created.movement.id;
+			// El ajuste manual actualiza el contador de productos, no el de lentes.
+			await executor
+				.update(lensCatalogItems)
+				.set({ stock: sql`coalesce(${lensCatalogItems.stock}, 0) + ${diff}` })
+				.where(eq(lensCatalogItems.id, line.lensCatalogItemId));
+		} else {
+			throw new Error('La línea no tiene un ítem ajustable');
+		}
+	} catch (error) {
+		// El cierre no puede fallar sin decir cómo salir: la solicitud se quita (✕)
+		// o se re-cuenta; nada de stock se movió (esta tx revierte completa).
+		const detail = error instanceof Error ? error.message : String(error);
+		throw new Error(
+			`No se pudo ejecutar el ajuste al cerrar: ${detail}. Quita la solicitud (✕) de la línea para poder cerrar.`,
+			{ cause: error }
+		);
+	}
+
+	// Guard atómico: si la solicitud se quitó o cambió entre la lectura de la
+	// sesión y aquí (upsert/recuento concurrente), 0 filas → revierte TODO
+	// (incluido el movement recién escrito en esta transacción).
+	const now = new Date().toISOString();
+	const executed = await executor
 		.update(inventoryCountLines)
 		.set({
 			adjustmentMovementId: movementId,
-			adjustmentReason: data.reason,
-			adjustmentReasonText: data.reasonText ?? null,
 			adjustmentCompleted: true,
-			adjustmentCompletedById: data.userId,
+			adjustmentCompletedById: userId,
 			adjustmentCompletedAt: now,
 			updatedAt: now
 		})
-		.where(eq(inventoryCountLines.id, line.id));
+		.where(
+			and(
+				eq(inventoryCountLines.id, line.id),
+				isNotNull(inventoryCountLines.adjustmentRequestedAt),
+				isNull(inventoryCountLines.adjustmentMovementId)
+			)
+		)
+		.returning({ id: inventoryCountLines.id });
+	if (executed.length === 0) {
+		throw new Error(
+			'La solicitud de ajuste cambió durante el cierre: revisa la línea y vuelve a cerrar'
+		);
+	}
+}
 
-	const updated = await getLineById(line.id, executor);
-	if (!updated) throw new Error('No se pudo recargar la línea ajustada');
-	return updated;
+/** Valida que exista un lote apto para el diff (solo lectura, sin escribir). */
+async function requireAdjustmentLot(
+	line: InventoryCountLine,
+	diff: number,
+	executor: DbOrTx
+): Promise<void> {
+	if (line.itemType === 'PRODUCT' && line.productId != null) {
+		findAdjustmentLot(await getActiveLotsFifo(line.productId, executor), diff);
+	} else if (line.itemType === 'LENS' && line.lensCatalogItemId != null) {
+		findAdjustmentLot(await getActiveLensLotsFifo(line.lensCatalogItemId, executor), diff);
+	} else {
+		throw new Error('La línea no tiene un ítem ajustable');
+	}
 }
 
 function findAdjustmentLot(lots: InventoryLot[], diff: number): InventoryLot {
@@ -127,21 +284,23 @@ async function requireOpenForAdjustment(line: InventoryCountLine, executor: DbOr
 		.select()
 		.from(inventoryCountSessions)
 		.where(eq(inventoryCountSessions.id, line.sessionId))
-		.limit(1);
+		.limit(1)
+		.for('update');
 	if (session?.status === 'CANCELLED') {
-		throw new Error('No se pueden registrar ajustes en una sesión cancelada');
+		throw new Error('No se pueden solicitar ajustes en una sesión cancelada');
 	}
 	if (session?.status !== 'OPEN') {
-		throw new Error('Los ajustes se aplican dentro de la sesión abierta');
+		throw new Error('Los ajustes se solicitan dentro de la sesión abierta');
 	}
 }
 
 /**
- * «Aplicar todo (N)»: ajusta todas las diferencias bajo los umbrales
- * (unidades y USD) que no tengan ajuste ni recuento pendiente. Falla completa
- * si alguna línea falla (transacción compartida).
+ * «Ajustar todo (N)»: marca todas las diferencias bajo los umbrales
+ * (unidades y USD) que no tengan movimiento, solicitud ni recuento pendiente.
+ * Falla completa si alguna falla (transacción compartida). Los movimientos se
+ * crean al cerrar la sesión.
  */
-export async function applyAdjustmentsBatch(
+export async function requestAdjustmentsBatch(
 	sessionId: number,
 	reason: AdjustmentReason,
 	reasonText: string | null,
@@ -149,7 +308,9 @@ export async function applyAdjustmentsBatch(
 	executor: DbOrTx = db
 ): Promise<number> {
 	if (executor === db) {
-		return db.transaction((tx) => applyAdjustmentsBatch(sessionId, reason, reasonText, userId, tx));
+		return db.transaction((tx) =>
+			requestAdjustmentsBatch(sessionId, reason, reasonText, userId, tx)
+		);
 	}
 
 	const [session] = await executor
@@ -178,6 +339,8 @@ export async function applyAdjustmentsBatch(
 		const diff = final - line.systemStock;
 		if (diff === 0) return false;
 		if (line.adjustmentMovementId != null) return false;
+		// Ya solicitadas: «Ajustar todo» solo marca las que faltan.
+		if (line.adjustmentRequestedAt != null) return false;
 		if (Math.abs(diff) >= config.diffThresholdUnits) return false;
 		const cost = costs.get(line.id);
 		if (
@@ -191,7 +354,7 @@ export async function applyAdjustmentsBatch(
 	});
 
 	for (const line of candidates) {
-		await applyCountLineAdjustment({ lineId: line.id, reason, reasonText, userId }, executor);
+		await requestCountLineAdjustment({ lineId: line.id, reason, reasonText, userId }, executor);
 	}
 	return candidates.length;
 }

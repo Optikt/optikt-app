@@ -23,6 +23,7 @@ import {
 	summarizeCoverage,
 	type CountCycleConfig
 } from '$lib/shared/inventoryCount';
+import { executeCountLineAdjustment } from './adjustments';
 import type {
 	CreateCountSessionInput,
 	CountSessionSummary,
@@ -206,7 +207,10 @@ export async function cancelSession(
 	reason: string,
 	executor: DbOrTx = db
 ): Promise<InventoryCountSessionDetail> {
-	const session = await getSessionRow(id, executor);
+	if (executor === db) {
+		return db.transaction((tx) => cancelSession(id, userId, reason, tx));
+	}
+	const session = await getSessionRow(id, executor, { lock: true });
 	requireOpenSession(session);
 
 	const cancelReason = reason.trim();
@@ -255,7 +259,9 @@ export async function applySession(
 		throw new Error('Solo ADMIN o MANAGER pueden cerrar la sesión');
 	}
 
-	const session = await getSessionRow(id, executor);
+	// Bloquea la sesión ANTES de leer las líneas: serializa con quien solicite
+	// o quite ajustes mientras se cierra (evita solicitudes huérfanas post-cierre).
+	const session = await getSessionRow(id, executor, { lock: true });
 	requireOpenSession(session);
 
 	const [lines, config] = await Promise.all([
@@ -288,6 +294,16 @@ export async function applySession(
 		throw new Error(
 			`Hay ${recountPending.length} diferencia(s) sobre el umbral que deben recontarse`
 		);
+	}
+
+	// Ajustes solicitados en Revisar: aquí se crean los movimientos, dentro de
+	// esta misma transacción. Si alguno falla, todo revierte y la sesión sigue
+	// OPEN (nunca queda stock movido por un conteo que no se aplicó).
+	const requestedAdjustments = lines.filter(
+		(line) => line.adjustmentRequestedAt != null && line.adjustmentMovementId == null
+	);
+	for (const line of requestedAdjustments) {
+		await executeCountLineAdjustment(line, userId, executor);
 	}
 
 	const coveredNow = new Date().toISOString();
@@ -379,13 +395,16 @@ interface InventoryCountSessionLineSeed {
 
 export async function getSessionRow(
 	id: number,
-	executor: DbOrTx = db
+	executor: DbOrTx = db,
+	options: { lock?: boolean } = {}
 ): Promise<InventoryCountSession | null> {
-	const [session] = await executor
+	const base = executor
 		.select()
 		.from(inventoryCountSessions)
-		.where(eq(inventoryCountSessions.id, id))
-		.limit(1);
+		.where(eq(inventoryCountSessions.id, id));
+	// `lock`: FOR UPDATE serializa pedido/quitar/cancelar/cerrar sobre la misma
+	// sesión (cierre vs. ajustes concurrentes); sin lock es solo lectura.
+	const [session] = options.lock ? await base.limit(1).for('update') : await base.limit(1);
 	return session ?? null;
 }
 

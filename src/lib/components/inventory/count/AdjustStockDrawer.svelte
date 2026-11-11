@@ -91,7 +91,8 @@
 				</label>
 			{/if}
 			<p class="text-xs text-on-surface-variant">
-				Se vincula un movimiento de inventario a esta línea del conteo.
+				El movimiento de inventario se creará al cerrar la sesión; si la cancelas, este ajuste no se
+				aplica.
 			</p>
 		</div>
 	{/if}
@@ -111,7 +112,7 @@
 				class="rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-brand-navy transition-colors hover:bg-brand-gold-dark aria-disabled:opacity-60"
 				onclick={() => target && onApply(target)}
 			>
-				Aplicar ajuste
+				Solicitar ajuste
 			</button>
 		</div>
 	{/snippet}

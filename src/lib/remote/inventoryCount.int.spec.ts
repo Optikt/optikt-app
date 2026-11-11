@@ -7,8 +7,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AdjustmentReason, LensType, UserRole } from '$lib/shared/enums';
 import {
-	applyAdjustmentsBatchCmd,
-	applyLineAdjustmentCmd,
+	requestAdjustmentsBatchCmd,
+	requestLineAdjustmentCmd,
 	applySessionCmd,
 	cancelSessionCmd,
 	confirmZeroStock,
@@ -84,6 +84,7 @@ interface CountLineDto {
 	recountedStock: number | null;
 	countedByName: string | null;
 	adjustmentMovementId: string | null;
+	adjustmentRequestedAt: string | null;
 }
 interface SessionDto {
 	id: number;
@@ -389,7 +390,7 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 		await resetDb();
 	});
 
-	it('adjust vinculado + umbral + rol + lote', async () => {
+	it('solicitud de ajuste + umbral + rol + lote', async () => {
 		const adminId = await admin();
 		const sellerId = await seller();
 		const { product: productA } = await productFixture();
@@ -433,7 +434,7 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 		// SELLER: guard de rol lanza HttpError 403 (no-error para toThrow)
 		await expectRemoteError(
 			invoke<CommandResult<CountLineDto>>(
-				applyLineAdjustmentCmd,
+				requestLineAdjustmentCmd,
 				{ lineId: under.id, reason: AdjustmentReason.PHYSICAL_COUNT, reasonText: null },
 				sellerId
 			)
@@ -449,20 +450,22 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 		);
 
 		const invalid = await invoke<CommandResult<CountLineDto>>(
-			applyLineAdjustmentCmd,
+			requestLineAdjustmentCmd,
 			{ lineId: under.id, reason: AdjustmentReason.OTHER, reasonText: '' },
 			adminId
 		);
 		expect(invalid.success).toBe(false);
 
 		const adjusted = await invoke<CommandResult<CountLineDto>>(
-			applyLineAdjustmentCmd,
+			requestLineAdjustmentCmd,
 			{ lineId: under.id, reason: AdjustmentReason.PHYSICAL_COUNT, reasonText: null },
 			adminId
 		);
 		expect(adjusted.success).toBe(true);
 		if (adjusted.success && adjusted.data) {
-			expect(adjusted.data.adjustmentMovementId).not.toBeNull();
+			// Solo marca: el movimiento se crea al cerrar la sesión.
+			expect(adjusted.data.adjustmentMovementId).toBeNull();
+			expect(adjusted.data.adjustmentRequestedAt).not.toBeNull();
 		}
 
 		const costs = await invoke<Record<string, number | null>>(
@@ -473,7 +476,7 @@ describe('Capa 3 · ajustes vinculados y cierre', () => {
 		expect(Object.keys(costs).length).toBeGreaterThanOrEqual(1);
 
 		const batch = await invoke<CommandResult<number>>(
-			applyAdjustmentsBatchCmd,
+			requestAdjustmentsBatchCmd,
 			{ sessionId: session.id, reason: AdjustmentReason.PHYSICAL_COUNT, reasonText: null },
 			adminId
 		);

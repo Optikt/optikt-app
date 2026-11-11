@@ -162,14 +162,18 @@ export const ReasonSchema = z.object({
 		.nullable()
 });
 
-export const ApplyCountLineAdjustmentSchema = z.object({
+export const RequestLineAdjustmentSchema = z.object({
 	lineId: CoercedInteger.min(1, 'Línea inválida'),
 	...ReasonSchema.shape
 });
 
-export const ApplyAdjustmentsBatchSchema = z.object({
+export const RequestAdjustmentsBatchSchema = z.object({
 	sessionId: CoercedInteger.min(1, 'Sesión inválida'),
 	...ReasonSchema.shape
+});
+
+export const ClearLineAdjustmentSchema = z.object({
+	lineId: CoercedInteger.min(1, 'Línea inválida')
 });
 
 export const ListCountOptionsSchema = z.object({

@@ -160,6 +160,10 @@ export async function upsertCountLine(
 			adjustmentCompleted: inventoryCountLines.adjustmentCompleted,
 			adjustmentCompletedById: inventoryCountLines.adjustmentCompletedById,
 			adjustmentCompletedAt: inventoryCountLines.adjustmentCompletedAt,
+			adjustmentReason: inventoryCountLines.adjustmentReason,
+			adjustmentReasonText: inventoryCountLines.adjustmentReasonText,
+			adjustmentRequestedBy: inventoryCountLines.adjustmentRequestedBy,
+			adjustmentRequestedAt: inventoryCountLines.adjustmentRequestedAt,
 			sessionStatus: inventoryCountSessions.status
 		})
 		.from(inventoryCountLines)
@@ -198,6 +202,11 @@ export async function upsertCountLine(
 			adjustmentCompleted: resetDerived ? false : line.adjustmentCompleted,
 			adjustmentCompletedById: resetDerived ? null : line.adjustmentCompletedById,
 			adjustmentCompletedAt: resetDerived ? null : line.adjustmentCompletedAt,
+			// Cambiar el conteo también descarta una solicitud de ajuste pendiente.
+			adjustmentReason: resetDerived ? null : line.adjustmentReason,
+			adjustmentReasonText: resetDerived ? null : line.adjustmentReasonText,
+			adjustmentRequestedBy: resetDerived ? null : line.adjustmentRequestedBy,
+			adjustmentRequestedAt: resetDerived ? null : line.adjustmentRequestedAt,
 			updatedAt: now
 		})
 		.where(
@@ -255,6 +264,12 @@ export async function recountCountLine(
 			adjustmentCompleted: diffChanges ? false : line.adjustmentCompleted,
 			adjustmentCompletedById: diffChanges ? null : line.adjustmentCompletedById,
 			adjustmentCompletedAt: diffChanges ? null : line.adjustmentCompletedAt,
+			// Un recuento que cambia la diferencia descarta la solicitud (habría
+			// que re-solicitar con el diff nuevo).
+			adjustmentReason: diffChanges ? null : line.adjustmentReason,
+			adjustmentReasonText: diffChanges ? null : line.adjustmentReasonText,
+			adjustmentRequestedBy: diffChanges ? null : line.adjustmentRequestedBy,
+			adjustmentRequestedAt: diffChanges ? null : line.adjustmentRequestedAt,
 			updatedAt: now
 		})
 		.where(eq(inventoryCountLines.id, line.id));

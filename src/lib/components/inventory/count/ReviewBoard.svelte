@@ -1,6 +1,6 @@
 <script lang="ts">
 	import ItemCell from './ui/ItemCell.svelte';
-	import { CheckCheck } from '@lucide/svelte';
+	import { CheckCheck, Clock } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import StatusIcon from './ui/StatusIcon.svelte';
 	import DiffBadge from './ui/DiffBadge.svelte';
@@ -24,13 +24,15 @@
 		costByLineId: Map<number, number | null>;
 		canReview: boolean;
 		isBusy: boolean;
-		/** N de líneas ajustables en lote (para «Aplicar todo (N)»). */
+		/** N de líneas ajustables en lote (para «Ajustar todo (N)»). */
 		batchCount: number;
 		reason: AdjustmentReason;
 		reasonText: string;
-		onApplyBatch: () => void;
+		onRequestBatch: () => void;
 		onRecount: (line: CountLineRow, raw: string) => void | Promise<void>;
 		onOpenAdjust: (line: CountLineRow) => void;
+		/** Quita la solicitud de ajuste de una línea (vuelve a «Ajustar»). */
+		onClearAdjust: (line: CountLineRow) => void;
 	}
 
 	let {
@@ -40,9 +42,10 @@
 		canReview,
 		isBusy,
 		batchCount,
-		onApplyBatch,
+		onRequestBatch,
 		onRecount,
 		onOpenAdjust,
+		onClearAdjust,
 		reason = $bindable(AdjustmentReason.PHYSICAL_COUNT),
 		reasonText = $bindable('')
 	}: Props = $props();
@@ -72,8 +75,8 @@
 		<span class="flex-1"></span>
 		{#if canReview}
 			<TriggerTooltip
-				title={`Aplicar todo (${batchCount})`}
-				text={`Ajusta el stock de las ${batchCount} diferencias bajo el umbral (${config.diffThresholdUnits} unidades${config.diffThresholdUsd > 0 ? ` y ${config.diffThresholdUsd} USD` : ''}). Las que superan el umbral se ajustan una por una tras el recuento.`}
+				title={`Ajustar todo (${batchCount})`}
+				text={`Deja ${batchCount} diferencia(s) bajo el umbral (${config.diffThresholdUnits} unidades${config.diffThresholdUsd > 0 ? ` y ${config.diffThresholdUsd} USD` : ''}) marcadas para el cierre: los movimientos se crean al cerrar la sesión. Las que superan el umbral se piden una por una tras el recuento.`}
 				side="bottom"
 			>
 				{#snippet trigger({ props })}
@@ -91,10 +94,10 @@
 								event.preventDefault();
 								return;
 							}
-							onApplyBatch();
+							onRequestBatch();
 						}}
 					>
-						Aplicar todo ({batchCount})
+						Ajustar todo ({batchCount})
 					</button>
 				{/snippet}
 			</TriggerTooltip>
@@ -187,6 +190,22 @@
 										<CheckCheck class="h-4 w-4" />
 										Ajustado
 									</span>
+								{:else if line.adjustmentRequestedAt != null}
+									<span
+										class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant"
+									>
+										<Clock class="h-4 w-4" />
+										Al cierre
+									</span>
+									<button
+										type="button"
+										aria-label={`Quitar ajuste de ${line.itemName}`}
+										disabled={isBusy}
+										class="ml-1 rounded px-1.5 py-0.5 text-xs text-on-surface-variant transition-colors hover:bg-surface-container hover:text-brand-navy disabled:opacity-60"
+										onclick={() => onClearAdjust(line)}
+									>
+										✕
+									</button>
 								{:else if gravityHigh(line, row.diff) && line.recountedStock == null}
 									<input
 										type="text"

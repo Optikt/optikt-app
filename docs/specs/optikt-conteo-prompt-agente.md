@@ -396,6 +396,7 @@ Tabla de participantes por sesión: `sessionId`, `userId` (nullable), `displayNa
 
 - **Recuento:** conservar el primer conteo y el recuento (`recountStock`, `recountedById/At`); la diferencia se calcula sobre el valor final (`recuento ?? conteo`). Cambiar el conteo limpia el recuento y el ajuste (invariante 4).
 - **Ajuste dentro de la sesión:** comando `applyLineAdjustment(lineId, motivo, texto?)` y `applyAdjustmentsBatch(sessionId, motivo, texto?)` (solo líneas bajo umbral, sin ajuste y sin recuento pendiente). **Reutilizan la lógica de ajuste manual existente** (lotes FIFO, confirmación por pérdida) y **vinculan el `inventory_movement` creado a la línea** (p. ej. `adjustmentMovementId`), de modo que «Ajustado» significa «existe el movimiento». Las sesiones antiguas conservan `adjustmentCompleted`.
+  > **Actualización 2026-11-10:** el ajuste se **solicita** en Revisar (`requestLineAdjustmentCmd`, `adjustment_requested_by/at`, sin movimiento) y el movimiento se crea **al cerrar** dentro de la transacción de `applySession`; cancelar la sesión descarta lo solicitado y `clearLineAdjustmentCmd` permite des-marcar una línea mientras siga OPEN.
 - **Motivos:** usar la lista de motivos que ya existe en el repo + **«Otros»** con texto libre obligatorio (se guarda el texto).
 - Permisos de ajuste: ADMIN/MANAGER (ver 17.7 sobre lentes).
 

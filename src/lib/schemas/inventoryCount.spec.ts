@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-	ApplyAdjustmentsBatchSchema,
-	ApplyCountLineAdjustmentSchema,
+	RequestAdjustmentsBatchSchema,
+	RequestLineAdjustmentSchema,
 	CancelInventoryCountSessionSchema,
 	ConfirmZeroStockSchema,
 	CreateCountSessionSchema,
@@ -88,14 +88,14 @@ describe('Motivos de ajuste', () => {
 		expect(ReasonSchema.safeParse({ reason: 'LOCURA' }).success).toBe(false);
 	});
 
-	it('ApplyCountLineAdjustmentSchema exige lineId', () => {
-		expect(ApplyCountLineAdjustmentSchema.safeParse({ lineId: 0, reason: 'DAMAGE' }).success).toBe(
+	it('RequestLineAdjustmentSchema exige lineId', () => {
+		expect(RequestLineAdjustmentSchema.safeParse({ lineId: 0, reason: 'DAMAGE' }).success).toBe(
 			false
 		);
 	});
 
-	it('ApplyAdjustmentsBatchSchema exige session y motivo', () => {
-		expect(ApplyAdjustmentsBatchSchema.safeParse({ sessionId: 1 }).success).toBe(false);
+	it('RequestAdjustmentsBatchSchema exige session y motivo', () => {
+		expect(RequestAdjustmentsBatchSchema.safeParse({ sessionId: 1 }).success).toBe(false);
 	});
 });
 

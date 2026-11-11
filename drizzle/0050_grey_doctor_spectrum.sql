@@ -1,0 +1,2 @@
+ALTER TABLE "inventory_count_lines" ADD COLUMN "adjustment_requested_by" uuid;--> statement-breakpoint
+ALTER TABLE "inventory_count_lines" ADD COLUMN "adjustment_requested_at" timestamp with time zone;

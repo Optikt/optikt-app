@@ -9,8 +9,9 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { inventoryCountLines } from '$lib/server/db/schema';
 import {
-	ApplyAdjustmentsBatchSchema,
-	ApplyCountLineAdjustmentSchema,
+	ClearLineAdjustmentSchema,
+	RequestAdjustmentsBatchSchema,
+	RequestLineAdjustmentSchema,
 	CancelInventoryCountSessionSchema,
 	ConfirmZeroStockSchema,
 	CreateCountSessionSchema,
@@ -40,8 +41,9 @@ import {
 	upsertCountLine
 } from '$lib/server/db/queries/inventoryCount/lines';
 import {
-	applyAdjustmentsBatch,
-	applyCountLineAdjustment
+	clearLineAdjustmentRequest,
+	requestAdjustmentsBatch,
+	requestCountLineAdjustment
 } from '$lib/server/db/queries/inventoryCount/adjustments';
 import {
 	getCoverage,
@@ -253,12 +255,12 @@ export const confirmZeroStock = command(ConfirmZeroStockSchema, async (data) => 
 	}
 });
 
-export const applyLineAdjustmentCmd = command(ApplyCountLineAdjustmentSchema, async (data) => {
+export const requestLineAdjustmentCmd = command(RequestLineAdjustmentSchema, async (data) => {
 	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
 	try {
 		const sessionId = await sessionIdForLine(data.lineId);
 		await requireCountWriteAccess(user.id, user.role, sessionId);
-		const line = await applyCountLineAdjustment({
+		const line = await requestCountLineAdjustment({
 			lineId: data.lineId,
 			reason: mapReason(data.reason),
 			reasonText: data.reasonText ?? null,
@@ -270,17 +272,29 @@ export const applyLineAdjustmentCmd = command(ApplyCountLineAdjustmentSchema, as
 	}
 });
 
-export const applyAdjustmentsBatchCmd = command(ApplyAdjustmentsBatchSchema, async (data) => {
+export const requestAdjustmentsBatchCmd = command(RequestAdjustmentsBatchSchema, async (data) => {
 	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
 	try {
 		await requireCountWriteAccess(user.id, user.role, data.sessionId);
-		const applied = await applyAdjustmentsBatch(
+		const applied = await requestAdjustmentsBatch(
 			data.sessionId,
 			mapReason(data.reason),
 			data.reasonText ?? null,
 			user.id
 		);
 		return ok(applied);
+	} catch (error) {
+		return fail(error);
+	}
+});
+
+export const clearLineAdjustmentCmd = command(ClearLineAdjustmentSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);
+	try {
+		const sessionId = await sessionIdForLine(data.lineId);
+		await requireCountWriteAccess(user.id, user.role, sessionId);
+		const line = await clearLineAdjustmentRequest(data.lineId);
+		return ok(line);
 	} catch (error) {
 		return fail(error);
 	}

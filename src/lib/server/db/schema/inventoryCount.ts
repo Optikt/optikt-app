@@ -115,6 +115,13 @@ export const inventoryCountLines = pgTable(
 			withTimezone: true,
 			mode: 'string'
 		}),
+		/** Quién pidió el ajuste en fase Revisar (se ejecuta al cierre). */
+		adjustmentRequestedBy: uuid('adjustment_requested_by'),
+		/** Cuándo se pidió el ajuste; movimiento = null hasta que se cierra. */
+		adjustmentRequestedAt: timestamp('adjustment_requested_at', {
+			withTimezone: true,
+			mode: 'string'
+		}),
 		countedById: uuid('counted_by_id'),
 		countedAt: timestamp('counted_at', { withTimezone: true, mode: 'string' }),
 		notes: text(),

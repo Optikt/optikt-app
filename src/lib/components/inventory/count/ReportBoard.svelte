@@ -302,7 +302,13 @@
 									{formatUsd(entry.diff * (costByLineId.get(entry.line.id) ?? 0))}
 								</td>
 								<td class="px-2 py-2 text-right text-xs">
-									{entry.line.adjustmentMovementId ? 'Ajustado' : 'Ajuste pendiente'}
+									{#if entry.line.adjustmentMovementId != null}
+										Ajustado
+									{:else if session.status === 'CANCELLED'}
+										{entry.line.adjustmentRequestedAt != null ? 'Ajuste descartado' : 'Sin ajuste'}
+									{:else}
+										Ajuste pendiente
+									{/if}
 								</td>
 							</tr>
 						{/each}

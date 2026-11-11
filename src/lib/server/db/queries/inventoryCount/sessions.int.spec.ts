@@ -6,12 +6,36 @@
  * Requiere DATABASE_URL (Testcontainers) — igual que el resto de suites .int.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AdjustmentReason } from '$lib/shared/enums';
-import { applySession, cancelSession, createSession } from './sessions';
+import { AdjustmentReason, InventoryMovementType } from '$lib/shared/enums';
+import { applySession, cancelSession, createSession, getSessionRow } from './sessions';
 import { recountCountLine, upsertCountLine, getSessionLines } from './lines';
-import { applyAdjustmentsBatch, applyCountLineAdjustment } from './adjustments';
+import {
+	clearLineAdjustmentRequest,
+	executeCountLineAdjustment,
+	requestAdjustmentsBatch,
+	requestCountLineAdjustment
+} from './adjustments';
 import { syncSessionResponsibles, listSessionResponsibles } from './responsibles';
 import { resetDb } from '$lib/testing/integration/db';
+import { and, count, eq } from 'drizzle-orm';
+import { db } from '$lib/server/db';
+import { inventoryLots, inventoryMovements, products } from '$lib/server/db/schema';
+
+async function productStock(productId: string): Promise<number> {
+	const [row] = await db
+		.select({ stock: products.stock })
+		.from(products)
+		.where(eq(products.id, productId));
+	return row?.stock ?? 0;
+}
+
+async function movementCount(productId: string): Promise<number> {
+	const [row] = await db
+		.select({ n: count() })
+		.from(inventoryMovements)
+		.where(eq(inventoryMovements.productId, productId));
+	return Number(row?.n ?? 0);
+}
 import {
 	createBrand,
 	createInventoryCountLine,
@@ -179,7 +203,7 @@ describe('ajuste vinculado a la línea', () => {
 		await resetDb();
 	});
 
-	it('un ajuste individual crea movement y lo vincula', async () => {
+	it('una solicitud no toca stock hasta cerrar; al cerrar crea el movement', async () => {
 		const admin = await createUser({ role: UserRole.ADMIN });
 		const { product } = await productFixture();
 		await createInventoryLot({
@@ -201,16 +225,51 @@ describe('ajuste vinculado a la línea', () => {
 			difference: 1
 		});
 
-		const updated = await applyCountLineAdjustment({
+		const movementsBefore = await movementCount(product.id);
+		const stockBefore = await productStock(product.id);
+
+		const requested = await requestCountLineAdjustment({
 			lineId: line.id,
 			reason: AdjustmentReason.PHYSICAL_COUNT,
 			reasonText: null,
 			userId: admin.id
 		});
-		expect(updated.adjustmentMovementId).not.toBeNull();
+		// Solo se marca: ni movimientos ni stock cambian hasta cerrar.
+		expect(await movementCount(product.id)).toBe(movementsBefore);
+		expect(await productStock(product.id)).toBe(stockBefore);
+		expect(requested.adjustmentMovementId).toBeNull();
+		expect(requested.adjustmentRequestedAt).not.toBeNull();
+		expect(requested.adjustmentReason).toBe(AdjustmentReason.PHYSICAL_COUNT);
+
+		// Lo pide adminA y lo cierra adminB: completedById = quien cierra.
+		const closer = await createUser({ role: UserRole.ADMIN });
+		await applySession(session.id, closer.id);
+
+		const rows = await getSessionLines(session.id, 'ALL');
+		const row = rows.find((candidate) => candidate.id === line.id);
+		expect(row?.adjustmentMovementId).not.toBeNull();
+		expect(row?.adjustmentCompleted).toBe(true);
+		expect(row?.adjustmentCompletedById).toBe(closer.id);
+
+		// Movimiento real: +1 ADJUSTMENT_IN, notas y stock del producto +1.
+		expect(await movementCount(product.id)).toBe(movementsBefore + 1);
+		expect(await productStock(product.id)).toBe(stockBefore + 1);
+		const [movement] = await db
+			.select()
+			.from(inventoryMovements)
+			.where(
+				and(
+					eq(inventoryMovements.productId, product.id),
+					eq(inventoryMovements.movementType, InventoryMovementType.ADJUSTMENT_IN)
+				)
+			)
+			.limit(1);
+		expect(movement?.quantityDelta).toBe(1);
+		expect(movement?.quantityAfter).toBe((movement?.quantityBefore ?? 0) + 1);
+		expect(movement?.notes).toBe('Conteo físico: Conteo físico');
 	});
 
-	it('«Aplicar todo» ajusta solo diferencias bajo el umbral', async () => {
+	it('«Ajustar todo» marca solo diferencias bajo el umbral', async () => {
 		const admin = await createUser({ role: UserRole.ADMIN });
 		const { product: productA } = await productFixture();
 		const { product: productB } = await productFixture();
@@ -242,7 +301,7 @@ describe('ajuste vinculado a la línea', () => {
 			difference: 4
 		});
 
-		const applied = await applyAdjustmentsBatch(
+		const applied = await requestAdjustmentsBatch(
 			session.id,
 			AdjustmentReason.PHYSICAL_COUNT,
 			null,
@@ -253,7 +312,9 @@ describe('ajuste vinculado a la línea', () => {
 		const rows = await getSessionLines(session.id, 'ALL');
 		const adjusted = rows.find((row) => row.productId === productA.id);
 		const skipped = rows.find((row) => row.productId === productB.id);
-		expect(adjusted?.adjustmentMovementId).not.toBeNull();
+		expect(adjusted?.adjustmentRequestedAt).not.toBeNull();
+		expect(adjusted?.adjustmentMovementId).toBeNull();
+		expect(skipped?.adjustmentRequestedAt).toBeNull();
 		expect(skipped?.adjustmentMovementId).toBeNull();
 	});
 
@@ -278,13 +339,216 @@ describe('ajuste vinculado a la línea', () => {
 		});
 
 		await expect(
-			applyCountLineAdjustment({
+			requestCountLineAdjustment({
 				lineId: line.id,
 				reason: AdjustmentReason.PHYSICAL_COUNT,
 				reasonText: null,
 				userId: admin.id
 			})
 		).rejects.toThrow('lote');
+	});
+
+	it('cancelar la sesión descarta lo solicitado: no se crea ningún movimiento', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const { product } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 10,
+			quantityAvailable: 10,
+			unitPurchasePrice: 90,
+			bcvRateAtPurchase: 1
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const line = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 8,
+			countedStock: 9,
+			difference: 1
+		});
+
+		const before = await movementCount(product.id);
+		await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+		await cancelSession(session.id, admin.id, 'cambio de planes');
+
+		expect(await movementCount(product.id)).toBe(before);
+		const rows = await getSessionLines(session.id, 'ALL');
+		expect(rows.find((candidate) => candidate.id === line.id)?.adjustmentMovementId).toBeNull();
+	});
+
+	it('quitar la solicitud deja la línea sin ajuste al cerrar', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const { product } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 10,
+			quantityAvailable: 10,
+			unitPurchasePrice: 90,
+			bcvRateAtPurchase: 1
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const line = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 8,
+			countedStock: 9,
+			difference: 1
+		});
+
+		await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+		await clearLineAdjustmentRequest(line.id);
+		const afterClear = await getSessionLines(session.id, 'ALL');
+		expect(
+			afterClear.find((candidate) => candidate.id === line.id)?.adjustmentRequestedAt
+		).toBeNull();
+
+		await applySession(session.id, admin.id);
+		const rows = await getSessionLines(session.id, 'ALL');
+		expect(rows.find((candidate) => candidate.id === line.id)?.adjustmentMovementId).toBeNull();
+	});
+
+	it('si el lote no alcanza al cerrar: revierte todo y explica cómo salir', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const { product } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 10,
+			quantityAvailable: 10,
+			unitPurchasePrice: 90,
+			bcvRateAtPurchase: 1
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const line = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 9,
+			countedStock: 8,
+			difference: -1
+		});
+		await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+
+		// El stock disponible cae entre la solicitud y el cierre.
+		await db
+			.update(inventoryLots)
+			.set({ quantityAvailable: 0 })
+			.where(eq(inventoryLots.productId, product.id));
+		const movementsBefore = await movementCount(product.id);
+
+		await expect(applySession(session.id, admin.id)).rejects.toThrow('Quita la solicitud');
+		expect((await getSessionRow(session.id))?.status).toBe('OPEN');
+		expect(await movementCount(product.id)).toBe(movementsBefore);
+
+		// Quitar la solicitud destraba el cierre (la línea queda sin ajustar).
+		await clearLineAdjustmentRequest(line.id);
+		await applySession(session.id, admin.id);
+		expect((await getSessionRow(session.id))?.status).toBe('APPLIED');
+		const rows = await getSessionLines(session.id, 'ALL');
+		expect(rows.find((candidate) => candidate.id === line.id)?.adjustmentMovementId).toBeNull();
+	});
+
+	it('un recuento que cambia la diferencia descarta la solicitud', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const { product } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 10,
+			quantityAvailable: 10
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const line = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 20,
+			countedStock: 19,
+			difference: -1
+		});
+
+		await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+		const recounted = await recountCountLine({
+			lineId: line.id,
+			recountedStock: 15,
+			userId: admin.id
+		});
+		expect(recounted.adjustmentRequestedAt).toBeNull();
+		expect(recounted.adjustmentReason).toBeNull();
+
+		await applySession(session.id, admin.id);
+		const rows = await getSessionLines(session.id, 'ALL');
+		expect(rows.find((candidate) => candidate.id === line.id)?.adjustmentMovementId).toBeNull();
+	});
+
+	it('guard de ejecución: una solicitud ya quitada no crea movimiento (carrera)', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const { product } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 10,
+			quantityAvailable: 10
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const line = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 8,
+			countedStock: 9,
+			difference: 1
+		});
+		const movementsBefore = await movementCount(product.id);
+
+		await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+		// Copia «stale» de la línea (la que leería un cierre concurrente)…
+		const stale = (await getSessionLines(session.id, 'ALL')).find(
+			(candidate) => candidate.id === line.id
+		);
+		expect(stale?.adjustmentRequestedAt).not.toBeNull();
+		// …mientras otra transacción quita la solicitud.
+		await clearLineAdjustmentRequest(line.id);
+
+		if (!stale) throw new Error('línea stale no encontrada');
+		await expect(executeCountLineAdjustment(stale, admin.id, db)).rejects.toThrow(
+			'cambió durante el cierre'
+		);
+		expect(await movementCount(product.id)).toBe(movementsBefore);
 	});
 });
 
@@ -293,9 +557,16 @@ describe('upsertCountLine ligero + reset de derivados', () => {
 		await resetDb();
 	});
 
-	it('devuelve solo la línea y limpia recuento/ajuste al cambiar el conteo', async () => {
+	it('devuelve solo la línea y limpia recuento/ajuste/solicitud al cambiar el conteo', async () => {
 		const admin = await createUser({ role: UserRole.ADMIN });
 		const { product } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 10,
+			quantityAvailable: 10
+		});
 		const session = await createInventoryCountSession({ openedById: admin.id });
 		const line = await createInventoryCountLine({
 			sessionId: session.id,
@@ -314,10 +585,21 @@ describe('upsertCountLine ligero + reset de derivados', () => {
 		});
 		expect(recounted.recountedStock).toBe(6);
 
+		const requested = await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+		expect(requested.adjustmentRequestedAt).not.toBeNull();
+
 		const changed = await upsertCountLine({ lineId: line.id, countedStock: 7, userId: admin.id });
 		expect(changed.countedStock).toBe(7);
 		expect(changed.recountedStock).toBeNull();
 		expect(changed.difference).toBe(2);
+		// Cambiar el conteo descarta la solicitud de ajuste.
+		expect(changed.adjustmentRequestedAt).toBeNull();
+		expect(changed.adjustmentReason).toBeNull();
 	});
 });
 
