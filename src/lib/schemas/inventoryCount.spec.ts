@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+	ClearLineAdjustmentSchema,
 	RequestAdjustmentsBatchSchema,
 	RequestLineAdjustmentSchema,
 	CancelInventoryCountSessionSchema,
@@ -92,6 +93,12 @@ describe('Motivos de ajuste', () => {
 		expect(RequestLineAdjustmentSchema.safeParse({ lineId: 0, reason: 'DAMAGE' }).success).toBe(
 			false
 		);
+	});
+
+	it('ClearLineAdjustmentSchema exige lineId', () => {
+		expect(ClearLineAdjustmentSchema.safeParse({}).success).toBe(false);
+		expect(ClearLineAdjustmentSchema.safeParse({ lineId: 0 }).success).toBe(false);
+		expect(ClearLineAdjustmentSchema.safeParse({ lineId: 1 }).success).toBe(true);
 	});
 
 	it('RequestAdjustmentsBatchSchema exige session y motivo', () => {
