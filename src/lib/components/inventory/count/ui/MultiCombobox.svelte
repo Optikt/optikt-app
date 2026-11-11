@@ -36,6 +36,7 @@
 		onchange,
 		oncreate
 	}: Props = $props();
+	const listboxId = $props.id();
 
 	let search = $state('');
 	let open = $state(false);
@@ -167,6 +168,7 @@
 			autocomplete="off"
 			role="combobox"
 			aria-expanded={open}
+			aria-controls={listboxId}
 			aria-haspopup="listbox"
 			aria-autocomplete="list"
 			class="min-w-[140px] flex-1 border-0 bg-transparent p-1 pr-6 text-sm text-on-surface outline-none"
@@ -190,6 +192,7 @@
 
 	{#if open && !disabled}
 		<ul
+			id={listboxId}
 			role="listbox"
 			aria-multiselectable="true"
 			class="absolute top-[calc(100%+4px)] z-50 max-h-60 w-full overflow-y-auto rounded-xl bg-white py-1 shadow-lg ring-1 shadow-brand-navy/25 ring-outline-variant/30"

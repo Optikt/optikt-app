@@ -58,13 +58,13 @@
 
 <TriggerTooltip {title} text={body}>
 	{#snippet trigger({ props })}
-		<span
+		<button
+			type="button"
 			{...props}
-			tabindex="0"
 			aria-label={title}
-			class={`inline-flex items-center justify-center ${tone}`}
+			class={`inline-flex items-center justify-center ${tone} p-0`}
 		>
 			<Icon class={dimension} aria-hidden="true" />
-		</span>
+		</button>
 	{/snippet}
 </TriggerTooltip>

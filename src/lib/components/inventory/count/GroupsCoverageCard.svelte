@@ -82,10 +82,17 @@
 	{:else}
 		<div class="divide-y divide-outline-variant/40 max-sm:hidden">
 			{#each groups[dim]! as group (group.value)}
-				<button
-					type="button"
+				<div
+					role="button"
+					tabindex="0"
 					class="grid w-full grid-cols-[28px_1.3fr_.5fr_1.2fr_.5fr_1.3fr_30px_.6fr] items-center gap-2.5 border-t border-outline-variant/40 px-1.5 py-3 text-left transition-colors hover:bg-surface-container-low"
 					onclick={() => onToggleRow(group.value)}
+					onkeydown={(event) => {
+						if (event.key === 'Enter' || event.key === ' ') {
+							event.preventDefault();
+							onToggleRow(group.value);
+						}
+					}}
 					aria-pressed={selectedValues.includes(group.value)}
 				>
 					<span class="inline-flex items-center" aria-hidden="true">
@@ -109,11 +116,15 @@
 						text="Mediana de días desde el último conteo: la mitad del grupo se contó hace menos que esto."
 					>
 						{#snippet trigger({ props })}
-							<span {...props} tabindex="0" class="text-sm text-on-surface-variant">
+							<button
+								type="button"
+								{...props}
+								class="p-0 text-left text-sm text-on-surface-variant"
+							>
 								{group.medianAgeDays == null
 									? 'Nunca'
 									: `mediana ${formatAgo(group.medianAgeDays)}`}
-							</span>
+							</button>
 						{/snippet}
 					</TriggerTooltip>
 					<TrafficDot
@@ -128,12 +139,12 @@
 						text="Ventas, compras y ajustes desde el último conteo. Más movimiento, más riesgo de desfase."
 					>
 						{#snippet trigger({ props })}
-							<span {...props} tabindex="0" class="text-sm text-on-surface-variant"
-								>{group.movementsSince}</span
+							<button type="button" {...props} class="p-0 text-left text-sm text-on-surface-variant"
+								>{group.movementsSince}</button
 							>
 						{/snippet}
 					</TriggerTooltip>
-				</button>
+				</div>
 			{/each}
 		</div>
 	{/if}

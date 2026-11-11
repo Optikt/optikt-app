@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ItemCell from './ui/ItemCell.svelte';
 	import { CheckCheck } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import StatusIcon from './ui/StatusIcon.svelte';
@@ -152,9 +153,13 @@
 								/>
 							</td>
 							<td class="px-2 py-2.5">
-								<span class="block truncate font-medium text-brand-navy" title={line.itemName}
-									>{line.itemName}</span
-								>
+								<ItemCell
+									itemName={line.itemName}
+									itemCode={line.itemCode}
+									itemType={line.itemType}
+									productId={line.productId}
+									lensCatalogItemId={line.lensCatalogItemId}
+								/>
 								<span class="block truncate font-mono text-xs text-outline"
 									>{line.itemCode ?? ''}</span
 								>
@@ -191,10 +196,21 @@
 										disabled={isBusy}
 										enterkeyhint="done"
 										class="w-24 rounded-lg border border-outline-variant/40 bg-white px-2 py-1.5 text-right font-semibold tabular-nums focus:ring-2 focus:ring-brand-blue/50 focus:outline-none"
+										onchange={(event) => {
+											const input = event.currentTarget as HTMLInputElement;
+											// Tras Enter el valor ya viajó: no repetir si el blur llega antes del render.
+											if (input.dataset.synced === input.value) {
+												delete input.dataset.synced;
+												return;
+											}
+											void onRecount(line, input.value);
+										}}
 										onkeydown={(event) => {
 											if (event.key === 'Enter') {
 												event.preventDefault();
-												void onRecount(line, (event.currentTarget as HTMLInputElement).value);
+												const input = event.currentTarget as HTMLInputElement;
+												input.dataset.synced = input.value;
+												void onRecount(line, input.value);
 											}
 										}}
 									/>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { SlideOver } from '$lib/components/ui';
 	import InfoTooltip from '$lib/components/ui/InfoTooltip.svelte';
 	import type { CountCycleConfig } from '$lib/shared/inventoryCount';
@@ -12,10 +13,10 @@
 
 	let { open = $bindable(false), config, onClose, onSave }: Props = $props();
 
-	let cycleDays = $state(config.cycleDays);
-	let diffThresholdUnits = $state(config.diffThresholdUnits);
-	let diffThresholdUsd = $state(config.diffThresholdUsd);
-	let quickOldestLimit = $state(config.quickOldestLimit);
+	let cycleDays = $state(untrack(() => config.cycleDays));
+	let diffThresholdUnits = $state(untrack(() => config.diffThresholdUnits));
+	let diffThresholdUsd = $state(untrack(() => config.diffThresholdUsd));
+	let quickOldestLimit = $state(untrack(() => config.quickOldestLimit));
 
 	const canSave = $derived(
 		Number.isFinite(cycleDays) &&

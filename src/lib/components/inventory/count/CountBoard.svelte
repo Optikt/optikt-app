@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ItemCell from './ui/ItemCell.svelte';
 	import CountVirtualList from './CountVirtualList.svelte';
 	import { finalCount as finalCountHelper } from '$lib/shared/inventoryCount';
 	import type { CountLineRow } from '$lib/server/db/queries/inventoryCount/types';
@@ -72,7 +73,16 @@
 			<p class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase">
 				{fichaLine.brandName} · ficha {Math.min(fichaIndex + 1, fichaOrder.length)} de {fichaOrder.length}
 			</p>
-			<p class="font-heading mt-1 text-2xl font-bold text-brand-navy">{fichaLine.itemName}</p>
+			<p class="mt-1">
+				<ItemCell
+					itemName={fichaLine.itemName}
+					itemCode={fichaLine.itemCode}
+					itemType={fichaLine.itemType}
+					productId={fichaLine.productId}
+					lensCatalogItemId={fichaLine.lensCatalogItemId}
+					nameClass="font-heading text-2xl font-bold"
+				/>
+			</p>
 			<p class="font-mono text-xs text-outline">{fichaLine.itemCode ?? ''}</p>
 			<p class="mt-6 text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase">
 				Sistema

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ItemCell from './ui/ItemCell.svelte';
 	import { downloadCsv } from '$lib/utils/csv';
 	import CountSegmented from './ui/CountSegmented.svelte';
 	import CountLabel from './ui/CountLabel.svelte';
@@ -141,12 +142,16 @@
 			{#each kpis as kpi (kpi.label)}
 				<TriggerTooltip title={kpi.label} text={kpi.hint} side="bottom">
 					{#snippet trigger({ props })}
-						<div {...props} tabindex="0" class="rounded-lg bg-surface-container-low px-4 py-3">
+						<button
+							type="button"
+							{...props}
+							class="rounded-lg bg-surface-container-low px-4 py-3 text-left"
+						>
 							<CountLabel text={kpi.label} />
 							<p class="font-heading mt-1 text-[26px] font-bold text-brand-navy tabular-nums">
 								{kpi.value}
 							</p>
-						</div>
+						</button>
 					{/snippet}
 				</TriggerTooltip>
 			{/each}
@@ -256,28 +261,57 @@
 
 		<div class="rounded-xl bg-white p-4 shadow-[var(--ds-shadow-md)]">
 			<p class="text-sm font-semibold text-brand-navy">Detalle de diferencias</p>
-			<ul class="mt-2 divide-y divide-outline-variant/40">
-				{#each diffLines as entry (entry.line.id)}
-					<li class="flex items-center justify-between gap-3 py-2 text-sm">
-						<span class="truncate">{entry.line.itemName}</span>
-						<span class="text-on-surface-variant tabular-nums"
-							>{entry.line.systemStock} → {finalCount(entry.line)}</span
-						>
-						<span class={entry.diff > 0 ? 'text-success tabular-nums' : 'text-error tabular-nums'}>
-							{entry.diff > 0 ? `+${entry.diff}` : `${entry.diff}`}
-						</span>
-						<span class="tabular-nums"
-							>{formatUsd(entry.diff * (costByLineId.get(entry.line.id) ?? 0))}</span
-						>
-						<span class="text-xs">
-							{entry.line.adjustmentMovementId ? 'Ajustado' : 'Ajuste pendiente'}
-						</span>
-					</li>
-				{/each}
+			<div class="mt-2 overflow-x-auto">
+				<table class="w-full text-sm">
+					<thead
+						class="bg-surface-container-high text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
+					>
+						<tr>
+							<th class="px-2 py-2 text-left font-semibold">Ítem</th>
+							<th class="px-2 py-2 text-right font-semibold">Sistema → Contado</th>
+							<th class="px-2 py-2 text-right font-semibold">Dif.</th>
+							<th class="px-2 py-2 text-right font-semibold">Impacto</th>
+							<th class="px-2 py-2 text-right font-semibold">Estado</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-outline-variant/40">
+						{#each diffLines as entry (entry.line.id)}
+							<tr>
+								<td class="px-2 py-2">
+									<span class="block max-w-56"
+										><ItemCell
+											itemName={entry.line.itemName}
+											itemCode={entry.line.itemCode}
+											itemType={entry.line.itemType}
+											productId={entry.line.productId}
+											lensCatalogItemId={entry.line.lensCatalogItemId}
+										/></span
+									>
+								</td>
+								<td class="px-2 py-2 text-right text-on-surface-variant tabular-nums">
+									{entry.line.systemStock} → {finalCount(entry.line)}
+								</td>
+								<td
+									class="px-2 py-2 text-right {entry.diff > 0
+										? 'text-success tabular-nums'
+										: 'text-error tabular-nums'}"
+								>
+									{entry.diff > 0 ? `+${entry.diff}` : `${entry.diff}`}
+								</td>
+								<td class="px-2 py-2 text-right text-on-surface-variant tabular-nums">
+									{formatUsd(entry.diff * (costByLineId.get(entry.line.id) ?? 0))}
+								</td>
+								<td class="px-2 py-2 text-right text-xs">
+									{entry.line.adjustmentMovementId ? 'Ajustado' : 'Ajuste pendiente'}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 				{#if diffLines.length === 0}
-					<li class="py-3 text-center text-sm text-on-surface-variant">Sin diferencias</li>
+					<p class="py-3 text-center text-sm text-on-surface-variant">Sin diferencias</p>
 				{/if}
-			</ul>
+			</div>
 		</div>
 	{/if}
 </section>

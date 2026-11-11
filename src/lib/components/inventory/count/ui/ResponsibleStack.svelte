@@ -65,7 +65,12 @@
 {:else}
 	<TriggerTooltip title={tooltipTitle} text={names}>
 		{#snippet trigger({ props })}
-			<span {...props} tabindex="0" class="inline-flex items-center" aria-label={tooltipTitle}>
+			<button
+				type="button"
+				{...props}
+				class="inline-flex items-center p-0"
+				aria-label={tooltipTitle}
+			>
 				{#each list as entry (entry.id)}
 					<span
 						class="inline-grid h-[26px] w-[26px] place-items-center rounded-full border-[1.5px] border-brand-navy bg-brand-blue text-[11px] font-bold text-brand-navy"
@@ -78,7 +83,7 @@
 						style="margin-left:-6px">+{rest}</span
 					>
 				{/if}
-			</span>
+			</button>
 		{/snippet}
 	</TriggerTooltip>
 {/if}

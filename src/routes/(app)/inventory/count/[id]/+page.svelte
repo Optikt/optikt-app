@@ -63,7 +63,7 @@
 	let lines = $state<CountLineRow[]>(initialSession.lines);
 	let responsibles = $state(initialSession.responsibles);
 	let config = $state<CountCycleConfig>(initialConfig);
-	let phase = $state<1 | 2 | 3>(session.status === 'OPEN' ? 1 : 3);
+	let phase = $state<1 | 2 | 3>(untrack((): 1 | 2 | 3 => (session.status === 'OPEN' ? 1 : 3)));
 	let isSubmitting = $state(false);
 	let isMobileView = $state(false);
 	let mobileMode = $state<'ficha' | 'lista'>('lista');
@@ -382,12 +382,14 @@
 	}
 
 	let userOptions = $state<Array<{ userId: string; displayName: string }>>(
-		responsibles
-			.filter((entry: ResponsibleRow) => entry.userId != null)
-			.map((entry: ResponsibleRow) => ({
-				userId: entry.userId as string,
-				displayName: entry.displayName
-			}))
+		untrack(() =>
+			responsibles
+				.filter((entry: ResponsibleRow) => entry.userId != null)
+				.map((entry: ResponsibleRow) => ({
+					userId: entry.userId as string,
+					displayName: entry.displayName
+				}))
+		)
 	);
 
 	async function loadResponsibleOptions(): Promise<void> {

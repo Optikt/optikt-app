@@ -15,15 +15,15 @@
 >
 	<TriggerTooltip title="Pendientes" text="Ítems con stock en el sistema que aún no cuentas.">
 		{#snippet trigger({ props })}
-			<span {...props} tabindex="0"
-				>Pendientes <b class="font-heading text-brand-navy">{stats.pendingCounting}</b></span
+			<button type="button" {...props} class="p-0"
+				>Pendientes <b class="font-heading text-brand-navy">{stats.pendingCounting}</b></button
 			>
 		{/snippet}
 	</TriggerTooltip>
 	<TriggerTooltip title="Coinciden" text="Lo contado es igual al sistema.">
 		{#snippet trigger({ props })}
-			<span {...props} tabindex="0"
-				>Coinciden <b class="font-heading text-brand-navy">{stats.matchCount}</b></span
+			<button type="button" {...props} class="p-0"
+				>Coinciden <b class="font-heading text-brand-navy">{stats.matchCount}</b></button
 			>
 		{/snippet}
 	</TriggerTooltip>
@@ -32,10 +32,10 @@
 		text={`Faltan ${stats.missingUnits} u y sobran ${stats.surplusUnits} u en total.`}
 	>
 		{#snippet trigger({ props })}
-			<span {...props} tabindex="0">
+			<button type="button" {...props} class="p-0">
 				Con diferencia <b class="font-heading text-brand-navy">{stats.diffCount}</b>
 				<span class="tabular-nums">(−{stats.missingUnits} / +{stats.surplusUnits})</span>
-			</span>
+			</button>
 		{/snippet}
 	</TriggerTooltip>
 	<TriggerTooltip
@@ -43,9 +43,9 @@
 		text="Diferencia × costo de cada ítem. Negativo = pérdida."
 	>
 		{#snippet trigger({ props })}
-			<span {...props} tabindex="0"
+			<button type="button" {...props} class="p-0"
 				>Impacto est. <b class="font-heading text-brand-navy">{formatUsd(stats.impactCost)}</b
-				></span
+				></button
 			>
 		{/snippet}
 	</TriggerTooltip>
@@ -55,9 +55,9 @@
 			text="No bloquea el cierre, pero esos ítems no quedan como verificados."
 		>
 			{#snippet trigger({ props })}
-				<span {...props} tabindex="0"
+				<button type="button" {...props} class="p-0"
 					>Stock 0 sin confirmar <b class="font-heading text-brand-navy">{stats.zeroStockPending}</b
-					></span
+					></button
 				>
 			{/snippet}
 		</TriggerTooltip>

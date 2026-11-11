@@ -1,6 +1,7 @@
 <script lang="ts">
+	import ItemCell from './ui/ItemCell.svelte';
 	import { tick } from 'svelte';
-	import { Keyboard } from '@lucide/svelte';
+	import { Keyboard, Loader2 } from '@lucide/svelte';
 	import CountSegmented from './ui/CountSegmented.svelte';
 	import StatusIcon from './ui/StatusIcon.svelte';
 	import DiffBadge from './ui/DiffBadge.svelte';
@@ -218,18 +219,6 @@
 		return null;
 	}
 
-	async function jumpNextPending(fromLineIdx: number): Promise<void> {
-		let searchIdx = fromLineIdx + 1;
-		while (searchIdx < lineCount) {
-			const entry = findVirtualLine(searchIdx);
-			if (entry && entry.row.line.countedStock == null) {
-				await reachLineIndex(searchIdx);
-				return;
-			}
-			searchIdx += 1;
-		}
-	}
-
 	function saveLine(line: CountLineRow, raw: string): void {
 		if (raw === '') return;
 		const numeric = Number.parseInt(raw, 10);
@@ -242,7 +231,9 @@
 		if (event.key === 'Enter') {
 			event.preventDefault();
 			saveLine(line, input.value);
-			void jumpNextPending(lineIndex);
+			// Siguiente = la línea de abajo, aunque esté contada (no saltar al
+			// último pendiente lejano: el usuario puede estar re-editando arriba).
+			if (lineIndex + 1 < lineCount) void reachLineIndex(lineIndex + 1);
 		} else if (event.key === 'ArrowDown') {
 			event.preventDefault();
 			void reachLineIndex(Math.min(lineIndex + 1, lineCount - 1));
@@ -289,13 +280,13 @@
 			text="↑ ↓ mover · Enter guardar y pasar al siguiente · Esc deshacer · / buscar"
 		>
 			{#snippet trigger({ props })}
-				<span
+				<button
+					type="button"
 					{...props}
-					tabindex="0"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container text-brand-navy"
+					class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container p-0 text-brand-navy"
 				>
 					<Keyboard class="h-4 w-4" />
-				</span>
+				</button>
 			{/snippet}
 		</TriggerTooltip>
 	</div>
@@ -363,8 +354,13 @@
 										unitCost={costByLineId.get(line.id) ?? null}
 									/>
 									<span class="flex min-w-0 flex-col justify-center">
-										<span class="truncate text-sm font-medium text-brand-navy">{line.itemName}</span
-										>
+										<ItemCell
+											itemName={line.itemName}
+											itemCode={line.itemCode}
+											itemType={line.itemType}
+											productId={line.productId}
+											lensCatalogItemId={line.lensCatalogItemId}
+										/>
 										{#if line.notes}
 											<span class="truncate text-xs text-on-surface-variant">{line.notes}</span>
 										{:else}
@@ -397,7 +393,15 @@
 										onkeydown={(event) => handleRowKeydown(event, line, virtualLine.lineIndex)}
 									/>
 									<div class="text-right">
-										{#if line.countedStock != null && diff !== 0}
+										{#if savingLineIds.has(line.id)}
+											<span
+												class="inline-flex items-center gap-1 rounded-md bg-surface-container px-2 py-0.5 text-xs font-semibold text-on-surface-variant"
+												role="status"
+											>
+												<Loader2 class="h-3 w-3 animate-spin" aria-hidden="true" />
+												<span class="hidden lg:inline">Guardando…</span>
+											</span>
+										{:else if line.countedStock != null && diff !== 0}
 											<DiffBadge
 												{diff}
 												gravity={gravityOf(line)}
