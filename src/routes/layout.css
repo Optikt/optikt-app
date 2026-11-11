@@ -261,6 +261,34 @@ body {
 	}
 }
 
+/* ── Motion spec (mockup detalle-venta): 150–400ms, ease ds-ease-out, no bounce ── */
+@keyframes page-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+}
+
+@keyframes pop-in {
+	from {
+		opacity: 0;
+		transform: scale(0.95) translateY(-6px);
+	}
+}
+
+@keyframes fade-only {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes slide-in-right {
+	from {
+		opacity: 0;
+		transform: translateX(40px);
+	}
+}
+
 @keyframes spin {
 	to {
 		transform: rotate(360deg);
@@ -269,6 +297,35 @@ body {
 
 .animate-fade-in {
 	animation: fade-in 0.5s ease-out forwards;
+}
+
+/* Entrance utilities (direction is purpose, never decoration) */
+.anim-page {
+	animation: page-in 400ms var(--ds-ease-out) both;
+}
+
+.anim-pop {
+	animation: pop-in 180ms var(--ds-ease-out) both;
+}
+
+.anim-fade {
+	animation: fade-only 250ms var(--ds-ease-out) both;
+}
+
+.anim-slide-in {
+	animation: slide-in-right 320ms var(--ds-ease-out) both;
+}
+
+/* Global reduced-motion: no animations, no transitions (a11y, non-negotiable) */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }
 
 .spinner {

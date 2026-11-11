@@ -124,7 +124,7 @@
 			{#if icon}
 				{@render icon()}
 			{/if}
-			<div>
+			<div class="min-w-0 flex-1">
 				{#if message}
 					<p class="text-on-surface">{message}</p>
 				{/if}

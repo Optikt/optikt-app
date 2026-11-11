@@ -40,7 +40,7 @@
 </script>
 
 <div
-	class="fixed inset-0 z-40 bg-black/40 transition-opacity"
+	class="fixed inset-0 z-54 bg-black/40 transition-opacity"
 	class:hidden={!open}
 	class:opacity-100={open}
 	onclick={onclose}
@@ -49,7 +49,7 @@
 
 <svelte:window onkeydown={(e: KeyboardEvent) => e.key === 'Escape' && onclose()} />
 
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4" class:hidden={!open}>
+<div class="fixed inset-0 z-55 flex items-center justify-center p-4" class:hidden={!open}>
 	<div
 		class="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
 		role="dialog"

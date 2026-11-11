@@ -1,5 +1,11 @@
 import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import {
+	SaleItemType,
+	FREE_ITEM_CATEGORY_LABELS,
+	type FreeItemCategory
+} from '$lib/shared/enums/lensTypes';
+import type { DocumentItemKind } from '$lib/components/commercialDocument/itemView';
+import { getCachedLensItem } from '../catalogCache.svelte';
 
 export interface DisplayGroup {
 	key: string;
@@ -10,65 +16,77 @@ export interface DisplayGroup {
 	treatments: SaleItemWithDetails[];
 }
 
+/** Display name for a persisted sale item (single source for list + calculator). */
+export function itemName(item: SaleItemWithDetails): string {
+	if (item.itemType === SaleItemType.FREE_ITEM) {
+		return item.freeDetails?.description ?? 'Ítem libre';
+	}
+	return item.snapshotName ?? item.product?.name ?? item.lensCatalogItem?.name ?? 'Item sin nombre';
+}
+
 export function itemLabel(group: DisplayGroup): string {
-	if (group.item.itemType === SaleItemType.FREE_ITEM) {
-		return group.item.freeDetails?.description ?? 'Ítem libre';
+	return itemName(group.item);
+}
+
+/** Neutral kind for the icon chip (no colored type tags — structure is greyscale). */
+export function itemKind(itemType: string): DocumentItemKind {
+	if (itemType === SaleItemType.LENS_PAIR) return 'crystal';
+	if (itemType === SaleItemType.FREE_ITEM) return 'free';
+	return 'product';
+}
+
+export function itemKindTooltip(kind: DocumentItemKind): string {
+	switch (kind) {
+		case 'crystal':
+			return 'Cristal';
+		case 'free':
+			return 'Ítem libre';
+		default:
+			return 'Montura / producto';
+	}
+}
+
+/** Factory treatments included in the lens (from the shared catalog cache, same as the drawer). */
+export function factoryTreatments(lensCatalogItemId: string | null): string[] {
+	if (!lensCatalogItemId) return [];
+	const lens = getCachedLensItem(lensCatalogItemId);
+	if (!lens) return [];
+	const parts: string[] = [];
+	if (lens.hasAr) parts.push('Antirreflejo');
+	if (lens.hasBluecut) parts.push('Blue Block');
+	if (lens.isPhotochromic) parts.push('Fotocromático');
+	return parts;
+}
+
+/**
+ * Secondary meta line (single source: drawer parity).
+ * product → `SKU · brand` · lens → `lab · Incluye …` · free → `categoría · descripción`.
+ */
+export function itemSubtitle(group: DisplayGroup): string | undefined {
+	const item = group.item;
+	if (item.itemType === SaleItemType.LENS_PAIR) {
+		const factory = factoryTreatments(item.lensCatalogItemId ?? null);
+		const parts = [item.snapshotBrand];
+		if (factory.length > 0) parts.push(`Incluye ${factory.join(', ')}`);
+		return parts.filter(Boolean).join(' · ') || undefined;
+	}
+	if (item.itemType === SaleItemType.FREE_ITEM) {
+		const category = item.freeDetails?.category
+			? (FREE_ITEM_CATEGORY_LABELS[item.freeDetails.category as FreeItemCategory] ?? null)
+			: null;
+		const parts = [category, item.freeDetails?.description].filter(Boolean);
+		return parts.length > 0 ? parts.join(' · ') : 'Servicio';
 	}
 	return (
-		group.item.snapshotName ??
-		group.item.product?.name ??
-		group.item.lensCatalogItem?.name ??
-		'Item sin nombre'
+		[item.snapshotSku ?? item.product?.sku, item.snapshotBrand].filter(Boolean).join(' · ') ||
+		undefined
 	);
 }
 
-export function splitItemName(group: DisplayGroup): { principal: string; details: string } {
-	const name = itemLabel(group);
-	const parts = name.split('·').map((s) => s.trim());
-	if (parts.length > 1) {
-		return { principal: parts[0], details: parts.slice(1).join(' · ') };
-	}
-	const sku = group.item.snapshotSku ?? group.item.product?.sku;
-	if (sku) {
-		return { principal: name, details: sku };
-	}
-	return { principal: name, details: '' };
-}
-
-export function itemBadge(itemType: string): { label: string; classes: string } {
-	if (itemType === SaleItemType.LENS_PAIR) {
-		return {
-			label: 'CRISTAL',
-			classes: 'text-amber-700 bg-amber-100 border-amber-200'
-		};
-	}
-	if (itemType === SaleItemType.FREE_ITEM) {
-		return {
-			label: 'ÍTEM LIBRE',
-			classes: 'text-gray-600 bg-gray-100 border-gray-200'
-		};
-	}
-	return {
-		label: 'MONTURA',
-		classes: 'text-indigo-700 bg-indigo-50 border-indigo-100'
-	};
-}
-
-export function iconContainerClasses(itemType: string): string {
-	if (itemType === SaleItemType.LENS_PAIR) {
-		return 'bg-amber-100 border-amber-200 text-amber-700';
-	}
-	if (itemType === SaleItemType.FREE_ITEM) {
-		return 'bg-gray-100 border-gray-200 text-gray-500';
-	}
-	return 'bg-indigo-50 border-indigo-100 text-indigo-600';
-}
-
-export function rowHoverClasses(itemType: string): string {
-	if (itemType === SaleItemType.LENS_PAIR) return 'hover:bg-amber-50/30';
-	return 'hover:bg-gray-50/50';
-}
-
-export function prescriptionValue(val: number | null | undefined): string {
-	return val != null ? String(val) : '—';
+/** Progressive/bifocal lenses need mounting measures (ALT/DNP) in the expanded table. */
+export function isProgressiveItem(item: SaleItemWithDetails): boolean {
+	const type = item.lensCatalogItem?.type;
+	if (type === 'PROGRESSIVE' || type === 'BIFOCAL') return true;
+	const name = item.snapshotName ?? '';
+	return /Progresivo|Bifocal/i.test(name);
 }

@@ -5,7 +5,6 @@ import {
 	customerName,
 	customerPhone,
 	nextStatusTargets,
-	refundCardClasses,
 	refundDecisionTitle
 } from './saleDetail';
 
@@ -33,13 +32,6 @@ describe('customer display', () => {
 });
 
 describe('refund display', () => {
-	it('classes by refund status', () => {
-		expect(refundCardClasses(RefundStatus.REFUNDED)).toContain('bg-red-50');
-		expect(refundCardClasses(RefundStatus.RETAINED)).toContain('bg-amber-50');
-		expect(refundCardClasses(RefundStatus.NO_PAYMENT)).toContain('bg-gray-50');
-		expect(refundCardClasses(null)).toContain('bg-gray-50');
-	});
-
 	it('titles by refund status', () => {
 		expect(refundDecisionTitle(RefundStatus.REFUNDED)).toBe('Reembolso emitido');
 		expect(refundDecisionTitle(RefundStatus.RETAINED)).toBe('Depósito retenido');

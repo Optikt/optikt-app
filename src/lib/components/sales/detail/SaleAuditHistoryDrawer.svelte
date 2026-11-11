@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { History, X } from '@lucide/svelte';
-	import { SlideOver } from '$lib/components/ui';
+	import { X } from '@lucide/svelte';
+	import { AppBadge, SlideOver } from '$lib/components/ui';
 	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-	import { formatDate } from '$lib/utils';
 	import { classifySaleAuditEntry, type AuditEvent } from '$lib/utils/saleDetail';
+	import { formatDate } from '$lib/utils';
+	import SaleAuditEvent from './SaleAuditEvent.svelte';
 
 	interface Props {
 		open: boolean;
@@ -18,36 +19,19 @@
 	const auditTimeline = $derived(
 		auditHistory.map(classifySaleAuditEntry).filter((e): e is AuditEvent => e !== null)
 	);
-
-	function eventDotClass(event: AuditEvent): string {
-		const isCreate = event.action === 'create';
-		const isStatus = event.label.startsWith('Estado:');
-		if (isCreate) return 'bg-brand-navy/10 text-brand-navy';
-		if (isStatus) return 'bg-brand-blue/15 text-brand-blue';
-		return 'bg-surface-container-high text-on-surface-variant';
-	}
 </script>
 
-<SlideOver {open} {onclose} size="lg">
-	{#snippet header({ onclose })}
-		<div class="flex items-center justify-between border-b border-outline-variant/15 px-6 py-4">
-			<div class="flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
-				>
-					<History class="h-5 w-5" />
-				</div>
-				<div>
-					<h2 class="text-lg font-semibold text-brand-navy">Historial de cambios</h2>
-					<p class="text-xs text-on-surface-variant">
-						{auditTimeline.length} evento{auditTimeline.length !== 1 ? 's' : ''}
-					</p>
-				</div>
-			</div>
+<SlideOver {open} {onclose} widthClass="w-[440px]" bodyClass="px-0 py-1">
+	{#snippet header({ onclose: close })}
+		<div class="flex items-center gap-3 border-b border-outline-variant/15 px-5 py-3.5">
+			<h2 class="font-heading min-w-0 flex-1 text-lg font-semibold text-brand-navy">
+				Historial de cambios
+			</h2>
+			<AppBadge variant="neutral">{auditTimeline.length} eventos</AppBadge>
 			<button
 				type="button"
-				onclick={onclose}
-				class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+				onclick={close}
+				class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
 				aria-label="Cerrar"
 			>
 				<X class="h-5 w-5" />
@@ -55,59 +39,21 @@
 		</div>
 	{/snippet}
 
-	<div class="px-6 py-5">
+	<div class="py-1">
 		{#if auditTimeline.length === 0}
-			<div class="space-y-4">
-				<div class="rounded-2xl bg-surface-container-low p-4">
-					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-						Creada por
-					</p>
-					<p class="mt-2 font-semibold text-brand-navy">
-						{saleCreatedBy ?? 'Usuario no disponible'}
-					</p>
-					<p class="mt-1 text-sm text-on-surface-variant">
-						{formatDate(saleCreatedAt, {
-							dateStyle: 'medium',
-							timeStyle: 'short'
-						})}
-					</p>
-				</div>
+			<div class="mx-4 rounded-2xl bg-surface-container-low p-4">
+				<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Creada por</p>
+				<p class="mt-2 font-semibold text-brand-navy">
+					{saleCreatedBy ?? 'Usuario no disponible'}
+				</p>
+				<p class="mt-1 text-sm text-on-surface-variant">
+					{formatDate(saleCreatedAt, { dateStyle: 'medium', timeStyle: 'short' })}
+				</p>
 			</div>
 		{:else}
-			<ol class="relative border-l border-outline-variant/25">
-				{#each auditTimeline as event (event.id)}
-					{@const dotClass = eventDotClass(event)}
-					{@const isCreate = event.action === 'create'}
-					<li class="ms-5 mb-6 last:mb-0">
-						<span
-							class="absolute -start-[9px] flex h-[18px] w-[18px] items-center justify-center rounded-full ring-4 ring-surface-container-lowest {dotClass}"
-						>
-							{#if isCreate}
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2.5"
-									class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14" /></svg
-								>
-							{:else}
-								<svg viewBox="0 0 24 24" fill="currentColor" class="h-1.5 w-1.5"
-									><circle cx="12" cy="12" r="6" /></svg
-								>
-							{/if}
-						</span>
-						<p class="text-sm font-semibold text-on-surface">
-							{event.label}
-						</p>
-						<p class="mt-0.5 text-xs text-on-surface-variant">
-							{event.changedByName ?? 'Usuario desconocido'}
-						</p>
-						<time class="mt-0.5 block font-mono text-[11px] text-outline tabular-nums">
-							{formatDate(event.changedAt, { dateStyle: 'short', timeStyle: 'short' })}
-						</time>
-					</li>
-				{/each}
-			</ol>
+			{#each auditTimeline as event (event.id)}
+				<SaleAuditEvent {event} />
+			{/each}
 		{/if}
 	</div>
 </SlideOver>

@@ -1,39 +1,38 @@
 <script lang="ts">
-	import { ClipboardList } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
 		CancelSaleModal,
 		EditSaleModal,
-		SaleItemsTable,
 		SaleMovementsModal,
 		SaleStatusModal
 	} from '$lib/components/sales';
-	import { SaleAuditTimeline, SaleAuditHistoryDrawer } from '$lib/components/sales/detail';
-	import SaleDetailHeader from '$lib/components/sales/detail/SaleDetailHeader.svelte';
+	import SaleItemsTable from '$lib/components/sales/itemsTable/SaleItemsTable.svelte';
+	import SaleAuditTimeline from '$lib/components/sales/detail/SaleAuditTimeline.svelte';
+	import SaleAuditHistoryDrawer from '$lib/components/sales/detail/SaleAuditHistoryDrawer.svelte';
+	import SaleDetailHero from '$lib/components/sales/detail/SaleDetailHero.svelte';
 	import SaleDetailNotices from '$lib/components/sales/detail/SaleDetailNotices.svelte';
-	import SaleDetailCustomerCard from '$lib/components/sales/detail/SaleDetailCustomerCard.svelte';
-	import SaleDetailSummary from '$lib/components/sales/detail/SaleDetailSummary.svelte';
 	import SaleDetailPayments from '$lib/components/sales/detail/SaleDetailPayments.svelte';
 	import SalePaymentDrawer from '$lib/components/sales/detail/SalePaymentDrawer.svelte';
+	import SaleInvoiceCalculator from '$lib/components/sales/detail/SaleInvoiceCalculator.svelte';
 	import { PDFViewerModal } from '$lib/components/pdf';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
-	import { computeDiscount, formatDate, formatPrice, getBackUrl } from '$lib/utils';
+	import { formatDate, getBackUrl } from '$lib/utils';
 	import { getErrorMessage } from '$lib/utils/errors';
-	import { RefundStatus, SaleStatus, UserRole } from '$lib/shared/enums';
+	import { SaleStatus, UserRole } from '$lib/shared/enums';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
-	import { computeTaxBreakdown } from '$lib/shared/tax';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import type { SalePayment } from '$lib/server/db/schema';
 	import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
 	import { printTickeraReceipt } from '$lib/remote/printing.remote';
 	import {
-		customerName,
 		nextStatusTargets,
-		refundDecisionTitle
+		resolveSaleRateDisplay
 	} from '$lib/components/sales/detail/saleDetail';
+	import { computeSaleBreakdown } from '$lib/components/sales/detail/saleBreakdown';
+	import { cacheLensItem } from '$lib/components/sales/catalogCache.svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 
@@ -57,6 +56,9 @@
 
 	// PDF preview modal
 	let showPdfPreview = $state(false);
+
+	// Invoice calculator drawer
+	let showCalculator = $state(false);
 
 	// Audit history drawer
 	let showAuditDrawer = $state(false);
@@ -97,12 +99,7 @@
 				i.freeDetails?.enrichmentStatus === FreeItemEnrichmentStatus.PENDING
 		).length
 	);
-	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
-	let canPrintReceipt = $derived(
-		(isPending || isInProgress || isReady || isCompleted) && !isCancelled
-	);
-	let showPaymentForm = $derived(canAct && !isCancelled && remainingBcvUsd > 0.01);
 	let isAdmin = $derived(data.user.role === UserRole.ADMIN || data.user.role === UserRole.MANAGER);
 	let receiptHalfLetterOverflowRisk = $derived(
 		hasHalfLetterReceiptOverflowRisk({ itemLineCount: items.length, paymentCount: payments.length })
@@ -110,22 +107,16 @@
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
 	);
-	let globalDiscountAmount = $derived(
-		computeDiscount(sale.discount ?? 0, sale.discountType ?? 'FIXED', sale.subtotal)
-	);
 
-	const taxBreakdown = $derived(
-		computeTaxBreakdown(
-			items.map((i) => ({
-				unitPrice: i.unitPrice,
-				quantity: i.quantity,
-				discount: i.discount,
-				discountType: i.discountType as 'FIXED' | 'PERCENTAGE',
-				isTaxable: i.snapshotIsTaxable ?? false,
-				taxRate: sale.snapshotTaxRate
-			}))
-		)
-	);
+	/** Single formula for the view's money display (hero desglose + items costs footer). */
+	const breakdown = $derived(computeSaleBreakdown(sale, items));
+	const rateDisplay = $derived(resolveSaleRateDisplay(sale.snapshotBcvRate, bcvRate));
+
+	/** Seed the shared catalog cache so item meta shows factory treatments (drawer parity). */
+	$effect(() => {
+		const lenses = data.lensCatalogItems;
+		for (const lens of lenses) cacheLensItem(lens);
+	});
 
 	function syncFromData() {
 		const next = untrack(() => data);
@@ -207,37 +198,42 @@
 </script>
 
 <svelte:head>
-	<title>Venta {formattedOrderNumber} - {customerName(sale)} - Optikt</title>
+	<title
+		>Venta {formattedOrderNumber} - {sale.customer
+			? `${sale.customer.firstName} ${sale.customer.lastName}`
+			: 'Cliente no asignado'} - Optikt</title
+	>
 </svelte:head>
 
 <div class="min-h-screen bg-surface">
-	<div class="mx-auto max-w-7xl px-4 py-4">
-		<SaleDetailHeader
+	<div class="anim-page @container mx-auto w-full max-w-[1280px] px-5 pt-3.5 pb-7">
+		<SaleDetailHero
+			{sale}
+			{items}
 			{formattedOrderNumber}
-			isCashea={sale.isCashea}
-			{canPrintReceipt}
+			{bcvRate}
+			{canAct}
 			{canManageSale}
-			{isCancelled}
-			{isPending}
-			{isInProgress}
-			{isReady}
-			{isCompleted}
 			{isAdmin}
+			{remainingBcvUsd}
+			paidAmountBcvUsd={sale.paidAmountBcvUsd}
+			{paymentProgressPercent}
 			{printingTickera}
 			onBack={goBack}
-			onPreviewPdf={() => (showPdfPreview = true)}
-			onOpenPdf={openPdfReceipt}
-			onPrintTickera={printTickera}
-			onChangeStatus={() => {
-				statusModalPreset = undefined;
+			onChangeStatus={(target) => {
+				statusModalPreset = target ? [target] : undefined;
 				showStatusModal = true;
 			}}
 			onEdit={() => (showEditModal = true)}
+			onPreviewPdf={() => (showPdfPreview = true)}
+			onOpenPdf={openPdfReceipt}
+			onPrintTickera={printTickera}
 			onCancel={() => (showCancelModal = true)}
+			onPay={openDrawer}
+			onCalculate={() => (showCalculator = true)}
 		/>
 
 		<SaleDetailNotices
-			notes={sale.notes}
 			{isCancelled}
 			refundStatus={sale.refundStatus}
 			refundAmount={sale.refundAmount}
@@ -246,20 +242,18 @@
 			cancelledAt={sale.cancelledAt}
 			cancelledByName={sale.cancelledBy?.fullName ?? null}
 			{pendingFreeItemCount}
+			{canAct}
 		/>
 
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
-			<div class="space-y-6 lg:col-span-3">
-				<SaleDetailCustomerCard {sale} {formattedOrderNumber} />
-
+		<div class="mt-3 grid grid-cols-1 items-start gap-3 @min-[1060px]:grid-cols-[1fr_330px]">
+			<div>
 				<SaleItemsTable
 					{items}
-					subtotal={sale.subtotal}
-					discount={sale.discount}
-					discountType={sale.discountType}
-					total={sale.total}
+					subtotalNet={breakdown.subtotalNet}
 					allowCostEdit={canAct}
 					suppliers={data.suppliers}
+					bsRate={rateDisplay.rate}
+					bsApproximate={rateDisplay.approximate}
 					onCostsUpdated={async () => {
 						await invalidateAll();
 						syncFromData();
@@ -267,66 +261,36 @@
 				/>
 			</div>
 
-			<div class="lg:sticky lg:top-6 lg:col-span-2">
-				<SaleDetailSummary
-					subtotal={sale.subtotal}
-					discount={sale.discount}
-					discountType={sale.discountType}
-					{globalDiscountAmount}
-					taxRate={sale.snapshotTaxRate}
-					taxAmount={taxBreakdown.taxAmount}
-					total={sale.total}
+			<div class="grid grid-cols-[1fr_1fr] items-start gap-3 @min-[1060px]:grid-cols-1">
+				<SaleDetailPayments
+					{payments}
+					{canAct}
+					{isCancelled}
 					{remainingBcvUsd}
-					paidAmountBcvUsd={sale.paidAmountBcvUsd}
-					{paymentProgressPercent}
-					{showPaymentForm}
-					onPay={openDrawer}
+					onRegister={openDrawer}
+					onChanged={async () => {
+						await invalidateAll();
+						syncFromData();
+					}}
 				/>
 
-				<SaleDetailPayments {payments} />
-
-				<div class="mt-3">
-					<SaleAuditTimeline
-						{auditHistory}
-						saleCreatedAt={saleLoadedAt}
-						saleCreatedBy={sale.seller?.fullName}
-						onViewAudit={() => (showAuditDrawer = true)}
-					/>
-				</div>
-
-				{#if isCancelled && sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
-					<div
-						class="mt-4 rounded-[var(--ds-radius-xl)] border border-outline-variant/50 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-md)]"
-					>
-						<p class="text-sm font-medium text-outline">{refundDecisionTitle(sale.refundStatus)}</p>
-						<p class="mt-1 font-mono text-2xl font-bold text-on-surface">
-							{formatPrice(sale.refundAmount ?? 0)}
-						</p>
-					</div>
-				{/if}
-
-				<div class="mt-2 text-right">
-					<button
-						type="button"
-						onclick={openStockModal}
-						class="inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
-					>
-						<ClipboardList class="h-4 w-4" />
-						Ver movimientos de stock ({movements.length})
-					</button>
-				</div>
-
-				<SaleMovementsModal {movements} open={showStockModal} onclose={closeStockModal} />
-
-				{#if lastUpdatedLabel}
-					<div class="border-outline-variant pt-4 text-end text-sm text-on-surface-variant italic">
-						Última actualización en la venta {lastUpdatedLabel}
-					</div>
-				{/if}
+				<SaleAuditTimeline
+					{auditHistory}
+					saleCreatedAt={saleLoadedAt}
+					saleCreatedBy={sale.seller?.fullName}
+					onViewAudit={() => (showAuditDrawer = true)}
+					movementsCount={movements.length}
+					onOpenMovements={openStockModal}
+					{lastUpdatedLabel}
+				/>
 			</div>
 		</div>
 	</div>
 </div>
+
+<!-- Fixed-position overlays live OUTSIDE the @container wrapper: container-type
+     containment would make `fixed` descendants relative to the page box. -->
+<SaleMovementsModal {movements} open={showStockModal} onclose={closeStockModal} />
 
 <SalePaymentDrawer
 	bind:open={showDrawer}
@@ -341,6 +305,14 @@
 		drawerResetCount++;
 		closeDrawer();
 	}}
+/>
+
+<SaleInvoiceCalculator
+	bind:open={showCalculator}
+	{sale}
+	{items}
+	liveRate={bcvRate}
+	{formattedOrderNumber}
 />
 
 <EditSaleModal

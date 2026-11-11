@@ -14,7 +14,7 @@
 		onChange: (values: T[]) => void;
 	}
 
-	let { options, value = $bindable(), labelAll = 'Todos', onChange }: Props = $props();
+	let { options, value = [], labelAll = 'Todos', onChange }: Props = $props();
 
 	const triggerLabel = $derived.by(() => {
 		if (value.length === 0) return labelAll;
@@ -30,7 +30,7 @@
 	}
 </script>
 
-<Select.Root type="multiple" bind:value onValueChange={(v) => onChange((v ?? []) as T[])}>
+<Select.Root type="multiple" {value} onValueChange={(v) => onChange((v ?? []) as T[])}>
 	<Select.Trigger
 		class="inline-flex min-w-[10rem] flex-1 items-center justify-between gap-2 rounded-lg border-none bg-surface-container-high px-3 py-2.5 text-sm font-medium text-on-surface transition-colors focus:bg-surface-container-highest focus:ring-0"
 		aria-label={labelAll}

@@ -34,3 +34,20 @@ export function checkHasAnyCost(groups: DisplayGroup[]): boolean {
 				g.item.freeDetails?.enrichmentStatus === FreeItemEnrichmentStatus.ENRICHED)
 	);
 }
+
+export interface GrossMargin {
+	/** subtotalNet − totalCost (raw floats, no rounding — format at paint time). */
+	amount: number;
+	/** margin over subtotalNet, null when the net subtotal is 0. */
+	percent: number | null;
+}
+
+/**
+ * Gross margin over the tax-exclusive net subtotal (prompt §7.4 proposal,
+ * open for business confirmation §16.2): amount = subtotalNet − internal cost.
+ */
+export function computeGrossMargin(subtotalNet: number, totalCost: number): GrossMargin {
+	const amount = subtotalNet - totalCost;
+	const percent = subtotalNet > 0 ? (amount / subtotalNet) * 100 : null;
+	return { amount, percent };
+}
