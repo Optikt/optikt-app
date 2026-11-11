@@ -339,6 +339,17 @@ export function lineMatchesFilter(line: CountLineCore, filter: InventoryCountUiF
 	}
 }
 
+/**
+ * true si la línea tiene diferencia ≠ 0 y su costo FIFO aún no está en el
+ * mapa de costos (`Record` con claves string, como lo devuelve `getDiffCosts`).
+ * Usado por la página para pedir costos al aparecer una diferencia nueva.
+ */
+export function lineNeedsCost(line: CountLineCore, costs: Record<string, number | null>): boolean {
+	const final = line.recountedStock ?? line.countedStock;
+	if (final == null || final === line.systemStock) return false;
+	return !(String(line.id) in costs);
+}
+
 export function lineMatchesSearch(
 	line: { itemName: string; itemCode: string | null },
 	search: string

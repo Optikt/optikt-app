@@ -19,7 +19,8 @@ import {
 	statusVariantFor,
 	isLineVerified,
 	lineMatchesFilter,
-	lineMatchesSearch
+	lineMatchesSearch,
+	lineNeedsCost
 } from './inventoryCount';
 import type { CountLineCore } from './inventoryCount';
 
@@ -235,5 +236,36 @@ describe('filter y búsqueda de líneas', () => {
 		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: 'SKU-1' }, 'sku-1')).toBe(true);
 		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: 'SKU-1' }, 'nope')).toBe(false);
 		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: null }, '')).toBe(true);
+	});
+});
+
+describe('lineNeedsCost', () => {
+	const base = {
+		id: 7,
+		itemType: 'PRODUCT',
+		systemStock: 5,
+		recountedStock: null,
+		adjustmentMovementId: null
+	};
+
+	it('diferencia nueva sin costo → true', () => {
+		expect(lineNeedsCost({ ...base, countedStock: 8 }, {})).toBe(true);
+	});
+
+	it('diferencia con costo ya cargado → false', () => {
+		expect(lineNeedsCost({ ...base, countedStock: 8 }, { '7': 12.5 })).toBe(false);
+	});
+
+	it('sin diferencia (contado == sistema) → false', () => {
+		expect(lineNeedsCost({ ...base, countedStock: 5 }, {})).toBe(false);
+	});
+
+	it('sin contar → false', () => {
+		expect(lineNeedsCost({ ...base, countedStock: null }, {})).toBe(false);
+	});
+
+	it('el recuento manda para la diferencia', () => {
+		expect(lineNeedsCost({ ...base, countedStock: 5, recountedStock: 9 }, {})).toBe(true);
+		expect(lineNeedsCost({ ...base, countedStock: 9, recountedStock: 5 }, { '7': 3 })).toBe(false);
 	});
 });

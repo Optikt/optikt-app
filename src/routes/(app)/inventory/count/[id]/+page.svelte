@@ -11,6 +11,7 @@
 		recountCountLineCmd,
 		setSessionResponsibles,
 		upsertCountLineCmd,
+		getDiffCosts,
 		getSessionById,
 		listCountResponsibles
 	} from '$lib/remote/inventoryCount.remote';
@@ -26,7 +27,11 @@
 		stepClickOutcome
 	} from '$lib/shared/countSessionPhase';
 	import { AdjustmentReason } from '$lib/shared/enums';
-	import { computeCountStats, type CountCycleConfig } from '$lib/shared/inventoryCount';
+	import {
+		computeCountStats,
+		lineNeedsCost,
+		type CountCycleConfig
+	} from '$lib/shared/inventoryCount';
 	import type {
 		InventoryCountSessionDetail,
 		CountLineRow,
@@ -66,6 +71,8 @@
 	let isSubmitting = $state(false);
 	let isMobileView = $state(false);
 	let mobileMode = $state<'ficha' | 'lista'>('lista');
+	// Costos FIFO por línea (claves string, como los devuelve getDiffCosts).
+	let costsByLine = $state<Record<string, number | null>>(initialCosts);
 
 	// Ajuste de línea (drawer) y en lote
 	let adjustTarget = $state<CountLineRow | null>(null);
@@ -81,7 +88,7 @@
 
 	const costByLineId = $derived(
 		new Map<number, number | null>(
-			Object.entries(initialCosts).map(([key, value]) => [Number(key), value ?? null])
+			Object.entries(costsByLine).map(([key, value]) => [Number(key), value ?? null])
 		)
 	);
 
@@ -137,6 +144,7 @@
 			lines = lines.map((candidate) =>
 				candidate.id === response.data.id ? response.data : candidate
 			);
+			if (lineNeedsCost(response.data, costsByLine)) void refreshCosts();
 		}
 	});
 
@@ -186,6 +194,7 @@
 			lines = lines.map((candidate) =>
 				candidate.id === response.data.id ? response.data : candidate
 			);
+			if (lineNeedsCost(response.data, costsByLine)) void refreshCosts();
 			toast.success('Recuento guardado');
 		} catch (error) {
 			toast.error(getErrorMessage(error, 'No se pudo guardar el recuento'));
@@ -228,6 +237,31 @@
 			return;
 		}
 		lines = detail.lines;
+		if (detail.lines.some((line) => lineNeedsCost(line, costsByLine))) void refreshCosts();
+	}
+
+	// Costos FIFO: el mapa del load solo cubre las líneas ya contadas al cargar;
+	// al aparecer una diferencia nueva se piden al server. La cola evita
+	// apilarse si varias líneas se guardan juntas.
+	let costsRefreshing = false;
+	let costsQueued = false;
+	async function refreshCosts(): Promise<void> {
+		if (!canManage) return;
+		if (costsRefreshing) {
+			costsQueued = true;
+			return;
+		}
+		costsRefreshing = true;
+		try {
+			do {
+				costsQueued = false;
+				costsByLine = await getDiffCosts({ sessionId: session.id });
+			} while (costsQueued);
+		} catch (error) {
+			logger.error('No se pudieron actualizar los costos del conteo', error);
+		} finally {
+			costsRefreshing = false;
+		}
 	}
 
 	// Responsables: sincronización (solo A/M).
@@ -303,6 +337,8 @@
 			session = response.data;
 			lines = response.data.lines;
 			responsibles = response.data.responsibles;
+			// El cierre ejecuta ajustes que mueven lotes: refresca costos antes del informe.
+			await refreshCosts();
 			phase = 3;
 			countContext.activeSession = null;
 			toast.success('Conteo cerrado');
