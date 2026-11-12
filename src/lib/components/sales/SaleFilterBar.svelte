@@ -1,195 +1,237 @@
 <script lang="ts">
-	import { RotateCcw, Search, SlidersHorizontal, Sparkles, Truck } from '@lucide/svelte';
-	import { ALL_SALE_STATUSES, SALE_STATUS_LABELS, type SaleStatus } from '$lib/shared/enums';
-	import { CasheaIsotipo } from '$lib/components/branding';
-	import StatusMultiSelect from './StatusMultiSelect.svelte';
+	import { Search, SlidersHorizontal } from '@lucide/svelte';
+	import PopoverRoot from '$lib/components/ui/popover/popover.svelte';
+	import PopoverTrigger from '$lib/components/ui/popover/popover-trigger.svelte';
+	import PopoverContent from '$lib/components/ui/popover/popover-content.svelte';
+	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
+	import type { SaleDatePreset, SaleListSort } from './listParams';
+
+	type ToggleKey = 'cashea' | 'shippingPending' | 'freeItem' | 'balance';
 
 	interface Props {
 		search: string;
-		statusFilter: SaleStatus[];
-		shippingPendingFilter: boolean;
-		hasFreeItemFilter: boolean;
-		casheaFilter: boolean;
-		hasActiveFilters: boolean;
+		sellerId: string;
+		sellers: { id: string; fullName: string }[];
+		preset: SaleDatePreset;
+		from: string | null;
+		to: string | null;
+		sort: SaleListSort;
+		toggles: Record<ToggleKey, boolean>;
+		activeToggleCount: number;
 		onSearch: (value: string) => void;
-		onStatusChange: (values: SaleStatus[]) => void;
-		onToggleShippingPending: () => void;
-		onToggleFreeItem: () => void;
-		onToggleCashea: () => void;
-		onClearFilters: () => void;
+		onSellerChange: (sellerId: string) => void;
+		onPresetChange: (preset: SaleDatePreset) => void;
+		onRangeChange: (from: string | null, to: string | null) => void;
+		onToggle: (key: ToggleKey) => void;
+		onSortChange: (sort: SaleListSort) => void;
 	}
 
 	let {
 		search,
-		statusFilter,
-		shippingPendingFilter,
-		hasFreeItemFilter,
-		casheaFilter,
-		hasActiveFilters,
+		sellerId,
+		sellers,
+		preset,
+		from,
+		to,
+		sort,
+		toggles,
+		activeToggleCount,
 		onSearch,
-		onStatusChange,
-		onToggleShippingPending,
-		onToggleFreeItem,
-		onToggleCashea,
-		onClearFilters
+		onSellerChange,
+		onPresetChange,
+		onRangeChange,
+		onToggle,
+		onSortChange
 	}: Props = $props();
 
-	let mobileFiltersOpen = $state(false);
+	let mobileOpen = $state(false);
 
-	const activeFilterCount = $derived(
-		(statusFilter.length > 0 ? 1 : 0) +
-			(shippingPendingFilter ? 1 : 0) +
-			(hasFreeItemFilter ? 1 : 0) +
-			(casheaFilter ? 1 : 0)
+	const control =
+		'h-9 rounded-[var(--ds-radius-md)] border border-outline-variant bg-white px-2.5 text-sm font-medium text-on-surface transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30 focus:outline-none';
+
+	const TOGGLES: { key: ToggleKey; label: string }[] = [
+		{ key: 'cashea', label: 'Cashea' },
+		{ key: 'shippingPending', label: 'Envío pendiente' },
+		{ key: 'freeItem', label: 'Ítem libre' },
+		{ key: 'balance', label: 'Solo con saldo pendiente' }
+	];
+
+	const PRESETS: { value: SaleDatePreset; label: string }[] = [
+		{ value: 'all', label: 'Todas las fechas' },
+		{ value: 'today', label: 'Hoy' },
+		{ value: '7d', label: 'Últimos 7 días' },
+		{ value: 'month', label: 'Este mes' },
+		{ value: 'custom', label: 'Personalizado' }
+	];
+
+	const SORTS: { value: SaleListSort; label: string }[] = [
+		{ value: 'recent', label: 'Más recientes' },
+		{ value: 'balance', label: 'Mayor saldo' },
+		{ value: 'total', label: 'Mayor total' },
+		{ value: 'old', label: 'Más antiguas' }
+	];
+
+	const collapsedCount = $derived(
+		(sellerId ? 1 : 0) + (preset !== 'all' ? 1 : 0) + activeToggleCount
 	);
 
-	const statusOptions = ALL_SALE_STATUSES.map((s) => ({ value: s, label: SALE_STATUS_LABELS[s] }));
-
-	const inputClass =
-		'w-full rounded-lg border-none bg-surface-container-high p-2.5 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
-	const toggleButtonClass = (active: boolean, activeClass: string) =>
-		`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active ? activeClass : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}`;
+	/** Controles que en mobile viven en el bloque colapsable; en desktop van inline con la búsqueda. */
+	const visBlock = $derived(mobileOpen ? 'block' : 'hidden');
+	const visFlex = $derived(mobileOpen ? 'flex' : 'hidden');
+	const visInline = $derived(mobileOpen ? 'inline-flex' : 'hidden');
 </script>
 
-<section class="glass-card min-w-0 bg-surface-container-low p-2 lg:p-3">
-	<!-- Single flex-wrap row: search + filters + toggle + clear -->
-	<div class="flex flex-wrap items-center gap-2">
-		<div class="relative min-w-0 flex-1 basis-48">
-			<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
-			<input
-				id="sales-search"
-				name="sales-search"
-				type="search"
-				value={search}
-				oninput={(e) => onSearch(e.currentTarget.value)}
-				placeholder="Buscar por cliente, vendedor o # de orden..."
-				class={inputClass}
-			/>
-		</div>
-
-		<!-- Desktop inline filters -->
-		<div class="mt-0 hidden flex-wrap items-center gap-2 lg:flex">
-			<StatusMultiSelect
-				options={statusOptions}
-				value={statusFilter}
-				labelAll="Todos los estados"
-				onChange={onStatusChange}
-			/>
-
-			<button
-				type="button"
-				onclick={onToggleShippingPending}
-				class={toggleButtonClass(
-					shippingPendingFilter,
-					'bg-warning-container text-on-warning-container'
-				)}
-				title="Filtrar ventas con envío pendiente"
-			>
-				<Truck class="h-4 w-4" />
-				Envío pendiente
-			</button>
-
-			<button
-				type="button"
-				onclick={onToggleFreeItem}
-				class={toggleButtonClass(hasFreeItemFilter, 'bg-amber-100 text-amber-700')}
-				title="Filtrar ventas con ítems libres"
-			>
-				<Sparkles class="h-4 w-4" />
-				Ítem libre
-			</button>
-
-			<button
-				type="button"
-				onclick={onToggleCashea}
-				class={toggleButtonClass(casheaFilter, 'bg-brand-gold/20 text-brand-navy')}
-				title="Filtrar ventas con Cashea"
-			>
-				<CasheaIsotipo class="h-4 w-4" />
-				Cashea
-			</button>
-		</div>
-
-		<!-- Mobile filter toggle (icon only) -->
-		<button
-			type="button"
-			onclick={() => (mobileFiltersOpen = !mobileFiltersOpen)}
-			class="relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-colors lg:hidden {activeFilterCount >
-			0
-				? 'bg-brand-blue text-white'
-				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
-			aria-expanded={mobileFiltersOpen}
-			aria-label="Mostrar filtros"
-		>
-			<SlidersHorizontal class="h-4 w-4" />
-			{#if activeFilterCount > 0}
-				<span
-					class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-gold px-1 text-[9px] font-bold text-brand-navy"
-				>
-					{activeFilterCount}
-				</span>
-			{/if}
-		</button>
-
-		<!-- Clear button -->
-		<button
-			type="button"
-			onclick={onClearFilters}
-			disabled={!hasActiveFilters}
-			class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
-				? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
-				: 'bg-surface-container-high text-outline'}"
-			aria-label="Limpiar filtros"
-			title="Limpiar filtros"
-		>
-			<RotateCcw class="h-4 w-4" />
-		</button>
+<div class="flex flex-wrap items-center gap-2">
+	<div class="relative min-w-[200px] flex-1 basis-52">
+		<Search
+			class="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-outline"
+		/>
+		<input
+			id="sales-search"
+			name="sales-search"
+			type="search"
+			value={search}
+			oninput={(e) => onSearch(e.currentTarget.value)}
+			placeholder="Buscar por cliente, vendedor o # de orden…"
+			aria-label="Buscar ventas"
+			class="{control} w-full pl-9"
+		/>
 	</div>
 
-	<!-- Mobile collapsible filters -->
-	{#if mobileFiltersOpen}
-		<div class="mt-3 space-y-2 lg:hidden">
-			<StatusMultiSelect
-				options={statusOptions}
-				value={statusFilter}
-				labelAll="Todos los estados"
-				onChange={onStatusChange}
-			/>
+	<button
+		type="button"
+		onclick={() => (mobileOpen = !mobileOpen)}
+		aria-expanded={mobileOpen}
+		aria-controls="sales-filter-controls"
+		class="inline-flex h-9 items-center gap-1.5 rounded-[var(--ds-radius-md)] border border-outline-variant bg-white px-3 text-sm font-semibold text-on-surface transition-colors lg:hidden {collapsedCount >
+		0
+			? 'border-brand-blue text-brand-blue'
+			: ''}"
+	>
+		<SlidersHorizontal class="h-4 w-4" />
+		Filtros
+		{#if collapsedCount > 0}
+			<span
+				class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-navy px-1 text-[10px] font-bold text-white"
+			>
+				{collapsedCount}
+			</span>
+		{/if}
+	</button>
 
-			<div class="flex flex-wrap gap-2">
-				<button
-					type="button"
-					onclick={onToggleShippingPending}
-					class={toggleButtonClass(
-						shippingPendingFilter,
-						'bg-warning-container text-on-warning-container'
-					)}
-					title="Filtrar ventas con envío pendiente"
-				>
-					<Truck class="h-4 w-4" />
-					Envío pendiente
-				</button>
+	<div id="sales-filter-controls" class="contents">
+		<label class="sr-only" for="sales-seller">Vendedor</label>
+		<select
+			id="sales-seller"
+			class="{control} {visBlock} max-w-44 lg:block"
+			value={sellerId}
+			onchange={(e) => onSellerChange(e.currentTarget.value)}
+		>
+			<option value="">Todos los vendedores</option>
+			{#each sellers as seller (seller.id)}
+				<option value={seller.id}>{seller.fullName}</option>
+			{/each}
+		</select>
 
-				<button
-					type="button"
-					onclick={onToggleFreeItem}
-					class={toggleButtonClass(hasFreeItemFilter, 'bg-amber-100 text-amber-700')}
-					title="Filtrar ventas con ítems libres"
-				>
-					<Sparkles class="h-4 w-4" />
-					Ítem libre
-				</button>
+		<div class="{visFlex} items-center gap-1.5 lg:flex">
+			<label class="sr-only" for="sales-date-preset">Fecha</label>
+			<select
+				id="sales-date-preset"
+				class={control}
+				value={preset}
+				onchange={(e) => onPresetChange(e.currentTarget.value as SaleDatePreset)}
+			>
+				{#each PRESETS as option (option.value)}
+					<option value={option.value}>{option.label}</option>
+				{/each}
+			</select>
 
-				<button
-					type="button"
-					onclick={onToggleCashea}
-					class={toggleButtonClass(casheaFilter, 'bg-brand-gold/20 text-brand-navy')}
-					title="Filtrar ventas con Cashea"
-				>
-					<CasheaIsotipo class="h-4 w-4" />
-					Cashea
-				</button>
-			</div>
+			{#if preset === 'custom'}
+				<input
+					type="date"
+					aria-label="Desde"
+					value={from ?? ''}
+					onchange={(e) => onRangeChange(e.currentTarget.value || null, to)}
+					class="{control} w-36"
+				/>
+				<input
+					type="date"
+					aria-label="Hasta"
+					value={to ?? ''}
+					onchange={(e) => onRangeChange(from, e.currentTarget.value || null)}
+					class="{control} w-36"
+				/>
+			{/if}
 		</div>
-	{/if}
-</section>
+
+		<PopoverRoot>
+			<PopoverTrigger
+				aria-label="Más filtros"
+				class="{visInline} h-9 items-center gap-1.5 rounded-[var(--ds-radius-md)] border px-3 text-sm font-semibold transition-colors lg:inline-flex {activeToggleCount >
+				0
+					? 'border-brand-blue bg-info-container text-on-info-container'
+					: 'border-outline-variant bg-white text-on-surface'}"
+			>
+				<SlidersHorizontal class="h-4 w-4" />
+				Filtros
+				{#if activeToggleCount > 0}
+					<span
+						class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-navy px-1 text-[10px] font-bold text-white"
+					>
+						{activeToggleCount}
+					</span>
+				{/if}
+			</PopoverTrigger>
+			<PopoverContent
+				align="end"
+				sideOffset={6}
+				class="w-64 gap-0 rounded-[var(--ds-radius-lg)] bg-white p-1.5 shadow-[var(--ds-shadow-lg)]"
+			>
+				{#each TOGGLES as toggle (toggle.key)}
+					<button
+						type="button"
+						role="switch"
+						aria-checked={toggles[toggle.key]}
+						onclick={() => onToggle(toggle.key)}
+						class="flex w-full items-center gap-2.5 rounded-[var(--ds-radius-md)] px-2.5 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low"
+					>
+						{toggle.label}
+						<span
+							class="ml-auto inline-flex h-[18px] w-[30px] items-center rounded-full p-0.5 transition-colors duration-200 {toggles[
+								toggle.key
+							]
+								? 'bg-brand-blue'
+								: 'bg-outline-variant'}"
+						>
+							<span
+								class="h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out {toggles[
+									toggle.key
+								]
+									? 'translate-x-3'
+									: ''}"
+							></span>
+						</span>
+					</button>
+				{/each}
+			</PopoverContent>
+		</PopoverRoot>
+
+		<TriggerTooltip text="Orden de la lista" side="bottom">
+			{#snippet trigger({ props })}
+				<div {...props} class="{visBlock} lg:block">
+					<label class="sr-only" for="sales-sort">Orden</label>
+					<select
+						id="sales-sort"
+						class={control}
+						value={sort}
+						onchange={(e) => onSortChange(e.currentTarget.value as SaleListSort)}
+					>
+						{#each SORTS as option (option.value)}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
+				</div>
+			{/snippet}
+		</TriggerTooltip>
+	</div>
+</div>

@@ -21,7 +21,8 @@
 				"src/lib/shared/saleItemCosts*",
 				"src/lib/shared/saleItemValues.ts",
 				"src/lib/shared/tickera*",
-				"src/lib/shared/ticketRate*"
+				"src/lib/shared/ticketRate*",
+				"src/lib/shared/saleBalance*"
 			]
 		},
 		{
@@ -213,9 +214,11 @@
 				"src/lib/server/actionContext.ts",
 				"src/lib/server/db/queries/users.ts",
 				"src/lib/server/db/queries/sessions.ts",
+				"src/lib/server/db/queries/userPreferences.ts",
 				"src/lib/schemas/users*",
 				"src/lib/server/db/schema/users.ts",
 				"src/lib/server/db/schema/sessions.ts",
+				"src/lib/server/db/schema/userPreferences.ts",
 				"src/lib/remote/auth.remote.ts",
 				"src/lib/schemas/auth.ts",
 				"src/lib/shared/user-deletion-rules*",

@@ -353,6 +353,42 @@ body {
 	box-shadow: var(--ds-shadow-md);
 }
 
+/* ── Motion (entrada y stagger; plan sales-list-redesign) ────────────────── */
+/* Uso: `.animate-rise` + `style="animation-delay: {i * 25}ms"` para stagger. */
+@keyframes rise-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+}
+
+@keyframes pop-in {
+	from {
+		opacity: 0;
+		transform: scale(0.95) translateY(-6px);
+	}
+}
+
+.animate-rise {
+	animation: rise-in var(--ds-duration-slow) var(--ds-ease-out) both;
+}
+
+.animate-pop {
+	animation: pop-in var(--ds-duration-fast) var(--ds-ease-out) both;
+}
+
+/* Accesibilidad: sin movimiento si el usuario lo pide (afecta a toda la app). */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
 /* Print styles for reports */
 @media print {
 	body {

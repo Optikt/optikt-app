@@ -9,11 +9,11 @@ import { ListSalesSchema, SaleIdSchema, CustomerLookupSchema } from '$lib/schema
 import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
 import { getSalePayments } from '$lib/server/db/queries/sales/payments';
 import {
-	getAllSales,
-	countSales,
+	getSalesListPage,
 	getSalesStats as getSalesStatsQuery,
 	findSaleByIdWithRelations
 } from '$lib/server/db/queries/sales/reads';
+import { saleListSortToOrder } from '$lib/components/sales/listParams';
 import type { SalesStats } from '$lib/server/db/queries/';
 import { findCustomerByIdNumber } from '$lib/server/db/queries/customers';
 
@@ -36,14 +36,15 @@ export const getSalesStats = query(EmptySchema, async (): Promise<SalesStats> =>
 });
 
 /**
- * List sales with pagination and filters
+ * List sales with pagination and filters (página + total + facetas + selección).
  */
 export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedSales> => {
 	requireAuth();
 
 	const { page, perPage } = data;
+	const order = saleListSortToOrder(data.sort ?? 'recent');
 
-	const filterOptions = {
+	const result = await getSalesListPage({
 		statuses: data.statuses ?? undefined,
 		customerId: data.customerId ?? undefined,
 		sellerId: data.sellerId ?? undefined,
@@ -52,21 +53,25 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
 		search: data.search ?? undefined,
 		shippingCostPending: data.shippingCostPending ?? undefined,
 		hasFreeItem: data.hasFreeItem ?? undefined,
-		isCashea: data.isCashea ?? undefined
+		isCashea: data.isCashea ?? undefined,
+		balanceOnly: data.balance ?? undefined,
+		orderBy: order.orderBy,
+		orderSort: order.orderSort,
+		limit: perPage,
+		offset: (page - 1) * perPage
+	});
+
+	const totalPages = Math.ceil(result.total / perPage);
+
+	return {
+		sales: result.sales,
+		total: result.total,
+		page,
+		perPage,
+		totalPages,
+		facets: result.facets,
+		selection: result.selection
 	};
-
-	const [salesPage, total] = await Promise.all([
-		getAllSales({
-			...filterOptions,
-			limit: perPage,
-			offset: (page - 1) * perPage
-		}),
-		countSales(filterOptions)
-	]);
-
-	const totalPages = Math.ceil(total / perPage);
-
-	return { sales: salesPage, total, page, perPage, totalPages };
 });
 
 /**

@@ -17,7 +17,10 @@
 	import SaleInvoiceCalculator from '$lib/components/sales/detail/SaleInvoiceCalculator.svelte';
 	import { PDFViewerModal } from '$lib/components/pdf';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
-	import { formatDate, getBackUrl } from '$lib/utils';
+	import { formatDate, getBackUrl, replaceUrlSearch } from '$lib/utils';
+	import { SALE_PAID_EPSILON } from '$lib/shared/saleBalance';
+	import { parseSaleAction } from '$lib/components/sales/listParams';
+	import { page } from '$app/state';
 	import { getErrorMessage } from '$lib/utils/errors';
 	import { SaleStatus, UserRole } from '$lib/shared/enums';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
@@ -101,6 +104,50 @@
 	);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
 	let isAdmin = $derived(data.user.role === UserRole.ADMIN || data.user.role === UserRole.MANAGER);
+
+	// ── Intención de navegación ?action=pay|status ───────────────────────────
+	// Contrato: docs/specs/action-intent-param.md — se consume UNA vez, se valida
+	// con los mismos guard que los botones del detalle, y se limpia la URL.
+	let actionConsumed = false;
+
+	$effect(() => {
+		if (actionConsumed) return;
+		const action = parseSaleAction(untrack(() => page.url.searchParams.get('action')));
+		actionConsumed = true;
+		if (!action) return;
+
+		replaceUrlSearch(page.url, (params) => params.delete('action'));
+
+		if (action === 'pay') {
+			if (!canAct) {
+				toast.warning('No tienes permisos para registrar pagos');
+			} else if (isCancelled) {
+				toast.warning('Esta venta está cancelada');
+			} else if (remainingBcvUsd <= SALE_PAID_EPSILON) {
+				toast.warning('Esta venta ya está pagada');
+			} else {
+				showDrawer = true;
+			}
+			return;
+		}
+
+		// 'status': mismas condiciones que el botón "Cambiar Estado" del encabezado.
+		if (!canManageSale) {
+			toast.warning('No tienes permisos para cambiar el estado de esta venta');
+		} else if (isCancelled) {
+			toast.warning('Esta venta está cancelada');
+		} else if (!(
+			isPending ||
+			isInProgress ||
+			isReady ||
+			(sale.status === SaleStatus.COMPLETED && isAdmin)
+		)) {
+			toast.warning('Esta venta ya no permite cambiar de estado');
+		} else {
+			statusModalPreset = undefined;
+			showStatusModal = true;
+		}
+	});
 	let receiptHalfLetterOverflowRisk = $derived(
 		hasHalfLetterReceiptOverflowRisk({ itemLineCount: items.length, paymentCount: payments.length })
 	);

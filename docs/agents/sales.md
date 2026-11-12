@@ -9,7 +9,7 @@ Ventas ópticas: wizard con receta, items polimórficos (`PRODUCT | LENS_PAIR | 
 
 ## Scope
 
-`components/sales/**`, `routes/(app)/sales/**`, `remote/sales/**`, `server/sales/**`, `queries/sales/**`, `schemas/sales*`, `schema/sales.ts`; lógica pura `shared/saleTotals*`, `saleItemCosts*`, `saleItemValues`, `tickera*`, `ticketRate*`.
+`components/sales/**`, `routes/(app)/sales/**`, `remote/sales/**`, `server/sales/**`, `queries/sales/**`, `schemas/sales*`, `schema/sales.ts`; lógica pura `shared/saleTotals*`, `saleItemCosts*`, `saleItemValues`, `tickera*`, `ticketRate*`, `saleBalance*`.
 
 Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`consumeFifoForSaleItem`); los pagos usan el factory transversal de `payments` (`server/payments/salePayments.ts`) pero con semántica propia de venta (documento abajo).
 
@@ -59,6 +59,16 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 - `RefundStatus` sincronizado: sin pagos → `NO_PAYMENT` forzado (`cancelSale.ts:116-131`).
 - Audit best-effort SIEMPRE después de la tx, con `excludeFields` fijos.
 
+**Listado de ventas (plan `sales-list-redesign`)**
+
+- **Saldo** = helper puro único `src/lib/shared/saleBalance.ts` (`saleBalance`, `saleHasBalance`, `saleIsPaid`, `salePaymentPercent`, `SALE_PAID_EPSILON = 0.01`; canceladas ⇒ no aplica). Es la fuente para la celda de saldo, las KPIs, el pie de selección y el detalle — **no recalcularlo en componentes**.
+- `getSalesStats` es **global** (no reacciona a filtros) y en una sola query devuelve `total`, `monthly`, `monthlyTotalUsd`, `pending/completed/cancelled/ready`, `receivableCount/receivableAmount` (por cobrar = no canceladas con saldo > 0.01).
+- Filtros nuevos del listado: `balanceOnly` (`SaleFilterOptions`) y `orderBy: 'balance'` (`SaleOrderBy`, expresión SQL con canceladas al final). Facetas: `countSalesByStatus` (GROUP BY ignorando `statuses`) y `sumSalesForSelection` (selección sin canceladas); ambos reusan `buildSaleConditions`.
+- `getAllSales` agrega `hasShippingPending`/`hasFreeItem` (dos `EXISTS` correlacionados en el SELECT) y devuelve `SaleListItem`. `getSalesListPage` centraliza página+total+facetas+selección (lo usan el load y el remote `listSales`: sin lógica duplicada).
+- Contrato de URL (aditivo): `q, status, shippingPending, freeItem, cashea, balance, seller, from, to, sort, per, view, page` — parseo tolerante en `components/sales/listParams.ts` (+ spec) y `statusFilter.ts`.
+- Acciones rápidas: el listado **navega** a `/sales/[id]?action=pay|status`; el detalle consume el parámetro una vez, valida con sus mismos guard, lo limpia con `replaceState` y muestra toast si no aplica. Contrato reutilizable: `docs/specs/action-intent-param.md`.
+- `SaleStatsCards` fue **eliminado** (sus 4 números viven en las KPIs + pestañas de estado).
+
 **Numeración**: `orderNumber` secuencia MAX+1 dentro de la tx; override numérico (backfill) solo ADMIN con validación de duplicado (`createSale.ts:25-31,91-100`).
 
 ## Patrones locales
@@ -73,6 +83,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 - Cores: `*.int.spec.ts` co-ubicados (lifecycle create/cancel/setStatus/update, voids con recálculo, FIFO cancel/update, free-item enrichment).
 - Schemas: `schemas/sales.spec.ts`. Unit puros espejados en `components/sales/**` (pricing, taxBreakdown, paymentForm*, editSale*, wizard*, etc.).
+- Listado: `shared/saleBalance.spec.ts`, `components/sales/listParams.spec.ts`, `components/sales/saleDisplay.spec.ts`; a nivel DB `queries/sales/list.int.spec.ts` (stats/facetas/selección/saldo/flags) y `queries/userPreferences.int.spec.ts` (ambos `project=integration`, requieren Docker).
 - E2E de dinero: `e2e/sale-payment.test.ts`, `e2e/quote-to-sale.test.ts`.
 
 ## Known gaps / tech debt

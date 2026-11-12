@@ -15,7 +15,7 @@ Owner rules: el pago reutiliza tal cual `addPayment` del dominio `sales` (valida
 
 ## Reglas de dominio / invarianzas
 
-- ⚠️ **Definición de cuenta por cobrar** (`queries/receivables.ts:59-63`, spec `docs/specs/completed/receivables-multi-status.md`): `deletedAt IS NULL` ∧ `status != 'CANCELLED'` ∧ `balance > 0`. El estado **no** determina la deuda: solo CANCELLED excluye — incluye PENDING/IN_PROGRESS/READY/COMPLETED, porque un `voidPayment` puede dejar una venta COMPLETED bajo pagada.
+- ⚠️ **Definición de cuenta por cobrar** (`queries/receivables.ts:59-63`, spec `docs/specs/completed/receivables-multi-status.md`): `deletedAt IS NULL` ∧ `status != 'CANCELLED'` ∧ `balance > 0.01` (tolerancia `SALE_PAID_EPSILON` de `shared/saleBalance.ts`, alineada con `dashboard` y el listado de ventas; antes era `> 0`). El estado **no** determina la deuda: solo CANCELLED excluye — incluye PENDING/IN_PROGRESS/READY/COMPLETED, porque un `voidPayment` puede dejar una venta COMPLETED bajo pagada.
 - No duplicar el filtro inline: viven dashboard (`pendingPayments`) y `/receivables` reutilizándolo (spec `:29-36`).
 - Pago desde `/receivables` reutiliza `addSalePayment` tal cual (`receivables.remote.ts:59`): **no cambia el estado manualmente**; el toast "Venta completada" es solo informativo (`+page.svelte:132-136`).
 - Orden por saldo DESC; los pagos se agrupan por venta en una sola query (`receivables.ts:88,97-110`).

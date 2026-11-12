@@ -17,6 +17,7 @@ Home con stats del día, ventas recientes, bajo stock, FREE_ITEMs pendientes de 
 - Bajo stock: productos `stock <= minStock`; cristales **solo** `inventoryMode='STOCK'` con `stock <= 0` (`queries/dashboard.ts:104-121`) — no marcar lentes ON_DEMAND como faltantes.
 - `saleDate` de ventas recientes es **alias de `createdAt`** (`dashboard.ts:28-35`) — mantener el convention fecha-verdad del doc `sales`.
 - Widget de vencimientos de compras (`getUpcomingPurchaseOrderDues`) es admin-only; el load lo condiciona con `isAdminRole` (`+page.server.ts:13,20-22`).
+- "Pagos pendientes" (count + amount) usa el umbral de dominio **`SALE_PAID_EPSILON` = 0.01** de `shared/saleBalance.ts` (`dashboard.ts:87-101`), alineado con `/receivables` y el listado de ventas — antes era `> 0`.
 
 ## Patrones locales
 

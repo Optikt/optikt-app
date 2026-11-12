@@ -3,6 +3,7 @@
  */
 
 import { type Sale, type SaleItem, type SaleItemFreeDetails } from '$lib/server/db/schema';
+import type { SaleStatus } from '$lib/shared/enums';
 
 // ============================================================================
 // TYPES
@@ -34,18 +35,47 @@ export type SaleItemWithDetails = SaleItem & {
 };
 
 export interface SalesStats {
+	/** Total de ventas no borradas (subtítulo "N ventas registradas") */
+	total: number;
+	/** Ventas creadas este mes (cualquier estado, sin canceladas incluidas en el conteo) */
 	monthly: number;
+	/** Suma USD de las ventas de este mes, sin canceladas (KPI "Ventas del mes") */
+	monthlyTotalUsd: number;
 	pending: number;
 	completed: number;
 	cancelled: number;
+	/** Ventas en READY (KPI "Listas para retirar") */
+	ready: number;
+	/** Ventas no canceladas con saldo > 0.01 (KPI "Por cobrar") */
+	receivableCount: number;
+	/** Suma de saldos de esas ventas (KPI "Por cobrar") */
+	receivableAmount: number;
 }
+
+/** Conteo de ventas agrupado por estado (pestañas facetadas del listado). */
+export type SaleStatusCounts = Record<SaleStatus, number>;
+
+/** Suma de TODAS las ventas que cumplen los filtros (no solo la página), sin canceladas. */
+export interface SalesSelectionSummary {
+	count: number;
+	totalUsd: number;
+	balanceUsd: number;
+}
+
+/** Fila del listado de ventas: agrega flags baratos por ítem para la UI. */
+export type SaleListItem = SaleWithRelations & {
+	/** ¿Al menos un ítem con envío pendiente de registrar? */
+	hasShippingPending: boolean;
+	/** ¿Al menos un ítem FREE_ITEM? */
+	hasFreeItem: boolean;
+};
 
 // ============================================================================
 // QUERY OPTIONS
 // ============================================================================
 
-/** Sortable sale columns */
-export type SaleOrderBy = 'saleDate' | 'orderNumber' | 'total' | 'createdAt';
+/** Sortable sale columns (`balance` = total − paid, canceladas al final) */
+export type SaleOrderBy = 'saleDate' | 'orderNumber' | 'total' | 'createdAt' | 'balance';
 
 /** Options for filtering sales (shared between query and count) */
 export interface SaleFilterOptions {
@@ -69,6 +99,11 @@ export interface SaleFilterOptions {
 	hasFreeItem?: boolean;
 	/** Filter sales flagged as Cashea (buy-now-pay-later channel) */
 	isCashea?: boolean;
+	/**
+	 * Only non-cancelled sales with outstanding balance > 0.01
+	 * (misma tolerancia que `SALE_PAID_EPSILON` en `$lib/shared/saleBalance`).
+	 */
+	balanceOnly?: boolean;
 }
 
 /** Options for querying sales with relations */

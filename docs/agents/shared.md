@@ -23,12 +23,13 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 - **`hooks.server.ts`**: sesión validada por-request (`handleAuth`, `:20`); cookie se borra si la sesión expiró. `ServerInit` arranca el poller de tasas (`:16`) — NO moverlo a import-time (ver comentario: en prod el env dynamic llegaba vacío y las tasas congelaban). `handleValidationError` (`:89`) centraliza la traducción de issues Zod a mensaje humano.
 - **`src/lib/dates.ts`**: toda manipulación de fechas pasa por acá (`nowISO()`); no usar `new Date().toISOString()` sueltos ni aritmética de timezone ad-hoc.
 - **Schemas primitivos** (`schemas/common/`): cuando el schema de un dominio repite un patrón de una primitiva, componer desde `common/`, no copiar.
-- **`components/ui/**`**: los componentes base se importan de `$lib/components/ui/`, nunca se copian a un dominio. `components/index.ts` es barrel legacy: consumible por código existente, no extendible (regla global No Barrels).
+- **`components/ui/**`**: los componentes base se importan de `$lib/components/ui/`, nunca se copian a un dominio. `components/index.ts` es barrel legacy: consumible por código existente, no extendible (regla global No Barrels). Extender un kit-component solo con **props opcionales** que no cambien a los consumidores actuales (ej.: `SegmentedToggle` ganó `variant: 'default'|'light'`, `icon` por opción y `class` — el default sigue idéntico — más `role=tablist` + navegación con flechas; `SaleStatusBadge` ganó `label` y `class`).
 - **`commercialDocument/`** es la capa compartida de fila de documento (ventas/cotizaciones): items, qty, descuento. Reglas exclusivas de un dominio van en el doc de ese dominio, no acá.
 
 ## Patrones locales
 
 - Unit specs co-ubicadas junto al archivo (`*.spec.ts`), corren con `pnpm test:unit` (project server + client).
+- **Motion** (`routes/layout.css`): keyframes `rise-in`/`pop-in` con utilidades `.animate-rise` / `.animate-pop` (duración y easing salen de los tokens `--ds-*`); el stagger se hace con `style="animation-delay: {i * N}ms"`. Una regla global `@media (prefers-reduced-motion: reduce)` desactiva animaciones y transiciones en toda la app — reutilizar en vez de agregar keyframes por página.
 - Tests de integración de query fns: `int.spec.ts` co-ubicado, corren contra Postgres real vía `scripts/run-integration-tests.mjs` (`pnpm test:integration`).
 - `src/lib/shared/` = frontera client/server: lógica idéntica a ambos lados vive ahí; lo que es solo-cliente va a `utils/`, solo-servidor a `src/lib/server/`.
 - Conteo Físico (archivos en shared, reglas del dominio `inventory`): `countLineSaveQueue.ts` = cola de guardado «último valor gana» (un envío por línea, líneas distintas en paralelo, el caller aporta el `Set` in-flight como `$state`); `countSessionPhase.ts` = fases/CTA/stepper + `buildDiffRows`; `inventoryCount.ts` = math del ciclo. Specs co-ubicados.

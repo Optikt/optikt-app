@@ -1,38 +1,71 @@
 import type { PageServerLoad } from './$types';
+import { z } from 'zod';
 import { monthStart, toUTCString } from '$lib/dates';
-import { getAllSales, countSales, getSalesStats } from '$lib/server/db/queries/sales/reads';
+import { parseBooleanParam, parsePageParam } from '$lib/utils';
+import {
+	getSalesListPage,
+	getSalesStats,
+	listSaleSellers
+} from '$lib/server/db/queries/sales/reads';
+import { getUserPreference } from '$lib/server/db/queries/userPreferences';
 import { parseSaleStatuses } from '$lib/components/sales/statusFilter';
+import {
+	parseIsoDateOnly,
+	parseSaleListPerPage,
+	parseSaleListSort,
+	parseSaleListView,
+	saleListSortToOrder
+} from '$lib/components/sales/listParams';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
 	const searchParams = url.searchParams;
-	const rawPage = Number.parseInt(searchParams.get('page') ?? '1', 10);
-	const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
-	const perPage = 10;
-	const search = searchParams.get('q')?.trim() || undefined;
-	const statuses = parseSaleStatuses(searchParams.get('status'));
-	const statusFilter = statuses.length > 0 ? statuses : undefined;
-	const shippingCostPending = searchParams.get('shippingPending') === '1' ? true : undefined;
-	const hasFreeItem = searchParams.get('freeItem') === '1' ? true : undefined;
-	const isCashea = searchParams.get('cashea') === '1' ? true : undefined;
-	const offset = (page - 1) * perPage;
 
-	const [initialSales, totalCount, stats] = await Promise.all([
-		getAllSales({
+	const page = parsePageParam(searchParams.get('page'));
+	const perPage = parseSaleListPerPage(searchParams.get('per'));
+	const search = searchParams.get('q')?.trim() || undefined;
+
+	const statuses = parseSaleStatuses(searchParams.get('status'));
+
+	// Params no validados por Zod en el load: acá también son confianza del cliente.
+	const sellerRaw = searchParams.get('seller');
+	const sellerId = sellerRaw && z.uuid().safeParse(sellerRaw).success ? sellerRaw : undefined;
+	const dateFrom = parseIsoDateOnly(searchParams.get('from')) ?? undefined;
+	const dateTo = parseIsoDateOnly(searchParams.get('to')) ?? undefined;
+
+	const order = saleListSortToOrder(parseSaleListSort(searchParams.get('sort')));
+
+	const filterOptions = {
+		statuses: statuses.length > 0 ? statuses : undefined,
+		search,
+		sellerId,
+		dateFrom,
+		dateTo,
+		shippingCostPending: parseBooleanParam(searchParams.get('shippingPending')) || undefined,
+		hasFreeItem: parseBooleanParam(searchParams.get('freeItem')) || undefined,
+		isCashea: parseBooleanParam(searchParams.get('cashea')) || undefined,
+		balanceOnly: parseBooleanParam(searchParams.get('balance')) || undefined
+	};
+
+	const [list, stats, sellers, rawView] = await Promise.all([
+		getSalesListPage({
+			...filterOptions,
+			...order,
 			limit: perPage,
-			offset,
-			search,
-			statuses: statusFilter,
-			shippingCostPending,
-			hasFreeItem,
-			isCashea
+			offset: (page - 1) * perPage
 		}),
-		countSales({ search, statuses: statusFilter, shippingCostPending, hasFreeItem, isCashea }),
-		getSalesStats(toUTCString(monthStart()))
+		getSalesStats(toUTCString(monthStart())),
+		listSaleSellers(),
+		locals.user ? getUserPreference(locals.user.id, 'sales.view') : Promise.resolve(null)
 	]);
 
 	return {
-		initialSales,
-		totalCount,
-		stats
+		...list,
+		page,
+		perPage,
+		totalPages: Math.ceil(list.total / perPage),
+		stats,
+		sellers,
+		/** Preferencia guardada del usuario (`?view=` de la URL tiene prioridad en la página). */
+		preferredView: parseSaleListView(typeof rawView === 'string' ? rawView : null)
 	};
 };
