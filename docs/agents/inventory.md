@@ -59,6 +59,7 @@ Owner rules: la creación de lotes/movimientos por PO vive en el flujo de `purch
 - Import circular intencional `sessions ↔ lines` (lazy import con comentario, `sessions.ts:16`).
 - Contadores de search con relevancia junto a filtros combinados (`inventoryMovements.ts:339`).
 - Guardado de líneas de conteo por **cola «último valor gana»** (`shared/countLineSaveQueue.ts`): un envío por línea a la vez, líneas distintas en paralelo y sin bloqueo global de la hoja; el input de la línea en vuelo queda `readonly` (`savingLineIds`, `$state(Set)`).
+- **Refresh manual de la sesión** (`SessionHeaderBar`, botón junto a «volver», fases Contar/Revisar): recarga vía `getSessionById` sesión + líneas + responsables, y `getDiffCosts` si aparece una línea que lo necesita. Motivo: el snapshot de stock esperado se fija al abrir y no reacciona a ventas/ajustes registrados mid-session — el botón trae el estado vigente sin salir de la página. Incluye `isRefreshing` (icono gira); no toca `phase` ni el contexto de sesión activa.
 
 ## Known gaps / tech debt — latencia de DB
 

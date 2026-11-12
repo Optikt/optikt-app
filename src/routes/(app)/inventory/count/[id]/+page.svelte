@@ -243,6 +243,30 @@
 		if (detail.lines.some((line) => lineNeedsCost(line, costsByLine))) void refreshCosts();
 	}
 
+	let isRefreshing = $state(false);
+
+	/** Refresh manual: recarga sesión, líneas, responsables y costos pendientes. */
+	async function refreshSession(): Promise<void> {
+		if (isRefreshing) return;
+		isRefreshing = true;
+		try {
+			const detail = await getSessionById({ id: session.id });
+			if (!detail) {
+				toast.error('No se pudo recargar la sesión');
+				return;
+			}
+			session = detail;
+			lines = detail.lines;
+			responsibles = detail.responsibles;
+			if (detail.lines.some((line) => lineNeedsCost(line, costsByLine))) void refreshCosts();
+		} catch (error) {
+			logger.error('No se pudo actualizar la sesión de conteo', error);
+			toast.error(getErrorMessage(error, 'No se pudo actualizar la sesión'));
+		} finally {
+			isRefreshing = false;
+		}
+	}
+
 	// Costos FIFO: el mapa del load solo cubre las líneas ya contadas al cargar;
 	// al aparecer una diferencia nueva se piden al server. La cola evita
 	// apilarse si varias líneas se guardan juntas.
@@ -398,6 +422,8 @@
 		onStepClick={handleStepClick}
 		onOpenResponsibles={openResponsibles}
 		onCancel={() => (cancelModal = true)}
+		onRefresh={() => void refreshSession()}
+		{isRefreshing}
 	/>
 
 	{#if phase !== 3}
