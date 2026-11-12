@@ -1,5 +1,5 @@
 {
-  "id": "c2f77fa6-4390-466b-99e0-c841098689bb",
+  "id": "250dd903-7689-4c70-9c05-41802c6ee6e7",
   "prevId": "bf442711-78b1-4ddd-bfd9-ac0884c99418",
   "version": "7",
   "dialect": "postgresql",
@@ -1675,6 +1675,34 @@
           "notNull": true,
           "default": 16
         },
+        "count_cycle_days": {
+          "name": "count_cycle_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 30
+        },
+        "count_diff_threshold_units": {
+          "name": "count_diff_threshold_units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 2
+        },
+        "count_diff_threshold_usd": {
+          "name": "count_diff_threshold_usd",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "count_quick_oldest_limit": {
+          "name": "count_quick_oldest_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 50
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -2155,6 +2183,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "last_counted_at": {
+          "name": "last_counted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_count_session_id": {
+          "name": "last_count_session_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -2478,6 +2518,18 @@
         },
         "stock": {
           "name": "stock",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_counted_at": {
+          "name": "last_counted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_count_session_id": {
+          "name": "last_count_session_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -3503,24 +3555,6 @@
         },
         "os_altura": {
           "name": "os_altura",
-          "type": "double precision",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "dp": {
-          "name": "dp",
-          "type": "double precision",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "np_right": {
-          "name": "np_right",
-          "type": "double precision",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "np_left": {
-          "name": "np_left",
           "type": "double precision",
           "primaryKey": false,
           "notNull": false
@@ -6816,6 +6850,42 @@
           "primaryKey": false,
           "notNull": false
         },
+        "recounted_stock": {
+          "name": "recounted_stock",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recounted_by_id": {
+          "name": "recounted_by_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recounted_at": {
+          "name": "recounted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adjustment_movement_id": {
+          "name": "adjustment_movement_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adjustment_reason": {
+          "name": "adjustment_reason",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adjustment_reason_text": {
+          "name": "adjustment_reason_text",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
         "adjustment_completed": {
           "name": "adjustment_completed",
           "type": "boolean",
@@ -6832,6 +6902,24 @@
         "adjustment_completed_at": {
           "name": "adjustment_completed_at",
           "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adjustment_requested_by": {
+          "name": "adjustment_requested_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adjustment_requested_at": {
+          "name": "adjustment_requested_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fifo_cost_usd": {
+          "name": "fifo_cost_usd",
+          "type": "double precision",
           "primaryKey": false,
           "notNull": false
         },
@@ -7027,6 +7115,149 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.inventory_count_responsibles": {
+      "name": "inventory_count_responsibles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_external": {
+          "name": "is_external",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "added_by_id": {
+          "name": "added_by_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "added_at": {
+          "name": "added_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ix_inventory_count_responsibles_session": {
+          "name": "ix_inventory_count_responsibles_session",
+          "columns": [
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops"
+            },
+            {
+              "expression": "removed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ix_inventory_count_responsibles_user": {
+          "name": "ix_inventory_count_responsibles_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "inventory_count_responsibles_session_id_fkey": {
+          "name": "inventory_count_responsibles_session_id_fkey",
+          "tableFrom": "inventory_count_responsibles",
+          "tableTo": "inventory_count_sessions",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "inventory_count_responsibles_user_id_fkey": {
+          "name": "inventory_count_responsibles_user_id_fkey",
+          "tableFrom": "inventory_count_responsibles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.inventory_count_sessions": {
       "name": "inventory_count_sessions",
       "schema": "",
@@ -7051,6 +7282,30 @@
         },
         "scope_value": {
           "name": "scope_value",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope_dim": {
+          "name": "scope_dim",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope_values": {
+          "name": "scope_values",
+          "type": "varchar[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope_n": {
+          "name": "scope_n",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope_kind": {
+          "name": "scope_kind",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
@@ -7101,6 +7356,30 @@
         "cancel_reason": {
           "name": "cancel_reason",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coverage_before": {
+          "name": "coverage_before",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coverage_never_before": {
+          "name": "coverage_never_before",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coverage_after": {
+          "name": "coverage_after",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coverage_never_after": {
+          "name": "coverage_never_after",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },

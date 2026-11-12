@@ -29,6 +29,7 @@ Owner rules: el stock de lentes-STOCK lo gestiona `inventory` (ajustes con lotes
 
 - Regido por `inventoryMode`: ON_DEMAND → `stock: null`; STOCK → valor dado (`catalog.remote.ts:122-123`, `catalog-update.remote.ts:123-125`).
 - **Ajuste manual (STOCK)** — `catalog-stock.remote.ts:54`: solo ADMIN; rechaza items ON_DEMAND (`:64`); FIFO sobre lotes activos (`:78`); sin lote y salida → error (`:81`); sin lote y entrada → crea **PO CONFIRMADA fantasma** con precios 0 para anclar el lote (`:96-137`, deuda abajo); salida sin `CUSTOMER_RETURN` registra `unitCostAtAdjustment` para el reporte de cash (`:199-207`); movimiento + update de stock cacheado en la MISMA tx (`:159-236`).
+- Cobertura de conteo: `lastCountedAt`/`lastCountSessionId` (`schema/lenses.ts`) los escribe **solo** el cierre de sesión del dominio `inventory` (`applySession`), solo en líneas verificadas de ítems STOCK — no mutar desde este dominio.
 
 **Rangos ópticos** (`schema/lenses.ts:199-229`)
 

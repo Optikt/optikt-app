@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Info } from '@lucide/svelte';
 	import TriggerTooltip from './TriggerTooltip.svelte';
+	import { splitTooltip } from '$lib/utils/tooltip';
 
 	interface Props {
 		text: string;
@@ -9,6 +10,9 @@
 	}
 
 	let { text, side = 'top', class: className = '' }: Props = $props();
+
+	// Convención del módulo: «Título|Cuerpo» (mockup data-tip). Sin pipe → texto completo.
+	const tip = $derived(splitTooltip(text));
 </script>
 
 {#snippet infoTrigger({ props }: { props: Record<string, unknown> })}
@@ -22,4 +26,10 @@
 	</button>
 {/snippet}
 
-<TriggerTooltip {text} {side} contentClass="max-w-64" trigger={infoTrigger} />
+<TriggerTooltip
+	title={tip.title}
+	text={tip.text}
+	{side}
+	contentClass="max-w-64"
+	trigger={infoTrigger}
+/>

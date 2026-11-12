@@ -1,325 +1,494 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import { getInventoryCountContext } from '$lib/context';
 	import {
-		applySession,
-		cancelSession,
-		setLineAdjustmentStatus,
-		upsertCountLine
+		applySessionCmd,
+		confirmZeroStock,
+		recountCountLineCmd,
+		setSessionResponsibles,
+		upsertCountLineCmd,
+		getDiffCosts,
+		getSessionById,
+		listCountResponsibles
 	} from '$lib/remote/inventoryCount.remote';
-	import {
-		canCloseInventoryCountSession,
-		type InventoryCountUiFilter
-	} from '$lib/schemas/inventoryCount';
-	import { isAdminRole } from '$lib/shared/enums';
-	import type {
-		InventoryCountLineRow,
-		InventoryCountSessionDetail
-	} from '$lib/server/db/queries/inventoryCount/types';
 	import { getErrorMessage } from '$lib/utils';
-	import CountSessionHeader from '$lib/components/inventory/count/CountSessionHeader.svelte';
-	import CountSummaryMetrics from '$lib/components/inventory/count/CountSummaryMetrics.svelte';
-	import CountLinesTable from '$lib/components/inventory/count/CountLinesTable.svelte';
+	import { logger } from '$lib/utils/logger';
+	import { createLineSaveQueue } from '$lib/shared/countLineSaveQueue';
 	import {
-		createEmptyLineEditing,
-		startLineEditing,
-		type CountLineEditing
-	} from '$lib/components/inventory/count/CountLineEditRow.svelte';
-	import CountActionModals from '$lib/components/inventory/count/CountActionModals.svelte';
+		blockedToast,
+		buildDiffRows,
+		phaseCtaAction,
+		phaseCtaLabel,
+		phaseCtaReason,
+		stepClickOutcome
+	} from '$lib/shared/countSessionPhase';
+	import { AdjustmentReason } from '$lib/shared/enums';
 	import {
-		buildSummaryMessage,
-		buildSummaryMetrics,
 		computeCountStats,
-		filterCountLines
-	} from '$lib/components/inventory/count/countSummary';
-	import {
-		getAdjustmentPath,
-		isAdjustmentStatusUpdating,
-		toggleUpdatingId
-	} from '$lib/components/inventory/count/countAdjustments';
+		lineNeedsAdjustment,
+		lineNeedsCost,
+		type CountCycleConfig
+	} from '$lib/shared/inventoryCount';
+	import type {
+		InventoryCountSessionDetail,
+		CountLineRow,
+		ResponsibleRow
+	} from '$lib/server/db/queries/inventoryCount/types';
+	import SessionHeaderBar from '$lib/components/inventory/count/SessionHeaderBar.svelte';
+	import SummaryStrip from '$lib/components/inventory/count/SummaryStrip.svelte';
+	import CountBoard from '$lib/components/inventory/count/CountBoard.svelte';
+	import AdjustStockDrawer from '$lib/components/inventory/count/AdjustStockDrawer.svelte';
+	import { createAdjustmentActions } from '$lib/components/inventory/count/adjustmentActions';
+	import CancelCountModal from '$lib/components/inventory/count/CancelCountModal.svelte';
+	import ResponsiblesDrawer from '$lib/components/inventory/count/ResponsiblesDrawer.svelte';
+
+	import ReviewBoard from '$lib/components/inventory/count/ReviewBoard.svelte';
+	import ReportBoard from '$lib/components/inventory/count/ReportBoard.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+
+	interface Tag {
+		key: string;
+		label: string;
+	}
 
 	let { data } = $props();
-	const inventoryCountContext = getInventoryCountContext();
-	let session = $state<InventoryCountSessionDetail>(untrack(() => data.session));
-	let lines = $state<InventoryCountLineRow[]>(untrack(() => data.session.lines));
-	let search = $state('');
-	let activeFilter = $state<InventoryCountUiFilter>('ALL');
-	let showApplyModal = $state(false);
-	let showCancelModal = $state(false);
-	let cancelReason = $state('');
-	let isApplying = $state(false);
-	let isCancelling = $state(false);
-	let updatingAdjustmentLineIds = $state<number[]>([]);
-	let editing = $state<CountLineEditing>(createEmptyLineEditing());
 
-	const currentUser = $derived(data.user);
-	const canManage = $derived(isAdminRole(currentUser.role));
-	const isReadonly = $derived(session.status !== 'OPEN');
-	const stats = $derived(computeCountStats(lines));
-	const canCloseSession = $derived(canCloseInventoryCountSession(stats.total, stats.counted));
-	const filteredLines = $derived(filterCountLines(lines, activeFilter, search));
-	const summaryMetrics = $derived(buildSummaryMetrics(stats));
-	const summary = $derived(
-		buildSummaryMessage({
-			status: session.status,
-			notes: session.notes,
-			cancelReason: session.cancelReason,
-			canClose: canCloseSession,
-			pendingTotal: stats.pending,
-			diffCount: stats.diffCount,
-			pendingAdjustments: stats.pendingAdjustments
+	// Datos iniciales solo vía `load`; todo lo demás son updates por remote.
+	const initialSession = untrack(() => data.session) as InventoryCountSessionDetail;
+	const initialConfig = untrack(() => data.config) as CountCycleConfig;
+	const initialCosts = untrack(() => data.costs) as Record<string, number | null>;
+
+	const countContext = getInventoryCountContext();
+	const canManage = $derived(data.canManage as boolean);
+
+	let session = $state<InventoryCountSessionDetail>(initialSession);
+	let lines = $state<CountLineRow[]>(initialSession.lines);
+	let responsibles = $state(initialSession.responsibles);
+	let config = $state<CountCycleConfig>(initialConfig);
+	let phase = $state<1 | 2 | 3>(untrack((): 1 | 2 | 3 => (session.status === 'OPEN' ? 1 : 3)));
+	let isSubmitting = $state(false);
+	let isMobileView = $state(false);
+	let mobileMode = $state<'ficha' | 'lista'>('lista');
+	// Costos FIFO por línea (claves string, como los devuelve getDiffCosts).
+	let costsByLine = $state<Record<string, number | null>>(initialCosts);
+
+	// Ajuste de línea (drawer) y en lote
+	let adjustTarget = $state<CountLineRow | null>(null);
+	let adjustReason = $state<AdjustmentReason>(AdjustmentReason.PHYSICAL_COUNT);
+	let adjustReasonText = $state('');
+	let isAdjusting = $state(false);
+
+	// Responsables (drawer) y cancelación (modal)
+	let showResponsibles = $state(false);
+	let pendingResponsibleTags = $state<Tag[]>([]);
+	let cancelModal = $state(false);
+	// Confirmación de cierre cuando hay diferencias sin ajustar.
+	let closeConfirm = $state(false);
+
+	const costByLineId = $derived(
+		new Map<number, number | null>(
+			Object.entries(costsByLine).map(([key, value]) => [Number(key), value ?? null])
+		)
+	);
+
+	const stats = $derived(computeCountStats(lines, config, costByLineId));
+
+	const canCloseNow = $derived(
+		lines.length > 0 && stats.pendingCounting === 0 && stats.recountsPending === 0
+	);
+
+	const ctaDisabledReason = $derived(phaseCtaReason(phase, stats));
+	const ctaLabel = $derived(phaseCtaLabel(phase));
+
+	const diffRows = $derived(buildDiffRows(lines, costByLineId));
+	const unadjustedCount = $derived(lines.filter(lineNeedsAdjustment).length);
+
+	const batchAdjustable = $derived(
+		diffRows.filter(({ line, diff }) => {
+			if (line.adjustmentMovementId != null) return false;
+			if (line.adjustmentRequestedAt != null) return false;
+			const cost = costByLineId.get(line.id) ?? 0;
+			const usdHit =
+				config.diffThresholdUsd > 0 && Math.abs(diff * cost) >= config.diffThresholdUsd;
+			return Math.abs(diff) < config.diffThresholdUnits && !usdHit;
 		})
 	);
 
-	function goBack() {
-		goto(resolve('/inventory/count'));
-	}
+	// ── Eventos/UI helpers ────────────────────────────────────────────────────
 
-	function openAdjustment(line: InventoryCountLineRow) {
-		const adjustmentPath = getAdjustmentPath(line);
-		if (!adjustmentPath) {
-			return;
-		}
-
-		window.open(resolve(adjustmentPath), '_blank', 'noopener,noreferrer');
-	}
-
-	async function toggleAdjustmentCompleted(
-		line: InventoryCountLineRow,
-		adjustmentCompleted: boolean
-	) {
-		if (isAdjustmentStatusUpdating(line.id, updatingAdjustmentLineIds)) {
-			return;
-		}
-
-		updatingAdjustmentLineIds = toggleUpdatingId(updatingAdjustmentLineIds, line.id, true);
-
-		try {
-			const result = await setLineAdjustmentStatus({ lineId: line.id, adjustmentCompleted });
-
-			if (!result.success) {
-				throw new Error(result.error ?? 'No se pudo actualizar el seguimiento del ajuste');
+	function handleKeydown(event: KeyboardEvent): void {
+		// Atajo «/» para enfocar la búsqueda de la hoja (solo fase Contar).
+		if (event.key === '/' && phase === 1) {
+			const target = event.target as HTMLElement | null;
+			if (!target || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+			const input = document.querySelector<HTMLInputElement>('[data-count-search]');
+			if (input) {
+				event.preventDefault();
+				input.focus();
 			}
-
-			updateLineLocally(result.line);
-		} catch (error) {
-			toast.error(getErrorMessage(error, 'No se pudo actualizar el tracking del ajuste'));
-		} finally {
-			updatingAdjustmentLineIds = toggleUpdatingId(updatingAdjustmentLineIds, line.id, false);
 		}
 	}
 
-	function handleAdjustmentCheckboxChange(line: InventoryCountLineRow, event: Event) {
-		const target = event.currentTarget;
-		if (!(target instanceof HTMLInputElement)) {
-			return;
-		}
-
-		void toggleAdjustmentCompleted(line, target.checked);
-	}
-
-	function startEditing(line: InventoryCountLineRow) {
-		if (isReadonly) {
-			return;
-		}
-
-		editing = startLineEditing(line);
-	}
-
-	function stopEditing() {
-		editing = createEmptyLineEditing();
-	}
-
-	function updateLineLocally(nextLine: InventoryCountLineRow) {
-		lines = lines.map((line) => (line.id === nextLine.id ? nextLine : line));
-		session = { ...session, lines };
-	}
-
-	async function handleSaveLine(line: InventoryCountLineRow) {
-		const nextCount = Number(editing.count);
-		if (!Number.isInteger(nextCount) || nextCount < 0) {
-			toast.error('La cantidad contada debe ser un entero mayor o igual a 0');
-			return;
-		}
-
-		const optimisticLine: InventoryCountLineRow = {
-			...line,
-			countedStock: nextCount,
-			difference: nextCount - line.systemStock,
-			adjustmentCompleted:
-				line.adjustmentCompleted && line.countedStock === nextCount
-					? line.adjustmentCompleted
-					: false,
-			adjustmentCompletedById:
-				line.adjustmentCompleted && line.countedStock === nextCount
-					? line.adjustmentCompletedById
-					: null,
-			adjustmentCompletedAt:
-				line.adjustmentCompleted && line.countedStock === nextCount
-					? line.adjustmentCompletedAt
-					: null,
-			adjustmentCompletedByName:
-				line.adjustmentCompleted && line.countedStock === nextCount
-					? line.adjustmentCompletedByName
-					: null,
-			countedById: currentUser.id,
-			countedByName: currentUser.fullName,
-			countedAt: new Date().toISOString(),
-			notes: editing.notes.trim() || null
-		};
-
-		const previousLines = lines;
-		editing.isSaving = true;
-		updateLineLocally(optimisticLine);
-
-		try {
-			const result = await upsertCountLine({
-				sessionId: session.id,
-				itemId: line.itemId,
-				itemType: line.itemType as 'PRODUCT' | 'LENS',
-				countedStock: nextCount,
-				notes: editing.notes.trim() || null
-			});
-
-			if (!result.success) {
-				throw new Error(result.error ?? 'No se pudo guardar el conteo');
+	// Guard por línea (cola «último valor gana»): dos líneas se guardan en
+	// paralelo y las ediciones mientras una vuela no se descartan.
+	// El Set es reactivo ($state): la cola lo muta con add/delete.
+	const savingLineIds = $state<Set<number>>(new Set());
+	const lineSaves = createLineSaveQueue({
+		inFlight: savingLineIds,
+		send: async (lineId, value) => {
+			const response = await upsertCountLineCmd({ lineId, countedStock: value });
+			if (!response.success) {
+				toast.error(response.error);
+				return;
 			}
+			lines = lines.map((candidate) =>
+				candidate.id === response.data.id ? response.data : candidate
+			);
+			if (lineNeedsCost(response.data, costsByLine)) void refreshCosts();
+		}
+	});
 
-			updateLineLocally(result.line);
-			stopEditing();
+	async function saveLine(lineId: number, value: number): Promise<void> {
+		try {
+			await lineSaves.submit(lineId, value);
 		} catch (error) {
-			lines = previousLines;
-			session = { ...session, lines: previousLines };
+			logger.error('No se pudo guardar el conteo', error);
 			toast.error(getErrorMessage(error, 'No se pudo guardar el conteo'));
-			editing.isSaving = false;
 		}
 	}
 
-	async function handleApplySession() {
-		if (isApplying) {
-			return;
-		}
-
-		if (!canCloseSession) {
-			toast.error('Debes contar o confirmar todos los ítems antes de cerrar la sesión');
-			return;
-		}
-
-		isApplying = true;
-
+	async function confirmZero(): Promise<void> {
+		if (isSubmitting) return;
+		isSubmitting = true;
 		try {
-			const result = await applySession({ id: session.id });
-
-			if (!result.success) {
-				throw new Error(result.error ?? 'No se pudo aplicar la sesión');
+			const response = await confirmZeroStock({ sessionId: session.id });
+			if (!response.success) {
+				toast.error(response.error);
+				return;
 			}
+			toast.success(`Stock 0 confirmado en lote (${response.data} ítems)`);
+			await refreshLines();
+		} catch (error) {
+			toast.error(getErrorMessage(error, 'No se pudo confirmar el stock 0'));
+		} finally {
+			isSubmitting = false;
+		}
+	}
 
-			session = result.session;
-			lines = result.session.lines;
-			inventoryCountContext.activeSession = null;
-			showApplyModal = false;
-			stopEditing();
-			toast.success('Sesión de conteo cerrada');
+	async function recountLine(line: CountLineRow, raw: string): Promise<void> {
+		const value = raw.trim();
+		if (!value) return;
+		const numeric = Number.parseInt(value, 10);
+		if (Number.isNaN(numeric) || numeric < 0) {
+			toast.error('El recuento debe ser un entero ≥ 0');
+			return;
+		}
+		if (isSubmitting) return;
+		isSubmitting = true;
+		try {
+			const response = await recountCountLineCmd({ lineId: line.id, recountedStock: numeric });
+			if (!response.success) {
+				toast.error(response.error);
+				return;
+			}
+			lines = lines.map((candidate) =>
+				candidate.id === response.data.id ? response.data : candidate
+			);
+			if (lineNeedsCost(response.data, costsByLine)) void refreshCosts();
+			toast.success('Recuento guardado');
+		} catch (error) {
+			toast.error(getErrorMessage(error, 'No se pudo guardar el recuento'));
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+	function openAdjust(line: CountLineRow): void {
+		adjustTarget = line;
+		adjustReason = AdjustmentReason.PHYSICAL_COUNT;
+		adjustReasonText = '';
+	}
+
+	function closeAdjust(): void {
+		adjustTarget = null;
+		adjustReasonText = '';
+	}
+
+	// Acciones de ajuste (solicitar/lote/quitar) fuera de la página: size gate DT1.
+	const { requestAdjust, requestBatch, clearAdjust } = createAdjustmentActions({
+		// El id de sesión es constante en esta página (no cambia con refetch).
+		sessionId: untrack(() => session.id),
+		getReason: () => ({ reason: adjustReason, reasonText: adjustReasonText }),
+		replaceLine: (line) => {
+			lines = lines.map((candidate) => (candidate.id === line.id ? line : candidate));
+		},
+		refreshLines,
+		closeDrawer: closeAdjust,
+		isBusy: () => isAdjusting,
+		setBusy: (busy) => {
+			isAdjusting = busy;
+		}
+	});
+
+	async function refreshLines(): Promise<void> {
+		const detail = await getSessionById({ id: session.id });
+		if (!detail) {
+			toast.error('No se pudo recargar la sesión');
+			return;
+		}
+		lines = detail.lines;
+		if (detail.lines.some((line) => lineNeedsCost(line, costsByLine))) void refreshCosts();
+	}
+
+	// Costos FIFO: el mapa del load solo cubre las líneas ya contadas al cargar;
+	// al aparecer una diferencia nueva se piden al server. La cola evita
+	// apilarse si varias líneas se guardan juntas.
+	let costsRefreshing = false;
+	let costsQueued = false;
+	async function refreshCosts(): Promise<void> {
+		if (!canManage) return;
+		if (costsRefreshing) {
+			costsQueued = true;
+			return;
+		}
+		costsRefreshing = true;
+		try {
+			do {
+				costsQueued = false;
+				costsByLine = await getDiffCosts({ sessionId: session.id });
+			} while (costsQueued);
+		} catch (error) {
+			logger.error('No se pudieron actualizar los costos del conteo', error);
+		} finally {
+			costsRefreshing = false;
+		}
+	}
+
+	// Responsables: sincronización (solo A/M).
+	function openResponsibles(): void {
+		pendingResponsibleTags = responsibles.map((entry: ResponsibleRow) => ({
+			key: entry.userId ?? entry.displayName,
+			label: entry.displayName
+		}));
+		showResponsibles = true;
+		void loadResponsibleOptions();
+	}
+
+	async function saveResponsibles(): Promise<void> {
+		const entries = pendingResponsibleTags.map((tag) => ({
+			userId: userOptions.some((option) => option.userId === tag.key) ? tag.key : undefined,
+			displayName: tag.label,
+			isExternal: !userOptions.some((option) => option.userId === tag.key)
+		}));
+		if (isSubmitting) return;
+		isSubmitting = true;
+		try {
+			const response = await setSessionResponsibles({ sessionId: session.id, entries });
+			if (!response.success) {
+				toast.error(response.error);
+				return;
+			}
+			responsibles = response.data;
+			showResponsibles = false;
+			toast.success('Responsables actualizados');
+		} catch (error) {
+			toast.error(getErrorMessage(error, 'No se pudo actualizar responsables'));
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+	async function applyNow(): Promise<void> {
+		if (isSubmitting) return;
+		isSubmitting = true;
+		try {
+			const response = await applySessionCmd({ id: session.id });
+			if (!response.success) {
+				toast.error(response.error);
+				return;
+			}
+			session = response.data;
+			lines = response.data.lines;
+			responsibles = response.data.responsibles;
+			// El cierre ejecuta ajustes que mueven lotes: refresca costos antes del informe.
+			await refreshCosts();
+			phase = 3;
+			countContext.activeSession = null;
+			toast.success('Conteo cerrado');
 		} catch (error) {
 			toast.error(getErrorMessage(error, 'No se pudo cerrar la sesión'));
 		} finally {
-			isApplying = false;
+			isSubmitting = false;
 		}
 	}
 
-	async function handleCancelSession() {
-		if (isCancelling) {
-			return;
-		}
-
-		const reason = cancelReason.trim();
-		if (reason.length < 5) {
-			toast.error('Indica el motivo de cancelación');
-			return;
-		}
-
-		isCancelling = true;
-
-		try {
-			const result = await cancelSession({ id: session.id, reason });
-
-			if (!result.success) {
-				throw new Error(result.error ?? 'No se pudo cancelar la sesión');
+	function handlePhaseCta(): void {
+		const action = phaseCtaAction(phase, stats, canCloseNow);
+		if (action === 'back') onBack();
+		else if (action === 'review') phase = 2;
+		else if (action === 'close') {
+			// Cerrar con diferencias sin ajustar exige confirmación explícita.
+			if (unadjustedCount > 0) {
+				closeConfirm = true;
+				return;
 			}
+			void applyNow();
+		} else notifyCtaBlocked();
+	}
 
-			session = result.session;
-			lines = result.session.lines;
-			inventoryCountContext.activeSession = null;
-			showCancelModal = false;
-			cancelReason = '';
-			stopEditing();
-			toast.success('Sesión cancelada');
-		} catch (error) {
-			toast.error(getErrorMessage(error, 'No se pudo cancelar la sesión'));
-		} finally {
-			isCancelling = false;
+	/** Toast con el motivo de bloqueo del CTA (Título|Cuerpo). */
+	function notifyCtaBlocked(): void {
+		const { title, description } = blockedToast(ctaDisabledReason);
+		toast.info(title, { description });
+	}
+
+	/** Clic en un paso del stepper: navega entre fases; nunca cierra la sesión. */
+	function handleStepClick(step: 1 | 2 | 3): void {
+		const outcome = stepClickOutcome(step, phase, ctaDisabledReason);
+		if (outcome.kind === 'blocked') notifyCtaBlocked();
+		else if (outcome.kind === 'phase') phase = outcome.phase;
+	}
+
+	function onBack(): void {
+		if (session.status === 'OPEN') {
+			countContext.activeSession = { id: session.id };
 		}
+		void goto(resolve('/inventory/count'), { replaceState: true });
+	}
+
+	let userOptions = $state<Array<{ userId: string; displayName: string }>>(
+		untrack(() =>
+			responsibles
+				.filter((entry: ResponsibleRow) => entry.userId != null)
+				.map((entry: ResponsibleRow) => ({
+					userId: entry.userId as string,
+					displayName: entry.displayName
+				}))
+		)
+	);
+
+	async function loadResponsibleOptions(): Promise<void> {
+		const response = await listCountResponsibles();
+		userOptions = response;
 	}
 </script>
 
 <svelte:head>
-	<title>Sesión #{session.id} - Conteo Físico - Optikt</title>
+	<title>Conteo #{session.id} · Conteo físico · Optikt</title>
 </svelte:head>
 
-<div class="space-y-4 p-3 sm:p-4 lg:px-4 lg:py-4">
-	<CountSessionHeader
-		sessionId={session.id}
-		status={session.status}
+<svelte:window onkeydown={handleKeydown} />
+
+<div class="min-0 flex h-full flex-col bg-[#edf1f6]">
+	<SessionHeaderBar
+		title={session.status === 'OPEN' ? `Conteo #${session.id}` : `Informe #${session.id}`}
+		scope={session.scopeLabel}
+		{phase}
+		progress={{ verified: stats.verified, total: stats.total }}
+		{responsibles}
 		{canManage}
-		{canCloseSession}
-		onBack={goBack}
-		onOpenApply={() => (showApplyModal = true)}
-		onOpenCancel={() => (showCancelModal = true)}
+		{ctaLabel}
+		ctaDisabledReason={session.status === 'OPEN' ? ctaDisabledReason : null}
+		{onBack}
+		onOpenPhase={handlePhaseCta}
+		onCtaBlocked={notifyCtaBlocked}
+		onStepClick={handleStepClick}
+		onOpenResponsibles={openResponsibles}
+		onCancel={() => (cancelModal = true)}
 	/>
 
-	<CountSummaryMetrics
-		{session}
-		{stats}
-		metrics={summaryMetrics}
-		messageLabel={summary.label}
-		message={summary.message}
+	{#if phase !== 3}
+		<SummaryStrip {stats} />
+	{/if}
+
+	{#if session.status !== 'OPEN'}
+		<ReportBoard {session} {lines} {costByLineId} {stats} {responsibles} />
+	{:else if phase === 1}
+		{#if isMobileView}
+			<div class="flex justify-center py-2">
+				<button
+					type="button"
+					aria-pressed={mobileMode === 'ficha'}
+					class="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-brand-navy shadow-sm"
+					onclick={() => (mobileMode = mobileMode === 'ficha' ? 'lista' : 'ficha')}
+				>
+					{mobileMode === 'ficha' ? 'Ficha | Lista' : 'Lista | Ficha'} (alternar)
+				</button>
+			</div>
+		{/if}
+		<CountBoard
+			{lines}
+			{config}
+			{costByLineId}
+			canCount={data.canCount}
+			{savingLineIds}
+			onSaveLine={saveLine}
+			onConfirmZero={confirmZero}
+			isMobile={isMobileView}
+			mode={mobileMode}
+		/>
+	{:else if phase === 2}
+		<ReviewBoard
+			rows={diffRows}
+			{config}
+			{costByLineId}
+			canReview={canManage}
+			isBusy={isSubmitting}
+			batchCount={batchAdjustable.length}
+			bind:reason={adjustReason}
+			bind:reasonText={adjustReasonText}
+			onRequestBatch={requestBatch}
+			onRecount={recountLine}
+			onOpenAdjust={openAdjust}
+			onClearAdjust={clearAdjust}
+		/>
+	{/if}
+
+	<AdjustStockDrawer
+		target={adjustTarget}
+		unitCost={costByLineId.get(adjustTarget?.id ?? -1) ?? null}
+		isBusy={isAdjusting}
+		bind:reason={adjustReason}
+		bind:reasonText={adjustReasonText}
+		onclose={closeAdjust}
+		onApply={(line) => void requestAdjust(line)}
 	/>
 
-	<CountLinesTable
-		lines={filteredLines}
-		totalLines={stats.total}
-		bind:activeFilter
-		bind:search
-		{isReadonly}
-		sessionCancelled={session.status === 'CANCELLED'}
-		bind:editing
-		onStartEditing={startEditing}
-		onSaveLine={(line) => void handleSaveLine(line)}
-		onStopEditing={stopEditing}
-		onOpenAdjustment={openAdjustment}
-		onAdjustmentChange={handleAdjustmentCheckboxChange}
-		isAdjustmentUpdating={(lineId) => isAdjustmentStatusUpdating(lineId, updatingAdjustmentLineIds)}
+	<ResponsiblesDrawer
+		bind:open={showResponsibles}
+		{userOptions}
+		bind:pendingResponsibleTags
+		isBusy={isSubmitting}
+		onClose={() => (showResponsibles = false)}
+		onSave={() => void saveResponsibles()}
 	/>
 
-	<CountActionModals
-		bind:showApplyModal
-		bind:showCancelModal
-		bind:cancelReason
-		countedTotal={stats.counted}
-		matchedCount={stats.matchedCount}
-		pendingTotal={stats.pending}
-		positiveDiffCount={stats.positiveDiffCount}
-		positiveUnits={stats.positiveUnits}
-		negativeDiffCount={stats.negativeDiffCount}
-		negativeUnits={stats.negativeUnits}
-		pendingManualAdjustments={stats.pendingAdjustments}
-		{isApplying}
-		{isCancelling}
-		{canCloseSession}
-		onApply={() => void handleApplySession()}
-		onCancel={() => void handleCancelSession()}
+	<!-- Modal: Cancelar sesión -->
+	<CancelCountModal
+		bind:open={cancelModal}
+		sessionId={session.id}
+		onCancelled={(detail) => {
+			session = detail;
+			lines = detail.lines;
+			responsibles = detail.responsibles;
+			phase = 3;
+			countContext.activeSession = null;
+		}}
+	/>
+
+	<!-- Modal: cerrar con diferencias sin ajustar -->
+	<ConfirmModal
+		bind:open={closeConfirm}
+		title="Cerrar con diferencias sin ajustar"
+		message={`${unadjustedCount} línea(s) con diferencia no tienen ajuste solicitado: al cerrar no se creará ningún movimiento de stock para ellas (quedarán como «Ajuste pendiente» en el informe). Si no quieres ajustarlas, continúa.`}
+		confirmLabel="Cerrar de todos modos"
+		confirmColor="yellow"
+		onConfirm={() => {
+			closeConfirm = false;
+			void applyNow();
+		}}
 	/>
 </div>

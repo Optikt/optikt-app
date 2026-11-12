@@ -1,155 +1,135 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
+	ClearLineAdjustmentSchema,
+	RequestAdjustmentsBatchSchema,
+	RequestLineAdjustmentSchema,
 	CancelInventoryCountSessionSchema,
-	CreateInventoryCountSessionSchema,
-	GetSessionLinesSchema,
-	GetSessionsSchema,
-	SetInventoryCountLineAdjustmentStatusSchema,
-	SessionIdSchema,
-	UpsertInventoryCountLineSchema,
-	canCloseInventoryCountSession,
-	formatInventoryCountScope,
-	getInventoryCountStatusLabel
+	ConfirmZeroStockSchema,
+	CreateCountSessionSchema,
+	PreviewCountScopeSchema,
+	RecountCountLineSchema,
+	ReasonSchema,
+	SetSessionResponsiblesSchema,
+	UpsertCountLineSchema
 } from './inventoryCount';
 
-describe('CreateInventoryCountSessionSchema', () => {
-	it('accepts a full inventory session', () => {
-		const result = CreateInventoryCountSessionSchema.safeParse({
-			scopeType: 'ALL',
-			notes: 'Conteo mensual general de tienda'
-		});
+describe('CreateCountSessionSchema', () => {
+	beforeEach(() => {});
 
+	it('acepta alcance ALL sin valores y con quick', () => {
+		const result = CreateCountSessionSchema.safeParse({
+			dim: 'ALL',
+			values: [],
+			quick: 'OLDEST',
+			n: 50,
+			responsibles: []
+		});
 		expect(result.success).toBe(true);
 	});
 
-	it('accepts product-only sessions without a category to include all products', () => {
-		const result = CreateInventoryCountSessionSchema.safeParse({
-			scopeType: 'PRODUCT_CATEGORY',
-			notes: 'Solo monturas'
+	it('rechaza quick combinado con valores de dimensión', () => {
+		const result = CreateCountSessionSchema.safeParse({
+			dim: 'ALL',
+			values: ['x'],
+			quick: 'OLDEST',
+			responsibles: []
 		});
-
-		expect(result.success).toBe(true);
-	});
-
-	it('accepts product-only sessions for a specific category', () => {
-		const result = CreateInventoryCountSessionSchema.safeParse({
-			scopeType: 'PRODUCT_CATEGORY',
-			scopeValue: 'FRAME'
-		});
-
-		expect(result.success).toBe(true);
-	});
-
-	it('rejects scopeValue when scopeType is not PRODUCT_CATEGORY', () => {
-		const result = CreateInventoryCountSessionSchema.safeParse({
-			scopeType: 'LENS',
-			scopeValue: 'FRAME'
-		});
-
 		expect(result.success).toBe(false);
 	});
-});
 
-describe('SessionIdSchema', () => {
-	it('coerces a numeric string', () => {
-		const result = SessionIdSchema.safeParse({ id: '12' });
-
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data.id).toBe(12);
-		}
-	});
-});
-
-describe('GetSessionsSchema', () => {
-	it('defaults the limit to 20', () => {
-		const result = GetSessionsSchema.safeParse({});
-
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data.limit).toBe(20);
-		}
-	});
-
-	it('accepts scope and exact-day filters', () => {
-		const result = GetSessionsSchema.safeParse({
-			limit: 50,
-			scopeType: 'LENS',
-			openedOn: '2026-05-03'
-		});
-
-		expect(result.success).toBe(true);
-	});
-});
-
-describe('GetSessionLinesSchema', () => {
-	it('accepts a valid filter', () => {
-		const result = GetSessionLinesSchema.safeParse({ sessionId: 4, filter: 'WITH_DIFF' });
-
-		expect(result.success).toBe(true);
-	});
-});
-
-describe('UpsertInventoryCountLineSchema', () => {
-	it('accepts zero as counted stock', () => {
-		const result = UpsertInventoryCountLineSchema.safeParse({
-			sessionId: 3,
-			itemId: '00000000-0000-4000-8000-000000000010',
-			itemType: 'PRODUCT',
-			countedStock: 0,
-			notes: 'Sin unidades en anaquel'
-		});
-
-		expect(result.success).toBe(true);
-	});
-
-	it('rejects negative counted stock', () => {
-		const result = UpsertInventoryCountLineSchema.safeParse({
-			sessionId: 3,
-			itemId: '00000000-0000-4000-8000-000000000010',
-			itemType: 'LENS',
-			countedStock: -1
-		});
-
+	it('exige al menos un valor para marca/proveedor/tipo', () => {
+		const result = CreateCountSessionSchema.safeParse({ dim: 'BRAND', values: [] });
 		expect(result.success).toBe(false);
 	});
-});
 
-describe('CancelInventoryCountSessionSchema', () => {
-	it('requires a reason', () => {
-		const result = CancelInventoryCountSessionSchema.safeParse({
-			id: 2,
-			reason: '  '
-		});
-
+	it('rechaza valores con alcance ALL sin quick', () => {
+		const result = CreateCountSessionSchema.safeParse({ dim: 'ALL', values: ['x'] });
 		expect(result.success).toBe(false);
 	});
-});
 
-describe('SetInventoryCountLineAdjustmentStatusSchema', () => {
-	it('accepts a valid adjustment tracking payload', () => {
-		const result = SetInventoryCountLineAdjustmentStatusSchema.safeParse({
-			lineId: 7,
-			adjustmentCompleted: true
+	it('acepta marcas múltiples y notas cortas con responsables', () => {
+		const result = CreateCountSessionSchema.safeParse({
+			dim: 'BRAND',
+			values: ['b1', 'b2'],
+			responsibles: [
+				{ userId: '3f5af9db-7b19-4118-8105-8ec15e34a4b1', displayName: 'Ana', isExternal: false }
+			]
 		});
-
 		expect(result.success).toBe(true);
 	});
 });
 
-describe('inventory count helpers', () => {
-	it('formats product-category scopes', () => {
-		expect(formatInventoryCountScope('PRODUCT_CATEGORY', 'FRAME')).toBe('Solo productos - FRAME');
+describe('PreviewCountScopeSchema (sin .pick con refinements)', () => {
+	it('acepta la forma del panel y rechaza extras malos', () => {
+		expect(PreviewCountScopeSchema.safeParse({ dim: 'ALL', values: [] }).success).toBe(true);
+		expect(PreviewCountScopeSchema.safeParse({ dim: 'other' }).success).toBe(false);
+	});
+});
+
+describe('Upsert / Recount de líneas', () => {
+	it('rechaza conteo negativo', () => {
+		expect(UpsertCountLineSchema.safeParse({ lineId: 1, countedStock: -1 }).success).toBe(false);
 	});
 
-	it('formats status labels with fallback', () => {
-		expect(getInventoryCountStatusLabel('APPLIED')).toBe('Aplicada');
-		expect(getInventoryCountStatusLabel('CUSTOM')).toBe('CUSTOM');
+	it('rechaza nota mayor a 240', () => {
+		expect(
+			UpsertCountLineSchema.safeParse({ lineId: 1, countedStock: 1, notes: 'a'.repeat(241) })
+				.success
+		).toBe(false);
 	});
 
-	it('only allows closing when every line was explicitly counted', () => {
-		expect(canCloseInventoryCountSession(4, 4)).toBe(true);
-		expect(canCloseInventoryCountSession(4, 3)).toBe(false);
-		expect(canCloseInventoryCountSession(0, 0)).toBe(false);
+	it('rechaza recuento inválido', () => {
+		expect(RecountCountLineSchema.safeParse({ lineId: 1, recountedStock: -4 }).success).toBe(false);
+	});
+});
+
+describe('Motivos de ajuste', () => {
+	it('ReasonSchema exige motivo conocido', () => {
+		expect(ReasonSchema.safeParse({ reason: 'DAMAGE' }).success).toBe(true);
+		expect(ReasonSchema.safeParse({ reason: 'LOCURA' }).success).toBe(false);
+	});
+
+	it('RequestLineAdjustmentSchema exige lineId', () => {
+		expect(RequestLineAdjustmentSchema.safeParse({ lineId: 0, reason: 'DAMAGE' }).success).toBe(
+			false
+		);
+	});
+
+	it('ClearLineAdjustmentSchema exige lineId', () => {
+		expect(ClearLineAdjustmentSchema.safeParse({}).success).toBe(false);
+		expect(ClearLineAdjustmentSchema.safeParse({ lineId: 0 }).success).toBe(false);
+		expect(ClearLineAdjustmentSchema.safeParse({ lineId: 1 }).success).toBe(true);
+	});
+
+	it('RequestAdjustmentsBatchSchema exige session y motivo', () => {
+		expect(RequestAdjustmentsBatchSchema.safeParse({ sessionId: 1 }).success).toBe(false);
+	});
+});
+
+describe('Cancelación y confirmación de stock 0', () => {
+	it('CancelInventoryCountSessionSchema exige motivo (5-500)', () => {
+		expect(CancelInventoryCountSessionSchema.safeParse({ id: 3, reason: 'va' }).success).toBe(
+			false
+		);
+		expect(
+			CancelInventoryCountSessionSchema.safeParse({ id: 3, reason: 'Motivo completo' }).success
+		).toBe(true);
+		expect(
+			CancelInventoryCountSessionSchema.safeParse({ id: 3, reason: 'x'.repeat(501) }).success
+		).toBe(false);
+	});
+
+	it('ConfirmZeroStockSchema exige sessionId entero', () => {
+		expect(ConfirmZeroStockSchema.safeParse({ sessionId: 0 }).success).toBe(false);
+	});
+});
+
+describe('SetSessionResponsiblesSchema', () => {
+	it('máx 20 entradas y entradas bien formadas', () => {
+		const entries = Array.from({ length: 21 }, () => ({
+			displayName: 'Responsable',
+			isExternal: true
+		}));
+		expect(SetSessionResponsiblesSchema.safeParse({ sessionId: 1, entries }).success).toBe(false);
 	});
 });

@@ -1,63 +1,101 @@
 /**
- * Split from parent query module (DT1 phase 4) — logic unchanged, verbatim move: count lines.
+ * Conteo Físico — líneas: lectura con joins ligeros, upsert del conteo
+ * (retorna solo la línea), recuento de Revisar y confirmación en lote de stock 0.
  */
-import type {
-	InventoryCountLineFilter,
-	InventoryCountLineRow,
-	SetCountLineAdjustmentStatusInput,
-	UpsertCountLineInput
-} from './types';
-import { requireOpenSession, buildSessionLineFilter, normalizeSessionNotes } from './shared';
-// NOTE: circular with ./sessions by design — used lazily inside function bodies only.
-import { getSessionById } from './sessions';
-import { and, asc, eq, type SQL } from 'drizzle-orm';
+import { and, asc, eq, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
-
 import {
 	inventoryCountLines,
 	inventoryCountSessions,
+	brands,
 	lensCatalogItems,
 	products,
-	users
+	suppliers as suppliersTable,
+	users,
+	type InventoryCountLine
 } from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
+import { getProductTypeLabel } from '$lib/shared/enums/productTypes';
+import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+import {
+	FINAL_COUNT_SQL,
+	FINAL_DIFF_SQL,
+	requireOpenSession,
+	requireOpenSessionStatus,
+	normalizeSessionNotes
+} from './shared';
+import type { CountLineRow, UpsertCountLineInput, RecountLineInput } from './types';
 
-export async function getSessionLines(
-	sessionId: number,
-	filter: InventoryCountLineFilter = 'ALL',
-	executor: DbOrTx = db
-): Promise<InventoryCountLineRow[]> {
-	const adjustmentCompletedByUser = alias(users, 'inventory_count_adjustment_completed_by_user');
-	const conditions: SQL[] = [eq(inventoryCountLines.sessionId, sessionId)];
-	const filterCondition = buildSessionLineFilter(filter);
-	if (filterCondition) {
-		conditions.push(filterCondition);
-	}
+const countedByUser = alias(users, 'count_counted_by_user');
+const recountedByUser = alias(users, 'count_recounted_by_user');
+const adjustDoneByUser = alias(users, 'count_adjust_done_user');
+const lensSupplier = alias(suppliersTable, 'count_lens_supplier');
 
-	const rows = await executor
-		.select({
-			line: inventoryCountLines,
-			productName: products.name,
-			productSku: products.sku,
-			productType: products.type,
-			productStock: products.stock,
-			lensName: lensCatalogItems.name,
-			lensType: lensCatalogItems.type,
-			lensStock: lensCatalogItems.stock,
-			countedByName: users.fullName,
-			adjustmentCompletedByName: adjustmentCompletedByUser.fullName
-		})
+const lineSelection = {
+	line: inventoryCountLines,
+	productName: products.name,
+	productSku: products.sku,
+	productType: products.type,
+	lensName: lensCatalogItems.name,
+	lensType: lensCatalogItems.type,
+	brandName: brands.name,
+	supplierName: suppliersTable.name,
+	lensSupplierName: lensSupplier.name,
+	countedByName: countedByUser.fullName,
+	recountedByName: recountedByUser.fullName,
+	adjustmentCompletedByName: adjustDoneByUser.fullName
+};
+
+type LineJoinRow = {
+	line: InventoryCountLine;
+	productName: string | null;
+	productSku: string | null;
+	productType: string | null;
+	lensName: string | null;
+	lensType: string | null;
+	brandName: string | null;
+	supplierName: string | null;
+	lensSupplierName: string | null;
+	countedByName: string | null;
+	recountedByName: string | null;
+	adjustmentCompletedByName: string | null;
+};
+
+function mapLine(row: LineJoinRow): CountLineRow {
+	const isProduct = row.line.itemType === 'PRODUCT';
+	return {
+		...row.line,
+		itemId: row.line.productId ?? row.line.lensCatalogItemId ?? '',
+		itemName: row.productName ?? row.lensName ?? 'Ítem sin nombre',
+		itemCode: isProduct ? row.productSku : row.lensType,
+		typeLabel: isProduct
+			? getProductTypeLabel(row.productType ?? '')
+			: getLensTypeLabel(row.lensType ?? ''),
+		brandName: row.brandName ?? '—',
+		supplierName: isProduct ? (row.supplierName ?? '—') : (row.lensSupplierName ?? '—'),
+		countedByName: row.countedByName,
+		recountedByName: row.recountedByName,
+		adjustmentCompletedByName: row.adjustmentCompletedByName
+	};
+}
+
+const baseLineQuery = (executor: DbOrTx) =>
+	executor
+		.select(lineSelection)
 		.from(inventoryCountLines)
 		.leftJoin(products, eq(inventoryCountLines.productId, products.id))
+		.leftJoin(brands, eq(products.brandId, brands.id))
+		.leftJoin(suppliersTable, eq(products.supplierId, suppliersTable.id))
 		.leftJoin(lensCatalogItems, eq(inventoryCountLines.lensCatalogItemId, lensCatalogItems.id))
-		.leftJoin(users, eq(inventoryCountLines.countedById, users.id))
+		.leftJoin(lensSupplier, eq(lensCatalogItems.supplierId, lensSupplier.id))
+		.leftJoin(countedByUser, eq(inventoryCountLines.countedById, countedByUser.id))
+		.leftJoin(recountedByUser, eq(inventoryCountLines.recountedById, recountedByUser.id))
 		.leftJoin(
-			adjustmentCompletedByUser,
-			eq(inventoryCountLines.adjustmentCompletedById, adjustmentCompletedByUser.id)
+			adjustDoneByUser,
+			eq(inventoryCountLines.adjustmentCompletedById, adjustDoneByUser.id)
 		)
-		.where(and(...conditions))
 		.orderBy(
 			asc(inventoryCountLines.itemType),
 			asc(products.name),
@@ -65,125 +103,242 @@ export async function getSessionLines(
 			asc(inventoryCountLines.id)
 		);
 
-	return rows.map((row) => ({
-		...row.line,
-		itemId: row.line.productId ?? row.line.lensCatalogItemId ?? '',
-		itemName: row.productName ?? row.lensName ?? 'Ítem sin nombre',
-		itemCode: row.productSku ?? row.lensType ?? null,
-		itemDetail: row.productType ?? row.lensType ?? null,
-		currentStock: row.line.itemType === 'PRODUCT' ? (row.productStock ?? 0) : (row.lensStock ?? 0),
-		countedByName: row.countedByName ?? null,
-		adjustmentCompletedByName: row.adjustmentCompletedByName ?? null
-	}));
+/** Filtros server-side legacy compatibles con el nuevo conteo final. */
+function lineFilterCondition(filter: 'ALL' | 'COUNTED' | 'PENDING' | 'WITH_DIFF'): SQL | undefined {
+	if (filter === 'COUNTED') {
+		return sql`${FINAL_COUNT_SQL} is not null`;
+	}
+	if (filter === 'PENDING') {
+		return sql`${inventoryCountLines.countedStock} is null`;
+	}
+	if (filter === 'WITH_DIFF') {
+		return sql`${FINAL_COUNT_SQL} is not null and ${FINAL_DIFF_SQL} != 0`;
+	}
+	return undefined;
 }
+
+/** Todas las líneas de la sesión con sus joins. La UI filtra/búsqueda localmente. */
+export async function getSessionLines(
+	sessionId: number,
+	filter: 'ALL' | 'COUNTED' | 'PENDING' | 'WITH_DIFF' = 'ALL',
+	executor: DbOrTx = db
+): Promise<CountLineRow[]> {
+	const conditions = [eq(inventoryCountLines.sessionId, sessionId)];
+	const filterCondition = lineFilterCondition(filter);
+	if (filterCondition) conditions.push(filterCondition);
+	const rows = await baseLineQuery(executor).where(and(...conditions));
+	return rows.map(mapLine);
+}
+
+export async function getLineById(
+	lineId: number,
+	executor: DbOrTx = db
+): Promise<CountLineRow | null> {
+	const [row] = await baseLineQuery(executor).where(eq(inventoryCountLines.id, lineId)).limit(1);
+	return row ? mapLine(row) : null;
+}
+
+// ── Upsert del conteo (fase Contar) — devuelve solo la línea actualizada ───
 
 export async function upsertCountLine(
 	data: UpsertCountLineInput,
 	executor: DbOrTx = db
-): Promise<InventoryCountLineRow> {
-	const session = await getSessionById(data.sessionId, executor);
-	requireOpenSession(session);
-
-	const lineConditions: SQL[] = [
-		eq(inventoryCountLines.sessionId, data.sessionId),
-		eq(inventoryCountLines.itemType, data.itemType)
-	];
-
-	if (data.itemType === 'PRODUCT') {
-		lineConditions.push(eq(inventoryCountLines.productId, data.itemId));
-	} else {
-		lineConditions.push(eq(inventoryCountLines.lensCatalogItemId, data.itemId));
-	}
-
+): Promise<CountLineRow> {
+	// 1) Lectura única: estado previo de la línea + status de la sesión (antes eran
+	//    3 queries: sessionIdForLine + requireLineById con joins + sesión).
 	const [line] = await executor
-		.select()
+		.select({
+			id: inventoryCountLines.id,
+			sessionId: inventoryCountLines.sessionId,
+			systemStock: inventoryCountLines.systemStock,
+			countedStock: inventoryCountLines.countedStock,
+			notes: inventoryCountLines.notes,
+			recountedStock: inventoryCountLines.recountedStock,
+			recountedById: inventoryCountLines.recountedById,
+			recountedAt: inventoryCountLines.recountedAt,
+			adjustmentMovementId: inventoryCountLines.adjustmentMovementId,
+			adjustmentCompleted: inventoryCountLines.adjustmentCompleted,
+			adjustmentCompletedById: inventoryCountLines.adjustmentCompletedById,
+			adjustmentCompletedAt: inventoryCountLines.adjustmentCompletedAt,
+			adjustmentReason: inventoryCountLines.adjustmentReason,
+			adjustmentReasonText: inventoryCountLines.adjustmentReasonText,
+			adjustmentRequestedBy: inventoryCountLines.adjustmentRequestedBy,
+			adjustmentRequestedAt: inventoryCountLines.adjustmentRequestedAt,
+			sessionStatus: inventoryCountSessions.status
+		})
 		.from(inventoryCountLines)
-		.where(and(...lineConditions))
+		.leftJoin(inventoryCountSessions, eq(inventoryCountLines.sessionId, inventoryCountSessions.id))
+		.where(eq(inventoryCountLines.id, data.lineId))
 		.limit(1);
+	if (!line) throw new Error('La línea de conteo no existe');
+	requireOpenSessionStatus(line.sessionStatus);
 
-	if (!line) {
-		throw new Error('El ítem no pertenece a la sesión activa');
-	}
+	const known = line.countedStock ?? null;
+	const nextDiff = data.countedStock - line.systemStock;
+	const previousDiff = known == null ? null : known - line.systemStock;
+	const countChanged = known !== data.countedStock;
 
-	const nextNotes = data.notes === undefined ? line.notes : normalizeSessionNotes(data.notes);
-	const nextDifference = data.countedStock - line.systemStock;
-	const shouldResetAdjustmentTracking =
-		line.adjustmentCompleted &&
-		(line.countedStock !== data.countedStock || (line.difference ?? null) !== nextDifference);
+	// Invariante: cambiar el conteo invalida recuento, ajuste y tracking previo
+	// (el movimiento de stock ya hecho queda como historial; el vínculo se libera).
+	const resetDerived = countChanged || previousDiff == null || previousDiff !== nextDiff;
+	const nextNotes =
+		data.notes === undefined ? line.notes : normalizeSessionNotes(data.notes ?? null);
+	const now = new Date().toISOString();
 
-	await executor
+	// 2) Update con guard atómico: si la sesión se cerró entre la lectura y este
+	//    write, el EXISTS filtra la fila y no se modifica nada (sin tx extra).
+	const updated = await executor
 		.update(inventoryCountLines)
 		.set({
 			countedStock: data.countedStock,
-			difference: nextDifference,
-			adjustmentCompleted: shouldResetAdjustmentTracking ? false : line.adjustmentCompleted,
-			adjustmentCompletedById: shouldResetAdjustmentTracking ? null : line.adjustmentCompletedById,
-			adjustmentCompletedAt: shouldResetAdjustmentTracking ? null : line.adjustmentCompletedAt,
+			difference: nextDiff,
 			countedById: data.userId,
-			countedAt: nowISO(),
-			notes: nextNotes,
-			updatedAt: nowISO()
+			countedAt: now,
+			notes: nextNotes ?? null,
+			recountedStock: resetDerived ? null : line.recountedStock,
+			recountedById: resetDerived ? null : line.recountedById,
+			recountedAt: resetDerived ? null : line.recountedAt,
+			adjustmentMovementId: resetDerived ? null : line.adjustmentMovementId,
+			adjustmentCompleted: resetDerived ? false : line.adjustmentCompleted,
+			adjustmentCompletedById: resetDerived ? null : line.adjustmentCompletedById,
+			adjustmentCompletedAt: resetDerived ? null : line.adjustmentCompletedAt,
+			// Cambiar el conteo también descarta una solicitud de ajuste pendiente.
+			adjustmentReason: resetDerived ? null : line.adjustmentReason,
+			adjustmentReasonText: resetDerived ? null : line.adjustmentReasonText,
+			adjustmentRequestedBy: resetDerived ? null : line.adjustmentRequestedBy,
+			adjustmentRequestedAt: resetDerived ? null : line.adjustmentRequestedAt,
+			updatedAt: now
 		})
-		.where(eq(inventoryCountLines.id, line.id));
+		.where(
+			and(
+				eq(inventoryCountLines.id, line.id),
+				sql`exists (
+					select 1 from ${inventoryCountSessions}
+					where ${inventoryCountSessions.id} = ${inventoryCountLines.sessionId}
+						and ${inventoryCountSessions.status} = 'OPEN'
+				)`
+			)
+		)
+		.returning({ id: inventoryCountLines.id });
+	if (updated.length === 0) throw new Error('La sesión ya no está abierta');
 
-	const updatedLines = await getSessionLines(data.sessionId, 'ALL', executor);
-	const updatedLine = updatedLines.find((candidate) => candidate.id === line.id);
-
-	if (!updatedLine) {
-		throw new Error('No se pudo recargar la línea actualizada');
-	}
-
-	return updatedLine;
+	// 3) DTO enriquecido (joins de marca/proveedor/usuarios) solo al final.
+	const full = await getLineById(line.id, executor);
+	if (!full) throw new Error('No se pudo recargar la línea actualizada');
+	return full;
 }
 
-export async function setLineAdjustmentStatus(
-	data: SetCountLineAdjustmentStatusInput,
+// ── Recuento (fase Revisar) ─────────────────────────────────────────────────
+
+export async function recountCountLine(
+	data: RecountLineInput,
 	executor: DbOrTx = db
-): Promise<InventoryCountLineRow> {
-	const [line] = await executor
-		.select()
-		.from(inventoryCountLines)
-		.where(eq(inventoryCountLines.id, data.lineId))
-		.limit(1);
-
-	if (!line) {
-		throw new Error('La línea de conteo no existe');
-	}
-
+): Promise<CountLineRow> {
+	const line = await requireLineById(data.lineId, executor);
 	const [session] = await executor
 		.select()
 		.from(inventoryCountSessions)
 		.where(eq(inventoryCountSessions.id, line.sessionId))
 		.limit(1);
-
-	if (!session) {
-		throw new Error('La sesión de conteo no existe');
+	requireOpenSession(session ?? null);
+	if (line.countedStock == null) {
+		throw new Error('La línea aún no tiene un conteo que se pueda recontar');
 	}
 
-	if (session.status === 'CANCELLED') {
-		throw new Error('No se puede marcar ajustes en una sesión cancelada');
-	}
+	const recordedFinal = line.recountedStock ?? line.countedStock;
+	const previousDiff = recordedFinal - line.systemStock;
+	const countedDiff = line.countedStock - line.systemStock;
+	const recountDiff = data.recountedStock - line.systemStock;
 
-	if (line.countedStock === null || (line.difference ?? 0) === 0) {
-		throw new Error('Solo se pueden marcar líneas con diferencia');
-	}
+	const diffChanges = previousDiff !== recountDiff || countedDiff !== recountDiff;
+	const now = new Date().toISOString();
 
 	await executor
 		.update(inventoryCountLines)
 		.set({
-			adjustmentCompleted: data.adjustmentCompleted,
-			adjustmentCompletedById: data.adjustmentCompleted ? data.userId : null,
-			adjustmentCompletedAt: data.adjustmentCompleted ? nowISO() : null,
-			updatedAt: nowISO()
+			recountedStock: data.recountedStock,
+			recountedById: data.userId,
+			recountedAt: now,
+			difference: recountDiff,
+			adjustmentMovementId: diffChanges ? null : line.adjustmentMovementId,
+			adjustmentCompleted: diffChanges ? false : line.adjustmentCompleted,
+			adjustmentCompletedById: diffChanges ? null : line.adjustmentCompletedById,
+			adjustmentCompletedAt: diffChanges ? null : line.adjustmentCompletedAt,
+			// Un recuento que cambia la diferencia descarta la solicitud (habría
+			// que re-solicitar con el diff nuevo).
+			adjustmentReason: diffChanges ? null : line.adjustmentReason,
+			adjustmentReasonText: diffChanges ? null : line.adjustmentReasonText,
+			adjustmentRequestedBy: diffChanges ? null : line.adjustmentRequestedBy,
+			adjustmentRequestedAt: diffChanges ? null : line.adjustmentRequestedAt,
+			updatedAt: now
 		})
-		.where(eq(inventoryCountLines.id, data.lineId));
+		.where(eq(inventoryCountLines.id, line.id));
 
-	const updatedLines = await getSessionLines(line.sessionId, 'ALL', executor);
-	const updatedLine = updatedLines.find((candidate) => candidate.id === line.id);
+	const updated = await getLineById(line.id, executor);
+	if (!updated) throw new Error('No se pudo recargar la línea recontada');
+	return updated;
+}
 
-	if (!updatedLine) {
-		throw new Error('No se pudo recargar la línea actualizada');
-	}
+/** Confirmar en 0 todas las líneas de stock 0 sin contar (no bloquean el cierre). */
+export async function confirmZeroStockBatch(
+	sessionId: number,
+	userId: string,
+	executor: DbOrTx = db
+): Promise<number> {
+	const [session] = await executor
+		.select()
+		.from(inventoryCountSessions)
+		.where(eq(inventoryCountSessions.id, sessionId))
+		.limit(1);
+	requireOpenSession(session ?? null);
 
-	return updatedLine;
+	const now = new Date().toISOString();
+	const updated = await executor
+		.update(inventoryCountLines)
+		.set({
+			countedStock: 0,
+			difference: 0,
+			countedById: userId,
+			countedAt: now,
+			updatedAt: now
+		})
+		.where(
+			and(
+				eq(inventoryCountLines.sessionId, sessionId),
+				eq(inventoryCountLines.systemStock, 0),
+				sql`${inventoryCountLines.countedStock} is null`
+			)
+		)
+		.returning({ id: inventoryCountLines.id });
+
+	return updated.length;
+}
+
+export async function requireLineById(
+	lineId: number,
+	executor: DbOrTx
+): Promise<InventoryCountLine> {
+	const [line] = await executor
+		.select()
+		.from(inventoryCountLines)
+		.where(eq(inventoryCountLines.id, lineId))
+		.limit(1);
+	if (!line) throw new Error('La línea de conteo no existe');
+	return line;
+}
+
+/** Utilidad de diagnóstico: cuenta líneas por estado final (usada por informe legacy). */
+export async function sessionFinalCounts(sessionId: number, executor: DbOrTx = db) {
+	const [row] = await executor
+		.select({
+			total: sql<number>`count(*)`.mapWith(Number),
+			verified: sql<number>`count(*) filter (where ${FINAL_COUNT_SQL} is not null)`.mapWith(Number),
+			withDiff:
+				sql<number>`count(*) filter (where ${FINAL_COUNT_SQL} is not null and ${FINAL_DIFF_SQL} != 0)`.mapWith(
+					Number
+				)
+		})
+		.from(inventoryCountLines)
+		.where(eq(inventoryCountLines.sessionId, sessionId));
+	return row;
 }

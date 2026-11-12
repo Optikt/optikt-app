@@ -31,6 +31,7 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 - Unit specs co-ubicadas junto al archivo (`*.spec.ts`), corren con `pnpm test:unit` (project server + client).
 - Tests de integración de query fns: `int.spec.ts` co-ubicado, corren contra Postgres real vía `scripts/run-integration-tests.mjs` (`pnpm test:integration`).
 - `src/lib/shared/` = frontera client/server: lógica idéntica a ambos lados vive ahí; lo que es solo-cliente va a `utils/`, solo-servidor a `src/lib/server/`.
+- Conteo Físico (archivos en shared, reglas del dominio `inventory`): `countLineSaveQueue.ts` = cola de guardado «último valor gana» (un envío por línea, líneas distintas en paralelo, el caller aporta el `Set` in-flight como `$state`); `countSessionPhase.ts` = fases/CTA/stepper + `buildDiffRows`; `inventoryCount.ts` = math del ciclo. Specs co-ubicados.
 
 ## Known gaps / tech debt
 

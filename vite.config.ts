@@ -39,6 +39,7 @@ export default defineConfig({
 				'src/lib/remote/**',
 				'src/lib/shared/**',
 				'src/lib/schemas/**',
+				'src/lib/components/inventory/count/*.ts',
 				'src/lib/components/documentEditor/**/*.ts',
 				'src/lib/components/sales/editSale/editSaleLensAdapter.ts',
 				'src/lib/components/sales/editSaleDraft.ts',
