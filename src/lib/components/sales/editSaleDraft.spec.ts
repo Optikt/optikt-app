@@ -109,6 +109,27 @@ describe('existingItemToInput', () => {
 		expect(result.freeItemDescription).toBe('Ajuste');
 		expect(result.freeItemUnitCost).toBe(3);
 		expect(result._removed).toBe(false);
+		expect(result.dp).toBeUndefined();
+		expect(result.npRight).toBeUndefined();
+		expect(result.npLeft).toBeUndefined();
+	});
+
+	it('carries mounting measures from the sale item', () => {
+		const result = existingItemToInput({
+			id: 1,
+			itemType: SaleItemType.LENS_PAIR,
+			quantity: 1,
+			unitPrice: 10,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			dp: 62,
+			npRight: 31,
+			npLeft: 32
+		} as unknown as SaleItemWithDetails);
+
+		expect(result.dp).toBe(62);
+		expect(result.npRight).toBe(31);
+		expect(result.npLeft).toBe(32);
 	});
 });
 

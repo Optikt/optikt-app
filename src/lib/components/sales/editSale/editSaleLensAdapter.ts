@@ -141,8 +141,8 @@ export function lensEditorDraftFromEditableItem(
 			axis: item.odAxis ?? null,
 			addition: item.odAddition ?? null,
 			altura: item.odAltura ?? null,
-			dp: measures?.odDp ?? null,
-			dnp: measures?.odDnp ?? null
+			dp: item.dp ?? measures?.odDp ?? null,
+			dnp: item.npRight ?? measures?.odDnp ?? null
 		},
 		oi: {
 			enabled: oiHasValues || !odHasValues,
@@ -151,8 +151,8 @@ export function lensEditorDraftFromEditableItem(
 			axis: item.osAxis ?? null,
 			addition: item.osAddition ?? null,
 			altura: item.osAltura ?? null,
-			dp: measures?.osDp ?? null,
-			dnp: measures?.osDnp ?? null
+			dp: item.dp ?? measures?.osDp ?? null,
+			dnp: item.npLeft ?? measures?.osDnp ?? null
 		},
 		treatments: lensEditorTreatmentsFromEdit(treatments)
 	};
@@ -179,6 +179,10 @@ export function editableItemFromLensEditorDraft(
 		osCylinder: draft.oi.enabled ? (draft.oi.cylinder ?? undefined) : undefined,
 		osAxis: draft.oi.enabled ? (draft.oi.axis ?? undefined) : undefined,
 		osAddition: draft.oi.enabled ? (draft.oi.addition ?? undefined) : undefined,
-		osAltura: draft.oi.enabled ? (draft.oi.altura ?? undefined) : undefined
+		osAltura: draft.oi.enabled ? (draft.oi.altura ?? undefined) : undefined,
+		// Mounting measures snapshot: DP binocular (OD source), naso-pupilar per eye.
+		dp: draft.od.dp ?? undefined,
+		npRight: draft.od.enabled ? (draft.od.dnp ?? undefined) : undefined,
+		npLeft: draft.oi.enabled ? (draft.oi.dnp ?? undefined) : undefined
 	};
 }

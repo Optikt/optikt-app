@@ -91,7 +91,9 @@ export async function getAllSales(options?: GetSalesOptions): Promise<SaleWithRe
 				lastName: customers.lastName,
 				idNumber: customers.idNumber,
 				birthDate: customers.birthDate,
-				primaryPhone: customers.primaryPhone
+				primaryPhone: customers.primaryPhone,
+				gender: customers.gender,
+				address: customers.address
 			},
 			seller: { id: users.id, fullName: users.fullName }
 		})
@@ -199,7 +201,9 @@ export async function findSaleByIdWithRelations(
 				lastName: customers.lastName,
 				idNumber: customers.idNumber,
 				birthDate: customers.birthDate,
-				primaryPhone: customers.primaryPhone
+				primaryPhone: customers.primaryPhone,
+				gender: customers.gender,
+				address: customers.address
 			},
 			seller: { id: users.id, fullName: users.fullName },
 			cancelledBy: { id: cancelledByUser.id, fullName: cancelledByUser.fullName },

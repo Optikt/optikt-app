@@ -87,8 +87,8 @@ test.describe('sale wizard → payment → estado', () => {
 		await expect(page.getByText('Venta registrada exitosamente')).toBeVisible();
 		await expect(page).toHaveURL(/\/sales\/[0-9a-f-]{36}$/);
 
-		// Payment drawer on the sale detail.
-		await page.getByRole('button', { name: /Cobrar \/ Registrar Pago/ }).click();
+		// Payment drawer on the sale detail (mockup copy: "pago" lowercase).
+		await page.getByRole('button', { name: /cobrar \/ registrar pago/i }).click();
 		await page.getByRole('button', { name: 'Bs · BCV' }).click();
 		await page.getByRole('button', { name: 'Efectivo Bs' }).click();
 		await page.getByLabel('Tasa BCV').fill('40');

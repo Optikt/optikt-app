@@ -23,7 +23,14 @@ import {
 import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 import { ALL_CUSTOMER_GENDERS } from '$lib/shared/enums/customerGenders';
-import { AxisSchema, AlturaSchema, DpPatchSchema, NpPatchSchema } from '$lib/schemas/prescriptions';
+import {
+	AxisSchema,
+	AlturaSchema,
+	DpSchema,
+	NpSchema,
+	DpPatchSchema,
+	NpPatchSchema
+} from '$lib/schemas/prescriptions';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
@@ -116,6 +123,10 @@ export const SaleItemSchema = z
 		osAxis: AxisSchema.optional(),
 		osAddition: OptionalAdditionSchema.optional(),
 		osAltura: AlturaSchema.optional(),
+		/** Mounting measures snapshot (optional — RX panel renders "—" when absent) */
+		dp: DpSchema.optional(),
+		npRight: NpSchema.optional(),
+		npLeft: NpSchema.optional(),
 		quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
 		unitPrice: SaleItemUnitPriceSchema,
 		discount: CoercedNumber.min(0).default(0),

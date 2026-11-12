@@ -134,6 +134,11 @@ export function buildSaleItemsFromWizard(
 				? (item.lensPair.oi.prescription.addition ?? undefined)
 				: undefined,
 			osAltura: item.lensPair.oi.enabled ? (item.lensPair.oi.altura ?? undefined) : undefined,
+			// Mounting measures (optional): DP is binocular (OD source, same as the
+			// prescription payload); naso-pupilar distance is per eye.
+			dp: item.lensPair.od.dp ?? undefined,
+			npRight: item.lensPair.od.enabled ? (item.lensPair.od.np ?? undefined) : undefined,
+			npLeft: item.lensPair.oi.enabled ? (item.lensPair.oi.np ?? undefined) : undefined,
 			quantity: 1,
 			unitPrice: item.unitPrice,
 			discount: item.discount,

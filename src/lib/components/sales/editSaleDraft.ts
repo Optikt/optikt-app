@@ -42,6 +42,9 @@ export function existingItemToInput(item: SaleItemWithDetails): EditableItem {
 		osAxis: item.osAxis ?? undefined,
 		osAddition: item.osAddition ?? undefined,
 		osAltura: item.osAltura ?? undefined,
+		dp: item.dp ?? undefined,
+		npRight: item.npRight ?? undefined,
+		npLeft: item.npLeft ?? undefined,
 		quantity: item.quantity,
 		unitPrice: item.unitPrice,
 		discount: item.discount,
@@ -225,8 +228,15 @@ function perEyePrice(child: EditableItem): { price: number; salePrice: number } 
  * `snapshotSalePrice`) store qty = eyes with rx and a per-eye unitPrice; legacy
  * rows store qty 1 with a pair (×2) unitPrice. Shared so list views and editors
  * agree on the price shown «c/u».
+ *
+ * Param widened to the three fields it reads so persisted sale items
+ * (detail view) and draft items (editor) share the same convention.
  */
-export function treatmentChildDisplay(child: EditableItem): {
+export function treatmentChildDisplay(child: {
+	snapshotSalePrice?: number | null;
+	unitPrice: number;
+	quantity: number;
+}): {
 	perEyeSalePrice: number;
 	eyes: number;
 } {

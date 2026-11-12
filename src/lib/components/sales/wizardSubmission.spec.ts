@@ -116,6 +116,26 @@ describe('buildSaleItemsFromWizard', () => {
 			snapshotBaseCost: 3
 		});
 	});
+
+	it('snapshots optional mounting measures (DP / naso-pupilar) when provided', () => {
+		const row: SaleItemRow = {
+			...lensRow,
+			lensPair: {
+				...lensRow.lensPair,
+				od: { ...lensRow.lensPair.od, dp: 62, np: 31 },
+				oi: { ...lensRow.lensPair.oi, dp: 62, np: 32 }
+			}
+		};
+
+		const result = buildSaleItemsFromWizard([row], [], [...lensItems] as never);
+
+		expect(result[0]).toMatchObject({ dp: 62, npRight: 31, npLeft: 32 });
+		// Absent measures stay undefined (nullable column → "—" in the RX panel).
+		const without = buildSaleItemsFromWizard([lensRow], [], [...lensItems] as never);
+		expect(without[0].dp).toBeUndefined();
+		expect(without[0].npRight).toBeUndefined();
+		expect(without[0].npLeft).toBeUndefined();
+	});
 });
 
 describe('buildQuoteItemsFromWizard', () => {

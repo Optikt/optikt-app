@@ -18,6 +18,8 @@ export type SaleWithRelations = Sale & {
 		idNumber: string | null;
 		birthDate: string | null;
 		primaryPhone: string;
+		gender: string | null;
+		address: string | null;
 	} | null;
 	seller: { id: string; fullName: string } | null;
 	cancelledBy: { id: string; fullName: string } | null;

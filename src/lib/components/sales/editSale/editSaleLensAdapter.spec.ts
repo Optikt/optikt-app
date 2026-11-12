@@ -71,6 +71,25 @@ describe('lensEditorDraftFromEditableItem', () => {
 		expect(draft.oi.sphere).toBeNull();
 		expect(draft.treatments).toHaveLength(1);
 	});
+
+	it('seeds mounting measures from the item snapshot before the prescription fallback', () => {
+		const measures = { odDp: 60, osDp: 60, odDnp: 30, osDnp: 30 };
+
+		const fromItem = lensEditorDraftFromEditableItem(
+			item({ dp: 62, npRight: 31, npLeft: 32 }),
+			[],
+			measures
+		);
+		expect(fromItem.od.dp).toBe(62);
+		expect(fromItem.od.dnp).toBe(31);
+		expect(fromItem.oi.dp).toBe(62);
+		expect(fromItem.oi.dnp).toBe(32);
+
+		const fallback = lensEditorDraftFromEditableItem(item(), [], measures);
+		expect(fallback.od.dp).toBe(60);
+		expect(fallback.od.dnp).toBe(30);
+		expect(fallback.oi.dnp).toBe(30);
+	});
 });
 
 describe('editableItemFromLensEditorDraft', () => {
@@ -113,9 +132,12 @@ describe('editableItemFromLensEditorDraft', () => {
 			odCylinder: -1,
 			odAxis: 180,
 			odAddition: 2,
-			odAltura: 18
+			odAltura: 18,
+			dp: 61,
+			npRight: 32
 		});
 		expect(result.osSphere).toBeUndefined();
+		expect(result.npLeft).toBeUndefined();
 	});
 });
 

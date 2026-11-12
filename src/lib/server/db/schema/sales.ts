@@ -164,6 +164,10 @@ export const saleItems = pgTable(
 		osAxis: integer('os_axis'),
 		osAddition: doublePrecision('os_addition'),
 		osAltura: doublePrecision('os_altura'),
+		/** Mounting measures snapshot (optional; RX panel shows "—" when absent). */
+		dp: doublePrecision('dp'),
+		npRight: doublePrecision('np_right'),
+		npLeft: doublePrecision('np_left'),
 
 		// --- Pricing ---
 		quantity: integer().notNull(),

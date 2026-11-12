@@ -84,7 +84,15 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		discount: 'Descuento',
 		total: 'Total',
 		paymentMethod: 'Método de pago',
-		notes: 'Notas'
+		notes: 'Notas',
+		cancellationReason: 'Motivo de cancelación',
+		cancelledAt: 'Fecha de cancelación',
+		refundStatus: 'Estado de reembolso',
+		refundNotes: 'Notas de reembolso',
+		refundAmount: 'Monto reembolsado',
+		isCashea: 'Cashea',
+		snapshotBcvRate: 'Tasa BCV',
+		snapshotTaxRate: 'Tasa de IVA'
 	},
 	sale_item: {
 		saleId: 'Venta',

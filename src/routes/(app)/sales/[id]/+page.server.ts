@@ -7,7 +7,8 @@ import { getEntityHistory } from '$lib/server/db/queries/changeHistory';
 import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
 import { getAllSuppliers, getAllTreatments } from '$lib/server/db/queries/suppliers';
 import { getSalePrescription } from '$lib/server/db/queries/sales/reads';
-import { MovementReferenceType } from '$lib/shared/enums';
+import { findLensCatalogItemByIdWithRelations } from '$lib/server/db/queries/lenses/catalog';
+import { MovementReferenceType, SaleItemType } from '$lib/shared/enums';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -34,6 +35,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			getSalePrescription(params.id)
 		]);
 
+	/** Lens catalog entries for the sale's crystals: factory treatments in the item meta (drawer parity). */
+	const lensIds = [
+		...new Set(
+			items
+				.filter((i) => i.itemType === SaleItemType.LENS_PAIR && i.lensCatalogItemId)
+				.map((i) => i.lensCatalogItemId as string)
+		)
+	];
+	const lensCatalogItems = (
+		await Promise.all(lensIds.map((id) => findLensCatalogItemByIdWithRelations(id)))
+	).filter((l) => l !== null);
+
 	return {
 		sale,
 		items,
@@ -42,6 +55,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		suppliers: supplierList,
 		allTreatments,
 		auditHistory,
-		prescription
+		prescription,
+		lensCatalogItems
 	};
 };

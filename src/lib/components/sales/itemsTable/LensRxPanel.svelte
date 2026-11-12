@@ -1,91 +1,158 @@
 <script lang="ts">
+	import { TriangleAlert } from '@lucide/svelte';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
-	import { prescriptionValue } from './itemDisplay';
+	import { formatAxis, formatOpticalValue } from '$lib/utils';
+	import { isProgressiveItem, missingMountingMeasures } from './itemDisplay';
+	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 
 	interface Props {
 		item: SaleItemWithDetails;
 	}
 
 	let { item }: Props = $props();
+
+	/**
+	 * Expanded prescription table (mockup Opción B).
+	 *
+	 * ALT / DP / DNP are snapshotted on the sale item (optional): absent values
+	 * render "—" and progressive/bifocal lenses keep the amber assembly warning.
+	 */
+	const progressive = $derived(isProgressiveItem(item));
+	const showMeasures = $derived(progressive);
+	const missingMeasures = $derived(progressive && missingMountingMeasures(item));
+
+	const COLS_BASE = 'grid-cols-[30px_repeat(4,56px)]';
+	const COLS_MEASURES = 'grid-cols-[30px_repeat(4,56px)_14px_repeat(3,50px)]';
+
+	interface EyeValues {
+		sphere: number | null | undefined;
+		cylinder: number | null | undefined;
+		axis: number | null | undefined;
+		addition: number | null | undefined;
+	}
+
+	const od = $derived<EyeValues>({
+		sphere: item.odSphere,
+		cylinder: item.odCylinder,
+		axis: item.odAxis,
+		addition: item.odAddition
+	});
+	const os = $derived<EyeValues>({
+		sphere: item.osSphere,
+		cylinder: item.osCylinder,
+		axis: item.osAxis,
+		addition: item.osAddition
+	});
+
+	function optical(value: number | null | undefined): string | null {
+		return value == null ? null : formatOpticalValue(value);
+	}
+	function axis(value: number | null | undefined): string | null {
+		return value == null ? null : formatAxis(value);
+	}
+	function mm(value: number | null | undefined): string | null {
+		return value == null ? null : String(value);
+	}
 </script>
 
-<div class="px-5 pb-4">
-	<div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-		<div class="mb-3 flex items-center gap-2">
-			<div class="flex h-5 w-5 items-center justify-center rounded bg-slate-200">
-				<svg
-					class="h-3 w-3 text-slate-600"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-					/>
-				</svg>
-			</div>
-			<span class="text-xs font-bold tracking-widest text-slate-600 uppercase">Prescripción</span>
-		</div>
-
-		<div class="grid grid-cols-[40px_repeat(5,minmax(50px,1fr))] gap-x-3 gap-y-2">
-			<div></div>
-			<span class="text-center text-[10px] font-bold text-slate-500">ESF</span>
-			<span class="text-center text-[10px] font-bold text-slate-500">CIL</span>
-			<span class="text-center text-[10px] font-bold text-slate-500">EJE</span>
-			<span class="text-center text-[10px] font-bold text-slate-500">ADD</span>
-			<span class="text-center text-[10px] font-bold text-slate-500">DIP</span>
-
-			<div class="flex items-center gap-1.5">
-				<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500"></span>
-				<span class="text-[11px] font-bold text-slate-600">OD</span>
-			</div>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>{prescriptionValue(item.odSphere)}</span
-			>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>{prescriptionValue(item.odCylinder)}</span
-			>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>{prescriptionValue(item.odAxis)}</span
-			>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>{prescriptionValue(item.odAddition)}</span
-			>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>—</span
-			>
-
-			<div class="flex items-center gap-1.5">
-				<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></span>
-				<span class="text-[11px] font-bold text-slate-600">OI</span>
-			</div>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>{prescriptionValue(item.osSphere)}</span
-			>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>{prescriptionValue(item.osCylinder)}</span
-			>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>{prescriptionValue(item.osAxis)}</span
-			>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>{prescriptionValue(item.osAddition)}</span
-			>
-			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-				>—</span
-			>
-		</div>
-
-		<div class="mt-3 flex gap-6 border-t border-slate-200 pt-3 text-[11px]">
-			<span class="text-slate-500"
-				>Alt. Montaje OD: <strong class="font-mono text-slate-800">—</strong></span
-			>
-			<span class="text-slate-500"
-				>Alt. Montaje OI: <strong class="font-mono text-slate-800">—</strong></span
-			>
-		</div>
+{#snippet measureWarn({ props }: { props: Record<string, unknown> })}
+	<div
+		{...props}
+		class="mt-2 flex cursor-help items-center gap-1.5 text-xs font-semibold text-on-warning-container"
+	>
+		<TriangleAlert class="h-3.5 w-3.5 shrink-0" />
+		Faltan medidas de montaje (ALT, DNP)
 	</div>
+{/snippet}
+
+<div class="mr-4 mb-3 ml-[60px] rounded-lg bg-surface-container-low px-3 py-2.5">
+	<div class="mb-2 flex items-center gap-2">
+		<span class="grid h-5 w-5 place-items-center rounded bg-surface-container-high">
+			<svg
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				class="h-3 w-3 text-on-surface-variant"
+				><path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+				/></svg
+			>
+		</span>
+		<span class="text-xs font-bold tracking-[0.1em] text-on-surface-variant uppercase">
+			Prescripción
+		</span>
+	</div>
+
+	<div
+		class="grid w-max items-center gap-x-1 gap-y-1 text-[13px] {showMeasures
+			? COLS_MEASURES
+			: COLS_BASE}"
+	>
+		<!-- Header -->
+		<span></span>
+		<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
+			>ESF</span
+		>
+		<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
+			>CIL</span
+		>
+		<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
+			>EJE</span
+		>
+		<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
+			>ADD</span
+		>
+		{#if showMeasures}
+			<span class="h-4 w-px justify-self-center bg-outline-variant"></span>
+			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
+				>ALT</span
+			>
+			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
+				>DP</span
+			>
+			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
+				>DNP</span
+			>
+		{/if}
+
+		<!-- OD -->
+		<span class="flex items-center gap-1.5 text-xs font-bold text-on-surface">
+			<span class="h-[7px] w-[7px] rounded-full bg-brand-blue"></span>OD
+		</span>
+		<span class="text-right font-medium tabular-nums">{optical(od.sphere) ?? '—'}</span>
+		<span class="text-right font-medium tabular-nums">{optical(od.cylinder) ?? '—'}</span>
+		<span class="text-right font-medium tabular-nums">{axis(od.axis) ?? '—'}</span>
+		<span class="text-right font-medium tabular-nums">{optical(od.addition) ?? '—'}</span>
+		{#if showMeasures}
+			<span class="h-4 w-px justify-self-center bg-outline-variant"></span>
+			<span class="text-right font-medium tabular-nums">{mm(item.odAltura) ?? '—'}</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.dp) ?? '—'}</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.npRight) ?? '—'}</span>
+		{/if}
+
+		<!-- OI -->
+		<span class="flex items-center gap-1.5 text-xs font-bold text-on-surface">
+			<span class="h-[7px] w-[7px] rounded-full bg-brand-navy"></span>OI
+		</span>
+		<span class="text-right font-medium tabular-nums">{optical(os.sphere) ?? '—'}</span>
+		<span class="text-right font-medium tabular-nums">{optical(os.cylinder) ?? '—'}</span>
+		<span class="text-right font-medium tabular-nums">{axis(os.axis) ?? '—'}</span>
+		<span class="text-right font-medium tabular-nums">{optical(os.addition) ?? '—'}</span>
+		{#if showMeasures}
+			<span class="h-4 w-px justify-self-center bg-outline-variant"></span>
+			<span class="text-right font-medium tabular-nums">{mm(item.osAltura) ?? '—'}</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.dp) ?? '—'}</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.npLeft) ?? '—'}</span>
+		{/if}
+	</div>
+
+	{#if missingMeasures}
+		<TriggerTooltip
+			trigger={measureWarn}
+			text="Los progresivos y bifocales necesitan Altura y DNP para el montaje."
+		/>
+	{/if}
 </div>
