@@ -16,8 +16,8 @@
 	let { trigger, title, text, items = [], side = 'top', contentClass }: Props = $props();
 </script>
 
-<!-- 2s de hover antes de abrir: los tooltips cortos estorban en la UI -->
-<Tooltip.Provider delayDuration={2000}>
+<!-- 1s de hover antes de abrir: los tooltips muy rápidos estorban en la UI -->
+<Tooltip.Provider delayDuration={1000}>
 	<Tooltip.Root>
 		<Tooltip.Trigger child={trigger} />
 		<Tooltip.Portal>
