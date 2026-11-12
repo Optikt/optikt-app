@@ -6,7 +6,6 @@
 	import { getInventoryCountContext } from '$lib/context';
 	import {
 		applySessionCmd,
-		cancelSessionCmd,
 		confirmZeroStock,
 		recountCountLineCmd,
 		setSessionResponsibles,
@@ -29,6 +28,7 @@
 	import { AdjustmentReason } from '$lib/shared/enums';
 	import {
 		computeCountStats,
+		lineNeedsAdjustment,
 		lineNeedsCost,
 		type CountCycleConfig
 	} from '$lib/shared/inventoryCount';
@@ -42,6 +42,7 @@
 	import CountBoard from '$lib/components/inventory/count/CountBoard.svelte';
 	import AdjustStockDrawer from '$lib/components/inventory/count/AdjustStockDrawer.svelte';
 	import { createAdjustmentActions } from '$lib/components/inventory/count/adjustmentActions';
+	import CancelCountModal from '$lib/components/inventory/count/CancelCountModal.svelte';
 	import ResponsiblesDrawer from '$lib/components/inventory/count/ResponsiblesDrawer.svelte';
 
 	import ReviewBoard from '$lib/components/inventory/count/ReviewBoard.svelte';
@@ -84,7 +85,8 @@
 	let showResponsibles = $state(false);
 	let pendingResponsibleTags = $state<Tag[]>([]);
 	let cancelModal = $state(false);
-	let cancelReason = $state('');
+	// Confirmación de cierre cuando hay diferencias sin ajustar.
+	let closeConfirm = $state(false);
 
 	const costByLineId = $derived(
 		new Map<number, number | null>(
@@ -102,6 +104,7 @@
 	const ctaLabel = $derived(phaseCtaLabel(phase));
 
 	const diffRows = $derived(buildDiffRows(lines, costByLineId));
+	const unadjustedCount = $derived(lines.filter(lineNeedsAdjustment).length);
 
 	const batchAdjustable = $derived(
 		diffRows.filter(({ line, diff }) => {
@@ -298,33 +301,6 @@
 		}
 	}
 
-	async function doCancelSession(): Promise<void> {
-		if (cancelReason.trim().length < 5) {
-			toast.error('El motivo necesita al menos 5 caracteres');
-			return;
-		}
-		if (isSubmitting) return;
-		isSubmitting = true;
-		try {
-			const response = await cancelSessionCmd({ id: session.id, reason: cancelReason.trim() });
-			if (!response.success) {
-				toast.error(response.error);
-				return;
-			}
-			session = response.data;
-			lines = response.data.lines;
-			responsibles = response.data.responsibles;
-			phase = 3;
-			countContext.activeSession = null;
-			cancelModal = false;
-			toast.success('Sesión cancelada');
-		} catch (error) {
-			toast.error(getErrorMessage(error, 'No se pudo cancelar la sesión'));
-		} finally {
-			isSubmitting = false;
-		}
-	}
-
 	async function applyNow(): Promise<void> {
 		if (isSubmitting) return;
 		isSubmitting = true;
@@ -353,8 +329,14 @@
 		const action = phaseCtaAction(phase, stats, canCloseNow);
 		if (action === 'back') onBack();
 		else if (action === 'review') phase = 2;
-		else if (action === 'close') void applyNow();
-		else notifyCtaBlocked();
+		else if (action === 'close') {
+			// Cerrar con diferencias sin ajustar exige confirmación explícita.
+			if (unadjustedCount > 0) {
+				closeConfirm = true;
+				return;
+			}
+			void applyNow();
+		} else notifyCtaBlocked();
 	}
 
 	/** Toast con el motivo de bloqueo del CTA (Título|Cuerpo). */
@@ -485,27 +467,28 @@
 	/>
 
 	<!-- Modal: Cancelar sesión -->
-	<ConfirmModal
+	<CancelCountModal
 		bind:open={cancelModal}
-		title="Cancelar conteo"
-		confirmLabel="Confirmar cancelación"
-		confirmColor="red"
-		onConfirm={() => void doCancelSession()}
-	>
-		{#snippet body()}
-			<p class="text-sm text-on-surface-variant">
-				La sesión queda en solo lectura y no se aplica ningún ajuste.
-			</p>
-			<label class="mt-3 block space-y-1">
-				<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase">
-					Motivo (mín. 5 caracteres)
-				</span>
-				<textarea
-					bind:value={cancelReason}
-					rows="3"
-					class="w-full rounded-lg border border-outline-variant/40 bg-white px-3 py-2 text-sm"
-					placeholder="Indica por qué se cancela el conteo"></textarea>
-			</label>
-		{/snippet}
-	</ConfirmModal>
+		sessionId={session.id}
+		onCancelled={(detail) => {
+			session = detail;
+			lines = detail.lines;
+			responsibles = detail.responsibles;
+			phase = 3;
+			countContext.activeSession = null;
+		}}
+	/>
+
+	<!-- Modal: cerrar con diferencias sin ajustar -->
+	<ConfirmModal
+		bind:open={closeConfirm}
+		title="Cerrar con diferencias sin ajustar"
+		message={`${unadjustedCount} línea(s) con diferencia no tienen ajuste solicitado: al cerrar no se creará ningún movimiento de stock para ellas (quedarán como «Ajuste pendiente» en el informe). Si no quieres ajustarlas, continúa.`}
+		confirmLabel="Cerrar de todos modos"
+		confirmColor="yellow"
+		onConfirm={() => {
+			closeConfirm = false;
+			void applyNow();
+		}}
+	/>
 </div>

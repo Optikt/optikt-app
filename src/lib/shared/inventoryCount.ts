@@ -148,6 +148,8 @@ export interface CountLineCore {
 	recountedStock: number | null;
 	/** Movimiento de inventario creado por el ajuste vinculado (null = sin ajuste). */
 	adjustmentMovementId: string | null;
+	/** Solicitud de ajuste hecha en Revisar (null = sin solicitar). */
+	adjustmentRequestedAt?: string | null;
 }
 
 /** Valor válido del conteo: recuento (Revisar) si existe, si no el conteo de fase ①. */
@@ -348,6 +350,16 @@ export function lineNeedsCost(line: CountLineCore, costs: Record<string, number 
 	const final = line.recountedStock ?? line.countedStock;
 	if (final == null || final === line.systemStock) return false;
 	return !(String(line.id) in costs);
+}
+
+/**
+ * true si la línea tiene diferencia ≠ 0 y ningún ajuste (ni solicitado ni con
+ * movimiento): al cerrar la sesión quedaría como «Ajuste pendiente».
+ */
+export function lineNeedsAdjustment(line: CountLineCore): boolean {
+	if (line.adjustmentMovementId != null || line.adjustmentRequestedAt != null) return false;
+	const final = line.recountedStock ?? line.countedStock;
+	return final != null && final !== line.systemStock;
 }
 
 export function lineMatchesSearch(

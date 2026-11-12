@@ -20,7 +20,8 @@ import {
 	isLineVerified,
 	lineMatchesFilter,
 	lineMatchesSearch,
-	lineNeedsCost
+	lineNeedsCost,
+	lineNeedsAdjustment
 } from './inventoryCount';
 import type { CountLineCore } from './inventoryCount';
 
@@ -267,5 +268,40 @@ describe('lineNeedsCost', () => {
 	it('el recuento manda para la diferencia', () => {
 		expect(lineNeedsCost({ ...base, countedStock: 5, recountedStock: 9 }, {})).toBe(true);
 		expect(lineNeedsCost({ ...base, countedStock: 9, recountedStock: 5 }, { '7': 3 })).toBe(false);
+	});
+});
+
+describe('lineNeedsAdjustment', () => {
+	const base = {
+		id: 3,
+		itemType: 'PRODUCT',
+		systemStock: 4,
+		countedStock: 6,
+		recountedStock: null,
+		adjustmentMovementId: null
+	};
+
+	it('diferencia sin ajuste → true', () => {
+		expect(lineNeedsAdjustment(base)).toBe(true);
+	});
+
+	it('con movimiento aplicado → false', () => {
+		expect(lineNeedsAdjustment({ ...base, adjustmentMovementId: 'uuid-mov' })).toBe(false);
+	});
+
+	it('con solicitud pendiente (se ejecuta al cerrar) → false', () => {
+		expect(lineNeedsAdjustment({ ...base, adjustmentRequestedAt: '2026-11-11T00:00:00Z' })).toBe(
+			false
+		);
+	});
+
+	it('sin diferencia → false', () => {
+		expect(lineNeedsAdjustment({ ...base, countedStock: 4 })).toBe(false);
+		expect(lineNeedsAdjustment({ ...base, countedStock: null })).toBe(false);
+	});
+
+	it('el recuento define la diferencia final', () => {
+		expect(lineNeedsAdjustment({ ...base, countedStock: 4, recountedStock: 7 })).toBe(true);
+		expect(lineNeedsAdjustment({ ...base, countedStock: 7, recountedStock: 4 })).toBe(false);
 	});
 });
