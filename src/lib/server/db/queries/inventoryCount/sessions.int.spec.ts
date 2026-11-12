@@ -6,9 +6,10 @@
  * Requiere DATABASE_URL (Testcontainers) — igual que el resto de suites .int.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AdjustmentReason, InventoryMovementType } from '$lib/shared/enums';
+import { AdjustmentReason, InventoryMovementType, LensType } from '$lib/shared/enums';
 import { applySession, cancelSession, createSession, getSessionRow } from './sessions';
 import { recountCountLine, upsertCountLine, getSessionLines } from './lines';
+import { buildLineCostMap } from './costs';
 import {
 	clearLineAdjustmentRequest,
 	executeCountLineAdjustment,
@@ -17,9 +18,16 @@ import {
 } from './adjustments';
 import { syncSessionResponsibles, listSessionResponsibles } from './responsibles';
 import { resetDb } from '$lib/testing/integration/db';
+import { getNextFifoCost } from '$lib/server/db/queries/inventoryLots';
 import { and, count, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { inventoryLots, inventoryMovements, products } from '$lib/server/db/schema';
+import {
+	inventoryLots,
+	inventoryMovements,
+	lensCatalogItems,
+	lensMaterials,
+	products
+} from '$lib/server/db/schema';
 
 async function productStock(productId: string): Promise<number> {
 	const [row] = await db
@@ -637,5 +645,254 @@ describe('createSession con alcance estructurado', () => {
 				responsibles: []
 			})
 		).rejects.toThrow('Ya existe una sesión de conteo abierta');
+	});
+});
+
+describe('costo FIFO congelado (informe estable)', () => {
+	beforeEach(async () => {
+		await resetDb();
+	});
+
+	it('al cerrar persiste fifo_cost_usd aunque el ajuste drene el lote', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const { product } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 1,
+			quantityAvailable: 1,
+			unitPurchasePrice: 90,
+			bcvRateAtPurchase: 1
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const line = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 1,
+			countedStock: 0,
+			difference: -1
+		});
+		await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+
+		await applySession(session.id, admin.id);
+
+		// El ajuste drenó el lote…
+		const [lot] = await db
+			.select({ qty: inventoryLots.quantityAvailable, active: inventoryLots.isActive })
+			.from(inventoryLots)
+			.where(eq(inventoryLots.productId, product.id));
+		expect(lot.qty).toBe(0);
+		expect(lot.active).toBe(false);
+
+		// …pero el costo quedó congelado y el mapa lo prefiere al FIFO vivo.
+		const rows = await getSessionLines(session.id, 'ALL');
+		const closed = rows.find((candidate) => candidate.id === line.id);
+		expect(closed?.fifoCostUsd).toBe(90);
+		const map = await buildLineCostMap(rows);
+		expect(map.get(line.id)).toBe(90);
+	});
+
+	it('cancelar congela los costos; las líneas sin diferencia quedan en null', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const { product: productA } = await productFixture();
+		const { product: productB } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: productA.id,
+			lensCatalogItemId: null,
+			quantityInitial: 4,
+			quantityAvailable: 4,
+			unitPurchasePrice: 55,
+			bcvRateAtPurchase: 1
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const withDiff = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: productA.id,
+			systemStock: 4,
+			countedStock: 3,
+			difference: -1
+		});
+		const equal = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: productB.id,
+			systemStock: 5,
+			countedStock: 5,
+			difference: 0
+		});
+
+		await cancelSession(session.id, admin.id, 'sin ajustar por ahora');
+
+		const rows = await getSessionLines(session.id, 'ALL');
+		expect(rows.find((candidate) => candidate.id === withDiff.id)?.fifoCostUsd).toBe(55);
+		expect(rows.find((candidate) => candidate.id === equal.id)?.fifoCostUsd).toBeNull();
+		const map = await buildLineCostMap(rows);
+		expect(map.get(withDiff.id)).toBe(55);
+	});
+});
+
+describe('costo congelado — multi-lote, entrada y lentes', () => {
+	beforeEach(async () => {
+		await resetDb();
+	});
+
+	it('multi-lote (A $5 primero, B $3): guarda $5 aunque A se drene; un lote C $99 posterior tampoco lo cambia', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const { product } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 1,
+			quantityAvailable: 1,
+			unitPurchasePrice: 5,
+			bcvRateAtPurchase: 1
+		});
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 5,
+			quantityAvailable: 5,
+			unitPurchasePrice: 3,
+			bcvRateAtPurchase: 1
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const line = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 1,
+			countedStock: 0,
+			difference: -1
+		});
+		await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+
+		await applySession(session.id, admin.id);
+
+		// El ajuste drenó A: el FIFO vivo ya es B ($3)…
+		expect(await getNextFifoCost(product.id)).toBe(3);
+		// …y un lote nuevo caro posterior tampoco debe tocar el informe.
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 10,
+			quantityAvailable: 10,
+			unitPurchasePrice: 99,
+			bcvRateAtPurchase: 1
+		});
+		const rows = await getSessionLines(session.id, 'ALL');
+		expect(rows.find((candidate) => candidate.id === line.id)?.fifoCostUsd).toBe(5);
+		const map = await buildLineCostMap(rows);
+		expect(map.get(line.id)).toBe(5);
+	});
+
+	it('diferencia de entrada (diff > 0) congela el costo vigente del lote', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const { product } = await productFixture();
+		await createInventoryLot({
+			itemType: 'PRODUCT',
+			productId: product.id,
+			lensCatalogItemId: null,
+			quantityInitial: 10,
+			quantityAvailable: 10,
+			unitPurchasePrice: 7,
+			bcvRateAtPurchase: 1
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const line = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 1,
+			countedStock: 2,
+			difference: 1
+		});
+		await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+
+		await applySession(session.id, admin.id);
+
+		const [lot] = await db
+			.select({ qty: inventoryLots.quantityAvailable })
+			.from(inventoryLots)
+			.where(eq(inventoryLots.productId, product.id));
+		expect(lot.qty).toBe(11); // entrada +1
+		const rows = await getSessionLines(session.id, 'ALL');
+		expect(rows.find((candidate) => candidate.id === line.id)?.fifoCostUsd).toBe(7);
+		const map = await buildLineCostMap(rows);
+		expect(map.get(line.id)).toBe(7);
+	});
+
+	it('LENS: congela el costo del lote del cristal y el mapa lo prefiere', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const supplier = await createSupplier();
+		const [lensMaterial] = await db
+			.insert(lensMaterials)
+			.values({ name: `Mat ${crypto.randomUUID()}`, code: `LM-${crypto.randomUUID()}` })
+			.returning();
+		const [lens] = await db
+			.insert(lensCatalogItems)
+			.values({
+				supplierId: supplier.id,
+				name: `Lente ${crypto.randomUUID()}`,
+				type: LensType.MONOFOCAL,
+				materialId: lensMaterial.id,
+				inventoryMode: 'STOCK',
+				basePrice: 0,
+				stock: 2
+			})
+			.returning();
+		await createInventoryLot({
+			itemType: 'LENS',
+			productId: null,
+			lensCatalogItemId: lens.id,
+			quantityInitial: 2,
+			quantityAvailable: 2,
+			unitPurchasePrice: 40,
+			bcvRateAtPurchase: 1
+		});
+		const session = await createInventoryCountSession({ openedById: admin.id });
+		const line = await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'LENS',
+			lensCatalogItemId: lens.id,
+			productId: null,
+			systemStock: 2,
+			countedStock: 1,
+			difference: -1
+		});
+		await requestCountLineAdjustment({
+			lineId: line.id,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			reasonText: null,
+			userId: admin.id
+		});
+
+		await applySession(session.id, admin.id);
+
+		const rows = await getSessionLines(session.id, 'ALL');
+		expect(rows.find((candidate) => candidate.id === line.id)?.fifoCostUsd).toBe(40);
+		const map = await buildLineCostMap(rows);
+		expect(map.get(line.id)).toBe(40);
 	});
 });

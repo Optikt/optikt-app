@@ -122,6 +122,12 @@ export const inventoryCountLines = pgTable(
 			withTimezone: true,
 			mode: 'string'
 		}),
+		/**
+		 * Costo FIFO unitario congelado al cerrar/cancelar la sesión: el
+		 * informe no depende del stock vivo (los ajustes pueden drenar lotes).
+		 * Null = sin costo conocido al congelar (fallback FIFO vivo).
+		 */
+		fifoCostUsd: doublePrecision('fifo_cost_usd'),
 		countedById: uuid('counted_by_id'),
 		countedAt: timestamp('counted_at', { withTimezone: true, mode: 'string' }),
 		notes: text(),

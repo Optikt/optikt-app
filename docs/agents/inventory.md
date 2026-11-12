@@ -39,7 +39,7 @@ Owner rules: la creación de lotes/movimientos por PO vive en el flujo de `purch
 - `createManualAdjustment` y `revertFullLot`: `requireRole(ADMIN)` (`remote/inventory.remote.ts:61-70`). Solo lotes de PRODUCT (`createManualAdjustment.ts:25-27`); flujo en tx: lote → movimiento → caché de stock.
 - `revertFullLot` (`server/inventory/revertFullLot.ts`) deshace la creación completa de un lote de PO: exige `quantityAvailable === quantityInitial` (`:25-30`, ni una unidad consumida) y registra `ADJUSTMENT_OUT` con referencia `PURCHASE_ORDER`.
 - Conteos: las diferencias **no** se aplican automáticamente — en Revisar solo se **solicitan** (`requestCountLineAdjustment` / `requestAdjustmentsBatch` / `clearLineAdjustmentRequest` en `queries/inventoryCount/adjustments.ts`: guardan motivo+solicitante en la línea, `adjustment_requested_by/at`, **sin movimiento**) y los `inventory_movement` se crean **al cerrar** (`executeCountLineAdjustment` dentro de la `db.transaction` de `applySession`; si uno falla, todo revierte y la sesión sigue OPEN). **Cancelar descarta las solicitudes**: nunca queda stock movido por un conteo no aplicado. Cambiar un conteo limpia la solicitud (mismo invariante que recuento/ajuste). «Ajustado» = existe el movimiento vinculado (siempre post-cierre). El flujo viejo (`countAdjustments` + `setLineAdjustmentStatus`, marcador sin movimiento) fue retirado.
-  Rollback de la migración `0050` (aditiva, anulable): `ALTER TABLE "inventory_count_lines" DROP COLUMN "adjustment_requested_by", DROP COLUMN "adjustment_requested_at";` — descarta solo lo solicitado durante su vigencia.
+  El PR lleva **una sola migración** (`0048_opposite_rick_jones`): los viejos 0048+0049+0050 fueron squasheados en un archivo regenerado desde el snapshot 0047, con sus backfills preservados + los nuevos de `fifo_cost_usd` al final. Rollback total si se descarta el PR: `DROP TABLE "inventory_count_responsibles";` + dropear los ALTER de `inventory_count_lines` (`recounted_*`, `adjustment_*`, `fifo_cost_usd`), `settings` (`count_*`), `products`/`lens_catalog_items` (`last_counted_*`) y `inventory_count_sessions` (`scope_*`, `coverage_*`); los backfills solo se revierten si se descartan sus datos (`last_counted_at`→NULL, responsables añadidos en aperturas → borrar).
 
 **Conteos** (`queries/inventoryCount/**`, `schema/inventoryCount.ts`)
 
@@ -48,6 +48,7 @@ Owner rules: la creación de lotes/movimientos por PO vive en el flujo de `purch
 - Captura: ADMIN/MANAGER/SELLER con participación activa (`requireWriteAccess`); aplicar/cancelar: **solo ADMIN o MANAGER**, con re-check dentro de `applySession` (doble verificación de autorización).
 - **Cierre**: cierra con stock 0 sin confirmar, **bloquea recuentos obligatorios** (`recountedStock` ≠ null) sobre umbral; fija `lastCountedAt` solo en líneas verificadas; guarda cobertura antes→después (`coverage_before` con `coverageSummaryLite`, sin agrupados). Aplicar **no genera** movimientos de ajuste.
 - Recuento conserva el conteo primario y lo superpone; **cambiar un conteo limpia recuento, ajuste y vínculo** (`lines.ts:upsertCountLine`).
+- **Informe estable (spec 409)**: el costo FIFO de cada línea con diferencia se congela en `inventory_count_lines.fifo_cost_usd` al **cerrar** (`applySession`, _antes_ de ejecutar los ajustes — un ajuste a 0 drena el lote) y al **cancelar** (`cancelSession`). `buildLineCostMap` prefiere la columna (sin queries extra) y solo cae al FIFO vivo si es null (sesión OPEN o ítem sin lote al congelar). La misma migración **backfillea las sesiones ya cerradas** (congela el FIFO vigente al merge). Límite conocido: una línea congelada en null que después reciba stock sí cambiaría — ver Known gaps.
 - Responsables: `inventory_count_responsibles` con baja lógica (quitar no borra lo contado); el creador queda activo.
 - UI: el cierre es **solo con el CTA de fase** (el stepper navega ①↔② y nunca cierra, mockup `if(p==3)break`); fase 3 = «Volver a cobertura».
 
@@ -71,7 +72,9 @@ Owner rules: la creación de lotes/movimientos por PO vive en el flujo de `purch
 
 ## Known gaps / tech debt
 
-- 🟡 `adjustment_requested_by` (migración 0050) no tiene FK a `users` (asimetría con `adjustment_completed_by_id`); si se quiere integridad, va en una migración nueva (0051), nunca editando 0050.
+- 🟡 `fifo_cost_usd` null congelado (ítem sin lote al cerrar/cancelar) cae al FIFO vivo como mejor esfuerzo: si después recibe stock, el informe de esa línea cambiaría. Distinguir «congelado sin costo» de «nunca congelado» requeriría una columna `cost_frozen_at` (money-reviewer M1).
+
+- 🟡 `adjustment_requested_by` (migración `0048_opposite_rick_jones`) no tiene FK a `users` (asimetría con `adjustment_completed_by_id`); si se quiere integridad, va en una migración nueva (0049), nunca editando 0048.
 
 - 🟡 `consumeFifoForSaleItem` no consume lotes de lentes-STOCK (solo el contador), mientras que los ajustes de lente sí tocan lotes FIFO → posible divergencia lotes vs contador para LENS.
 - 🟡 `applyManualAdjustment` (`inventoryLots.ts:261`) duplica el flujo de `createManualAdjustment` (misma secuencia lote+movement+stock) con autorización distinta; unificar.

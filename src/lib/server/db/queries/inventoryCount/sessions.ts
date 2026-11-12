@@ -41,7 +41,7 @@ import {
 import { coverageSummaryLite, selectCoverageItems } from './coverage';
 import { listSessionResponsibles } from './responsibles';
 import { getSessionLines } from './lines';
-import { buildLineCostMap } from './costs';
+import { buildLineCostMap, persistFrozenCosts } from './costs';
 
 // ── Configuración del ciclo (settings singleton) ───────────────────────────
 
@@ -216,6 +216,18 @@ export async function cancelSession(
 	const cancelReason = reason.trim();
 	if (!cancelReason) throw new Error('Debes indicar el motivo de cancelación');
 
+	// Congela el costo FIFO también al cancelar (aquí nunca se ejecutan
+	// ajustes, así que los lotes están intactos y el costo es fiel).
+	const cancelLines = await executor
+		.select()
+		.from(inventoryCountLines)
+		.where(eq(inventoryCountLines.sessionId, id));
+	const cancelCosts = await buildLineCostMap(cancelLines, executor);
+	await persistFrozenCosts(
+		[...cancelCosts].filter((entry): entry is [number, number] => entry[1] != null),
+		executor
+	);
+
 	const now = new Date().toISOString();
 	await executor
 		.update(inventoryCountSessions)
@@ -277,6 +289,14 @@ export async function applySession(
 	}
 
 	const costByLineId = await buildLineCostMap(lines, executor);
+	// Congela el costo FIFO por línea ANTES de ejecutar ajustes: el informe del
+	// cierre no depende del stock vivo (un ajuste a 0 drena el lote y el costo
+	// vivo sería null/otro — spec: «los datos del informe cerrado son estables»).
+	await persistFrozenCosts(
+		[...costByLineId].filter((entry): entry is [number, number] => entry[1] != null),
+		executor
+	);
+
 	const recountPending = lines.filter((line) => {
 		if (line.recountedStock != null) return false;
 		const final = line.countedStock ?? 0;

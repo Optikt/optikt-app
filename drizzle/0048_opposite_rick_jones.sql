@@ -25,16 +25,22 @@ ALTER TABLE "inventory_count_lines" ADD COLUMN "recounted_at" timestamp with tim
 ALTER TABLE "inventory_count_lines" ADD COLUMN "adjustment_movement_id" uuid;--> statement-breakpoint
 ALTER TABLE "inventory_count_lines" ADD COLUMN "adjustment_reason" varchar;--> statement-breakpoint
 ALTER TABLE "inventory_count_lines" ADD COLUMN "adjustment_reason_text" varchar;--> statement-breakpoint
+ALTER TABLE "inventory_count_lines" ADD COLUMN "adjustment_requested_by" uuid;--> statement-breakpoint
+ALTER TABLE "inventory_count_lines" ADD COLUMN "adjustment_requested_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "inventory_count_lines" ADD COLUMN "fifo_cost_usd" double precision;--> statement-breakpoint
 ALTER TABLE "inventory_count_sessions" ADD COLUMN "scope_dim" varchar;--> statement-breakpoint
 ALTER TABLE "inventory_count_sessions" ADD COLUMN "scope_values" varchar[];--> statement-breakpoint
 ALTER TABLE "inventory_count_sessions" ADD COLUMN "scope_n" integer;--> statement-breakpoint
 ALTER TABLE "inventory_count_sessions" ADD COLUMN "scope_kind" varchar;--> statement-breakpoint
 ALTER TABLE "inventory_count_sessions" ADD COLUMN "coverage_before" double precision;--> statement-breakpoint
 ALTER TABLE "inventory_count_sessions" ADD COLUMN "coverage_never_before" integer;--> statement-breakpoint
+ALTER TABLE "inventory_count_sessions" ADD COLUMN "coverage_after" double precision;--> statement-breakpoint
+ALTER TABLE "inventory_count_sessions" ADD COLUMN "coverage_never_after" integer;--> statement-breakpoint
 ALTER TABLE "inventory_count_responsibles" ADD CONSTRAINT "inventory_count_responsibles_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."inventory_count_sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "inventory_count_responsibles" ADD CONSTRAINT "inventory_count_responsibles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "ix_inventory_count_responsibles_session" ON "inventory_count_responsibles" USING btree ("session_id" int4_ops,"removed_at");--> statement-breakpoint
-CREATE INDEX "ix_inventory_count_responsibles_user" ON "inventory_count_responsibles" USING btree ("user_id" uuid_ops);--> statement-breakpoint
+CREATE INDEX "ix_inventory_count_responsibles_user" ON "inventory_count_responsibles" USING btree ("user_id" uuid_ops);
+--> statement-breakpoint
 -- Backfill: cobertura por ítem a partir de sesiones APPLIED existentes.
 -- Un ítem queda verificado si fue contado (o confirmado en 0) en una sesión cerrada.
 UPDATE "products" p SET "last_counted_at" = agg."max_at", "last_count_session_id" = agg."session_id"
@@ -71,3 +77,35 @@ WHERE s."status" = 'OPEN'
 		SELECT 1 FROM "inventory_count_responsibles" r
 		WHERE r."session_id" = s."id" AND r."user_id" = s."opened_by_id"
 	);
+
+--> statement-breakpoint
+-- Backfill: congela el costo FIFO actual de las líneas con diferencia en
+-- sesiones ya cerradas (mejor aproximación histórica disponible; a partir de
+-- aquí el informe no se mueve con el stock vivo).
+UPDATE "inventory_count_lines" l SET "fifo_cost_usd" = f.cost
+FROM (
+	SELECT l2."id",
+		(SELECT lu."unit_purchase_price" FROM "inventory_lots" lu
+		 WHERE lu."product_id" = l2."product_id" AND lu."is_active" AND lu."quantity_available" > 0
+		 ORDER BY lu."created_at" ASC, lu."id" ASC LIMIT 1) AS cost
+	FROM "inventory_count_lines" l2
+	JOIN "inventory_count_sessions" s ON s."id" = l2."session_id"
+	WHERE s."status" IN ('APPLIED', 'CANCELLED')
+		AND l2."item_type" = 'PRODUCT' AND l2."product_id" IS NOT NULL
+		AND (COALESCE(l2."recounted_stock", l2."counted_stock") - l2."system_stock") <> 0
+) f
+WHERE l."id" = f."id" AND f."cost" IS NOT NULL AND l."fifo_cost_usd" IS NULL;
+--> statement-breakpoint
+UPDATE "inventory_count_lines" l SET "fifo_cost_usd" = f.cost
+FROM (
+	SELECT l2."id",
+		(SELECT lu."unit_purchase_price" FROM "inventory_lots" lu
+		 WHERE lu."lens_catalog_item_id" = l2."lens_catalog_item_id" AND lu."is_active" AND lu."quantity_available" > 0
+		 ORDER BY lu."created_at" ASC, lu."id" ASC LIMIT 1) AS cost
+	FROM "inventory_count_lines" l2
+	JOIN "inventory_count_sessions" s ON s."id" = l2."session_id"
+	WHERE s."status" IN ('APPLIED', 'CANCELLED')
+		AND l2."item_type" = 'LENS' AND l2."lens_catalog_item_id" IS NOT NULL
+		AND (COALESCE(l2."recounted_stock", l2."counted_stock") - l2."system_stock") <> 0
+) f
+WHERE l."id" = f."id" AND f."cost" IS NOT NULL AND l."fifo_cost_usd" IS NULL;

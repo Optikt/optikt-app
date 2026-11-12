@@ -16,8 +16,8 @@
 ### Fase 0/1 escalado — área de datos y servidor — escrita (VERIFICAR con `pnpm check` antes de mergear)
 
 **Migraciones**
-- `drizzle/0048_count_redesign.sql` — tablas/columnas nuevas + **backfill** de `last_counted_at` desde sesiones APPLIED y de responsables en sesiones OPEN.
-- `drizzle/0049_count_close_coverage.sql` — `coverage_after`/`coverage_never_after`.
+- `drizzle/0048_opposite_rick_jones.sql (squash de 0048+0049+0050)` — tablas/columnas nuevas + **backfill** de `last_counted_at` desde sesiones APPLIED y de responsables en sesiones OPEN.
+- `incluido en el squash de 0048` — `coverage_after`/`coverage_never_after`.
 - Schema actualizado: `settings` (+`count_cycle_days/​count_diff_threshold_units/​count_diff_threshold_usd/​count_quick_oldest_limit`), `products`/`lens_catalog_items` (+`last_counted_at`/`last_count_session_id`), `inventory_count_sessions` (+`scope_dim/scope_values/scope_n/scope_kind/coverage_before(_never)_(after)`), `inventory_count_lines` (+`recounted_stock/recounted_by_id/recounted_at/adjustment_movement_id/adjustment_reason/adjustment_reason_text`), **tabla nueva** `inventory_count_responsibles`.
 
 **Dominio compartido**
