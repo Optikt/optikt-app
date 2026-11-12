@@ -10,6 +10,7 @@
 		finalCount,
 		lineDiff,
 		diffGravity,
+		sumGroupUnits,
 		type CountCycleConfig,
 		type DiffGravity
 	} from '$lib/shared/inventoryCount';
@@ -71,6 +72,9 @@
 		name: string;
 		counted: number;
 		total: number;
+		/** Suma de unidades contadas (0 si sin setear) y en sistema del grupo. */
+		unitsCounted: number;
+		unitsSystem: number;
 		isZero?: boolean;
 	}
 	interface VirtualLine {
@@ -102,12 +106,15 @@
 			if (line.brandName !== currentBrand) {
 				currentBrand = line.brandName;
 				const brandLines = stock.filter((candidate) => candidate.brandName === currentBrand);
+				const units = sumGroupUnits(brandLines);
 				list.push({
 					row: {
 						kind: 'group',
 						name: currentBrand,
 						counted: brandLines.filter((l) => l.countedStock != null).length,
-						total: brandLines.length
+						total: brandLines.length,
+						unitsCounted: units.counted,
+						unitsSystem: units.system
 					},
 					height: GROUP_H
 				});
@@ -121,12 +128,15 @@
 			.filter((line) => passesSearch(line) && passesFilter(line));
 
 		if (zeroLines.length > 0) {
+			const zeroUnits = sumGroupUnits(zeroLines);
 			list.push({
 				row: {
 					kind: 'group',
 					name: 'Stock 0',
 					counted: zeroLines.length - zeroLines.filter((l) => l.countedStock == null).length,
 					total: zeroLines.length,
+					unitsCounted: zeroUnits.counted,
+					unitsSystem: zeroUnits.system,
 					isZero: true
 				},
 				height: GROUP_H
@@ -190,6 +200,18 @@
 	function rowKey(entry: PositionedRow): string {
 		if (entry.row.kind === 'group') return `g-${entry.row.name}-${entry.offset}`;
 		return `l-${entry.row.line.id}`;
+	}
+
+	/**
+	 * Chip del grupo: «MARCA · 18/23 · contadas 45 · sistema 60». Las unidades
+	 * evitan sumar línea por línea (0 si aún no se setearon); Stock 0 se queda
+	 * con su etiqueta de ítems (su sistema es 0 por definición).
+	 */
+	function groupChipText(group: VirtualGroup): string {
+		const base = `${group.name} · ${group.counted}/${group.total}`;
+		return group.isZero
+			? base
+			: `${base} · contadas ${group.unitsCounted} · sistema ${group.unitsSystem}`;
 	}
 
 	function scrollToOffset(offset: number): void {
@@ -300,7 +322,7 @@
 			<div
 				class="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-surface-container-low px-3 py-1 text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase"
 			>
-				<span>{overlayGroup.name} · {overlayGroup.counted}/{overlayGroup.total}</span>
+				<span class="min-w-0 truncate">{groupChipText(overlayGroup)}</span>
 			</div>
 		{/if}
 
@@ -324,10 +346,10 @@
 								<div
 									class="flex items-center justify-between border-y border-outline-variant/30 bg-surface-container-low px-3 py-1 text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase"
 								>
-									<span>
+									<span class="min-w-0 truncate">
 										{entry.row.isZero
 											? `${zeroOpen ? '▾' : '▸'} Stock 0 · ${entry.row.total} ítems`
-											: `${entry.row.name} · ${entry.row.counted}/${entry.row.total}`}
+											: groupChipText(entry.row)}
 									</span>
 									{#if entry.row.isZero}
 										<button

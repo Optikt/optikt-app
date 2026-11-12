@@ -371,6 +371,24 @@ export function lineMatchesSearch(
 	return [line.itemName, line.itemCode ?? ''].join(' ').toLowerCase().includes(query);
 }
 
+/**
+ * Suma de unidades de un grupo de líneas (encabezado de marca): lo contado
+ * (recuento si existe, si no el conteo; **0 si aún no se seteó**) y lo que hay
+ * en sistema. Alimenta el chip «MARCA · 18/23 · contadas X · en sistema Y».
+ */
+export function sumGroupUnits(lines: readonly CountLineCore[]): {
+	counted: number;
+	system: number;
+} {
+	let counted = 0;
+	let system = 0;
+	for (const line of lines) {
+		counted += finalCount(line) ?? 0;
+		system += line.systemStock;
+	}
+	return { counted, system };
+}
+
 // ── Estado del ciclo (resumen de cobertura) ────────────────────────────────
 
 export interface CoverageSummary {
