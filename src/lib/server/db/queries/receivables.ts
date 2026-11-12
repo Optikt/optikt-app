@@ -2,6 +2,7 @@ import { eq, isNull, and, desc, sql, gt } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { sales, salePayments, customers } from '$lib/server/db/schema';
 import type { SalePayment } from '$lib/server/db/schema';
+import { SALE_PAID_EPSILON } from '$lib/shared/saleBalance';
 
 // ============================================================================
 // TYPES
@@ -59,7 +60,7 @@ export async function getReceivables(
 	const conditions = [
 		isNull(sales.deletedAt),
 		sql`${sales.status} != 'CANCELLED'`,
-		gt(sql<number>`${sales.total} - ${sales.paidAmountBcvUsd}`, 0)
+		gt(sql<number>`${sales.total} - ${sales.paidAmountBcvUsd}`, SALE_PAID_EPSILON)
 	];
 
 	if (filters?.customerId) {

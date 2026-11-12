@@ -35,4 +35,19 @@ export const UpdateUserSchema = CreateUserSchema.partial().extend({
 
 export const UserIdSchema = EntityIdSchema();
 
+// ============================================================================
+// USER PREFERENCES (key/value — plan sales-list-redesign, fase 5)
+// ============================================================================
+
+/**
+ * Preferencia `sales.view`: vista por defecto del listado de ventas.
+ * Agregar una preferencia nueva = agregar una rama acá (sin migración de BD).
+ */
+export const UserPreferenceSchema = z.discriminatedUnion('key', [
+	z.object({ key: z.literal('sales.view'), value: z.enum(['list', 'grid']) })
+]);
+
+export type UserPreferenceInput = z.infer<typeof UserPreferenceSchema>;
+export type UserPreferenceKey = UserPreferenceInput['key'];
+
 export const ReactivateUserSchema = ReactivateEntitySchema('deletedUserId', CreateUserSchema.shape);

@@ -11,6 +11,7 @@ import {
 	type Sale
 } from '$lib/server/db/schema';
 import { todayEnd, todayStart, toUTCString } from '$lib/dates';
+import { SALE_PAID_EPSILON } from '$lib/shared/saleBalance';
 
 // ============================================================================
 // TYPES
@@ -84,7 +85,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 			.where(and(isNull(quotes.deletedAt), eq(quotes.status, 'DRAFT')))
 			.then(([r]) => r.value),
 
-		// Pending payments (non-cancelled sales with outstanding balance)
+		// Pending payments (non-cancelled sales with outstanding balance > 0.01)
 		db
 			.select({
 				count: count(),
@@ -95,7 +96,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 				and(
 					isNull(sales.deletedAt),
 					sql`${sales.status} != 'CANCELLED'`,
-					gt(sql<number>`${sales.total} - ${sales.paidAmountBcvUsd}`, 0)
+					gt(sql<number>`${sales.total} - ${sales.paidAmountBcvUsd}`, SALE_PAID_EPSILON)
 				)
 			)
 			.then(([r]) => ({ count: r.count, amount: Number(r.amount ?? 0) })),

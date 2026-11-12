@@ -1,7 +1,6 @@
 export { default as CancelSaleModal } from './CancelSaleModal.svelte';
 export { default as SaleStatusModal } from './SaleStatusModal.svelte';
 export { default as EditSaleModal } from './EditSaleModal.svelte';
-export { default as SalesTable } from './SalesTable.svelte';
 export { default as NewSaleForm } from './NewSaleForm.svelte';
 export { default as CustomerLookupInput } from './CustomerLookupInput.svelte';
 export { default as PaymentForm } from './PaymentForm.svelte';
@@ -11,7 +10,6 @@ export { default as SaleBalanceCards } from './SaleBalanceCards.svelte';
 export { default as SaleMovementsModal } from './SaleMovementsModal.svelte';
 export { default as SaleMovementsSection } from './SaleMovementsSection.svelte';
 export { default as SalePaymentProgress } from './SalePaymentProgress.svelte';
-export { default as SaleStatsCards } from './SaleStatsCards.svelte';
 export { default as SaleFilterBar } from './SaleFilterBar.svelte';
 export { default as SaleStep2ItemCard } from './step2/SaleStep2ItemCard.svelte';
 export { default as InternalCostAccordion } from './step2/InternalCostAccordion.svelte';

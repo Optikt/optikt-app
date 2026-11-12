@@ -9,7 +9,7 @@ Login (Argon2), sesiones con token hash + vivacidad, gestión de usuarios ADMIN-
 
 ## Scope
 
-`components/users/**`, `components/forms/**`, `routes/(auth)/**`, `routes/(app)/users/**`, `remote/users/**`, `remote/auth.remote.ts`, `remote/profile.remote.ts`, `server/auth*`, `server/guards.ts`, `server/actionContext.ts`, `queries/users.ts`, `queries/sessions.ts`, `schemas/users*` + `schemas/auth.ts`, `schema/users.ts`, `schema/sessions.ts`, lógica pura `shared/user-deletion-rules*` + `shared/enums/roles.ts`.
+`components/users/**`, `components/forms/**`, `routes/(auth)/**`, `routes/(app)/users/**`, `remote/users/**`, `remote/auth.remote.ts`, `remote/profile.remote.ts`, `server/auth*`, `server/guards.ts`, `server/actionContext.ts`, `queries/users.ts`, `queries/sessions.ts`, `queries/userPreferences.ts`, `schemas/users*` + `schemas/auth.ts`, `schema/users.ts`, `schema/sessions.ts`, `schema/userPreferences.ts`, lógica pura `shared/user-deletion-rules*` + `shared/enums/roles.ts`.
 
 ## Reglas de dominio / invarianzas
 
@@ -31,6 +31,13 @@ Login (Argon2), sesiones con token hash + vivacidad, gestión de usuarios ADMIN-
 - `deleted_at` (papelera del dominio `trash`) vs `deactivated_at` (inactivo, bloquea login, `remote/auth.remote.ts:26-28`).
 - No autodesactivar/autoeliminarse (`commands.remote.ts:313-317,355-358`); superusers no eliminables (`:351-353`); MANAGER no elimina ADMIN/MANAGER; **no se puede eliminar el último ADMIN** (`isLastAdmin` + `countActiveAdmins`, reglas puras en `shared/user-deletion-rules.ts`) — audit después de la tx (`:373-376`).
 - Email/username única **entre activos**; si existe eliminado → `reactivationCandidate` (`commands.remote.ts:118-163`, `forms.remote.ts:42-87`). ⚠️ `ix_users_email` es unique **global** en DB (`schema/users.ts:32`) → el email queda reservado mientras exista el soft-deleted.
+
+**Preferencias de usuario** (`schema/userPreferences.ts`, `queries/userPreferences.ts`, `remote/users/preferences.remote.ts`)
+
+- Tabla `user_preferences` (PK compuesta `user_id + key`, `value jsonb`, FK a `users` con `ON DELETE CASCADE`): **crecer en preferencias no requiere migración** — agregar una preferencia nueva es agregar una rama al `UserPreferenceSchema` discriminado de `schemas/users.ts`.
+- **Lectura en SSR**: el `+page.server.ts` llama directo a `getUserPreference(userId, key)` (no pasa por remote). **Escritura**: remote `saveUserPreference` (`command` + `requireAuth`, sin requisito de rol: VIEWER también guarda, es preferencia personal y no una acción de negocio).
+- Preferencias actuales: `sales.view` = `'list' | 'grid'` (vista por defecto del listado de ventas, plan `sales-list-redesign`).
+- Invariante: `?view=` en la URL tiene prioridad sobre la preferencia guardada y **nunca la pisa al cargar**; solo se guarda cuando el usuario cambia la vista (y si el guardado falla, se reintenta en silencio sin romper la UI).
 
 **Rutas de layout**
 

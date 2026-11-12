@@ -16,6 +16,7 @@ import {
 } from 'drizzle-orm';
 
 import { buildTokenSearchConditions } from '$lib/server/db/search';
+import { SALE_PAID_EPSILON } from '$lib/shared/saleBalance';
 
 import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
 import { sales, saleItems, customers, users } from '$lib/server/db/schema';
@@ -60,7 +61,11 @@ export function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 	}
 
 	if (opts.dateFrom) {
-		conditions.push(gte(sales.createdAt, opts.dateFrom));
+		// Local start-of-day, consistente con dateTo (fin de día local).
+		const startOfDay = fromISODate(opts.dateFrom);
+		if (startOfDay) {
+			conditions.push(gte(sales.createdAt, toUTCString(startOfDay)));
+		}
 	}
 
 	if (opts.dateTo) {
@@ -100,6 +105,12 @@ export function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 
 	if (opts.isCashea) {
 		conditions.push(eq(sales.isCashea, true));
+	}
+
+	if (opts.balanceOnly) {
+		conditions.push(
+			sql`${sales.status} != 'CANCELLED' AND (${sales.total} - ${sales.paidAmountBcvUsd}) > ${SALE_PAID_EPSILON}`
+		);
 	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;

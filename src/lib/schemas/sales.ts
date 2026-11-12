@@ -48,7 +48,11 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 	dateTo: z.iso.date().optional(),
 	shippingCostPending: z.boolean().optional(),
 	hasFreeItem: z.boolean().optional(),
-	isCashea: z.boolean().optional()
+	isCashea: z.boolean().optional(),
+	/** Solo ventas no canceladas con saldo > 0.01 */
+	balance: z.boolean().optional(),
+	/** Orden del listado (default: recientes) */
+	sort: z.enum(['recent', 'balance', 'total', 'old']).optional()
 });
 
 // ============================================================================

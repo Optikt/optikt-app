@@ -3,6 +3,7 @@
 
 // Base tables (no dependencies)
 export * from './users';
+export * from './userPreferences';
 export * from './brands';
 export * from './suppliers';
 export * from './customers';
