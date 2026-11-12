@@ -56,6 +56,9 @@ export const products = pgTable(
 		minStock: integer('min_stock'),
 		imageUrl: varchar('image_url'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		/** Cobertura de conteo físico: último conteo CERRADO que verificó el producto */
+		lastCountedAt: timestamp('last_counted_at', { withTimezone: true, mode: 'string' }),
+		lastCountSessionId: integer('last_count_session_id'),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
 			.defaultNow(),

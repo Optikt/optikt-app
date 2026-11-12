@@ -131,6 +131,10 @@ await db.transaction(async (tx) => {
 
 Project conventions, Svelte patterns, and design principles are in `.github/instructions/`. Los tres archivos de convenciones (`project-conventions`, `svelte-patterns`, `design-ui`) se cargan automáticamente vía `instructions` en `opencode.json`; `svelte-doctor.instructions.md` se lee bajo demanda. Toast reference is available as a prompt in `.github/prompts/toast-usage.prompt.md`.
 
+### Rendimiento de endpoints y queries — en observación
+
+- ⚠️ En desarrollo la DB es **Supabase remoto** (~76 ms por roundtrip; medido 2026-11-09): cualquier flujo multi-query se siente lento y **eso no es un defecto del código**. Queda **en observación** la velocidad de respuesta de endpoints y queries (algunos parecen lentos, muy probablemente solo por este entorno). Con la DB en contenedor (docker/Dokploy) el roundtrip es ~1-2 ms y todo es prácticamente instantáneo: **medir contra contenedor antes de concluir que algo está lento**. Roundtrips por flujo medidos: `docs/agents/inventory.md` → Known gaps.
+
 ## OpenCode tooling
 
 - **Gate rápido:** tool `optikt_verify` (namespace `optikt`) o `/verify`. Corre `eslint` + `pnpm check` + solo los proyectos de vitest afectados por los archivos cambiados, y devuelve PASS/FAIL por gate.

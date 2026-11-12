@@ -144,7 +144,7 @@ export async function getNextFifoCost(
 				gt(inventoryLots.quantityAvailable, 0)
 			)
 		)
-		.orderBy(asc(inventoryLots.createdAt))
+		.orderBy(asc(inventoryLots.createdAt), asc(inventoryLots.id))
 		.limit(1);
 	return lot?.unitPurchasePrice ?? null;
 }
@@ -167,7 +167,7 @@ export async function getActiveLotsFifo(
 				gt(inventoryLots.quantityAvailable, 0)
 			)
 		)
-		.orderBy(asc(inventoryLots.createdAt));
+		.orderBy(asc(inventoryLots.createdAt), asc(inventoryLots.id));
 }
 
 /**
@@ -187,7 +187,7 @@ export async function getActiveLensLotsFifo(
 				gt(inventoryLots.quantityAvailable, 0)
 			)
 		)
-		.orderBy(asc(inventoryLots.createdAt));
+		.orderBy(asc(inventoryLots.createdAt), asc(inventoryLots.id));
 }
 
 // ---------------------------------------------------------------------------

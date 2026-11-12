@@ -32,6 +32,8 @@ export function makeLensItem(
 ): LensCatalogItemWithRelations {
 	return {
 		id: 'lens-1',
+		lastCountedAt: null,
+		lastCountSessionId: null,
 		source: LensCatalogSource.LAB,
 		supplierId: 'supplier-1',
 		name: 'Alpha Lens',

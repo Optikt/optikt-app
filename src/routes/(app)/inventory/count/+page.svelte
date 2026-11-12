@@ -1,234 +1,301 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { toast } from 'svelte-sonner';
+	import { Settings, Plus, Play } from '@lucide/svelte';
 	import { getInventoryCountContext } from '$lib/context';
 	import {
-		createSession,
-		getSessions as getSessionsQuery
+		createSessionCmd,
+		updateCountSettings as saveCountSettings
 	} from '$lib/remote/inventoryCount.remote';
-	import type { InventoryCountScopeType } from '$lib/schemas/inventoryCount';
-	import type { ProductType } from '$lib/shared/enums';
-	import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount/types';
 	import { getErrorMessage } from '$lib/utils';
-	import CountListHeader from '$lib/components/inventory/count/CountListHeader.svelte';
-	import CountListMetrics from '$lib/components/inventory/count/CountListMetrics.svelte';
-	import CountHistoryTable from '$lib/components/inventory/count/CountHistoryTable.svelte';
-	import CountCreateModal from '$lib/components/inventory/count/CountCreateModal.svelte';
-	import { isWithinLastDays, mergeCreatedSession } from '$lib/components/inventory/count/countList';
+	import CycleCard from '$lib/components/inventory/count/CycleCard.svelte';
+	import GroupsCoverageCard from '$lib/components/inventory/count/GroupsCoverageCard.svelte';
+	import HistoryList from '$lib/components/inventory/count/HistoryList.svelte';
+	import NewCountPanel from '$lib/components/inventory/count/NewCountPanel.svelte';
+	import CycleSettingsPanel from '$lib/components/inventory/count/CycleSettingsPanel.svelte';
+	import CountTabs from '$lib/components/inventory/count/ui/CountSegmented.svelte';
+	import CountButton from '$lib/components/inventory/count/ui/CountButton.svelte';
+	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
+	import type { CoverageData } from '$lib/server/db/queries/inventoryCount/coverage';
+	import type { CountCycleConfig } from '$lib/shared/inventoryCount';
+	import type { CountCycleConfig as _CountCycleConfig2 } from '$lib/shared/inventoryCount';
+	import type { CoverageDim } from '$lib/server/db/queries/inventoryCount/coverage';
+	import type { CountSessionSummary } from '$lib/server/db/queries/inventoryCount/types';
+
+	interface Tag {
+		key: string;
+		label: string;
+	}
 
 	let { data } = $props();
-	const inventoryCountContext = getInventoryCountContext();
-	const initialData = untrack(() => ({
-		activeSession: data.activeSession ?? null,
-		sessions: data.sessions
-	}));
-	let activeSession = $state<InventoryCountSessionSummary | null>(initialData.activeSession);
-	let summarySessions = $state<InventoryCountSessionSummary[]>(initialData.sessions);
-	let historySessions = $state<InventoryCountSessionSummary[]>(initialData.sessions);
-	let showCreateModal = $state(false);
-	let scopeType = $state<InventoryCountScopeType>('ALL');
-	let scopeValue = $state<ProductType | ''>('');
-	let notes = $state('');
-	let formError = $state('');
+
+	const initialConfig = untrack(() => data.config);
+	const coverageSnapshot = untrack(() => data.coverage) as CoverageData;
+	const initialSessions = untrack(() => data.sessions) as CountSessionSummary[];
+	const initialUsers = untrack(() => data.responsibleOptions);
+
+	let sessions = $state<CountSessionSummary[]>(initialSessions);
+	const sessionCountContext = getInventoryCountContext();
+	// La sesión activa puede cambiar desde el módulo (crear/cerrar).
+	const activeSessionId = $derived(sessionCountContext.activeSession?.id ?? null);
+	const activeSession = $derived(sessions.find((s) => s.id === activeSessionId) ?? null);
+
+	let tab = $state<'cov' | 'his'>(untrack(() => (getPageState().tab === 'his' ? 'his' : 'cov')));
+	let dim = $state<CoverageDim>(untrack(() => (getPageState().dim as CoverageDim) ?? 'BRAND'));
+	let selected = $state<string[]>([]);
+
+	function getPageState(): { tab: string | null; dim: string | null } {
+		if (typeof window === 'undefined') return { tab: null, dim: null };
+		const params = new SvelteURLSearchParams(window.location.search);
+		return { tab: params.get('tab'), dim: params.get('dim') };
+	}
+
+	function syncUrlState(next: { tab?: string; dim?: string }): void {
+		if (typeof window === 'undefined') return;
+		const params = new SvelteURLSearchParams(window.location.search);
+		if (next.tab) params.set('tab', next.tab);
+		if (next.dim) params.set('dim', next.dim);
+		window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+	}
+
+	let showNew = $state(false);
+	let showSettings = $state(false);
+	let preloadScope = $state<{
+		dim: 'ALL' | 'BRAND' | 'SUPPLIER' | 'TYPE';
+		values: Tag[];
+		quick: 'OLDEST' | 'NEVER' | null;
+	} | null>(null);
+	let config = $state<CountCycleConfig>(initialConfig);
 	let isSubmitting = $state(false);
-	let historyScopeFilter = $state<InventoryCountScopeType | ''>('');
-	let historyOpenedOn = $state('');
-	let isHistoryLoading = $state(false);
-	let historyRequestId = 0;
 
-	const totalSessions = $derived(summarySessions.length);
-	const openSessionsCount = $derived(
-		summarySessions.filter((session) => session.status === 'OPEN').length
-	);
-	const recentlyAppliedCount = $derived(
-		summarySessions.filter(
-			(session) => session.status === 'APPLIED' && isWithinLastDays(session.appliedAt, 14)
-		).length
-	);
-	const totalAuditedItems = $derived(
-		summarySessions.reduce(
-			(sum, session) => sum + (session.totalItemsCounted ?? session.countedLines ?? 0),
-			0
-		)
-	);
-	const hasHistoryFilters = $derived(Boolean(historyScopeFilter || historyOpenedOn));
-	const historyResultCount = $derived(historySessions.length);
-	const historyEmptyTitle = $derived(
-		hasHistoryFilters ? 'No hay sesiones para este filtro' : 'Sin sesiones registradas'
-	);
-	const historyEmptySubtitle = $derived(
-		hasHistoryFilters
-			? 'Prueba otro alcance o cambia el día seleccionado'
-			: 'Inicia el primer conteo físico para comenzar el historial operativo'
-	);
+	const summary = $derived(coverageSnapshot.summary);
+	const groups = $derived(coverageSnapshot.groups);
+	const options = $derived(coverageSnapshot.options);
 
-	function selectScope(nextScope: InventoryCountScopeType) {
-		scopeType = nextScope;
-
-		if (nextScope !== 'PRODUCT_CATEGORY') {
-			scopeValue = '';
-		}
+	function toggleRow(value: string): void {
+		selected = selected.includes(value)
+			? selected.filter((candidate) => candidate !== value)
+			: [...selected, value];
 	}
 
-	function openCreateModal() {
-		formError = '';
-		scopeType = 'ALL';
-		scopeValue = '';
-		notes = '';
-		showCreateModal = true;
+	function openQuick(quick: 'OLDEST' | 'NEVER'): void {
+		preloadScope = { dim: 'ALL', values: [], quick };
+		showNew = true;
 	}
 
-	async function handleCreateSession() {
-		if (isSubmitting) {
-			return;
-		}
+	function openSelection(): void {
+		preloadScope = {
+			dim,
+			values: selected.map((value) => ({
+				key: value,
+				label: options[dim].find((option) => option.id === value)?.name ?? value
+			})),
+			quick: null
+		};
+		showNew = true;
+	}
 
+	function openEmpty(): void {
+		preloadScope = { dim: 'ALL', values: [], quick: null };
+		showNew = true;
+	}
+
+	async function createCount(scope: {
+		quick?: 'OLDEST' | 'NEVER';
+		n?: number;
+		dim: 'ALL' | 'BRAND' | 'SUPPLIER' | 'TYPE';
+		values: Tag[];
+		responsibles: Tag[];
+		responsibleExternal: string[];
+		notes: string;
+	}): Promise<boolean> {
+		if (isSubmitting) return false;
 		isSubmitting = true;
-		formError = '';
-
 		try {
-			const result = await createSession({
-				scopeType,
-				scopeValue: scopeType === 'PRODUCT_CATEGORY' && scopeValue !== '' ? scopeValue : null,
-				notes: notes.trim() || null
-			});
-
-			if (!result.success) {
-				formError = result.error ?? 'No se pudo iniciar la sesión';
-				toast.error(formError);
-				return;
+			const response = await createSessionCmd({
+				dim: scope.dim,
+				values: scope.values.map((tag) => tag.key),
+				// Zod: z.enum().optional() y CoercedInteger.optional() aceptan undefined, no null.
+				quick: scope.quick ?? undefined,
+				n: scope.n ?? undefined,
+				notes: scope.notes,
+				responsibles: [
+					...scope.responsibles.map((tag) => ({
+						userId: scope.responsibles.some((r) => r.key === tag.key) ? tag.key : undefined,
+						displayName: tag.label,
+						isExternal: !scope.responsibles.some((r) => r.key === tag.key)
+					}))
+				]
+			} as never);
+			if (!response.success) {
+				toast.error(response.error ?? 'No se pudo iniciar la sesión');
+				return false;
 			}
-
-			const nextSummarySessions = mergeCreatedSession(summarySessions, result.session);
-			summarySessions = nextSummarySessions;
-			if (!historyScopeFilter && !historyOpenedOn) {
-				historySessions = nextSummarySessions;
-			}
-			activeSession = result.session;
-			inventoryCountContext.activeSession = { id: result.session.id };
-			showCreateModal = false;
-			await goto(resolve(`/inventory/count/${result.session.id}`));
+			const session = response.data;
+			sessions = [session, ...sessions];
+			sessionCountContext.activeSession = { id: session.id };
+			showNew = false;
+			toast.success(`Conteo #${session.id} en curso`);
+			await goto(resolve(`/inventory/count/${session.id}`));
+			return true;
 		} catch (error) {
-			formError = getErrorMessage(error, 'No se pudo iniciar la sesión');
-			toast.error(formError);
+			toast.error(getErrorMessage(error, 'No se pudo iniciar la sesión'));
+			return false;
 		} finally {
 			isSubmitting = false;
 		}
 	}
 
-	function goToSession(sessionId: number) {
-		goto(resolve(`/inventory/count/${sessionId}`));
-	}
-
-	function handleModalKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && !isSubmitting) {
-			showCreateModal = false;
-		}
-	}
-
-	async function refreshHistorySessions() {
-		historyRequestId += 1;
-		const requestId = historyRequestId;
-
-		if (!historyScopeFilter && !historyOpenedOn) {
-			isHistoryLoading = false;
-			historySessions = summarySessions;
+	async function onSettingsSave(next: CountCycleConfig): Promise<void> {
+		const response = await saveCountSettings(next);
+		if (!response.success) {
+			toast.error(response.error);
 			return;
 		}
-
-		isHistoryLoading = true;
-
-		try {
-			const nextSessions = await getSessionsQuery({
-				limit: 100,
-				scopeType: historyScopeFilter || undefined,
-				openedOn: historyOpenedOn || undefined
-			});
-
-			if (requestId !== historyRequestId) {
-				return;
-			}
-
-			historySessions = nextSessions;
-		} catch (error) {
-			if (requestId !== historyRequestId) {
-				return;
-			}
-
-			toast.error(getErrorMessage(error, 'No se pudo filtrar el historial'));
-		} finally {
-			if (requestId === historyRequestId) {
-				isHistoryLoading = false;
-			}
-		}
+		config = response.data;
+		showSettings = false;
+		toast.success('Ajustes del ciclo guardados');
+		await invalidate();
 	}
 
-	function toggleHistoryScopeFilter(nextScope: InventoryCountScopeType) {
-		historyScopeFilter = historyScopeFilter === nextScope ? '' : nextScope;
-		void refreshHistorySessions();
+	async function invalidate(): Promise<void> {
+		// Re-fetch cobertura tras cambios de settings (recarga de datos).
+		await goto(resolve('/inventory/count'), {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true
+		});
 	}
 
-	function applyHistoryDayFilter() {
-		void refreshHistorySessions();
-	}
-
-	function clearHistoryFilters() {
-		historyRequestId += 1;
-		historyScopeFilter = '';
-		historyOpenedOn = '';
-		isHistoryLoading = false;
-		historySessions = summarySessions;
+	function openSession(id: number): void {
+		goto(resolve(`/inventory/count/${id}`));
 	}
 </script>
 
 <svelte:head>
-	<title>Conteo Físico - Optikt</title>
+	<title>Conteo físico · Optikt</title>
 </svelte:head>
 
-<div class="space-y-4 p-4 sm:space-y-5 sm:p-6">
-	<CountListHeader
-		{recentlyAppliedCount}
-		{totalAuditedItems}
-		{activeSession}
-		onContinue={() => activeSession && goToSession(activeSession.id)}
-		onCreate={openCreateModal}
-	/>
+<div class="mx-auto max-w-[1360px] space-y-3 p-4">
+	<header class="flex flex-wrap items-center gap-3">
+		<h1 class="font-heading text-2xl font-bold text-brand-navy sm:text-3xl">Conteo físico</h1>
+		<CountTabs
+			value={tab}
+			options={[
+				{
+					value: 'cov',
+					label: 'Cobertura',
+					tooltip: 'Qué está verificado|Estado del inventario según los conteos cerrados.'
+				},
+				{
+					value: 'his',
+					label: 'Historial',
+					tooltip: 'Conteos anteriores|Abre el informe de cualquier conteo.'
+				}
+			]}
+			onchange={(value) => {
+				tab = value as typeof tab;
+				syncUrlState({ tab });
+			}}
+		/>
+		<span class="flex-1"></span>
 
-	<CountListMetrics
-		{totalSessions}
-		{openSessionsCount}
-		{recentlyAppliedCount}
-		{totalAuditedItems}
-		hasActiveSession={!!activeSession}
-	/>
+		{#if data.canManage}
+			<TriggerTooltip
+				title="Ajustes del ciclo"
+				text="Plazo, semáforo, umbral de diferencia y atajo. Son globales."
+				side="bottom"
+			>
+				{#snippet trigger({ props })}
+					<button
+						{...props}
+						type="button"
+						aria-label="Ajustes del ciclo"
+						class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container text-brand-navy transition-colors hover:bg-surface-container-high"
+						onclick={() => (showSettings = true)}
+					>
+						<Settings class="h-4 w-4" />
+					</button>
+				{/snippet}
+			</TriggerTooltip>
+		{/if}
 
-	<CountHistoryTable
-		sessions={historySessions}
-		{isHistoryLoading}
-		{historyResultCount}
-		emptyTitle={historyEmptyTitle}
-		emptySubtitle={historyEmptySubtitle}
-		bind:historyScopeFilter
-		bind:historyOpenedOn
-		{hasHistoryFilters}
-		onToggleScope={toggleHistoryScopeFilter}
-		onDayChange={applyHistoryDayFilter}
-		onClear={clearHistoryFilters}
-		onOpenSession={goToSession}
-	/>
+		{#if activeSession}
+			<CountButton variant="gold" onclick={() => openSession(activeSession.id)}>
+				{#snippet child()}
+					<Play class="h-4 w-4" />
+					Continuar
+				{/snippet}
+			</CountButton>
+		{:else}
+			<CountButton variant="gold" onclick={openEmpty}>
+				{#snippet child()}
+					<Plus class="h-4 w-4" />
+					Nuevo conteo
+				{/snippet}
+			</CountButton>
+		{/if}
+	</header>
 
-	<CountCreateModal
-		bind:showCreate={showCreateModal}
-		{isSubmitting}
-		bind:scopeType
-		bind:scopeValue
-		bind:notes
-		{formError}
-		onSelectScope={selectScope}
-		onClose={() => (showCreateModal = false)}
-		onSubmit={handleCreateSession}
-		onKeydown={handleModalKeydown}
-	/>
+	{#if activeSession && tab === 'cov'}
+		<section
+			class="flex flex-wrap items-center gap-2 rounded-lg bg-info-container px-4 py-2.5 text-sm font-medium text-on-info-container"
+		>
+			<b>Conteo #{activeSession.id} en curso</b>
+			<span class="tabular-nums">{activeSession.verifiedLines}/{activeSession.totalLines}</span>
+			<span>{activeSession.scopeLabel}</span>
+		</section>
+	{/if}
+
+	{#if tab === 'cov'}
+		<CycleCard
+			{summary}
+			cycleDays={config.cycleDays}
+			quickOldestLimit={config.quickOldestLimit}
+			onQuickOldest={() => openQuick('OLDEST')}
+			onQuickNever={() => openQuick('NEVER')}
+		/>
+		<GroupsCoverageCard
+			{dim}
+			{groups}
+			selectedValues={selected}
+			onDimChange={(next: CoverageDim) => {
+				dim = next;
+				selected = [];
+				syncUrlState({ dim: next });
+			}}
+			onToggleRow={toggleRow}
+			onClearSelection={() => (selected = [])}
+			onCountSelection={openSelection}
+		/>
+	{:else}
+		<HistoryList {sessions} onOpenSession={openSession} />
+	{/if}
 </div>
+
+<NewCountPanel
+	bind:open={showNew}
+	{options}
+	coverageSummary={summary}
+	{config}
+	responsibleOptions={initialUsers.map((option) => ({
+		userId: option.userId,
+		displayName: option.displayName
+	}))}
+	preload={preloadScope}
+	submitting={isSubmitting}
+	onSubmit={createCount}
+	onClose={() => (showNew = false)}
+/>
+
+{#if data.canManage}
+	<CycleSettingsPanel
+		bind:open={showSettings}
+		{config}
+		onClose={() => (showSettings = false)}
+		onSave={onSettingsSave}
+	/>
+{/if}

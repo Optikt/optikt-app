@@ -337,6 +337,13 @@
       "when": 1792196567326,
       "tag": "0047_cooing_caretaker",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1794446716065,
+      "tag": "0048_opposite_rick_jones",
+      "breakpoints": true
     }
   ]
 }

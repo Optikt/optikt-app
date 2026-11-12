@@ -1,68 +1,120 @@
 /**
- * Split from parent query module (DT1 phase 4) — logic unchanged, verbatim move: exported types.
+ * DTOs and contract types for the Conteo Físico module (rediseño).
+ * Split by concern: sessions.ts / lines.ts / shared.ts / coverage.ts / adjustments.ts.
  */
+import type {
+	InventoryCountScopeDim,
+	InventoryCountScopeKind,
+	InventoryCountSessionStatus
+} from '$lib/schemas/inventoryCount';
+import type {
+	InventoryCountLine,
+	InventoryCountResponsible,
+	InventoryCountSession
+} from '$lib/server/db/schema';
 
-import { type InventoryCountLine, type InventoryCountSession } from '$lib/server/db/schema';
+// ── Responsables ────────────────────────────────────────────────────────────
 
-export const INVENTORY_COUNT_SESSION_STATUSES = ['OPEN', 'APPLIED', 'CANCELLED'] as const;
-export type InventoryCountSessionStatus = (typeof INVENTORY_COUNT_SESSION_STATUSES)[number];
+export interface ResponsibleRow {
+	id: number;
+	userId: string | null;
+	displayName: string;
+	isExternal: boolean;
+	addedAt: string;
+}
 
-export const INVENTORY_COUNT_SCOPE_TYPES = ['ALL', 'PRODUCT_CATEGORY', 'LENS'] as const;
-export type InventoryCountScopeType = (typeof INVENTORY_COUNT_SCOPE_TYPES)[number];
+/** Entrada del panel de responsables (usuario activo o persona externa). */
+export interface ResponsibleEntry {
+	userId?: string | null;
+	displayName: string;
+	isExternal: boolean;
+}
 
-export const INVENTORY_COUNT_LINE_FILTERS = ['ALL', 'COUNTED', 'PENDING', 'WITH_DIFF'] as const;
-export type InventoryCountLineFilter = (typeof INVENTORY_COUNT_LINE_FILTERS)[number];
+// ── Sesiones ───────────────────────────────────────────────────────────────
 
-export interface InventoryCountSessionSummary extends InventoryCountSession {
+export interface CountSessionBase extends InventoryCountSession {
 	openedByName: string | null;
 	appliedByName: string | null;
 	cancelledByName: string | null;
+}
+
+export interface CountSessionSummary extends CountSessionBase {
+	/** Etiqueta legible del alcance (resuelve ids → nombres en server). */
+	scopeLabel: string;
 	totalLines: number;
-	countedLines: number;
+	verifiedLines: number;
 	pendingLines: number;
 	positiveDifferences: number;
 	negativeDifferences: number;
 	matchedLines: number;
 }
 
-export interface InventoryCountLineRow extends InventoryCountLine {
+export interface CountLineRow extends InventoryCountLine {
 	itemId: string;
 	itemName: string;
+	/** SKU del producto o tipo de lente. */
 	itemCode: string | null;
-	itemDetail: string | null;
-	currentStock: number;
+	/** Etiqueta del tipo para agrupar por «Tipo». */
+	typeLabel: string;
+	brandName: string;
+	supplierName: string;
 	countedByName: string | null;
+	recountedByName: string | null;
+	/** Legacy: quién marcó el checkbox «Hecho» antes del rediseño. */
 	adjustmentCompletedByName: string | null;
 }
 
-export interface InventoryCountSessionDetail extends InventoryCountSessionSummary {
-	lines: InventoryCountLineRow[];
-}
+export type InventoryCountSessionDetail = CountSessionSummary & {
+	responsibles: ResponsibleRow[];
+	lines: CountLineRow[];
+};
 
-export interface InventoryCountSnapshotInput {
-	scopeType: InventoryCountScopeType;
-	scopeValue?: string | null;
-	notes?: string | null;
-	openedById: string;
-}
+export type CountSessionDetail = InventoryCountSessionDetail;
+export type CountLineClient = CountLineRow;
 
-export interface GetInventoryCountSessionsOptions {
+export interface GetSessionsOptions {
 	limit?: number;
-	scopeType?: InventoryCountScopeType;
+	status?: InventoryCountSessionStatus;
 	openedOn?: string;
 }
 
+/** Alcance estructurado de una sesión nueva. */
+export interface ScopeSelection {
+	kind: InventoryCountScopeKind;
+	dim: InventoryCountScopeDim;
+	values: string[];
+	n: number | null;
+}
+
 export interface UpsertCountLineInput {
-	sessionId: number;
-	itemId: string;
-	itemType: 'PRODUCT' | 'LENS';
+	sessionId?: number;
+	lineId: number;
 	countedStock: number;
 	userId: string;
 	notes?: string | null;
 }
 
-export interface SetCountLineAdjustmentStatusInput {
+export interface RecountLineInput {
 	lineId: number;
-	adjustmentCompleted: boolean;
+	recountedStock: number;
 	userId: string;
+}
+
+export interface CreateCountSessionInput {
+	scopeKind: InventoryCountScopeKind;
+	scopeDim: InventoryCountScopeDim;
+	scopeValues: string[];
+	scopeN: number | null;
+	notes: string | null;
+	openedById: string;
+	responsibles: Array<Pick<InventoryCountResponsible, 'userId' | 'displayName' | 'isExternal'>>;
+}
+
+// ── Cobertura ──────────────────────────────────────────────────────────────
+
+export interface DiffCostEntry {
+	itemType: 'PRODUCT' | 'LENS';
+	productId: string | null;
+	lensCatalogItemId: string | null;
+	fifoCost: number | null;
 }
