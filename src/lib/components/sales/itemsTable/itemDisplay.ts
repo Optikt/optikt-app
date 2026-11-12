@@ -90,3 +90,13 @@ export function isProgressiveItem(item: SaleItemWithDetails): boolean {
 	const name = item.snapshotName ?? '';
 	return /Progresivo|Bifocal/i.test(name);
 }
+
+/**
+ * Mounting measures missing for assembly (optional data — absent renders "—").
+ * Progressive/bifocal lenses need ALT + naso-pupilar per eye; DP is not required.
+ */
+export function missingMountingMeasures(item: SaleItemWithDetails): boolean {
+	return (
+		item.odAltura == null || item.osAltura == null || item.npRight == null || item.npLeft == null
+	);
+}

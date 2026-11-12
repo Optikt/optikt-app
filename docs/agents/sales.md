@@ -33,6 +33,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 **Items / modificadores**
 
 - `LENS_PAIR` exige receta al momento (snapshot OD/OS en `sale_items`); `TREATMENT` es hijo con `parentSaleItemId` y debe compartir proveedor con el cristal — validado en create (`createSale.ts:43-46`) y edit (`updateSale.ts:104-109`).
+- Medidas de montaje snapshot en `sale_items` (`dp`, `np_right`, `np_left`, opcionales): escritas en create (`wizardSubmission.ts` `buildSaleItemsFromWizard`) y edit (`editSaleLensAdapter.ts`); migración `0048` backfilla desde la receta vinculada. Ausentes → "—" en `LensRxPanel` y aviso ámbar solo si falta ALT/DNP en progresivos/bifocales (`missingMountingMeasures`); DP nunca es obligatorio. La conversión cotización→venta aún no copia medidas (mismo hueco que ALT).
 - `FREE_ITEM` no consume FIFO y tiene fila 1:1 `sale_item_free_details` con `enrichment_status PENDING→ENRICHED` (`server/sales/enrichFreeItem.ts:15-62`).
 - Costos snapshot post-venta solo del módulo lens: `updateItemCosts` recalcula `snapshotCostTotal/Unit` (`updateItemCosts.ts:21-37`).
 - Edición de items = **reseteo completo del inventario** (revert con `CANCEL_REVERT` + re-consumo) en una sola tx; items viejos soft-delete en cascada (`updateSale.ts:36-37,178-308`). Falla si COMPLETED (`:51-53`) o no-ADMIN si IN_PROGRESS/READY (`:55-64`).

@@ -2,7 +2,7 @@
 	import { TriangleAlert } from '@lucide/svelte';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 	import { formatAxis, formatOpticalValue } from '$lib/utils';
-	import { isProgressiveItem } from './itemDisplay';
+	import { isProgressiveItem, missingMountingMeasures } from './itemDisplay';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 
 	interface Props {
@@ -14,13 +14,12 @@
 	/**
 	 * Expanded prescription table (mockup Opción B).
 	 *
-	 * ALT / DP / DNP are NOT persisted on sale items yet (prompt §13.5): the
-	 * measures block renders for progressive/bifocal lenses with faded "—"
-	 * values and the amber warning until the data exists.
+	 * ALT / DP / DNP are snapshotted on the sale item (optional): absent values
+	 * render "—" and progressive/bifocal lenses keep the amber assembly warning.
 	 */
 	const progressive = $derived(isProgressiveItem(item));
 	const showMeasures = $derived(progressive);
-	const missingMeasures = $derived(progressive);
+	const missingMeasures = $derived(progressive && missingMountingMeasures(item));
 
 	const COLS_BASE = 'grid-cols-[30px_repeat(4,56px)]';
 	const COLS_MEASURES = 'grid-cols-[30px_repeat(4,56px)_14px_repeat(3,50px)]';
@@ -50,6 +49,9 @@
 	}
 	function axis(value: number | null | undefined): string | null {
 		return value == null ? null : formatAxis(value);
+	}
+	function mm(value: number | null | undefined): string | null {
+		return value == null ? null : String(value);
 	}
 </script>
 
@@ -126,9 +128,9 @@
 		<span class="text-right font-medium tabular-nums">{optical(od.addition) ?? '—'}</span>
 		{#if showMeasures}
 			<span class="h-4 w-px justify-self-center bg-outline-variant"></span>
-			<span class="text-right font-medium text-on-surface-variant/60 tabular-nums">—</span>
-			<span class="text-right font-medium text-on-surface-variant/60 tabular-nums">—</span>
-			<span class="text-right font-medium text-on-surface-variant/60 tabular-nums">—</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.odAltura) ?? '—'}</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.dp) ?? '—'}</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.npRight) ?? '—'}</span>
 		{/if}
 
 		<!-- OI -->
@@ -141,9 +143,9 @@
 		<span class="text-right font-medium tabular-nums">{optical(os.addition) ?? '—'}</span>
 		{#if showMeasures}
 			<span class="h-4 w-px justify-self-center bg-outline-variant"></span>
-			<span class="text-right font-medium text-on-surface-variant/60 tabular-nums">—</span>
-			<span class="text-right font-medium text-on-surface-variant/60 tabular-nums">—</span>
-			<span class="text-right font-medium text-on-surface-variant/60 tabular-nums">—</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.osAltura) ?? '—'}</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.dp) ?? '—'}</span>
+			<span class="text-right font-medium tabular-nums">{mm(item.npLeft) ?? '—'}</span>
 		{/if}
 	</div>
 

@@ -11,6 +11,7 @@ import {
 	itemLabel,
 	itemName,
 	itemSubtitle,
+	missingMountingMeasures,
 	type DisplayGroup
 } from './itemDisplay';
 
@@ -152,5 +153,16 @@ describe('isProgressiveItem', () => {
 		expect(isProgressiveItem(item({ snapshotName: 'Cristal Progresivo 1.60' }))).toBe(true);
 		expect(isProgressiveItem(item({ snapshotName: 'Cristal Bifocal' }))).toBe(true);
 		expect(isProgressiveItem(item({ snapshotName: 'Monofocal' }))).toBe(false);
+	});
+});
+
+describe('missingMountingMeasures', () => {
+	it('needs ALT + naso-pupilar per eye (DP alone is not required)', () => {
+		expect(missingMountingMeasures(item({}))).toBe(true);
+		expect(missingMountingMeasures(item({ odAltura: 18, osAltura: 19, npRight: 31 }))).toBe(true);
+		// Full ALT + DNP with NO dp: still complete (DP is optional).
+		expect(
+			missingMountingMeasures(item({ odAltura: 18, osAltura: 19, npRight: 31, npLeft: 32 }))
+		).toBe(false);
 	});
 });

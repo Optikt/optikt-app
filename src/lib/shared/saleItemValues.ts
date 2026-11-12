@@ -31,6 +31,10 @@ export interface SaleItemValueSource {
 	osAxis?: Nullable<number>;
 	osAddition?: Nullable<number>;
 	osAltura?: Nullable<number>;
+	/** Mounting measures (sale items only — quote items don't persist them). */
+	dp?: Nullable<number>;
+	npRight?: Nullable<number>;
+	npLeft?: Nullable<number>;
 	quantity: number;
 	unitPrice: number;
 	discount: number;
