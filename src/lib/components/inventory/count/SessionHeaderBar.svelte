@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft, RefreshCw } from '@lucide/svelte';
+	import { ArrowLeft, DatabaseZap, RefreshCw } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import ResponsibleStack from './ui/ResponsibleStack.svelte';
 	import CountButton from './ui/CountButton.svelte';
@@ -26,7 +26,11 @@
 		onStepClick: (step: 1 | 2 | 3) => void;
 		onOpenResponsibles: () => void;
 		onCancel?: () => void;
-		/** «Refrescar stock»: sincroniza la referencia con el stock vivo. */
+		/** «Actualizar datos»: recarga sesión/líneas/responsables desde el server. */
+		onRefresh?: () => void;
+		/** Hay una recarga de la sesión en vuelo (icono gira). */
+		isRefreshing?: boolean;
+		/** «Refrescar stock»: sincroniza la referencia con el stock vivo (escribe). */
 		onRefreshStock?: () => void;
 		/** Hay un refresco de stock en vuelo (botón aria-disabled). */
 		refreshBusy?: boolean;
@@ -47,6 +51,8 @@
 		onStepClick,
 		onOpenResponsibles,
 		onCancel,
+		onRefresh,
+		isRefreshing = false,
 		onRefreshStock,
 		refreshBusy = false
 	}: Props = $props();
@@ -95,6 +101,26 @@
 			</button>
 		{/snippet}
 	</TriggerTooltip>
+
+	{#if phase !== 3 && onRefresh}
+		<TriggerTooltip
+			title="Actualizar datos"
+			text="Recarga el stock esperado y las líneas por si registraste ventas u otros movimientos durante el conteo."
+			side="bottom"
+		>
+			{#snippet trigger({ props })}
+				<button
+					{...props}
+					type="button"
+					aria-label="Actualizar datos de la sesión"
+					class="rounded-lg p-1.5 transition-colors hover:bg-white/10"
+					onclick={onRefresh}
+				>
+					<RefreshCw class={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+				</button>
+			{/snippet}
+		</TriggerTooltip>
+	{/if}
 
 	<h2 class="font-heading text-sm font-bold tracking-tight">
 		{title} <span class="opacity-70">· {scope}</span>
@@ -175,7 +201,7 @@
 						onRefreshStock();
 					}}
 				>
-					<RefreshCw class="h-5 w-5 {refreshBusy ? 'animate-spin' : ''}" />
+					<DatabaseZap class="h-5 w-5 {refreshBusy ? 'animate-spin' : ''}" />
 				</button>
 			{/snippet}
 		</TriggerTooltip>
