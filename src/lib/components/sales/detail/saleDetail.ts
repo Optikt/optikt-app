@@ -27,6 +27,14 @@ export function refundDecisionTitle(refundStatus: string | null | undefined): st
 	return 'Sin pagos previos';
 }
 
+/** Forward sale-status flow (stepper + menu gating). Shared by hero + actions. */
+export const SALE_STATUS_FLOW = [
+	SaleStatus.PENDING,
+	SaleStatus.IN_PROGRESS,
+	SaleStatus.READY,
+	SaleStatus.COMPLETED
+] as const;
+
 export function nextStatusTargets(status: string): SaleStatus[] | null {
 	if (status === SaleStatus.PENDING) {
 		return [SaleStatus.IN_PROGRESS, SaleStatus.READY, SaleStatus.COMPLETED];

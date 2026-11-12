@@ -43,12 +43,18 @@ export default defineConfig({
 				'src/lib/components/sales/editSale/editSaleLensAdapter.ts',
 				'src/lib/components/sales/editSaleDraft.ts',
 				'src/lib/components/sales/editSaleValidation.ts',
+				'src/lib/components/sales/detail/facturaCalculator.ts',
+				'src/lib/components/sales/detail/saleBreakdown.ts',
+				'src/lib/components/sales/detail/saleDetail.ts',
+				'src/lib/components/sales/itemsTable/costTotals.ts',
+				'src/lib/components/sales/itemsTable/itemDisplay.ts',
 				'src/lib/components/sales/payments/paymentFormValues.ts',
 				'src/lib/components/sales/payments/paymentFormDerived.ts',
 				'src/lib/components/sales/payments/purchasePayment.ts',
 				'src/lib/components/sales/payments/purchaseOrderProntoPago.ts',
 				'src/lib/utils/format.ts',
 				'src/lib/utils/index.ts',
+				'src/lib/utils/saleDetail.ts',
 				'src/lib/components/ui/chart/chart-utils.ts'
 			],
 			thresholds: {

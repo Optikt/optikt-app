@@ -9,8 +9,8 @@
 ## 0. Contexto de producto (importante para decisiones de diseño)
 
 - **Optikt** es un sistema de gestión para una **óptica en Venezuela**: vende monturas, cristales (lentes) con prescripción, tratamientos y "ítems libres" (Servicios, Accesorios dentro de un pack).
-- **Moneda referencial: USD.** Todos los precios de venta se expresan en `$` (formato `formatPrice`, locale `es-VE`, ej. `$1.234,50`). Los clientes mezclan métodos de pago en Bs (bolívares a la **tasa BCV**), USD efectivo, EUR, USDT (Binance) y PayPal. **Cada abono registra la tasa usada** (*rate freeze*: la tasa queda congelada en el momento del pago).
-- **IVA incluido en el precio (*tax-inclusive*):** el precio de venta YA incluye IVA (tasa snapshot de la venta, típicamente 16%). La vista lo **descompone** para mostrar `base + IVA`.
+- **Moneda referencial: USD.** Todos los precios de venta se expresan en `$` (formato `formatPrice`, locale `es-VE`, ej. `$1.234,50`). Los clientes mezclan métodos de pago en Bs (bolívares a la **tasa BCV**), USD efectivo, EUR, USDT (Binance) y PayPal. **Cada abono registra la tasa usada** (_rate freeze_: la tasa queda congelada en el momento del pago).
+- **IVA incluido en el precio (_tax-inclusive_):** el precio de venta YA incluye IVA (tasa snapshot de la venta, típicamente 16%). La vista lo **descompone** para mostrar `base + IVA`.
 - **Canal Cashea:** una venta puede marcarse como `isCashea` (compra a cuotas vía Cashea). Se muestra con un isotipo como badge.
 - **Usuarios:** roles `ADMIN`, `MANAGER` (ven todo), `SELLER` (gestiona solo sus propias ventas), `VIEWER` (solo lectura). La UI condiciona acciones por esto.
 
@@ -22,22 +22,23 @@
 
 **Carga inicial** (`+page.server.ts`, en paralelo):
 
-| Dato | Origen | Usado para |
-|---|---|---|
-| `sale` (`SaleWithRelations`) | `findSaleByIdWithRelations` | Todo; incluye `customer` (nombre, cédula, teléfono, fecha de nacimiento), `seller`, `cancelledBy`, `refundedBy` |
-| `items` (`SaleItemWithDetails[]`) | `getSaleItemsWithDetails` | Tabla de artículos con snapshots y RX embebidos |
-| `payments` | `getSalePayments(id, { includeVoided: true })` | Lista de abonos (ojo: **incluye pagos voidados**, la lista los muestra tal cual) |
-| `movements` | `getMovementsWithDetails(referenceType: SALE)` | Modal de movimientos de stock |
-| `suppliers` | `getAllSuppliers` | Selectores de proveedor (costos ítems libres) |
-| `allTreatments` | `getAllTreatments` | Solo para el editor de venta |
-| `auditHistory` | `getEntityHistory('sale', id)` | Timeline + drawer de historial |
-| `prescription` | `getSalePrescription` | Solo para el editor de venta (no se muestra en la vista) |
+| Dato                              | Origen                                         | Usado para                                                                                                      |
+| --------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `sale` (`SaleWithRelations`)      | `findSaleByIdWithRelations`                    | Todo; incluye `customer` (nombre, cédula, teléfono, fecha de nacimiento), `seller`, `cancelledBy`, `refundedBy` |
+| `items` (`SaleItemWithDetails[]`) | `getSaleItemsWithDetails`                      | Tabla de artículos con snapshots y RX embebidos                                                                 |
+| `payments`                        | `getSalePayments(id, { includeVoided: true })` | Lista de abonos (ojo: **incluye pagos voidados**, la lista los muestra tal cual)                                |
+| `movements`                       | `getMovementsWithDetails(referenceType: SALE)` | Modal de movimientos de stock                                                                                   |
+| `suppliers`                       | `getAllSuppliers`                              | Selectores de proveedor (costos ítems libres)                                                                   |
+| `allTreatments`                   | `getAllTreatments`                             | Solo para el editor de venta                                                                                    |
+| `auditHistory`                    | `getEntityHistory('sale', id)`                 | Timeline + drawer de historial                                                                                  |
+| `prescription`                    | `getSalePrescription`                          | Solo para el editor de venta (no se muestra en la vista)                                                        |
 
 `sale` además trae: `saleDate` (alias de `createdAt` — la fecha de venta es la fecha de creación, single date truth), `orderNumber`, `status`, `subtotal`, `discount`, `discountType`, `total`, `snapshotTaxRate`, `paidAmountBcvUsd`, `isCashea`, `notes`, `refundStatus`, `refundAmount`, `refundNotes`, `cancellationReason`, `cancelledAt`, `updatedAt`.
 
 Título de la pestaña: `Venta #0004 — Nombre del cliente — Optikt`.
 
 **Layout general:** contenedor `max-w-7xl`, fondo `bg-surface`. Grid de **2 columnas en desktop (3/5 – 2/5)**:
+
 - Izquierda: tarjeta cliente + tabla de artículos.
 - Derecha (sticky al hacer scroll): resumen financiero + abonos + historial + tarjeta de reembolso + link a movimientos + "última actualización".
 
@@ -72,21 +73,21 @@ Grid de tarjetas condicionales entre el header y el grid principal:
    - `REFUNDED` → rojo, título "Reembolso emitido"
    - `RETAINED` → ámbar, título "Depósito retenido"
    - otro con pagos → gris, "Sin pagos previos"
-   Contiene: motivo de cancelación (o "Sin motivo registrado"), fecha-hora de cancelación, quién la canceló, y un bloque interno "Resolución financiera" con el monto reembolsado en mono grande + notas del reembolso. Si `refundStatus === NO_PAYMENT`: "Sin pagos previos, no aplica reembolso."
+     Contiene: motivo de cancelación (o "Sin motivo registrado"), fecha-hora de cancelación, quién la canceló, y un bloque interno "Resolución financiera" con el monto reembolsado en mono grande + notas del reembolso. Si `refundStatus === NO_PAYMENT`: "Sin pagos previos, no aplica reembolso."
 3. **Aviso de ítems libres pendientes** — banda ámbar si hay FREE_ITEMs con `enrichmentStatus === PENDING`: "⚠ N ítems libres pendientes de completar."
 
 ### 2.3 Tarjeta de datos generales (`SaleDetailCustomerCard`)
 
 Tarjeta blanca con grid de 2 columnas × 3 filas:
 
-| Campo | Muestra |
-|---|---|
-| **Cliente** | Nombre completo + cédula (`RIF/Cédula no registrada` como fallback) + teléfono (solo si hay customer) + edad calculada (`birthDate`, "N años") |
-| **Ver cliente** | Link con icono a `/customers/[id]` (solo si hay customer asociado) |
-| **Vendedor** | `seller.fullName` o "Sin asignar" |
-| **N° Orden** | `#0004` |
-| **Fecha** | `saleDate` (solo fecha, es-VE) |
-| **Estado** | Badge de estado con colores canónicos: Pendiente=warning, En Progreso=info, Lista para Retirar=purple, Completada=success, Cancelada=error. (IN_PROGRESS se renderiza con un span manual azul; el resto con `SaleStatusBadge`) |
+| Campo           | Muestra                                                                                                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Cliente**     | Nombre completo + cédula (`RIF/Cédula no registrada` como fallback) + teléfono (solo si hay customer) + edad calculada (`birthDate`, "N años")                                                                                 |
+| **Ver cliente** | Link con icono a `/customers/[id]` (solo si hay customer asociado)                                                                                                                                                             |
+| **Vendedor**    | `seller.fullName` o "Sin asignar"                                                                                                                                                                                              |
+| **N° Orden**    | `#0004`                                                                                                                                                                                                                        |
+| **Fecha**       | `saleDate` (solo fecha, es-VE)                                                                                                                                                                                                 |
+| **Estado**      | Badge de estado con colores canónicos: Pendiente=warning, En Progreso=info, Lista para Retirar=purple, Completada=success, Cancelada=error. (IN_PROGRESS se renderiza con un span manual azul; el resto con `SaleStatusBadge`) |
 
 ### 2.4 Tabla de artículos y servicios (`SaleItemsTable`) — el corazón de la vista
 
@@ -97,6 +98,7 @@ Sección con header "Artículos y servicios" + contador de grupos ("N items").
 **Columnas:** `Producto | Cant. | Precio | Total`.
 
 **Fila principal — izquierda:**
+
 - **Icono categorizado:** 👁 Eye (cristal, ámbar), ✨ Sparkles (ítem libre, gris), 📦 Package (montura/producto, índigo).
 - **Nombre principal + badge de tipo:** `CRISTAL` (ámbar), `ÍTEM LIBRE` (gris), `MONTURA` (índigo). Debajo, la línea de detalles: segunda parte del nombre separada por `·`, o el SKU.
 - **Descuento por ítem** si existe: `- $X (Y%)` en rojo.
@@ -113,11 +115,13 @@ Sección con header "Artículos y servicios" + contador de grupos ("N items").
 ● OD    -1.25  -0.50  170    +2.00  —
 ● OI    -1.75  —      015    +2.00  —
 ```
+
 (mono, OD punto azul / OI punto rojo; valores vacíos como `—`; Alt. de montaje OD/OI aparecen como "—" hoy — están maquetados pero sin datos.)
 
 **Subfilas de tratamiento (`TreatmentSubRow`):** ítem de tratamiento con ícono 🧪 morado, badge "TRATAMIENTO", categoría (label del enum), cant., precio y total de línea.
 
 **Footer de la tabla (`ItemsTableFooter`):**
+
 - `Costo interno total` (suma de costos de todos los grupos, solo si hay algún costo) — dato para el negocio, no lo ve el cliente.
 - `Subtotal general`, luego `Descuento (monto o %)` en rojo (si >0) y `Total`.
 
@@ -196,16 +200,16 @@ Texto alineado a la derecha, itálica: "Última actualización en la venta [fech
 
 ## 4. Modelos / overlays disparados desde esta página
 
-| Overlay | Abre desde | Qué hace | ¿En alcance del rediseño? |
-|---|---|---|---|
-| **`EditSaleModal`** (sidebar lateral) | Botón "Editar" | Editor completo de la venta — **rediseñado hace poco; NO modificar, solo mencionar** | ❌ FUERA de alcance |
-| `SalePaymentDrawer` (SlideOver) | Botón "Cobrar / Registrar Pago" | Formulario de pago multi-moneda (payment form, rail por moneda, tasa BCV live del store), reset por drawerResetKey | Contexto puntual: se puede re-mencionar como flujo |
-| `CancelSaleModal` (2 pasos: motivo + decisión de reembolso, con confirmación) | Botón "Cancelar" | Sugerencias de motivo, elige REFUNDED/RETAINED/NO_PAYMENT con notas | Solo como acción de entrada |
-| `SaleStatusModal` (ConfirmModal) | "Cambiar Estado" o auto tras pago completo | Lista targets con descripciones y validación de orden de flujo | — |
-| `EnrichItemModal` | "Completar ítem" de un FREE_ITEM | Pide costo real, proveedor, notas ópticas; re-enriquecimiento con paso de confirmación | — |
-| `SaleMovementsModal` | Link de movimientos | Historial de inventario de la venta | — |
-| `SaleAuditHistoryDrawer` (SlideOver) | "Ver historial" | Timeline completa de cambios | — |
-| `PDFViewerModal` | "Ver Recibo" | Vista previa + descarga del PDF del recibo (`/api/pdf/sale/[id]`) | — |
+| Overlay                                                                       | Abre desde                                 | Qué hace                                                                                                           | ¿En alcance del rediseño?                          |
+| ----------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| **`EditSaleModal`** (sidebar lateral)                                         | Botón "Editar"                             | Editor completo de la venta — **rediseñado hace poco; NO modificar, solo mencionar**                               | ❌ FUERA de alcance                                |
+| `SalePaymentDrawer` (SlideOver)                                               | Botón "Cobrar / Registrar Pago"            | Formulario de pago multi-moneda (payment form, rail por moneda, tasa BCV live del store), reset por drawerResetKey | Contexto puntual: se puede re-mencionar como flujo |
+| `CancelSaleModal` (2 pasos: motivo + decisión de reembolso, con confirmación) | Botón "Cancelar"                           | Sugerencias de motivo, elige REFUNDED/RETAINED/NO_PAYMENT con notas                                                | Solo como acción de entrada                        |
+| `SaleStatusModal` (ConfirmModal)                                              | "Cambiar Estado" o auto tras pago completo | Lista targets con descripciones y validación de orden de flujo                                                     | —                                                  |
+| `EnrichItemModal`                                                             | "Completar ítem" de un FREE_ITEM           | Pide costo real, proveedor, notas ópticas; re-enriquecimiento con paso de confirmación                             | —                                                  |
+| `SaleMovementsModal`                                                          | Link de movimientos                        | Historial de inventario de la venta                                                                                | —                                                  |
+| `SaleAuditHistoryDrawer` (SlideOver)                                          | "Ver historial"                            | Timeline completa de cambios                                                                                       | —                                                  |
+| `PDFViewerModal`                                                              | "Ver Recibo"                               | Vista previa + descarga del PDF del recibo (`/api/pdf/sale/[id]`)                                                  | —                                                  |
 
 ---
 
@@ -290,4 +294,4 @@ Texto alineado a la derecha, itálica: "Última actualización en la venta [fech
 
 ---
 
-*Documento generado para el rediseño de la vista de detalle de venta. Fecha: 2026-11-08. Arbol de archivos de referencia: `src/routes/(app)/sales/[id]/{+page.svelte,+page.server.ts}` · `src/lib/components/sales/{detail,itemsTable,editSale}/` · `src/lib/utils/saleDetail.ts` · `src/lib/shared/{tax.ts,enums/}`.*
+_Documento generado para el rediseño de la vista de detalle de venta. Fecha: 2026-11-08. Arbol de archivos de referencia: `src/routes/(app)/sales/[id]/{+page.svelte,+page.server.ts}` · `src/lib/components/sales/{detail,itemsTable,editSale}/` · `src/lib/utils/saleDetail.ts` · `src/lib/shared/{tax.ts,enums/}`._

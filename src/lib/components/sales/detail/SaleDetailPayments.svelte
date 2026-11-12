@@ -4,11 +4,7 @@
 	import { ConfirmModal } from '$lib/components/ui';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import { voidPayment } from '$lib/remote/sales/payments.remote';
-	import {
-		PAYMENT_METHOD_LABELS,
-		PaymentMethod,
-		isBsPaymentMethod
-	} from '$lib/shared/enums';
+	import { PAYMENT_METHOD_LABELS, PaymentMethod, isBsPaymentMethod } from '$lib/shared/enums';
 	import { logger } from '$lib/utils/logger';
 	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
 	import { getErrorMessage } from '$lib/utils/errors';
@@ -132,7 +128,9 @@
 			{#each activePayments as payment (payment.id)}
 				{@const line = amountLine(payment)}
 				<div class="grid grid-cols-[32px_1fr_auto_26px] items-center gap-3 px-4 py-2.5">
-					<span class="grid h-[32px] w-[32px] place-items-center rounded-lg bg-surface-container-high text-brand-navy">
+					<span
+						class="grid h-[32px] w-[32px] place-items-center rounded-lg bg-surface-container-high text-brand-navy"
+					>
 						<CreditCard class="h-4 w-4" />
 					</span>
 					<div class="min-w-0">
@@ -149,10 +147,7 @@
 							{formatPrice(payment.amountBcvUsd)}
 						</p>
 						{#snippet rateTip({ props }: { props: Record<string, unknown> })}
-							<div
-								{...props}
-								class="cursor-help text-xs text-on-surface-variant tabular-nums"
-							>
+							<div {...props} class="cursor-help text-xs text-on-surface-variant tabular-nums">
 								{line.amount}
 								<span class="font-mono text-[11px] text-outline">{line.rate}</span>
 							</div>
@@ -188,7 +183,7 @@
 							<span class="text-[13px] font-semibold text-on-surface line-through">
 								{methodLabel(payment)} · anulado
 							</span>
-							<span class="text-[13px] font-semibold text-on-surface line-through tabular-nums">
+							<span class="text-[13px] font-semibold text-on-surface tabular-nums line-through">
 								{formatPrice(payment.amountBcvUsd)}
 							</span>
 						</div>
