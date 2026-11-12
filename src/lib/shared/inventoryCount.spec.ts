@@ -21,7 +21,8 @@ import {
 	lineMatchesFilter,
 	lineMatchesSearch,
 	lineNeedsCost,
-	lineNeedsAdjustment
+	lineNeedsAdjustment,
+	sumGroupUnits
 } from './inventoryCount';
 import type { CountLineCore } from './inventoryCount';
 
@@ -237,6 +238,24 @@ describe('filter y búsqueda de líneas', () => {
 		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: 'SKU-1' }, 'sku-1')).toBe(true);
 		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: 'SKU-1' }, 'nope')).toBe(false);
 		expect(lineMatchesSearch({ itemName: 'Montura X', itemCode: null }, '')).toBe(true);
+	});
+
+	it('sumGroupUnits suma contadas (0 si sin setear) y sistema', () => {
+		expect(
+			sumGroupUnits([
+				line({ systemStock: 7, countedStock: 8 }),
+				line({ systemStock: 5, countedStock: 5 }),
+				line({ systemStock: 3, countedStock: null })
+			])
+		).toEqual({ counted: 13, system: 15 });
+	});
+
+	it('sumGroupUnits usa el recuento si existe y vacío da 0/0', () => {
+		expect(sumGroupUnits([line({ systemStock: 4, countedStock: 9, recountedStock: 6 })])).toEqual({
+			counted: 6,
+			system: 4
+		});
+		expect(sumGroupUnits([])).toEqual({ counted: 0, system: 0 });
 	});
 });
 
