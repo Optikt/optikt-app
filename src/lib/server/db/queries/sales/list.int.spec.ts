@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDb } from '$lib/testing/integration/db';
 import { createSale, createSaleItem, createUser } from '$lib/testing/integration/factories';
+import { callRemote } from '$lib/testing/remoteHarness';
+import { listSales } from '$lib/remote/sales/queries.remote';
+import type { PaginatedSales } from '$lib/remote/sales/helpers';
+import type { ListSalesInput } from '$lib/schemas/sales';
 import {
 	countSales,
 	countSalesByStatus,
@@ -9,7 +13,7 @@ import {
 	listSaleSellers,
 	sumSalesForSelection
 } from './reads';
-import { SaleStatus } from '$lib/shared/enums';
+import { SaleStatus, UserRole } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { monthStart, toUTCString } from '$lib/dates';
 
@@ -158,6 +162,40 @@ describe('consultas del listado de ventas', () => {
 
 			expect(ids).toContain(withSales.id);
 			expect(ids).not.toContain(withoutSales.id);
+		});
+	});
+
+	describe('listSales (remote)', () => {
+		it('exige sesión (401 sin usuario)', async () => {
+			await expect(
+				callRemote(listSales, { page: 1, perPage: 10 }, { user: null })
+			).rejects.toMatchObject({ status: 401 });
+		});
+
+		it('aplica filtro de saldo + orden y devuelve facetas y selección', async () => {
+			const owed = await createSale({ total: 100, paidAmountBcvUsd: 0 });
+			await createSale({ total: 80, paidAmountBcvUsd: 80 }); // pagada
+			await createSale({ total: 999, paidAmountBcvUsd: 0, status: SaleStatus.CANCELLED });
+
+			const result = await callRemote<ListSalesInput, PaginatedSales>(
+				listSales,
+				{ page: 1, perPage: 10, balance: true, sort: 'balance' },
+				{ user: { id: crypto.randomUUID(), role: UserRole.ADMIN } }
+			);
+
+			expect(result.total).toBe(1);
+			expect(result.sales.map((s) => s.id)).toEqual([owed.id]);
+			expect(result.totalPages).toBe(1);
+
+			// Facetas: respetan el resto de filtros (saldo) e ignoran el de estados.
+			expect(result.facets[SaleStatus.PENDING]).toBe(1);
+			expect(result.facets[SaleStatus.COMPLETED]).toBe(0);
+			expect(result.facets[SaleStatus.CANCELLED]).toBe(0);
+
+			// Selección: solo las no canceladas que cumplen los filtros.
+			expect(result.selection.count).toBe(1);
+			expect(result.selection.totalUsd).toBeCloseTo(100, 6);
+			expect(result.selection.balanceUsd).toBeCloseTo(100, 6);
 		});
 	});
 });

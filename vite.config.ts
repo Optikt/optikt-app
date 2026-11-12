@@ -49,6 +49,8 @@ export default defineConfig({
 				'src/lib/components/sales/detail/saleDetail.ts',
 				'src/lib/components/sales/itemsTable/costTotals.ts',
 				'src/lib/components/sales/itemsTable/itemDisplay.ts',
+				'src/lib/components/sales/listParams.ts',
+				'src/lib/components/sales/saleDisplay.ts',
 				'src/lib/components/sales/payments/paymentFormValues.ts',
 				'src/lib/components/sales/payments/paymentFormDerived.ts',
 				'src/lib/components/sales/payments/purchasePayment.ts',

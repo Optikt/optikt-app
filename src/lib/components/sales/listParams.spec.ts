@@ -7,7 +7,8 @@ import {
 	parseSaleListSort,
 	parseSaleListView,
 	saleListDatePreset,
-	saleListPresetRange
+	saleListPresetRange,
+	saleListSortToOrder
 } from './listParams';
 
 describe('parseSaleListView', () => {
@@ -120,5 +121,20 @@ describe('saleListDatePreset', () => {
 			const range = saleListPresetRange(preset, now);
 			expect(saleListDatePreset(range.from, range.to, now)).toBe(preset);
 		}
+	});
+});
+
+describe('saleListSortToOrder', () => {
+	it('recent no impone columna (el default sigue siendo orderNumber DESC)', () => {
+		expect(saleListSortToOrder('recent')).toEqual({ orderSort: 'desc' });
+	});
+
+	it('balance y total ordenan descendente', () => {
+		expect(saleListSortToOrder('balance')).toEqual({ orderBy: 'balance', orderSort: 'desc' });
+		expect(saleListSortToOrder('total')).toEqual({ orderBy: 'total', orderSort: 'desc' });
+	});
+
+	it('old ordena por número de orden ascendente', () => {
+		expect(saleListSortToOrder('old')).toEqual({ orderBy: 'orderNumber', orderSort: 'asc' });
 	});
 });
