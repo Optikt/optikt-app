@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft } from '@lucide/svelte';
+	import { ArrowLeft, RefreshCw } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import ResponsibleStack from './ui/ResponsibleStack.svelte';
 	import CountButton from './ui/CountButton.svelte';
@@ -26,6 +26,9 @@
 		onStepClick: (step: 1 | 2 | 3) => void;
 		onOpenResponsibles: () => void;
 		onCancel?: () => void;
+		/** Refrescar la sesión: recarga líneas/stock esperado (ventas registradas mid-session). */
+		onRefresh?: () => void;
+		isRefreshing?: boolean;
 	}
 
 	let {
@@ -42,7 +45,9 @@
 		onCtaBlocked,
 		onStepClick,
 		onOpenResponsibles,
-		onCancel
+		onCancel,
+		onRefresh,
+		isRefreshing = false
 	}: Props = $props();
 
 	const steps = [1, 2, 3] as const;
@@ -89,6 +94,26 @@
 			</button>
 		{/snippet}
 	</TriggerTooltip>
+
+	{#if phase !== 3 && onRefresh}
+		<TriggerTooltip
+			title="Actualizar datos"
+			text="Recarga el stock esperado y las líneas por si registraste ventas u otros movimientos durante el conteo."
+			side="bottom"
+		>
+			{#snippet trigger({ props })}
+				<button
+					{...props}
+					type="button"
+					aria-label="Actualizar datos de la sesión"
+					class="rounded-lg p-1.5 transition-colors hover:bg-white/10"
+					onclick={onRefresh}
+				>
+					<RefreshCw class={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+				</button>
+			{/snippet}
+		</TriggerTooltip>
+	{/if}
 
 	<h2 class="font-heading text-sm font-bold tracking-tight">
 		{title} <span class="opacity-70">· {scope}</span>
