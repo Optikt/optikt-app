@@ -51,7 +51,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 **Inventario**
 
 - PRODUCT: FIFO completo (lotes + movimiento `SALE_OUT` + caché stock), con `sale_items.lotId` = lote primario (`queries/fifoConsumption.ts:56-120`, `schema/sales.ts:152-153`). Lente STOCK/no-product: solo decremento de contador.
-- Cancel/edición: `returnToLot` por cada `SALE_OUT` + movimiento `CANCEL_REVERT` (nunca hard-delete de movimientos) — `cancelSale.ts:46-113`.
+- Cancel/edición: `revertSaleInventory` devuelve **solo el neto pendiente por lote** (agrupa `SALE_OUT` + `CANCEL_REVERT` de la venta y revierte únicamente el saldo negativo) + movimiento `CANCEL_REVERT` (nunca hard-delete de movimientos) — `server/sales/revertSaleInventory.ts`, usado por `cancelSale.ts` y `updateSale.ts`. ⚠️ No reviertas cada `SALE_OUT` a ciegas: el log es inmutable y una segunda edición re-revertiría lo ya revertido (duplicaba stock del lote). Lote con neto ≥ 0 se salta (cubre datos fantasma pre-existentes).
 
 **Cancelación / reembolso**
 

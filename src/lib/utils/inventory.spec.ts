@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { planFifoConsumption, type FifoLotInput } from './inventory';
+import { planFifoConsumption, planSaleRevert, type FifoLotInput } from './inventory';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -222,5 +222,81 @@ describe('planFifoConsumption', () => {
 		const plan = planFifoConsumption(lots, 3);
 
 		expect(plan.lotsCount).toBe(1);
+	});
+});
+
+describe('planSaleRevert', () => {
+	const SALE_OUT = 'SALE_OUT';
+	const CANCEL_REVERT = 'CANCEL_REVERT';
+
+	it('returns the full outstanding quantity when nothing was reverted yet', () => {
+		const plan = planSaleRevert([
+			{ lotId: 'A', productId: 'p1', movementType: SALE_OUT, quantityDelta: -3 }
+		]);
+
+		expect(plan).toEqual([{ lotId: 'A', productId: 'p1', quantity: 3 }]);
+	});
+
+	it('nets a prior revert against the original SALE_OUT', () => {
+		// edit #1 reverted the original sale-out, then re-consumed
+		const plan = planSaleRevert([
+			{ lotId: 'A', productId: 'p1', movementType: SALE_OUT, quantityDelta: -2 },
+			{ lotId: 'A', productId: 'p1', movementType: CANCEL_REVERT, quantityDelta: 2 },
+			{ lotId: 'A', productId: 'p1', movementType: SALE_OUT, quantityDelta: -2 }
+		]);
+
+		// only the re-consumed 2 are outstanding — never the already-reverted 2
+		expect(plan).toEqual([{ lotId: 'A', productId: 'p1', quantity: 2 }]);
+	});
+
+	it('does not double-revert on a second edit (the reported bug)', () => {
+		// two edits each fully reverting and re-consuming: only the LAST
+		// consumption is outstanding, regardless of how many rounds happened
+		const plan = planSaleRevert([
+			{ lotId: 'A', productId: 'p1', movementType: SALE_OUT, quantityDelta: -1 },
+			{ lotId: 'A', productId: 'p1', movementType: CANCEL_REVERT, quantityDelta: 1 },
+			{ lotId: 'A', productId: 'p1', movementType: SALE_OUT, quantityDelta: -1 },
+			{ lotId: 'A', productId: 'p1', movementType: CANCEL_REVERT, quantityDelta: 1 },
+			{ lotId: 'A', productId: 'p1', movementType: SALE_OUT, quantityDelta: -1 }
+		]);
+
+		expect(plan).toEqual([{ lotId: 'A', productId: 'p1', quantity: 1 }]);
+	});
+
+	it('skips lots already fully returned', () => {
+		const plan = planSaleRevert([
+			{ lotId: 'A', productId: 'p1', movementType: SALE_OUT, quantityDelta: -1 },
+			{ lotId: 'A', productId: 'p1', movementType: CANCEL_REVERT, quantityDelta: 1 }
+		]);
+
+		expect(plan).toEqual([]);
+	});
+
+	it('never returns more than went out (over-reverted history is clamped)', () => {
+		// phantom state left by the old bug: more reverted than consumed
+		const plan = planSaleRevert([
+			{ lotId: 'A', productId: 'p1', movementType: SALE_OUT, quantityDelta: -1 },
+			{ lotId: 'A', productId: 'p1', movementType: CANCEL_REVERT, quantityDelta: 2 }
+		]);
+
+		expect(plan).toEqual([]);
+	});
+
+	it('plans per lot, mixing multiple lots of the same sale', () => {
+		const plan = planSaleRevert([
+			{ lotId: 'A', productId: 'p1', movementType: SALE_OUT, quantityDelta: -2 },
+			{ lotId: 'B', productId: 'p2', movementType: SALE_OUT, quantityDelta: -1 },
+			{ lotId: 'B', productId: 'p2', movementType: CANCEL_REVERT, quantityDelta: 1 },
+			{ lotId: 'B', productId: 'p2', movementType: SALE_OUT, quantityDelta: -1 }
+		]);
+
+		expect(plan).toEqual([
+			{ lotId: 'A', productId: 'p1', quantity: 2 },
+			{ lotId: 'B', productId: 'p2', quantity: 1 }
+		]);
+	});
+
+	it('returns an empty plan when the sale has no movements', () => {
+		expect(planSaleRevert([])).toEqual([]);
 	});
 });

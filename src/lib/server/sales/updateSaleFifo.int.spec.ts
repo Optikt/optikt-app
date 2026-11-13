@@ -228,6 +228,92 @@ describe('updateSaleCore — FIFO inventory replacement', () => {
 		expect(productBAfter.stock).toBe(3);
 	});
 
+	it('does not double-revert when the sale is edited twice in a row', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const supplier = await createSupplier();
+		const material = await createMaterial();
+		const product = await createProduct({
+			supplierId: supplier.id,
+			materialId: material.id,
+			stock: 4
+		});
+		const purchaseOrder = await createPurchaseOrder({
+			supplierId: supplier.id,
+			createdById: admin.id
+		});
+		const poItem = await createPurchaseOrderItem({
+			purchaseOrderId: purchaseOrder.id,
+			productId: product.id
+		});
+		const lot = await createInventoryLot({
+			purchaseOrderItemId: poItem.id,
+			productId: product.id,
+			quantityInitial: 5,
+			quantityAvailable: 4,
+			createdAt: '2026-01-01T00:00:00.000Z'
+		});
+
+		const sale = await createSale({ sellerId: admin.id, subtotal: 20, total: 20 });
+		await createSaleItem({
+			saleId: sale.id,
+			productId: product.id,
+			lotId: lot.id,
+			quantity: 1,
+			unitPrice: 20
+		});
+		await createInventoryMovement({
+			movementType: InventoryMovementType.SALE_OUT,
+			lotId: lot.id,
+			productId: product.id,
+			quantityDelta: -1,
+			quantityBefore: 5,
+			quantityAfter: 4,
+			referenceType: MovementReferenceType.SALE,
+			referenceId: sale.id,
+			createdById: admin.id
+		});
+
+		// Edit #1: quantity 1 → 3. Reverts the original SALE_OUT, re-consumes 3.
+		const first = await updateSaleCore(
+			{ id: sale.id, reason: 'primer ajuste', items: [productItem(product.id, 3)] },
+			ctx(admin.id)
+		);
+		expect(first.success).toBe(true);
+
+		// Edit #2: quantity 3 → 2. Must return ONLY the 3 from edit #1 —
+		// never the original sale-out again (that was the double-revert bug).
+		const second = await updateSaleCore(
+			{ id: sale.id, reason: 'segundo ajuste', items: [productItem(product.id, 2)] },
+			ctx(admin.id)
+		);
+		expect(second.success).toBe(true);
+
+		const [lotAfter] = await db.select().from(inventoryLots).where(eq(inventoryLots.id, lot.id));
+		const [productAfter] = await db.select().from(products).where(eq(products.id, product.id));
+
+		// 5 − 2 (current consumption) = 3, not 4 from re-reverting the original.
+		expect(lotAfter.quantityAvailable).toBe(3);
+		expect(productAfter.stock).toBe(3);
+
+		// Each edit reverted exactly its predecessor once: 2 CANCEL_REVERT rows.
+		const movements = await db
+			.select()
+			.from(inventoryMovements)
+			.where(
+				and(
+					eq(inventoryMovements.referenceId, sale.id),
+					eq(inventoryMovements.referenceType, MovementReferenceType.SALE)
+				)
+			);
+		expect(
+			movements.filter((m) => m.movementType === InventoryMovementType.CANCEL_REVERT)
+		).toHaveLength(2);
+		// original + edit #1 + edit #2 consumptions
+		expect(movements.filter((m) => m.movementType === InventoryMovementType.SALE_OUT)).toHaveLength(
+			3
+		);
+	});
+
 	it('rolls the whole edit back when the new quantity exceeds stock', async () => {
 		const admin = await createUser({ role: UserRole.ADMIN });
 		const supplier = await createSupplier();

@@ -57,6 +57,7 @@ export default defineConfig({
 				'src/lib/components/sales/payments/purchaseOrderProntoPago.ts',
 				'src/lib/utils/format.ts',
 				'src/lib/utils/index.ts',
+				'src/lib/utils/inventory.ts',
 				'src/lib/utils/saleDetail.ts',
 				'src/lib/components/ui/chart/chart-utils.ts'
 			],
