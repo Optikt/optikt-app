@@ -23,12 +23,16 @@ import {
 	listCountResponsibles,
 	previewCountScope,
 	recountCountLineCmd,
+	refreshStockCmd,
+	refreshStockPreview,
 	setSessionResponsibles,
 	updateCountSettings,
 	upsertCountLineCmd
 } from './inventoryCount.remote';
 import { resetDb } from '$lib/testing/integration/db';
+import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { products } from '$lib/server/db/schema';
 import {
 	createBrand,
 	createInventoryCountLine,
@@ -45,6 +49,12 @@ import type { User } from '$lib/server/db/schema';
 
 // ── Tipos locales (resultados de los remotes) ──────────────────────────────
 
+interface StockRefreshPreview {
+	totalLines: number;
+	updatedLines: number;
+	clearedCounts: number;
+	untouchedLines: number;
+}
 interface CountConfig {
 	cycleDays: number;
 	diffThresholdUnits: number;
@@ -799,6 +809,115 @@ describe('Capa 3 · con lente STOCK (rama LENS en snapshot/ajustes/costos)', () 
 		if (result.success && result.data) {
 			// el lente pueda o no entrar según elegibilidad; al menos no explota el snapshot
 			expect(Array.isArray(result.data.lines)).toBe(true);
+		}
+	});
+});
+
+describe('Capa 3 · refrescar stock', () => {
+	beforeEach(async () => {
+		await resetDb();
+	});
+
+	it('solo ADMIN/MANAGER o responsable activo pueden refrescar', async () => {
+		const adminId = await admin();
+		const outsider = await seller();
+		const { product } = await productFixture();
+		const session = await createInventoryCountSession({ openedById: adminId.id });
+		await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 5,
+			countedStock: 5,
+			difference: 0
+		});
+
+		// SELLER sin asignar: bloqueado en el preview (query) y en la ejecución.
+		await expectRemoteError(
+			invoke<StockRefreshPreview>(refreshStockPreview, { id: session.id }, outsider)
+		);
+		const blocked = await invoke<CommandResult<StockRefreshPreview>>(
+			refreshStockCmd,
+			{ id: session.id },
+			outsider
+		);
+		expect(blocked.success).toBe(false);
+
+		// Un responsable activo sí puede (misma regla que contar).
+		const assigned = await invoke<CommandResult<undefined>>(
+			setSessionResponsibles,
+			{
+				sessionId: session.id,
+				entries: [
+					{ userId: adminId.id, displayName: adminId.fullName, isExternal: false },
+					{ userId: outsider.id, displayName: outsider.fullName, isExternal: false }
+				]
+			},
+			adminId
+		);
+		expect(assigned.success).toBe(true);
+
+		// Venta editada afuera: el stock vivo baja de 5 a 3.
+		await db.update(products).set({ stock: 3 }).where(eq(products.id, product.id));
+
+		const preview = await invoke<StockRefreshPreview>(
+			refreshStockPreview,
+			{ id: session.id },
+			outsider
+		);
+		expect(preview).toEqual({
+			totalLines: 1,
+			updatedLines: 1,
+			clearedCounts: 1,
+			untouchedLines: 0
+		});
+
+		const result = await invoke<CommandResult<StockRefreshPreview>>(
+			refreshStockCmd,
+			{ id: session.id },
+			outsider
+		);
+		expect(result.success).toBe(true);
+		if (result.success && result.data) {
+			expect(result.data.updatedLines).toBe(1);
+			expect(result.data.clearedCounts).toBe(1);
+		}
+
+		// La única línea de la sesión quedó con el stock nuevo y sin conteo.
+		const detail = await invoke<SessionDto>(getSessionById, { id: session.id }, adminId);
+		expect(detail.lines).toHaveLength(1);
+		expect(detail.lines[0]?.countedStock).toBeNull();
+	});
+
+	it('si nada cambió, el preview lo dice y no hay nada que refrescar', async () => {
+		const adminId = await admin();
+		const { product } = await productFixture();
+		const session = await createInventoryCountSession({ openedById: adminId.id });
+		await createInventoryCountLine({
+			sessionId: session.id,
+			itemType: 'PRODUCT',
+			productId: product.id,
+			systemStock: 5,
+			countedStock: 5,
+			difference: 0
+		});
+
+		const preview = await invoke<StockRefreshPreview>(
+			refreshStockPreview,
+			{ id: session.id },
+			adminId
+		);
+		expect(preview.updatedLines).toBe(0);
+		expect(preview.untouchedLines).toBe(1);
+
+		const result = await invoke<CommandResult<StockRefreshPreview>>(
+			refreshStockCmd,
+			{ id: session.id },
+			adminId
+		);
+		expect(result.success).toBe(true);
+		if (result.success && result.data) {
+			expect(result.data.updatedLines).toBe(0);
 		}
 	});
 });

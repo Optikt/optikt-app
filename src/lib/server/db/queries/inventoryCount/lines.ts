@@ -187,6 +187,9 @@ export async function upsertCountLine(
 
 	// 2) Update con guard atómico: si la sesión se cerró entre la lectura y este
 	//    write, el EXISTS filtra la fila y no se modifica nada (sin tx extra).
+	//    El `system_stock` leído también va en el guard: si «Refrescar stock»
+	//    cambió la referencia mientras este guardado volaba, el diff que vamos a
+	//    grabar sería contra la referencia vieja → 0 filas y se reintenta.
 	const updated = await executor
 		.update(inventoryCountLines)
 		.set({
@@ -212,6 +215,7 @@ export async function upsertCountLine(
 		.where(
 			and(
 				eq(inventoryCountLines.id, line.id),
+				eq(inventoryCountLines.systemStock, line.systemStock),
 				sql`exists (
 					select 1 from ${inventoryCountSessions}
 					where ${inventoryCountSessions.id} = ${inventoryCountLines.sessionId}
@@ -220,7 +224,26 @@ export async function upsertCountLine(
 			)
 		)
 		.returning({ id: inventoryCountLines.id });
-	if (updated.length === 0) throw new Error('La sesión ya no está abierta');
+	if (updated.length === 0) {
+		const [fresh] = await executor
+			.select({
+				systemStock: inventoryCountLines.systemStock,
+				sessionStatus: inventoryCountSessions.status
+			})
+			.from(inventoryCountLines)
+			.leftJoin(
+				inventoryCountSessions,
+				eq(inventoryCountLines.sessionId, inventoryCountSessions.id)
+			)
+			.where(eq(inventoryCountLines.id, line.id))
+			.limit(1);
+		if (fresh && fresh.sessionStatus === 'OPEN' && fresh.systemStock !== line.systemStock) {
+			throw new Error(
+				'El stock del sistema cambió mientras guardabas: la línea se recargó, revisa y guarda de nuevo'
+			);
+		}
+		throw new Error('La sesión ya no está abierta');
+	}
 
 	// 3) DTO enriquecido (joins de marca/proveedor/usuarios) solo al final.
 	const full = await getLineById(line.id, executor);
@@ -253,7 +276,10 @@ export async function recountCountLine(
 	const diffChanges = previousDiff !== recountDiff || countedDiff !== recountDiff;
 	const now = new Date().toISOString();
 
-	await executor
+	// Guard en el WHERE: `system_stock` es mutable en sesión OPEN («Refrescar
+	// stock»). Si cambió con este recuento en vuelo, el diff que íbamos a grabar
+	// sería contra la referencia vieja → 0 filas y se reintenta.
+	const written = await executor
 		.update(inventoryCountLines)
 		.set({
 			recountedStock: data.recountedStock,
@@ -272,7 +298,44 @@ export async function recountCountLine(
 			adjustmentRequestedAt: diffChanges ? null : line.adjustmentRequestedAt,
 			updatedAt: now
 		})
-		.where(eq(inventoryCountLines.id, line.id));
+		.where(
+			and(
+				eq(inventoryCountLines.id, line.id),
+				eq(inventoryCountLines.systemStock, line.systemStock),
+				sql`exists (
+					select 1 from ${inventoryCountSessions}
+					where ${inventoryCountSessions.id} = ${inventoryCountLines.sessionId}
+						and ${inventoryCountSessions.status} = 'OPEN'
+				)`
+			)
+		)
+		.returning({ id: inventoryCountLines.id });
+	if (written.length === 0) {
+		const [fresh] = await executor
+			.select({
+				systemStock: inventoryCountLines.systemStock,
+				countedStock: inventoryCountLines.countedStock,
+				sessionStatus: inventoryCountSessions.status
+			})
+			.from(inventoryCountLines)
+			.leftJoin(
+				inventoryCountSessions,
+				eq(inventoryCountLines.sessionId, inventoryCountSessions.id)
+			)
+			.where(eq(inventoryCountLines.id, line.id))
+			.limit(1);
+		if (fresh && fresh.sessionStatus === 'OPEN' && fresh.systemStock !== line.systemStock) {
+			throw new Error(
+				'El stock del sistema cambió mientras guardabas: la línea se recargó, revisa y guarda de nuevo'
+			);
+		}
+		if (fresh && fresh.countedStock == null) {
+			throw new Error('La línea aún no tiene un conteo que se pueda recontar');
+		}
+		throw new Error(
+			'No se pudo guardar el recuento: la línea cambió, recarga e inténtalo de nuevo'
+		);
+	}
 
 	const updated = await getLineById(line.id, executor);
 	if (!updated) throw new Error('No se pudo recargar la línea recontada');

@@ -79,6 +79,9 @@ export async function requestCountLineAdjustment(
 		.where(
 			and(
 				eq(inventoryCountLines.id, line.id),
+				// `system_stock` es mutable en OPEN («Refrescar stock»): si cambió,
+				// el diff de esta solicitud sería contra la referencia vieja.
+				eq(inventoryCountLines.systemStock, line.systemStock),
 				isNull(inventoryCountLines.adjustmentMovementId),
 				sql`exists (
 					select 1 from ${inventoryCountSessions}
@@ -92,6 +95,14 @@ export async function requestCountLineAdjustment(
 		const fresh = await getLineById(line.id, executor);
 		if (fresh?.adjustmentMovementId != null) {
 			throw new Error('Esta línea ya tiene un ajuste aplicado');
+		}
+		if (fresh && fresh.countedStock == null) {
+			throw new Error('La línea todavía no está contada');
+		}
+		if (fresh && fresh.systemStock !== line.systemStock) {
+			throw new Error(
+				'El stock del sistema cambió mientras revisabas: la línea se recargó, vuelve a solicitar el ajuste'
+			);
 		}
 		throw new Error('La sesión ya no está abierta');
 	}

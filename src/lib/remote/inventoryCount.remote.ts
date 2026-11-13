@@ -53,6 +53,10 @@ import {
 } from '$lib/server/db/queries/inventoryCount/coverage';
 import { buildLineCostMap } from '$lib/server/db/queries/inventoryCount/costs';
 import {
+	previewSessionStockRefresh,
+	refreshSessionStock
+} from '$lib/server/db/queries/inventoryCount/refresh';
+import {
 	listResponsibleOptions,
 	requireWriteAccess,
 	syncSessionResponsibles
@@ -187,6 +191,13 @@ export const getDiffCosts = query(GetDiffCostsSchema, async (data) => {
 	return record;
 });
 
+/** Qué cambiaría «Refrescar stock» (para el modal de confirmación). */
+export const refreshStockPreview = query(SessionIdSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+	await requireCountWriteAccess(user.id, user.role, data.id);
+	return previewSessionStockRefresh(data.id);
+});
+
 // ── Escrituras ─────────────────────────────────────────────────────────────
 
 export const createSessionCmd = command(CreateCountSessionSchema, async (data) => {
@@ -250,6 +261,20 @@ export const confirmZeroStock = command(ConfirmZeroStockSchema, async (data) => 
 		await requireCountWriteAccess(user.id, user.role, data.sessionId);
 		const updated = await confirmZeroStockBatch(data.sessionId, user.id);
 		return ok(updated);
+	} catch (error) {
+		return fail(error);
+	}
+});
+
+/**
+ * Re-sincroniza `system_stock` con el stock vivo. Solo las líneas cuyo stock
+ * cambió se actualizan (y ahí se limpia el conteo); las demás quedan intactas.
+ */
+export const refreshStockCmd = command(SessionIdSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+	try {
+		await requireCountWriteAccess(user.id, user.role, data.id);
+		return ok(await refreshSessionStock(data.id));
 	} catch (error) {
 		return fail(error);
 	}

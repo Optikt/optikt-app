@@ -42,6 +42,8 @@
 	import CountBoard from '$lib/components/inventory/count/CountBoard.svelte';
 	import AdjustStockDrawer from '$lib/components/inventory/count/AdjustStockDrawer.svelte';
 	import { createAdjustmentActions } from '$lib/components/inventory/count/adjustmentActions';
+	import { createRefreshStockModel } from '$lib/components/inventory/count/refreshStockModel.svelte';
+	import RefreshStockModal from '$lib/components/inventory/count/RefreshStockModal.svelte';
 	import CancelCountModal from '$lib/components/inventory/count/CancelCountModal.svelte';
 	import ResponsiblesDrawer from '$lib/components/inventory/count/ResponsiblesDrawer.svelte';
 
@@ -142,6 +144,8 @@
 			const response = await upsertCountLineCmd({ lineId, countedStock: value });
 			if (!response.success) {
 				toast.error(response.error);
+				// «El stock cambió mientras guardabas»: recarga para ver la referencia nueva.
+				void refreshLines();
 				return;
 			}
 			lines = lines.map((candidate) =>
@@ -230,6 +234,17 @@
 		isBusy: () => isAdjusting,
 		setBusy: (busy) => {
 			isAdjusting = busy;
+		}
+	});
+
+	// Refrescar stock (preview + ejecución, con su estado reactivo) fuera de
+	// la página: size gate DT1.
+	const refreshStock = createRefreshStockModel({
+		sessionId: () => session.id,
+		refreshLines,
+		// Si se limpiaron conteos hay que volver a contar: Revisar ya no aplica.
+		onCleared: (clearedCounts) => {
+			if (clearedCounts > 0) phase = 1;
 		}
 	});
 
@@ -398,6 +413,8 @@
 		onStepClick={handleStepClick}
 		onOpenResponsibles={openResponsibles}
 		onCancel={() => (cancelModal = true)}
+		onRefreshStock={data.canCount ? () => void refreshStock.openPreview() : undefined}
+		refreshBusy={refreshStock.busy}
 	/>
 
 	{#if phase !== 3}
@@ -477,6 +494,13 @@
 			phase = 3;
 			countContext.activeSession = null;
 		}}
+	/>
+
+	<!-- Modal: refrescar stock (preview antes de ejecutar) -->
+	<RefreshStockModal
+		bind:open={refreshStock.modal}
+		preview={refreshStock.preview}
+		onConfirm={() => void refreshStock.confirm()}
 	/>
 
 	<!-- Modal: cerrar con diferencias sin ajustar -->
