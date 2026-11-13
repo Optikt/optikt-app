@@ -122,7 +122,7 @@
 - **`pdfjs-dist 6.0.227 / @pdfslick/core 4.0.0`:** ver **DT17**. Funciona por ahora (viewer `PDFViewerModal.svelte` + generación `puppeteer` server). Hay que tomar decisión futura: ¿mantener pinneado o buscar otra forma de ver PDFs (visor nativo, `pdf.js` sin `@pdfslick/core`)? Por ahora **no se toca** — funciona.
 - **`@types/node 22 → 26.4.0`:** runtime es `Node 22.22.2`. Se queda en `^22` a menos que hagamos **bump explícito de Node** (ej. a 24/26). Subir types sin subir runtime no aporta.
 
-**Estado:** Actualizado 2026-10-18: Kit 3 stable → majors de `@sveltejs/kit`/`@sveltejs/adapter-node` bloqueados en Dependabot; migración pendiente en branch propio (`npx sv migrate sveltekit-3`).
+**Estado:** Actualizado 2026-10-19: Kit 3 stable → majors de `@sveltejs/kit`/`@sveltejs/adapter-node` bloqueados en Dependabot. Plan detallado en `docs/plans/sveltekit-3-migration.md` y spec `docs/specs/sveltekit-3.md`; ejecutar en branch propio con `npx sv migrate sveltekit-3`. TS7 queda fuera: Kit 3.1.0 peer `typescript ^6.0.0`, `svelte-check@4.7.7` (`^5 || ^6`) y `typescript-eslint@8.71.2` (`<6.1.0`) todavía no lo soportan.
 
 ---
 

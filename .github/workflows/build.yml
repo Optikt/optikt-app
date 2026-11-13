@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'migrate/sveltekit-v3']
   pull_request:
-    branches: [main]
+    branches: [main, 'migrate/**']
 
 jobs:
   build:
