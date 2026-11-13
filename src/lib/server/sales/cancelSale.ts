@@ -1,13 +1,11 @@
 import { findSaleById } from '$lib/server/db/queries/sales/reads';
 import { updateSale as updateSaleQuery } from '$lib/server/db/queries/sales/writes';
 import { db } from '$lib/server/db';
-import { saleItems, products, lensCatalogItems, inventoryMovements } from '$lib/server/db/schema';
+import { saleItems, products, lensCatalogItems } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, RefundStatus, canManageSaleByOwner } from '$lib/shared/enums';
-import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { auditService } from '$lib/server/audit';
-import { returnToLot } from '$lib/server/db/queries/inventoryLots';
-import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
+import { revertSaleInventory } from '$lib/server/sales/revertSaleInventory';
 import { createExpense } from '$lib/server/db/queries/cash/expenses';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { nowISO, toISODate, nowUTC } from '$lib/dates';
@@ -42,40 +40,9 @@ export async function cancelSaleCore(data: CancelSaleInput, ctx: ActionContext) 
 			.from(saleItems)
 			.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
 
-		// Find all SALE_OUT movements for this sale to revert lots
-		const saleOutMovements = await tx
-			.select()
-			.from(inventoryMovements)
-			.where(
-				and(
-					eq(inventoryMovements.referenceType, MovementReferenceType.SALE),
-					eq(inventoryMovements.referenceId, data.id),
-					eq(inventoryMovements.movementType, InventoryMovementType.SALE_OUT)
-				)
-			);
-
-		// Revert lot consumption for each SALE_OUT movement
-		for (const movement of saleOutMovements) {
-			const quantityToReturn = Math.abs(movement.quantityDelta);
-			const updatedLot = await returnToLot(movement.lotId, quantityToReturn, tx);
-
-			// Create CANCEL_REVERT movement
-			await createInventoryMovement(
-				{
-					movementType: InventoryMovementType.CANCEL_REVERT,
-					lotId: movement.lotId,
-					itemType: 'PRODUCT',
-					productId: movement.productId!,
-					quantityDelta: quantityToReturn,
-					quantityBefore: updatedLot.quantityAvailable - quantityToReturn,
-					quantityAfter: updatedLot.quantityAvailable,
-					referenceType: MovementReferenceType.SALE,
-					referenceId: data.id,
-					createdById: ctx.userId!
-				},
-				tx
-			);
-		}
+		// Return only what this sale still holds (net outstanding per lot —
+		// movements already reverted by a prior edit are never re-returned).
+		await revertSaleInventory(tx, data.id, ctx.userId!);
 
 		// Restore cached stock for product and lens items
 		for (const item of items) {

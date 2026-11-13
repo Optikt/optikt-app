@@ -3,21 +3,12 @@ import { findSaleById, getSalePrescription } from '$lib/server/db/queries/sales/
 import type { Prescription } from '$lib/server/db/schema';
 import { findCustomerById } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
-import {
-	sales,
-	saleItems,
-	products,
-	lensCatalogItems,
-	inventoryMovements,
-	prescriptions
-} from '$lib/server/db/schema';
+import { sales, saleItems, products, lensCatalogItems, prescriptions } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
-import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { computeDiscount } from '$lib/utils';
 import { auditService } from '$lib/server/audit';
-import { returnToLot } from '$lib/server/db/queries/inventoryLots';
-import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
+import { revertSaleInventory } from '$lib/server/sales/revertSaleInventory';
 import { nowISO } from '$lib/dates';
 import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import { validateTreatmentItems } from '$lib/server/treatmentValidation';
@@ -176,38 +167,9 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		}
 
 		if (hasItemChanges) {
-			// ── 1. Revert all existing SALE_OUT inventory movements ──────────
-			const saleOutMovements = await tx
-				.select()
-				.from(inventoryMovements)
-				.where(
-					and(
-						eq(inventoryMovements.referenceType, MovementReferenceType.SALE),
-						eq(inventoryMovements.referenceId, data.id),
-						eq(inventoryMovements.movementType, InventoryMovementType.SALE_OUT)
-					)
-				);
-
-			for (const movement of saleOutMovements) {
-				const quantityToReturn = Math.abs(movement.quantityDelta);
-				const updatedLot = await returnToLot(movement.lotId, quantityToReturn, tx);
-
-				await createInventoryMovement(
-					{
-						movementType: InventoryMovementType.CANCEL_REVERT,
-						lotId: movement.lotId,
-						itemType: 'PRODUCT',
-						productId: movement.productId!,
-						quantityDelta: quantityToReturn,
-						quantityBefore: updatedLot.quantityAvailable - quantityToReturn,
-						quantityAfter: updatedLot.quantityAvailable,
-						referenceType: MovementReferenceType.SALE,
-						referenceId: data.id,
-						createdById: ctx.userId!
-					},
-					tx
-				);
-			}
+			// ── 1. Return only what the sale still holds (net outstanding per
+			// lot — never re-returns movements a prior edit already reverted) ──
+			await revertSaleInventory(tx, data.id, ctx.userId!);
 
 			// ── 2. Restore cached stock counters ────────────────────────────
 			const oldItems = await tx
