@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft } from '@lucide/svelte';
+	import { ArrowLeft, RefreshCw } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import ResponsibleStack from './ui/ResponsibleStack.svelte';
 	import CountButton from './ui/CountButton.svelte';
@@ -26,6 +26,10 @@
 		onStepClick: (step: 1 | 2 | 3) => void;
 		onOpenResponsibles: () => void;
 		onCancel?: () => void;
+		/** «Refrescar stock»: sincroniza la referencia con el stock vivo. */
+		onRefreshStock?: () => void;
+		/** Hay un refresco de stock en vuelo (botón aria-disabled). */
+		refreshBusy?: boolean;
 	}
 
 	let {
@@ -42,7 +46,9 @@
 		onCtaBlocked,
 		onStepClick,
 		onOpenResponsibles,
-		onCancel
+		onCancel,
+		onRefreshStock,
+		refreshBusy = false
 	}: Props = $props();
 
 	const steps = [1, 2, 3] as const;
@@ -148,6 +154,32 @@
 	>
 		{#snippet child()}{ctaLabel}{/snippet}
 	</CountButton>
+
+	{#if phase !== 3 && onRefreshStock}
+		<TriggerTooltip
+			title="Refrescar stock"
+			text="Vuelve a leer el stock real del sistema (p. ej. si editaste una venta afuera). Solo cambia las líneas cuyo stock varió: esas pierden su conteo y habrá que recontarlas; las demás conservan lo que ya escribiste."
+			side="bottom"
+		>
+			{#snippet trigger({ props })}
+				<button
+					{...props}
+					type="button"
+					aria-label="Refrescar stock del sistema"
+					aria-disabled={refreshBusy}
+					class="rounded-lg p-1.5 transition-colors hover:bg-white/10 {refreshBusy
+						? 'opacity-60'
+						: ''}"
+					onclick={() => {
+						if (refreshBusy) return;
+						onRefreshStock();
+					}}
+				>
+					<RefreshCw class="h-5 w-5 {refreshBusy ? 'animate-spin' : ''}" />
+				</button>
+			{/snippet}
+		</TriggerTooltip>
+	{/if}
 
 	{#if canManage && phase !== 3 && onCancel}
 		<TriggerTooltip title="Cancelar conteo" text="Pide un motivo. No ajusta stock." side="bottom">
