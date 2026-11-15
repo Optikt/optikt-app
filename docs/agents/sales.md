@@ -36,6 +36,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 - Medidas de montaje snapshot en `sale_items` (`dp`, `np_right`, `np_left`, opcionales): escritas en create (`wizardSubmission.ts` `buildSaleItemsFromWizard`) y edit (`editSaleLensAdapter.ts`); migración `0048` backfilla desde la receta vinculada. Ausentes → "—" en `LensRxPanel` y aviso ámbar solo si falta ALT/DNP en progresivos/bifocales (`missingMountingMeasures`); DP nunca es obligatorio. La conversión cotización→venta aún no copia medidas (mismo hueco que ALT).
 - `FREE_ITEM` no consume FIFO y tiene fila 1:1 `sale_item_free_details` con `enrichment_status PENDING→ENRICHED` (`server/sales/enrichFreeItem.ts:15-62`).
 - Costos snapshot post-venta solo del módulo lens: `updateItemCosts` recalcula `snapshotCostTotal/Unit` (`updateItemCosts.ts:21-37`).
+- ⚠️ **El commit del editor de cristal se construye desde el `lensDraft` (lo que el usuario editó), nunca desde `lensBase` (copia del mount)**: `EditSaleLensEditor.commitDraft` debe pasar por `editableItemFromLensEditorDraft(lensBase, lensDraft)` antes de `buildLensInputFromDraft`. Regresión del rework v2 (`4c266b58`) que descartaba precio/fórmula/cantidad **y el `lensCatalogItemId`** (items guardados sin enlace al catálogo → sin nombre ni stock). Cubierto por `EditSaleLensEditor.svelte.spec.ts` (2 tests: editar existente + agregar nuevo).
 - Edición de items = **reseteo completo del inventario** (revert con `CANCEL_REVERT` + re-consumo) en una sola tx; items viejos soft-delete en cascada (`updateSale.ts:36-37,178-308`). Falla si COMPLETED (`:51-53`) o no-ADMIN si IN_PROGRESS/READY (`:55-64`).
 
 **Dinero (subtotal / total / tasas)**
@@ -83,6 +84,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 - Cores: `*.int.spec.ts` co-ubicados (lifecycle create/cancel/setStatus/update, voids con recálculo, FIFO cancel/update, free-item enrichment).
 - Schemas: `schemas/sales.spec.ts`. Unit puros espejados en `components/sales/**` (pricing, taxBreakdown, paymentForm*, editSale*, wizard*, etc.).
+- Componentes (`project=client`, browser): `editSale/EditSaleLensEditor.svelte.spec.ts` — el «Hecho» del editor de cristal debe entregar al `onApply` lo editado en el draft (precio, graduación, enlace al catálogo).
 - Listado: `shared/saleBalance.spec.ts`, `components/sales/listParams.spec.ts`, `components/sales/saleDisplay.spec.ts`; a nivel DB `queries/sales/list.int.spec.ts` (stats/facetas/selección/saldo/flags) y `queries/userPreferences.int.spec.ts` (ambos `project=integration`, requieren Docker).
 - E2E de dinero: `e2e/sale-payment.test.ts`, `e2e/quote-to-sale.test.ts`.
 
