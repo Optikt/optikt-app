@@ -11,15 +11,20 @@ import type { DbOrTx } from '$lib/server/db/types';
  *
  * Used by both cancelSale and updateSale (which previously each inlined this
  * logic). The revert plan is the **net outstanding per lot** across the sale's
- * SALE_OUT and CANCEL_REVERT movements: a sale edited twice must not re-return
+ * SALE_OUT and *REVERT movements: a sale edited twice must not re-return
  * the movements a prior edit already reverted (that inflated lot stock on
  * every edit/cancel round — see planSaleRevert).
  */
 export async function revertSaleInventory(
 	executor: DbOrTx,
 	saleId: string,
-	createdById: string
+	createdById: string,
+	opts?: { origin?: 'edit' | 'cancel'; reason?: string }
 ): Promise<void> {
+	const movementType =
+		opts?.origin === 'edit'
+			? InventoryMovementType.EDIT_REVERT
+			: InventoryMovementType.CANCEL_REVERT;
 	const movements = await executor
 		.select({
 			lotId: inventoryMovements.lotId,
@@ -34,7 +39,8 @@ export async function revertSaleInventory(
 				eq(inventoryMovements.referenceId, saleId),
 				inArray(inventoryMovements.movementType, [
 					InventoryMovementType.SALE_OUT,
-					InventoryMovementType.CANCEL_REVERT
+					InventoryMovementType.CANCEL_REVERT,
+					InventoryMovementType.EDIT_REVERT
 				])
 			)
 		);
@@ -44,7 +50,7 @@ export async function revertSaleInventory(
 
 		await createInventoryMovement(
 			{
-				movementType: InventoryMovementType.CANCEL_REVERT,
+				movementType,
 				lotId,
 				itemType: 'PRODUCT',
 				productId: productId!,
@@ -53,6 +59,7 @@ export async function revertSaleInventory(
 				quantityAfter: updatedLot.quantityAvailable,
 				referenceType: MovementReferenceType.SALE,
 				referenceId: saleId,
+				notes: opts?.origin === 'edit' && opts?.reason ? `Edición: ${opts.reason}` : null,
 				createdById
 			},
 			executor

@@ -19,7 +19,9 @@ export enum InventoryMovementType {
 	/** Entrada por devolución de cliente (futuro) */
 	RETURN_IN = 'RETURN_IN',
 	/** Reversión por cancelación de venta */
-	CANCEL_REVERT = 'CANCEL_REVERT'
+	CANCEL_REVERT = 'CANCEL_REVERT',
+	/** Reversión por edición de venta (hacia adelante; lo viejo queda CANCEL_REVERT) */
+	EDIT_REVERT = 'EDIT_REVERT'
 }
 
 export const ALL_INVENTORY_MOVEMENT_TYPES = Object.values(
@@ -32,7 +34,8 @@ export const INVENTORY_MOVEMENT_TYPE_LABELS: Record<InventoryMovementType, strin
 	[InventoryMovementType.ADJUSTMENT_IN]: 'Ajuste positivo',
 	[InventoryMovementType.ADJUSTMENT_OUT]: 'Ajuste negativo',
 	[InventoryMovementType.RETURN_IN]: 'Devolución',
-	[InventoryMovementType.CANCEL_REVERT]: 'Reversión por cancelación'
+	[InventoryMovementType.CANCEL_REVERT]: 'Reversión por cancelación',
+	[InventoryMovementType.EDIT_REVERT]: 'Reversión por edición'
 };
 
 export function getInventoryMovementTypeLabel(type: string): string {

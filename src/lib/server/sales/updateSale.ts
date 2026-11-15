@@ -24,7 +24,7 @@ import type { ActionContext } from '$lib/server/actionContext';
  * - IN_PROGRESS / READY: only ADMIN/MANAGER may edit.
  * - PENDING: allowed for authorized users.
  *
- * When items change the full inventory is reset (CANCEL_REVERT) and
+ * When items change the full inventory is reset (EDIT_REVERT) and
  * re-consumed (SALE_OUT) inside the same transaction.
  */
 export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) {
@@ -169,7 +169,10 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		if (hasItemChanges) {
 			// ── 1. Return only what the sale still holds (net outstanding per
 			// lot — never re-returns movements a prior edit already reverted) ──
-			await revertSaleInventory(tx, data.id, ctx.userId!);
+			await revertSaleInventory(tx, data.id, ctx.userId!, {
+				origin: 'edit',
+				reason: data.reason
+			});
 
 			// ── 2. Restore cached stock counters ────────────────────────────
 			const oldItems = await tx

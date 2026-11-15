@@ -133,7 +133,7 @@ describe('updateSaleCore — FIFO inventory replacement', () => {
 				)
 			);
 		expect(
-			movements.filter((m) => m.movementType === InventoryMovementType.CANCEL_REVERT)
+			movements.filter((m) => m.movementType === InventoryMovementType.EDIT_REVERT)
 		).toHaveLength(1);
 		// 1 from the original sale + 2 FIFO allocations of the edit.
 		expect(movements.filter((m) => m.movementType === InventoryMovementType.SALE_OUT)).toHaveLength(
@@ -295,7 +295,7 @@ describe('updateSaleCore — FIFO inventory replacement', () => {
 		expect(lotAfter.quantityAvailable).toBe(3);
 		expect(productAfter.stock).toBe(3);
 
-		// Each edit reverted exactly its predecessor once: 2 CANCEL_REVERT rows.
+		// Each edit reverted exactly its predecessor once: 2 EDIT_REVERT rows.
 		const movements = await db
 			.select()
 			.from(inventoryMovements)
@@ -306,7 +306,7 @@ describe('updateSaleCore — FIFO inventory replacement', () => {
 				)
 			);
 		expect(
-			movements.filter((m) => m.movementType === InventoryMovementType.CANCEL_REVERT)
+			movements.filter((m) => m.movementType === InventoryMovementType.EDIT_REVERT)
 		).toHaveLength(2);
 		// original + edit #1 + edit #2 consumptions
 		expect(movements.filter((m) => m.movementType === InventoryMovementType.SALE_OUT)).toHaveLength(

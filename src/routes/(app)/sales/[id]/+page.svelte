@@ -1,12 +1,8 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import {
-		CancelSaleModal,
-		EditSaleModal,
-		SaleMovementsModal,
-		SaleStatusModal
-	} from '$lib/components/sales';
+	import { CancelSaleModal, EditSaleModal, SaleStatusModal } from '$lib/components/sales';
+	import SaleStockDrawer from '$lib/components/sales/detail/SaleStockDrawer.svelte';
 	import SaleItemsTable from '$lib/components/sales/itemsTable/SaleItemsTable.svelte';
 	import SaleAuditTimeline from '$lib/components/sales/detail/SaleAuditTimeline.svelte';
 	import SaleAuditHistoryDrawer from '$lib/components/sales/detail/SaleAuditHistoryDrawer.svelte';
@@ -341,7 +337,7 @@
 
 <!-- Fixed-position overlays live OUTSIDE the @container wrapper: container-type
      containment would make `fixed` descendants relative to the page box. -->
-<SaleMovementsModal {movements} open={showStockModal} onclose={closeStockModal} />
+<SaleStockDrawer {movements} open={showStockModal} onclose={closeStockModal} />
 
 <SalePaymentDrawer
 	bind:open={showDrawer}
