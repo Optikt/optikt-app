@@ -7,6 +7,7 @@
 	import SaleAuditTimeline from '$lib/components/sales/detail/SaleAuditTimeline.svelte';
 	import SaleAuditHistoryDrawer from '$lib/components/sales/detail/SaleAuditHistoryDrawer.svelte';
 	import SaleDetailHero from '$lib/components/sales/detail/SaleDetailHero.svelte';
+	import SaleDetailMobileBar from '$lib/components/sales/detail/SaleDetailMobileBar.svelte';
 	import SaleDetailNotices from '$lib/components/sales/detail/SaleDetailNotices.svelte';
 	import SaleDetailPayments from '$lib/components/sales/detail/SaleDetailPayments.svelte';
 	import SalePaymentDrawer from '$lib/components/sales/detail/SalePaymentDrawer.svelte';
@@ -63,6 +64,23 @@
 	let showAuditDrawer = $state(false);
 	let expandedAuditEventId = $state<string | null>(null);
 	let auditHistory = $state(untrack(() => data.auditHistory));
+
+	// ── Mobile bottom bar: visible only when the PAGE container is <700px.
+	// A ResizeObserver on the container (not a viewport query) so the sidebar
+	// open/close reflow drives the switch, like every other layout rule here.
+	let pageEl = $state<HTMLElement | undefined>(undefined);
+	let isNarrow = $state(false);
+
+	$effect(() => {
+		const target = pageEl;
+		if (!target) return;
+		const observer = new ResizeObserver((entries) => {
+			const width = entries[0]?.contentRect.width;
+			if (width !== undefined) isNarrow = width < 700;
+		});
+		observer.observe(target);
+		return () => observer.disconnect();
+	});
 	/** Load instant comes from the audit create event — sale.createdAt is the business date now. */
 	let saleLoadedAt = $derived(
 		auditHistory.find((e) => e.entityType === 'sale' && e.action === 'create')?.changedAt ??
@@ -250,7 +268,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-surface">
-	<div class="page anim-page @container w-full px-5 pt-3.5 pb-7">
+	<div bind:this={pageEl} class="page anim-page @container w-full px-5 pt-3.5 pb-7">
 		<SaleDetailHero
 			{sale}
 			{items}
@@ -307,7 +325,9 @@
 				/>
 			</div>
 
-			<div class="grid grid-cols-[1fr_1fr] items-start gap-3 @min-[1060px]:grid-cols-1">
+			<div
+				class="grid grid-cols-1 items-start gap-3 @min-[700px]:grid-cols-[1fr_1fr] @min-[1060px]:grid-cols-1"
+			>
 				<SaleDetailPayments
 					{payments}
 					{canAct}
@@ -336,8 +356,37 @@
 				/>
 			</div>
 		</div>
+		<!-- Reserva 96px bajo la barra inferior fija en móvil (<700 contenedor). -->
+		<div class="mobile-spacer" aria-hidden="true"></div>
 	</div>
 </div>
+
+{#if isNarrow}
+	<SaleDetailMobileBar
+		{sale}
+		{canAct}
+		{canManageSale}
+		{isAdmin}
+		{remainingBcvUsd}
+		{printingTickera}
+		onChangeStatus={(target) => {
+			statusModalPreset = target ? [target] : undefined;
+			showStatusModal = true;
+		}}
+		onEdit={() => (showEditModal = true)}
+		onPreviewPdf={() => (showPdfPreview = true)}
+		onOpenPdf={openPdfReceipt}
+		onPrintTickera={printTickera}
+		onCancel={() => (showCancelModal = true)}
+		onPay={openDrawer}
+		onCalculate={() => (showCalculator = true)}
+		onOpenHistory={() => {
+			expandedAuditEventId = null;
+			showAuditDrawer = true;
+		}}
+		onOpenStock={openStockModal}
+	/>
+{/if}
 
 <!-- Fixed-position overlays live OUTSIDE the @container wrapper: container-type
      containment would make `fixed` descendants relative to the page box. -->
@@ -421,5 +470,14 @@
 		max-width: 1760px;
 		margin: 0 auto;
 		container-type: inline-size;
+	}
+	/* Reserva 96px libres bajo la barra inferior fija (solo móvil <700). */
+	.mobile-spacer {
+		height: 0;
+	}
+	@container (max-width: 699px) {
+		.mobile-spacer {
+			height: 96px;
+		}
 	}
 </style>

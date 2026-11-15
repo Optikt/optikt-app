@@ -279,7 +279,7 @@
 {#if hasActionsRow}
 	<div
 		style="grid-area: acts"
-		class="mt-4 flex min-w-0 flex-nowrap items-stretch gap-2 border-t border-white/15 pt-4"
+		class="hero-acts mt-4 flex min-w-0 flex-nowrap items-stretch gap-2 border-t border-white/15 pt-4"
 	>
 		{@render statusMenu()}
 		{#if showEdit}
@@ -314,7 +314,7 @@
 {/if}
 
 {#if showPaymentForm}
-	<div style="grid-area: hcta" class="mt-4 min-w-0 border-t border-white/15 pt-4">
+	<div style="grid-area: hcta" class="hero-hcta mt-4 min-w-0 border-t border-white/15 pt-4">
 		<button
 			type="button"
 			onclick={onPay}
@@ -326,6 +326,15 @@
 {/if}
 
 <style lang="postcss">
+	/* En móvil (<700 contenedor) las acciones viven en la barra inferior fija:
+	   se ocultan aquí para no duplicarlas (spec §6: sin acciones del hero en página). */
+	@container (max-width: 699px) {
+		.hero-acts,
+		.hero-hcta {
+			display: none;
+		}
+	}
+
 	/* Ghost actions over navy: stretch to fill the row (compact when the sidebar opens). */
 	:global(.hero-btn) {
 		height: 40px;

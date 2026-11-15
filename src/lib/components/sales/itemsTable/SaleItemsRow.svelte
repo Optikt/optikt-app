@@ -157,7 +157,7 @@
 	aria-expanded={isLens ? expanded : undefined}
 	onclick={handleRowClick}
 	onkeydown={isLens ? onKeydown : undefined}
-	class="grid grid-cols-[32px_1fr_104px_128px_26px] items-start gap-3 border-t border-outline-variant/60 px-4 py-2.5 transition-colors duration-150 hover:bg-[#f6f8fb] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue"
+	class="item-row grid grid-cols-[32px_1fr_104px_128px_26px] items-start gap-3 border-t border-outline-variant/60 px-4 py-2.5 transition-colors duration-150 hover:bg-[#f6f8fb] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue"
 >
 	<!-- Neutral kind chip -->
 	{#snippet chipTooltipOuter({ props }: { props: Record<string, unknown> })}
@@ -173,7 +173,7 @@
 	<TriggerTooltip trigger={chipTooltipOuter} text={itemKindTooltip(kind)} />
 
 	<!-- Name + meta + rx + states -->
-	<div class="min-w-0">
+	<div class="item-main min-w-0">
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
 			{#if href}
 				<a
@@ -200,7 +200,7 @@
 		</div>
 
 		{#if subtitle}
-			<p class="mt-0.5 truncate text-xs text-on-surface-variant">{subtitle}</p>
+			<p class="item-subtitle mt-0.5 truncate text-xs text-on-surface-variant">{subtitle}</p>
 		{/if}
 
 		{#if hasRx}
@@ -334,7 +334,7 @@
 	</div>
 
 	<!-- USD / Bs. -->
-	<div class="text-right">
+	<div class="item-usd text-right">
 		<span class="block text-sm font-semibold text-on-surface tabular-nums">
 			{formatPrice(group.lineTotal)}
 		</span>
@@ -346,14 +346,14 @@
 			</span>
 		{/if}
 	</div>
-	<div class="text-right">
+	<div class="item-bs text-right">
 		{#if bsLineTotal !== null}
 			<span class="block text-xs text-on-surface-variant tabular-nums">{bsLabel(bsLineTotal)}</span>
 		{/if}
 	</div>
 
 	<!-- Expand chevron (lens rows only) -->
-	<div class="flex justify-end pt-0.5">
+	<div class="item-chevron flex justify-end pt-0.5">
 		{#if showChevron}
 			<button
 				type="button"
@@ -383,3 +383,43 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	/* Móvil <700 (contenedor de página): la fila es una tarjeta —
+	   cabecera (chip+título+chevron) arriba, línea de dinero full-row
+	   (USD izq / Bs der) abajo; la fórmula colapsable ya es full-row. */
+	@container (max-width: 699px) {
+		.item-row {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: flex-start;
+			row-gap: 8px;
+		}
+		.item-main {
+			flex: 1 1 0;
+			min-width: 0;
+			order: 2;
+		}
+		.item-chevron {
+			order: 3;
+			padding-top: 2px;
+		}
+		.item-usd,
+		.item-bs {
+			flex: 1 1 40%;
+			min-width: 0;
+		}
+		.item-usd {
+			order: 4;
+			text-align: left;
+		}
+		.item-bs {
+			order: 5;
+			text-align: right;
+		}
+		.item-subtitle {
+			white-space: normal;
+			overflow-wrap: anywhere;
+		}
+	}
+</style>

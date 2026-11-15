@@ -233,7 +233,7 @@
 	</button>
 {/snippet}
 
-<SlideOver bind:open widthClass="w-[580px]">
+<SlideOver bind:open widthClass="w-full sm:w-[580px]">
 	{#snippet header({ onclose: close })}
 		<div class="flex items-center gap-3 border-b border-outline-variant/15 px-6 py-4">
 			<span
@@ -263,7 +263,7 @@
 		<p class="mb-1.5 text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase">
 			Tasa BCV a usar
 		</p>
-		<div class="grid grid-cols-3 gap-2">
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
 			{#if hasSnapshot}
 				{#snippet saleCardTip({ props: tipProps }: { props: Record<string, unknown> })}
 					{@render rateCard({
@@ -335,7 +335,7 @@
 
 		<!-- Lines table -->
 		<div
-			class="mt-4 grid grid-cols-[1fr_104px_88px_108px] gap-x-2.5 border-b border-outline-variant/60 pb-1.5 text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase"
+			class="calc-header mt-4 grid grid-cols-[minmax(0,1fr)_84px_70px_88px] gap-x-2.5 border-b border-outline-variant/60 pb-1.5 text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase sm:grid-cols-[1fr_104px_88px_108px]"
 		>
 			<span>Concepto</span>
 			<span class="text-right">Base Bs.</span>
@@ -345,7 +345,7 @@
 
 		{#each calculation.lines as line, index (index)}
 			<div
-				class="grid grid-cols-[1fr_104px_88px_108px] items-start gap-x-2.5 gap-y-0.5 border-b border-outline-variant/40 py-1.5"
+				class="calc-row grid grid-cols-[minmax(0,1fr)_84px_70px_88px] items-start gap-x-2.5 gap-y-0.5 border-b border-outline-variant/40 py-1.5 sm:grid-cols-[1fr_104px_88px_108px]"
 			>
 				<div class="min-w-0">
 					<p class="text-[13px] font-semibold text-on-surface">{line.name}</p>

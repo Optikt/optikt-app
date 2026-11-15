@@ -130,7 +130,7 @@
 		</p>
 
 		<div class="mt-1 mb-2 flex flex-wrap items-center gap-2.5">
-			<h1 class="font-heading text-[30px] leading-none font-bold whitespace-nowrap">
+			<h1 class="hero-title font-heading text-[30px] leading-none font-bold whitespace-nowrap">
 				Venta {formattedOrderNumber}
 			</h1>
 			<span
@@ -155,14 +155,16 @@
 				{#each SALE_STATUS_FLOW as step, i (step)}
 					{#if i > 0}
 						<span
-							class="h-[2px] w-[22px] {i <= currentStepIndex ? 'bg-brand-blue' : 'bg-[#34456b]'}"
+							class="step-link h-[2px] w-[22px] {i <= currentStepIndex
+								? 'bg-brand-blue'
+								: 'bg-[#34456b]'}"
 						></span>
 					{/if}
 					<span
 						class="flex items-center gap-1.5 {i < currentStepIndex
 							? 'text-[#c9d3ea]'
 							: i === currentStepIndex
-								? 'text-white'
+								? 'step-current text-white'
 								: 'text-[#7f8caa]'}"
 					>
 						<i
@@ -172,7 +174,7 @@
 									? 'bg-brand-gold shadow-[0_0_0_3px_rgba(252,208,30,.28)]'
 									: 'bg-[#34456b]'}"
 						></i>
-						{SALE_STATUS_LABELS[step]}
+						<span class="step-label">{SALE_STATUS_LABELS[step]}</span>
 					</span>
 				{/each}
 			</div>
@@ -183,7 +185,7 @@
 	<div style="grid-area: hc2" class="hc2 min-w-0">
 		<SaleDetailHeroCustomer {customer} />
 
-		<div class="mt-3 grid grid-cols-[repeat(3,max-content)] gap-x-[30px] gap-y-0.5">
+		<div class="hero-meta mt-3 grid grid-cols-[repeat(3,max-content)] gap-x-[30px] gap-y-0.5">
 			<div>
 				<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
 					>Vendedor</span
@@ -229,20 +231,22 @@
 
 	<!-- ══ mon: dinero ════════════════════════════════════════════════ -->
 	<div style="grid-area: mon" class="mon min-w-0">
-		<p class="text-[11px] font-bold tracking-[0.12em] text-[#b8c4de] uppercase">Total</p>
-		<p class="font-heading mt-0.5 text-[32px] leading-none font-bold tabular-nums">
-			{formatPrice(sale.total)}
-		</p>
-		{#if bsLabel(sale.total)}
-			{#snippet bsTotal({ props }: { props: Record<string, unknown> })}
-				<p {...props} class="cursor-help text-[13px] text-[#b8c4de] tabular-nums">
-					{bsLabel(sale.total)}
-				</p>
-			{/snippet}
-			<TriggerTooltip trigger={bsTotal} text={rateTooltip} />
-		{/if}
+		<div class="money-total min-w-0">
+			<p class="text-[11px] font-bold tracking-[0.12em] text-[#b8c4de] uppercase">Total</p>
+			<p class="font-heading mt-0.5 text-[32px] leading-none font-bold tabular-nums">
+				{formatPrice(sale.total)}
+			</p>
+			{#if bsLabel(sale.total)}
+				{#snippet bsTotal({ props }: { props: Record<string, unknown> })}
+					<p {...props} class="cursor-help text-[13px] text-[#b8c4de] tabular-nums">
+						{bsLabel(sale.total)}
+					</p>
+				{/snippet}
+				<TriggerTooltip trigger={bsTotal} text={rateTooltip} />
+			{/if}
+		</div>
 
-		<div class="mt-2 flex items-center gap-3">
+		<div class="money-tools mt-2 flex items-center gap-3">
 			<button
 				type="button"
 				onclick={() => (showBreakdown = !showBreakdown)}
@@ -273,7 +277,7 @@
 		</div>
 
 		<div
-			class="grid transition-[grid-template-rows] duration-300 {showBreakdown
+			class="money-breakdown grid transition-[grid-template-rows] duration-300 {showBreakdown
 				? 'grid-rows-[1fr]'
 				: 'grid-rows-[0fr]'}"
 		>
@@ -289,7 +293,7 @@
 			</div>
 		</div>
 
-		<div class="mt-3 border-t border-white/20 pt-3">
+		<div class="money-balance mt-3 border-t border-white/20 pt-3">
 			{#if isCancelled}
 				{#if sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT && sale.refundAmount !== null}
 					<p class="text-[11px] font-bold tracking-[0.12em] text-[#b8c4de] uppercase">
@@ -379,6 +383,61 @@
 	/* Textos largos siempre envuelven (el `truncate` con tooltip sigue recortando). */
 	.hero :where(.hl, .hc2, .mon) {
 		overflow-wrap: anywhere;
+	}
+	/* ── Móvil <700 (contenedor): 1 col, título 24, stepper compacto,
+	   meta 2 col, dinero 2 col (Total | Saldo) + herramientas full-width. */
+	@container (max-width: 699px) {
+		.hero-title {
+			font-size: 24px;
+			white-space: normal;
+		}
+		/* Stepper compacto: solo el paso actual conserva etiqueta; el resto, puntos. */
+		.hero .step-label {
+			display: none;
+		}
+		.hero .step-current .step-label {
+			display: inline;
+		}
+		.hero .step-link {
+			display: none;
+		}
+		.hero-meta {
+			grid-template-columns: repeat(2, max-content);
+			column-gap: 24px;
+			row-gap: 8px;
+		}
+		.mon {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			column-gap: 16px;
+			align-items: start;
+		}
+		.money-total {
+			grid-column: 1;
+			grid-row: 1;
+			min-width: 0;
+		}
+		.mon :where(.money-total, .money-balance) > p.font-heading {
+			font-size: 22px;
+		}
+		.money-balance {
+			grid-column: 2;
+			grid-row: 1;
+			min-width: 0;
+			margin-top: 0;
+			border-top: 0;
+			padding-top: 0;
+			border-left: 1px solid rgba(255, 255, 255, 0.15);
+			padding-left: 16px;
+		}
+		.money-tools {
+			grid-column: 1 / -1;
+			grid-row: 2;
+		}
+		.money-breakdown {
+			grid-column: 1 / -1;
+			grid-row: 3;
+		}
 	}
 	/* Barras decorativas a la izquierda de `mon`; ocultas en móvil (<700). */
 	.hero::before,

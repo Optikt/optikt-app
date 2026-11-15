@@ -108,7 +108,7 @@
 						class="mt-1.5 flex max-w-[470px] items-center gap-1.5 text-xs text-[#c9d3ea]"
 					>
 						<MapPin class="h-3.5 w-3.5 shrink-0" />
-						<span class="truncate">{customer.address}</span>
+						<span class="customer-address-text truncate">{customer.address}</span>
 					</div>
 				{/snippet}
 				<TriggerTooltip trigger={addressLine} text={customer.address} />
@@ -127,3 +127,13 @@
 		<p class="text-sm font-semibold text-[#c9d3ea]">Cliente no asignado</p>
 	</div>
 {/if}
+
+<style>
+	/* Móvil <700 (contenedor de página): la dirección envuelve en vez de truncar. */
+	@container (max-width: 699px) {
+		.customer-address-text {
+			white-space: normal;
+			overflow-wrap: anywhere;
+		}
+	}
+</style>

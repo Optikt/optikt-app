@@ -232,7 +232,7 @@
 {/snippet}
 
 <section
-	class="overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm"
+	class="items-section overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm"
 >
 	<div class="flex items-center gap-3 px-4 pt-3.5 pb-3">
 		<h2 class="font-heading text-[15px] font-bold text-brand-navy">Artículos y servicios</h2>
@@ -248,7 +248,7 @@
 
 	<!-- Column header -->
 	<div
-		class="grid grid-cols-[32px_1fr_104px_128px_26px] gap-3 border-t border-outline-variant/60 px-4 py-1.5 text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
+		class="items-header grid grid-cols-[32px_1fr_104px_128px_26px] gap-3 border-t border-outline-variant/60 px-4 py-1.5 text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
 	>
 		<span></span>
 		<span>Artículo</span>
@@ -338,3 +338,16 @@
 		onSave={saveEnrich}
 	/>
 {/if}
+
+<style>
+	/* Móvil <700 (contenedor de página): filas como tarjetas sin header de
+	   columnas; hijos con sangría 36. El layout de tarjeta vive en SaleItemsRow. */
+	@container (max-width: 699px) {
+		.items-section .items-header {
+			display: none;
+		}
+		.items-section :global(.child-connector) {
+			margin-left: 36px;
+		}
+	}
+</style>
