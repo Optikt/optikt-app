@@ -1,38 +1,21 @@
 <script lang="ts">
-	import {
-		Calculator,
-		ChevronDown,
-		ExternalLink,
-		IdCard,
-		MapPin,
-		MessageSquare,
-		Phone
-	} from '@lucide/svelte';
+	import { Calculator, ChevronDown, MessageSquare } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { toast } from 'svelte-sonner';
-	import { logger } from '$lib/utils/logger';
 	import { CasheaIsotipo } from '$lib/components/branding';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
-	import {
-		CUSTOMER_GENDER_LABELS,
-		RefundStatus,
-		SaleStatus,
-		SALE_STATUS_LABELS,
-		type CustomerGender
-	} from '$lib/shared/enums';
-	import { calculateAge } from '$lib/dates';
+	import { RefundStatus, SaleStatus, SALE_STATUS_LABELS } from '$lib/shared/enums';
 	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import { computeSaleBreakdown, saleBreakdownRows } from './saleBreakdown';
 	import {
 		SALE_STATUS_FLOW,
 		bsEquivalent,
-		customerInitials,
 		resolveSaleRateDisplay,
 		saleStatusLabel,
 		saleStatusPillClasses
 	} from './saleDetail';
 	import SaleDetailHeroActions from './SaleDetailHeroActions.svelte';
+	import SaleDetailHeroCustomer from './SaleDetailHeroCustomer.svelte';
 
 	interface Props {
 		sale: SaleWithRelations;
@@ -115,26 +98,8 @@
 		SALE_STATUS_FLOW.indexOf(sale.status as (typeof SALE_STATUS_FLOW)[number])
 	);
 
-	// ── Customer ──────────────────────────────────────────────────────────
+	// ── Customer (panel propio `hc2`, ver SaleDetailHeroCustomer) ─────────
 	const customer = $derived(sale.customer);
-	const customerName = $derived(
-		customer ? `${customer.firstName} ${customer.lastName}` : 'Cliente no asignado'
-	);
-	const initials = $derived(customerInitials(customerName));
-	const age = $derived(customer ? calculateAge(customer.birthDate) : null);
-	const genderLabel = $derived(
-		customer?.gender ? (CUSTOMER_GENDER_LABELS[customer.gender as CustomerGender] ?? null) : null
-	);
-
-	async function copyValue(value: string, message: string) {
-		try {
-			await navigator.clipboard.writeText(value);
-			toast.success(message);
-		} catch (error) {
-			logger.error('No se pudo copiar al portapapeles', error);
-			toast.error('No se pudo copiar');
-		}
-	}
 
 	function handleBack(event: MouseEvent) {
 		event.preventDefault();
@@ -153,10 +118,10 @@
 {/snippet}
 
 <section
-	class="relative grid grid-cols-[1fr_290px] gap-x-[28px] gap-y-0 overflow-hidden rounded-xl bg-brand-navy p-4 px-5 text-white shadow-[var(--ds-shadow-md)] before:absolute before:-top-[10px] before:right-[338px] before:-bottom-[10px] before:w-[34px] before:-skew-x-20 before:bg-brand-blue before:opacity-90 before:content-[''] after:absolute after:-top-[10px] after:right-[384px] after:-bottom-[10px] after:w-[10px] after:-skew-x-20 after:bg-brand-gold after:content-[''] [&>*]:relative [&>*]:z-[1]"
+	class="hero relative gap-x-[28px] gap-y-0 overflow-hidden rounded-xl bg-brand-navy p-4 px-5 text-white shadow-[var(--ds-shadow-md)] [&>*]:relative [&>*]:z-[1]"
 >
-	<!-- ══ Columna izquierda: información ══════════════════════════════ -->
-	<div class="col-start-1 row-start-1 min-w-0">
+	<!-- ══ hl: encabezado (título + stepper) ═══════════════════════════ -->
+	<div style="grid-area: hl" class="hl min-w-0">
 		<p class="text-[11px] font-bold tracking-[0.12em] text-[#b8c4de] uppercase">
 			<a href={resolve('/sales')} onclick={handleBack} class="transition-colors hover:text-white"
 				>← Ventas</a
@@ -212,99 +177,11 @@
 				{/each}
 			</div>
 		{/if}
+	</div>
 
-		{#if customer}
-			<div
-				class="mb-2.5 flex items-start gap-3 rounded-xl border border-white/15 bg-white/[.07] px-3.5 py-2.5"
-			>
-				<span
-					class="font-heading grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full bg-brand-blue text-[15px] font-bold text-brand-navy"
-				>
-					{initials}
-				</span>
-				<div class="min-w-0">
-					{#snippet nameLink({ props }: { props: Record<string, unknown> })}
-						<a
-							{...props}
-							href={resolve(`/customers/${customer.id}`)}
-							class="font-heading inline-flex items-center gap-1.5 border-b border-dotted border-white/40 text-lg font-bold transition-colors hover:border-white"
-						>
-							{customerName}
-							<ExternalLink class="h-3.5 w-3.5" />
-						</a>
-					{/snippet}
-					<TriggerTooltip trigger={nameLink} text="Ver ficha del cliente" />
-
-					<div class="mt-1.5 flex flex-wrap items-center gap-2">
-						{#if customer.idNumber}
-							{#snippet cedulaChip({ props }: { props: Record<string, unknown> })}
-								<button
-									{...props}
-									type="button"
-									class="inline-flex cursor-copy items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-[3px] text-[13px] font-semibold transition-colors hover:bg-white/25"
-									onclick={() => copyValue(customer.idNumber ?? '', 'Cédula copiada')}
-								>
-									<IdCard class="h-3.5 w-3.5" />
-									{customer.idNumber}
-								</button>
-							{/snippet}
-							<TriggerTooltip trigger={cedulaChip} text="Clic para copiar la cédula" />
-						{/if}
-						{#if customer.primaryPhone}
-							{#snippet phoneChip({ props }: { props: Record<string, unknown> })}
-								<button
-									{...props}
-									type="button"
-									class="inline-flex cursor-copy items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-[3px] text-[13px] font-semibold transition-colors hover:bg-white/25"
-									onclick={() => copyValue(customer.primaryPhone ?? '', 'Teléfono copiado')}
-								>
-									<Phone class="h-3.5 w-3.5" />
-									{customer.primaryPhone}
-								</button>
-							{/snippet}
-							<TriggerTooltip trigger={phoneChip} text="Clic para copiar el teléfono" />
-						{/if}
-						{#if age !== null}
-							<span
-								class="inline-flex items-center gap-1.5 rounded-md bg-white/[.07] px-2 py-[3px] text-xs font-semibold text-[#c9d3ea]"
-							>
-								{age} años
-							</span>
-						{/if}
-						{#if genderLabel}
-							<span
-								class="inline-flex items-center gap-1.5 rounded-md bg-white/[.07] px-2 py-[3px] text-xs font-semibold text-[#c9d3ea]"
-							>
-								{genderLabel}
-							</span>
-						{/if}
-					</div>
-					{#if customer.address}
-						{#snippet addressLine({ props }: { props: Record<string, unknown> })}
-							<div
-								{...props}
-								class="mt-1.5 flex max-w-[470px] items-center gap-1.5 text-xs text-[#c9d3ea]"
-							>
-								<MapPin class="h-3.5 w-3.5 shrink-0" />
-								<span class="truncate">{customer.address}</span>
-							</div>
-						{/snippet}
-						<TriggerTooltip trigger={addressLine} text={customer.address} />
-					{/if}
-				</div>
-			</div>
-		{:else}
-			<div
-				class="mb-2.5 flex items-center gap-3 rounded-xl border border-white/15 bg-white/[.07] px-3.5 py-2.5"
-			>
-				<span
-					class="font-heading grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full bg-white/15 text-[15px] font-bold text-[#c9d3ea]"
-				>
-					—
-				</span>
-				<p class="text-sm font-semibold text-[#c9d3ea]">Cliente no asignado</p>
-			</div>
-		{/if}
+	<!-- ══ hc2: cliente + meta (hijo propio del hero, área "hc2") ═══════ -->
+	<div style="grid-area: hc2" class="hc2 min-w-0">
+		<SaleDetailHeroCustomer {customer} />
 
 		<div class="mt-3 grid grid-cols-[repeat(3,max-content)] gap-x-[30px] gap-y-0.5">
 			<div>
@@ -350,8 +227,8 @@
 		{/if}
 	</div>
 
-	<!-- ══ Columna derecha: dinero ═════════════════════════════════════ -->
-	<div class="col-start-2 row-start-1 border-l border-white/15 pl-[24px]">
+	<!-- ══ mon: dinero ════════════════════════════════════════════════ -->
+	<div style="grid-area: mon" class="mon min-w-0">
 		<p class="text-[11px] font-bold tracking-[0.12em] text-[#b8c4de] uppercase">Total</p>
 		<p class="font-heading mt-0.5 text-[32px] leading-none font-bold tabular-nums">
 			{formatPrice(sale.total)}
@@ -482,3 +359,81 @@
 		{onPay}
 	/>
 </section>
+
+<style>
+	/* Hero por áreas (hijos directos hl hc2 mon acts hcta). Los umbrales son
+	   container queries contra `.page` (nunca viewport): el sidebar reacomoda suave. */
+	.hero {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas:
+			'hl'
+			'hc2'
+			'mon'
+			'acts'
+			'hcta';
+	}
+	.hero > * {
+		min-width: 0;
+	}
+	/* Textos largos siempre envuelven (el `truncate` con tooltip sigue recortando). */
+	.hero :where(.hl, .hc2, .mon) {
+		overflow-wrap: anywhere;
+	}
+	/* Barras decorativas a la izquierda de `mon`; ocultas en móvil (<700). */
+	.hero::before,
+	.hero::after {
+		content: '';
+		position: absolute;
+		top: -10px;
+		bottom: -10px;
+		transform: skewX(-20deg);
+		display: none;
+	}
+	.mon {
+		border-top: 1px solid rgba(255, 255, 255, 0.15);
+		padding-top: 12px;
+	}
+	@container (min-width: 700px) {
+		.hero {
+			grid-template-columns: minmax(0, 1fr) 290px;
+			grid-template-areas:
+				'hl mon'
+				'hc2 mon'
+				'acts hcta';
+		}
+		.hero::before {
+			display: block;
+			right: 338px;
+			width: 34px;
+			background: var(--color-brand-blue);
+			opacity: 0.9;
+		}
+		.hero::after {
+			display: block;
+			right: 384px;
+			width: 10px;
+			background: var(--color-brand-gold);
+		}
+		.mon {
+			border-top: 0;
+			padding-top: 0;
+			border-left: 1px solid rgba(255, 255, 255, 0.15);
+			padding-left: 24px;
+		}
+	}
+	@container (min-width: 1500px) {
+		.hero {
+			grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) 330px;
+			grid-template-areas:
+				'hl hc2 mon'
+				'acts acts hcta';
+		}
+		.hero::before {
+			right: 378px;
+		}
+		.hero::after {
+			right: 424px;
+		}
+	}
+</style>

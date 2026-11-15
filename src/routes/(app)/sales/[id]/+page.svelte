@@ -253,7 +253,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-surface">
-	<div class="anim-page @container mx-auto w-full max-w-[1280px] px-5 pt-3.5 pb-7">
+	<div class="page anim-page @container w-full px-5 pt-3.5 pb-7">
 		<SaleDetailHero
 			{sale}
 			{items}
@@ -292,7 +292,9 @@
 			{canAct}
 		/>
 
-		<div class="mt-3 grid grid-cols-1 items-start gap-3 @min-[1060px]:grid-cols-[1fr_330px]">
+		<div
+			class="mt-3 grid grid-cols-1 items-start gap-3 @min-[1060px]:grid-cols-[minmax(0,1fr)_360px] @min-[1500px]:grid-cols-[minmax(0,1fr)_420px]"
+		>
 			<div>
 				<SaleItemsTable
 					{items}
@@ -403,3 +405,13 @@
 	saleCreatedAt={saleLoadedAt}
 	saleCreatedBy={sale.seller?.fullName}
 />
+
+<style>
+	/* Contenedor de página: tope 1760 y contexto para todas las container
+	   queries del detalle (hero + rail). Sin viewport queries para layout. */
+	.page {
+		max-width: 1760px;
+		margin: 0 auto;
+		container-type: inline-size;
+	}
+</style>

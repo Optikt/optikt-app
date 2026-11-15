@@ -275,10 +275,11 @@
 	</Popover.Root>
 {/snippet}
 
-<!-- ══ Fila 2: acciones + CTA ══════════════════════════════════════ -->
+<!-- ══ acts: acciones secundarias ═════════════════════════════════ -->
 {#if hasActionsRow}
 	<div
-		class="col-start-1 row-start-2 mt-4 flex flex-nowrap items-stretch gap-2 border-t border-white/15 pt-4"
+		style="grid-area: acts"
+		class="mt-4 flex min-w-0 flex-nowrap items-stretch gap-2 border-t border-white/15 pt-4"
 	>
 		{@render statusMenu()}
 		{#if showEdit}
@@ -313,7 +314,7 @@
 {/if}
 
 {#if showPaymentForm}
-	<div class="col-start-2 row-start-2 mt-4 border-t border-white/15 pt-4">
+	<div style="grid-area: hcta" class="mt-4 min-w-0 border-t border-white/15 pt-4">
 		<button
 			type="button"
 			onclick={onPay}

@@ -72,6 +72,8 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 **Numeración**: `orderNumber` secuencia MAX+1 dentro de la tx; override numérico (backfill) solo ADMIN con validación de duplicado (`createSale.ts:25-31,91-100`).
 
+**Detalle layout (B+ §3-A)**: `.page` (`routes/(app)/sales/[id]/+page.svelte`) tope 1760 + `container-type: inline-size` (sin viewport queries para layout); hero (`SaleDetailHero.svelte`) con hijos directos `hl hc2 mon acts hcta` y `grid-template-areas` (700–1499 dos cols `290px`; ≥1500 tres zonas `1.05fr/1fr/330px` vía `@container`, cliente `hc2` a toda altura). Rail `360px ≥1060 / 420px ≥1500` (container).
+
 ## Patrones locales
 
 - **Shell/core (DT9)**: lógica = `<acción>Core(input, ctx)` en `server/sales/<acción>.ts` con `ActionContext` explícito; remote solo `requireRole` + delega. Es el patrón de referencia para otros dominios.
