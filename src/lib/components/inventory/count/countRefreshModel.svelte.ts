@@ -1,21 +1,27 @@
 /**
- * Estado y acciones de refresh de la pantalla de sesión de conteo: recarga de
- * datos (`reload`) y re-sincronización de la referencia (`openPreview`/`confirm`).
- * Vive en un `.svelte.ts` para que el estado reactivo ($state) y las acciones
- * viajen juntos sin inflar `+page.svelte` (size gate DT1) — mismo criterio que
+ * Estado y acciones de «Actualizar datos» en la pantalla de sesión de conteo:
+ * un solo botón que (1) trae el estado vigente y (2) re-sincroniza la
+ * referencia cuando el stock vivo difiere del snapshot. Vive en un
+ * `.svelte.ts` para que el estado reactivo ($state) y las acciones viajen
+ * juntos sin inflar `+page.svelte` (size gate DT1) — mismo criterio que
  * `paymentFormModel.svelte.ts`.
  *
- * - `reload()`: trae el estado vigente (sesión + líneas + responsables + costos
- *   pendientes) sin salir de la página — p. ej. ventas registradas mid-session.
- *   Subsume al viejo `refreshLines` de la página.
- * - `openPreview()`/`confirm()`: «Refrescar stock» (escribe `system_stock`).
- *   El preview corre ANTES de abrir el modal, para ver cuántas líneas
- *   cambiarán, cuántas pierden su conteo y cuántas quedan intactas.
+ * - `refreshData()`: lee el plan del refresh (1 query). Si el stock NO cambió
+ *   → `reload()` y avisa (el «F5» de siempre). Si cambió → abre el modal, que
+ *   muestra cuántas líneas se actualizarán, cuántas pierden su conteo y
+ *   cuántas quedan intactas.
+ * - `reload()`: trae sesión + líneas + responsables + costos pendientes sin
+ *   salir de la página. No escribe nada.
+ * - `confirm()`: ejecuta la re-sincronización (escribe `system_stock`) y
+ *   recarga al terminar.
  */
 import { toast } from 'svelte-sonner';
 
-import { refreshStockCmd, refreshStockPreview } from '$lib/remote/inventoryCount.remote';
-import { getSessionById } from '$lib/remote/inventoryCount.remote';
+import {
+	getSessionById,
+	refreshStockCmd,
+	refreshStockPreview
+} from '$lib/remote/inventoryCount.remote';
 import type { StockRefreshPreview } from '$lib/server/db/queries/inventoryCount/refresh';
 import type { InventoryCountSessionDetail } from '$lib/server/db/queries/inventoryCount/types';
 import { getErrorMessage } from '$lib/utils';
@@ -60,32 +66,30 @@ export function createCountRefreshModel(options: CountRefreshModelOptions) {
 		}
 	}
 
-	/** Igual que `reload()` pero con toast de error (para el botón del header). */
-	async function reloadWithToast(): Promise<void> {
-		try {
-			await reload();
-		} catch (error) {
-			logger.error('No se pudo actualizar la sesión de conteo', error);
-			toast.error(getErrorMessage(error, 'No se pudo actualizar la sesión'));
-		}
-	}
-
-	/** Calcula el preview y abre el modal (o avisa que todo está al día). */
-	async function openPreview(): Promise<void> {
+	/**
+	 * «Actualizar datos»: un solo botón que pone la pantalla al día.
+	 * 1. Lee el plan del refresh de stock (1 query).
+	 * 2. Si el stock NO cambió → recarga la vista y avisa (era el «F5»).
+	 * 3. Si cambió → abre el modal: ahí se ve cuántas líneas se actualizarán
+	 *    y cuántas pierden su conteo (acción con consecuencias).
+	 */
+	async function refreshData(): Promise<void> {
 		if (busy) return;
 		busy = true;
 		preview = null;
 		try {
 			const result = await refreshStockPreview({ id: sessionId() });
 			if (result.updatedLines === 0) {
-				toast.info('El stock ya está al día: ninguna línea cambió');
+				// Nada que re-sincronizar: solo recarga (ventas/contajes de otros).
+				await reload();
+				toast.info('Datos al día');
 				return;
 			}
 			preview = result;
 			modal = true;
 		} catch (error) {
-			logger.error('No se pudo calcular el refresco de stock', error);
-			toast.error(getErrorMessage(error, 'No se pudo calcular el refresco de stock'));
+			logger.error('No se pudo actualizar la sesión', error);
+			toast.error(getErrorMessage(error, 'No se pudo actualizar la sesión'));
 		} finally {
 			busy = false;
 		}
@@ -141,9 +145,12 @@ export function createCountRefreshModel(options: CountRefreshModelOptions) {
 		get reloading(): boolean {
 			return reloading;
 		},
+		/** true mientras el botón hace cualquier cosa (recarga, preview o escritura). */
+		get working(): boolean {
+			return busy || reloading;
+		},
+		refreshData,
 		reload,
-		reloadWithToast,
-		openPreview,
 		confirm
 	};
 }

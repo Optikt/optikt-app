@@ -408,10 +408,8 @@
 		onStepClick={handleStepClick}
 		onOpenResponsibles={openResponsibles}
 		onCancel={() => (cancelModal = true)}
-		onRefresh={() => void countRefresh.reloadWithToast()}
-		isRefreshing={countRefresh.reloading}
-		onRefreshStock={data.canCount ? () => countRefresh.openPreview() : undefined}
-		refreshBusy={countRefresh.busy}
+		onRefresh={() => void countRefresh.refreshData()}
+		isRefreshing={countRefresh.working}
 	/>
 
 	{#if phase !== 3}
