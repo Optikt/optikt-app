@@ -32,7 +32,11 @@ export async function voidSalePaymentCore(data: VoidPaymentInput, ctx: ActionCon
 
 	// All writes in a single transaction: void + recalc + status revert
 	const paidAmount = await db.transaction(async (tx) => {
-		const voided = await voidSalePayment(data.id, tx);
+		const voided = await voidSalePayment(
+			data.id,
+			{ voidedById: ctx.userId, voidReason: data.reason },
+			tx
+		);
 		if (!voided) {
 			throw new Error('No se pudo anular el pago');
 		}

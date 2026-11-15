@@ -1,49 +1,72 @@
 <script lang="ts">
-	import { CreditCard, Ellipsis, Plus } from '@lucide/svelte';
+	import { CreditCard, Ellipsis, History, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { ConfirmModal } from '$lib/components/ui';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
+	import SalePaymentsHistoryDrawer from './SalePaymentsHistoryDrawer.svelte';
 	import { voidPayment } from '$lib/remote/sales/payments.remote';
 	import { PAYMENT_METHOD_LABELS, PaymentMethod, isBsPaymentMethod } from '$lib/shared/enums';
+	import type { SalePaymentWithUsers } from '$lib/server/db/queries/sales/payments';
 	import { logger } from '$lib/utils/logger';
 	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
 	import { getErrorMessage } from '$lib/utils/errors';
-	import type { SalePayment } from '$lib/server/db/schema';
 
 	interface Props {
 		/** Includes voided payments (loader) — they render collapsed behind a link. */
-		payments: SalePayment[];
+		payments: SalePaymentWithUsers[];
 		/** Non-viewer role (register + void). */
 		canAct: boolean;
 		isCancelled: boolean;
 		remainingBcvUsd: number;
+		total: number;
+		paidAmountBcvUsd: number;
 		/** Opens the payment drawer (page owns the drawer). */
 		onRegister: () => void;
 		/** A void succeeded: the page invalidates + syncs (saldo, barra, estados). */
 		onChanged: () => void;
 	}
 
-	let { payments, canAct, isCancelled, remainingBcvUsd, onRegister, onChanged }: Props = $props();
+	let {
+		payments,
+		canAct,
+		isCancelled,
+		remainingBcvUsd,
+		total,
+		paidAmountBcvUsd,
+		onRegister,
+		onChanged
+	}: Props = $props();
 
 	const activePayments = $derived(payments.filter((p) => !p.voidedAt));
 	const voidedPayments = $derived(payments.filter((p) => p.voidedAt));
 	const canRegister = $derived(canAct && !isCancelled && remainingBcvUsd > 0.01);
 
 	let showVoided = $state(false);
-	let voidTarget = $state<SalePayment | null>(null);
+	let showHistory = $state(false);
+	let voidTarget = $state<SalePaymentWithUsers | null>(null);
 	let voidOpen = $state(false);
 	let voiding = $state(false);
+	let voidReason = $state('');
+	let voidError = $state<string | null>(null);
 
 	function canVoid(): boolean {
 		return canAct && !isCancelled;
 	}
 
-	function methodLabel(payment: SalePayment): string {
+	function openVoidModal(payment: SalePaymentWithUsers) {
+		showHistory = false;
+		voidTarget = payment;
+		voidReason = '';
+		voidError = null;
+		voidOpen = true;
+	}
+
+	function methodLabel(payment: SalePaymentWithUsers): string {
 		return PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod] ?? 'Pago';
 	}
 
 	/** Line 2: original amount + frozen rate (rate travels WITH the amount, never with the date). */
-	function amountLine(payment: SalePayment): { amount: string; rate: string } {
+	function amountLine(payment: SalePaymentWithUsers): { amount: string; rate: string } {
 		const method = payment.paymentMethod as unknown as PaymentMethod;
 		if (isBsPaymentMethod(method)) {
 			return {
@@ -72,20 +95,29 @@
 
 	async function confirmVoid() {
 		if (!voidTarget || voiding) return;
+		const reason = voidReason.trim();
+		if (!reason) {
+			voidError = 'El motivo es obligatorio para anular el pago';
+			return;
+		}
+		voidError = null;
 		voiding = true;
 		try {
-			const result = await voidPayment({ id: voidTarget.id, saleId: voidTarget.saleId });
+			const result = await voidPayment({ id: voidTarget.id, saleId: voidTarget.saleId, reason });
 			if (result.success) {
 				toast.success('Pago anulado: el saldo se actualizó');
 				voidOpen = false;
 				voidTarget = null;
+				voidReason = '';
 				onChanged();
 			} else {
+				voidError = result.error;
 				toast.error(result.error);
 			}
 		} catch (error) {
 			logger.error('Error anulando el pago', error);
-			toast.error(getErrorMessage(error, 'No se pudo anular el pago'));
+			voidError = getErrorMessage(error, 'No se pudo anular el pago');
+			toast.error(voidError);
 		} finally {
 			voiding = false;
 		}
@@ -101,6 +133,14 @@
 			{activePayments.length}
 		</span>
 		<span class="flex-1"></span>
+		<button
+			type="button"
+			onclick={() => (showHistory = true)}
+			class="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-outline-variant bg-white px-2.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container-low"
+		>
+			<History class="h-3.5 w-3.5" />
+			Ver detalle
+		</button>
 		{#if canRegister}
 			<button
 				type="button"
@@ -127,27 +167,32 @@
 		<div class="border-t border-outline-variant/60">
 			{#each activePayments as payment (payment.id)}
 				{@const line = amountLine(payment)}
-				<div class="grid grid-cols-[32px_1fr_auto_26px] items-center gap-3 px-4 py-2.5">
+				<div class="grid grid-cols-[32px_1fr_auto_26px] items-start gap-3 px-4 py-2.5">
 					<span
-						class="grid h-[32px] w-[32px] place-items-center rounded-lg bg-surface-container-high text-brand-navy"
+						class="grid h-[32px] w-[32px] shrink-0 place-items-center rounded-lg bg-surface-container-high text-brand-navy"
 					>
 						<CreditCard class="h-4 w-4" />
 					</span>
-					<div class="min-w-0">
-						<p class="truncate text-[13px] font-semibold text-on-surface">
+					<div class="min-w-0 pt-0.5">
+						<p
+							class="text-[13px] font-semibold [overflow-wrap:anywhere] break-words text-on-surface"
+						>
 							{methodLabel(payment)}
 						</p>
-						<p class="truncate text-xs text-on-surface-variant">
+						<p class="text-xs [overflow-wrap:anywhere] break-words text-on-surface-variant">
 							{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })}
 							{#if payment.reference}&nbsp;· Ref. {payment.reference}{/if}
 						</p>
 					</div>
-					<div class="text-right">
+					<div class="pt-0.5 text-right">
 						<p class="text-[13px] font-semibold text-on-surface tabular-nums">
 							{formatPrice(payment.amountBcvUsd)}
 						</p>
 						{#snippet rateTip({ props }: { props: Record<string, unknown> })}
-							<div {...props} class="cursor-help text-xs text-on-surface-variant tabular-nums">
+							<div
+								{...props}
+								class="cursor-help text-xs [overflow-wrap:anywhere] break-words text-on-surface-variant tabular-nums"
+							>
 								{line.amount}
 								<span class="font-mono text-[11px] text-outline">{line.rate}</span>
 							</div>
@@ -158,10 +203,7 @@
 						<button
 							type="button"
 							aria-label="Anular pago"
-							onclick={() => {
-								voidTarget = payment;
-								voidOpen = true;
-							}}
+							onclick={() => openVoidModal(payment)}
 							class="grid h-[26px] w-[26px] place-items-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
 						>
 							<Ellipsis class="h-4 w-4" />
@@ -180,7 +222,9 @@
 				<div class="space-y-2 pt-1 pb-2">
 					{#each voidedPayments as payment (payment.id)}
 						<div class="flex items-center justify-between gap-2 opacity-60">
-							<span class="text-[13px] font-semibold text-on-surface line-through">
+							<span
+								class="text-[13px] font-semibold [overflow-wrap:anywhere] break-words text-on-surface line-through"
+							>
 								{methodLabel(payment)} · anulado
 							</span>
 							<span class="text-[13px] font-semibold text-on-surface tabular-nums line-through">
@@ -211,6 +255,16 @@
 	{/if}
 </section>
 
+<SalePaymentsHistoryDrawer
+	open={showHistory}
+	onclose={() => (showHistory = false)}
+	{payments}
+	{total}
+	paidAmount={paidAmountBcvUsd}
+	canVoid={canVoid()}
+	onVoidRequest={openVoidModal}
+/>
+
 <ConfirmModal
 	bind:open={voidOpen}
 	title="Anular pago"
@@ -223,5 +277,30 @@
 	onCancel={() => {
 		voidOpen = false;
 		voidTarget = null;
+		voidReason = '';
+		voidError = null;
 	}}
-/>
+>
+	{#snippet body()}
+		<div class="mt-3">
+			<label for="void-payment-reason" class="mb-1 block text-sm font-semibold text-on-surface">
+				Motivo de la anulación
+			</label>
+			<textarea
+				id="void-payment-reason"
+				bind:value={voidReason}
+				rows="3"
+				maxlength="500"
+				placeholder="Ej. transferencia duplicada, monto incorrecto…"
+				class="w-full resize-none rounded-lg border border-outline-variant bg-white px-3 py-2 text-sm [overflow-wrap:anywhere] text-on-surface outline-none focus:border-brand-navy"
+			></textarea>
+			{#if voidError}
+				<p
+					class="mt-1.5 rounded-lg bg-error-container/15 px-2.5 py-1.5 text-xs font-medium text-on-error-container"
+				>
+					{voidError}
+				</p>
+			{/if}
+		</div>
+	{/snippet}
+</ConfirmModal>

@@ -5,7 +5,8 @@ import {
 	CancelSaleSchema,
 	UpdateSaleSchema,
 	SetSaleStatusSchema,
-	ListSalesSchema
+	ListSalesSchema,
+	VoidPaymentSchema
 } from '$lib/schemas/sales';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { DiscountType, RefundStatus } from '$lib/shared/enums';
@@ -760,6 +761,30 @@ describe('ListSalesSchema', () => {
 
 	it('rejects a non-boolean isCashea filter', () => {
 		const result = ListSalesSchema.safeParse({ page: 1, perPage: 10, isCashea: '1' });
+		expect(result.success).toBe(false);
+	});
+});
+
+describe('VoidPaymentSchema', () => {
+	const base = { id: crypto.randomUUID(), saleId: crypto.randomUUID() };
+
+	it('accepts a void with a reason', () => {
+		const result = VoidPaymentSchema.safeParse({ ...base, reason: 'Transferencia duplicada' });
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects a void without reason', () => {
+		const result = VoidPaymentSchema.safeParse(base);
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects a blank reason', () => {
+		const result = VoidPaymentSchema.safeParse({ ...base, reason: '   ' });
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects a reason longer than 500 chars', () => {
+		const result = VoidPaymentSchema.safeParse({ ...base, reason: 'x'.repeat(501) });
 		expect(result.success).toBe(false);
 	});
 });

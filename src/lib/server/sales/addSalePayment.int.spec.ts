@@ -38,6 +38,17 @@ describe('addSalePaymentCore', () => {
 		expect(updated?.paidAmountBcvUsd).toBe(50);
 	});
 
+	it('stores who collected the payment', async () => {
+		const seller = await createUser();
+		const sale = await createSale({ sellerId: seller.id, total: 100 });
+
+		const result = await addSalePaymentCore(payment(sale.id), ctx(seller.id));
+
+		expect(result.success).toBe(true);
+		if (!result.success) throw new Error('payment was not created');
+		expect(result.payment.createdById).toBe(seller.id);
+	});
+
 	it('rejects a payment on a cancelled sale', async () => {
 		const sale = await createSale({ status: SaleStatus.CANCELLED });
 

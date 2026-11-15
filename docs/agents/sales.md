@@ -27,7 +27,9 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 - `paidAmountBcvUsd` **siempre se recalcula** desde la suma de pagos no-voided (`recalcSalePaidAmount`, `queries/sales/payments.ts:89-103`) — nunca incremental.
 - `amountBcvUsd` es el que **ingresa el usuario en USD** (evita drift de float; `addSalePayment.ts:19-21`). Métodos Bs no requieren `exchangeRate`; los extranjeros sí; `bcvRate` siempre obligatoria (`addSalePayment.ts:23-25`, `schema/sales.ts:287-297`).
 - El pago se registra vía factory `submitSalePayment` (`server/payments/salePayments.ts:21-43`): insert + recalc en la MISMA tx del caller.
-- Void = soft-delete con `voidedAt` (idempotente); encontrar el pago exige que pertenezca a la venta y esté sin void (cross-sale void rechazado).
+- Void = soft-delete con `voidedAt` (idempotente) + `voidedById`/`voidReason` obligatorios (`VoidPaymentSchema.reason` 1–500; mig. `0051`); encontrar el pago exige que pertenezca a la venta y esté sin void (cross-sale void rechazado).
+- Quién: `sale_payments.createdById` (cobró) y `voidedById` (anuló), nullable pre-feature; `getSalePayments` devuelve `SalePaymentWithUsers` (`createdByName`/`voidedByName` vía left join a `users`, `queries/sales/payments.ts`). Viejo sin datos ⇒ "—" en UI.
+- Historial de pagos: `SalePaymentsHistoryDrawer.svelte` (SlideOver `w-full sm:w-[440px]`): franja Total/Cobrado/Saldo + tarjeta por pago (original, tasa congelada+tipo, fecha-hora, registrado por, referencia, equiv. USD BCV, notas; anulado `bg #fbfafb` + motivo/quién/cuándo). Anular (card ⋯ o drawer) = `ConfirmModal` con motivo obligatorio inline + toast. Filas sin truncar (`overflow-wrap:anywhere`); tasa BCV mono + `TriggerTooltip`; sin `title` nativos.
 - ⚠️ Editar items reduciendo `total < paidAmount − 0.01` se **rechaza** (redirigir a cancelar + recrear) — `updateSale.ts:133-139`.
 
 **Items / modificadores**
@@ -84,8 +86,8 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 ## Testing
 
-- Cores: `*.int.spec.ts` co-ubicados (lifecycle create/cancel/setStatus/update, voids con recálculo, FIFO cancel/update, free-item enrichment).
-- Schemas: `schemas/sales.spec.ts`. Unit puros espejados en `components/sales/**` (pricing, taxBreakdown, paymentForm*, editSale*, wizard*, etc.).
+- Cores: `*.int.spec.ts` co-ubicados (lifecycle create/cancel/setStatus/update, voids con recálculo + quién/motivo, FIFO cancel/update, free-item enrichment).
+- Schemas: `schemas/sales.spec.ts` (incl. `VoidPaymentSchema`: motivo obligatorio 1–500). Unit puros espejados en `components/sales/**` (pricing, taxBreakdown, paymentForm*, editSale*, wizard*, etc.).
 - Componentes (`project=client`, browser): `editSale/EditSaleLensEditor.svelte.spec.ts` — el «Hecho» del editor de cristal debe entregar al `onApply` lo editado en el draft (precio, graduación, enlace al catálogo).
 - Listado: `shared/saleBalance.spec.ts`, `components/sales/listParams.spec.ts`, `components/sales/saleDisplay.spec.ts`; a nivel DB `queries/sales/list.int.spec.ts` (stats/facetas/selección/saldo/flags) y `queries/userPreferences.int.spec.ts` (ambos `project=integration`, requieren Docker).
 - E2E de dinero: `e2e/sale-payment.test.ts`, `e2e/quote-to-sale.test.ts`.

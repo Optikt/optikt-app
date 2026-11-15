@@ -38,7 +38,8 @@ export async function addSalePaymentCore(data: AddPaymentInput, ctx: ActionConte
 				paymentDate: composeBusinessTimestamp(data.paymentDate),
 				usdBcvAmount: amountBcvUsd,
 				reference: data.reference ?? null,
-				notes: data.notes ?? null
+				notes: data.notes ?? null,
+				createdById: ctx.userId
 			},
 			tx
 		);

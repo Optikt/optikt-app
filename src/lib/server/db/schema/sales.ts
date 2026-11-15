@@ -310,6 +310,12 @@ export const salePayments = pgTable(
 		notes: varchar(),
 		/** Voided payment marker */
 		voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'string' }),
+		/** User who collected the payment (nullable: pre-feature rows) */
+		createdById: uuid('created_by_id'),
+		/** User who voided the payment (nullable) */
+		voidedById: uuid('voided_by_id'),
+		/** Mandatory void reason (max 500) */
+		voidReason: varchar('void_reason', { length: 500 }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
 			.defaultNow(),

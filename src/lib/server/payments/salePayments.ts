@@ -15,6 +15,7 @@ export interface SalePaymentSubmission {
 	usdBcvAmount: number;
 	reference: string | null;
 	notes: string | null;
+	createdById: string | null;
 }
 
 /** Adapter over addSalePayment + recalc. Caller owns transaction via executor. */
@@ -34,7 +35,8 @@ export async function submitSalePayment(
 			paymentDate: input.paymentDate,
 			amountBcvUsd: input.usdBcvAmount,
 			reference: input.reference,
-			notes: input.notes
+			notes: input.notes,
+			createdById: input.createdById
 		},
 		executor
 	);

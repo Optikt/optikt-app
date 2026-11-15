@@ -277,7 +277,8 @@ export const AddPaymentSchema = z
 
 export const VoidPaymentSchema = z.object({
 	id: z.uuid('ID de pago requerido'),
-	saleId: z.uuid('ID de venta requerido')
+	saleId: z.uuid('ID de venta requerido'),
+	reason: z.string().trim().min(1, 'El motivo es obligatorio').max(500)
 });
 
 // ============================================================================

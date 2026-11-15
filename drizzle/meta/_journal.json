@@ -358,6 +358,13 @@
       "when": 1794456644989,
       "tag": "0050_mature_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1794778374321,
+      "tag": "0051_minor_shocker",
+      "breakpoints": true
     }
   ]
 }

@@ -27,7 +27,7 @@
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
-	import type { SalePayment } from '$lib/server/db/schema';
+	import type { SalePaymentWithUsers } from '$lib/server/db/queries/sales/payments';
 	import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
 	import { printTickeraReceipt } from '$lib/remote/printing.remote';
 	import {
@@ -42,7 +42,7 @@
 	let { data } = $props();
 	let sale = $state<SaleWithRelations>(untrack(() => data.sale));
 	let items = $state<SaleItemWithDetails[]>(untrack(() => data.items));
-	let payments = $state<SalePayment[]>(untrack(() => data.payments));
+	let payments = $state<SalePaymentWithUsers[]>(untrack(() => data.payments));
 	let movements = $state<MovementWithDetails[]>(untrack(() => data.movements));
 	const store = getExchangeRatesStore();
 	const bcvRate = $derived(store.bcvRate);
@@ -316,6 +316,8 @@
 					{canAct}
 					{isCancelled}
 					{remainingBcvUsd}
+					total={sale.total}
+					paidAmountBcvUsd={sale.paidAmountBcvUsd}
 					onRegister={openDrawer}
 					onChanged={async () => {
 						await invalidateAll();
