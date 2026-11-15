@@ -66,7 +66,6 @@ import { updateSettings } from '$lib/server/db/queries/settings';
 import { requireRole } from '$lib/server/guards';
 import { UserRole, AdjustmentReason } from '$lib/shared/enums';
 import { getErrorMessage } from '$lib/utils';
-import { logger } from '$lib/utils/logger';
 
 function kindFor(data: {
 	dim: string;
@@ -276,17 +275,14 @@ export const refreshStockCmd = command(SessionIdSchema, async (data) => {
 	try {
 		await requireCountWriteAccess(user.id, user.role, data.id);
 		const result = await refreshSessionStock(data.id);
-		// Single-flight refresh: `command` NO invalida queries por sí solo (doc
+		// Single-flight refresh: `command` NO invalida queries por sí sola (doc
 		// SvelteKit: «command does nothing … under-invalidates your app»), y el
 		// preview está cacheado en el cliente por (id, argumento) → sin esto, el
-		// segundo clic en «Actualizar datos» reabría el modal con el plan viejo.
-		// El refresh viaja con esta misma respuesta. Best-effort: la escritura ya
-		// se hizo, un fallo de invalidación no debe hacer fallar el command.
-		void refreshStockPreview({ id: data.id })
-			.refresh()
-			.catch((error) => {
-				logger.error('No se pudo refrescar el preview de stock en el cliente', error);
-			});
+		// segundo clic en «Actualizar datos» reabriría el modal con el plan viejo.
+		// Viaja en esta misma respuesta (patrón «Server-driven refreshes») y es
+		// seguro descartar la promise: el kit la await-ea y `.refresh()` resuelve
+		// siempre (su rechazo interno ya está manejado con un catch noop).
+		void refreshStockPreview({ id: data.id }).refresh();
 		return ok(result);
 	} catch (error) {
 		return fail(error);
