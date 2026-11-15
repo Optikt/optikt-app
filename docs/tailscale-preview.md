@@ -1,4 +1,44 @@
-# Tailscale Preview — Run the built adapter-node server via Tailscale
+# Tailscale — dev server con HTTPS y preview del built server
+
+Dos flujos: (1) `pnpm dev` servido con HTTPS desde otra máquina del tailnet, y (2) preview del build de producción.
+
+## Dev server (`pnpm dev`) con HTTPS
+
+Para probar el dev server (puerto 5173) desde otra máquina del tailnet con **secure context** — obligatorio para `crypto.randomUUID` y demás APIs que exigen `https://` o `localhost`. Sin esto, `http://victor-wsl.taild8f0b9.ts.net:5173` es HTTP plano y el navegador bloquea esas APIs.
+
+**Setup — una sola vez por máquina** (sin esto, todo comando `tailscale serve` pide sudo):
+
+```bash
+sudo tailscale set --operator=$USER
+```
+
+**Levantar el proxy** (con `pnpm dev` corriendo en 5173):
+
+```bash
+tailscale serve --bg --https=443 http://127.0.0.1:5173
+tailscale serve status
+# https://victor-wsl.taild8f0b9.ts.net (tailnet only)
+# |-- / proxy http://127.0.0.1:5173
+```
+
+**URL:** `https://victor-wsl.taild8f0b9.ts.net/dashboard` — **sin `:5173`**: Tailscale Serve solo sirve HTTPS en 443 (o `--https=8443`). La URL con `:5173` sigue funcionando pero por HTTP plano.
+
+Notas:
+
+- **Máquina-wide, no por repo**: la config vive en `tailscaled`, así que sirve para `pnpm dev` en cualquier carpeta (proyecto principal o worktrees). En el repo solo apunta `server.allowedHosts` de `vite.config.ts` (incluye los nombres `*.ts.net`); sin eso vite responde 403 al cargar por nombre de host.
+- **CSRF**: en dev SvelteKit salta el check de origin (`__SVELTEKIT_DEV__`), así que no hace falta tocar `csrf.trustedOrigins` para este flujo.
+- **HMR (websocket) pasa por el proxy.** Vite 8 exige `?token=` en la URL del ws cuando la request lleva header `Origin` (protección anti-hijacking): el navegador lo agrega solo. Si un `curl` de prueba devuelve 400, falta el token — no es el proxy.
+- **Certificados**: Tailscale los emite vía Let's Encrypt para el nombre MagicDNS del nodo y se renuevan solos (~90 días).
+- **Si desaparece el serve** (reinicio raro de WSL): repetir `tailscale serve --bg --https=443 http://127.0.0.1:5173` — ya sin sudo.
+
+Verificación rápida:
+
+```bash
+tailscale serve status
+curl -sI https://victor-wsl.taild8f0b9.ts.net/dashboard   # 302 → /login (auth guard)
+```
+
+## Preview — built adapter-node server
 
 TL;DR
 
@@ -71,9 +111,11 @@ PORT=4173 sh -lc '. ./.env && node build'
 5. Point Tailscale to the same port
 
 ```bash
-# if you used PORT=3000
-sudo tailscale serve 3000
+# HTTPS en 443 → http://127.0.0.1:3000 (sin sudo si ya corriste `tailscale set --operator=$USER`, ver arriba)
+tailscale serve --bg --https=443 http://127.0.0.1:3000
 ```
+
+⚠️ Solo puede haber **un** servicio por puerto: si el dev server ya usa `--https=443`, el preview necesita otro puerto (`--https=8443`) o un path distinto con `--set-path`.
 
 Debugging tips
 

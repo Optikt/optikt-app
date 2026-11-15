@@ -15,6 +15,7 @@
 		type EditLensTreatment
 	} from '../editSaleDraft';
 	import {
+		editableItemFromLensEditorDraft,
 		editTreatmentsFromLensEditor,
 		filterCompatibleTreatments,
 		lensEditorDraftFromEditableItem,
@@ -142,7 +143,10 @@
 			toast.warning('Se omitieron tratamientos que no pertenecen al proveedor del cristal');
 		}
 
-		const baseItem = { ...lensBase, id: item.id || crypto.randomUUID() };
+		// El item se construye desde el BORRADOR (lo que el usuario editó), no desde
+		// `lensBase` (copia del mount): si no, precio/fórmula/cantidad se pierden.
+		const baseItem = editableItemFromLensEditorDraft(lensBase, lensDraft);
+		baseItem.id = item.id || crypto.randomUUID();
 		const savedItem = buildLensInputFromDraft(baseItem, context.selectedLens);
 		onApply(
 			savedItem,
