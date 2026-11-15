@@ -78,6 +78,8 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 **Detalle stock (B+ §3-C)**: `SaleStockDrawer.svelte` (SlideOver `w-full sm:w-[440px]`, reemplaza el uso de `SaleMovementsModal` — el archivo viejo se conserva) sobre los mismos `movements` del loader: subtítulo «N movimientos · efecto neto», tabla neto por producto (Producto·Salidas·Reversiones·Neto, 0 en gris), píldoras Todos/Salidas/Reversiones y grupos por operación (más reciente primero: «Edición · fecha · usuario» / «Creación de la venta» / «Cancelación», clave `referenceType+referenceId+usuario+minuto`). Lógica pura en `saleStock.ts` (+ `saleStock.spec.ts`).
 
+**Detalle auditoría (B+ §3-D)**: `updateSale` anexa `changes.itemsDiff` (schema `SaleAuditDiff v1`, `schemas/sales.ts`) al evento «Venta actualizada», calculado puro post-tx (`server/sales/saleAuditDiff.ts:buildSaleAuditDiff`, tope 50 + `truncated`). Empareja por `id` cliente; `swap` = cambio de producto; hijos tratamiento re-creados sin id = `add`/`del`. Costos internos excluidos por allowlist (nunca en el diff). Eventos viejos sin diff ⇒ aviso en cursiva sin despliegue. Timeline fusiona `sale` + `sale_payment` (registrado/anulado; el void ahora audita `sale_payment` en `voidSalePayment.ts`) vía `queries/changeHistory.ts:getSaleAuditHistory(+Count)` + remote `history.remote.ts:getSaleAuditHistory` (limit/offset, «ver más»). UI: `SaleAuditTimeline` (3 recientes + «N cambios · Total ±» abre expandido), `SaleAuditHistoryDrawer` (filtros Todos/Ediciones/Estados), `SaleAuditEvent` (secciones ARTÍCULOS/DATOS/TOTALES, chip Total ±, MOTIVO destacado, estados como pills). Sin `title` nativos.
+
 ## Patrones locales
 
 - **Shell/core (DT9)**: lógica = `<acción>Core(input, ctx)` en `server/sales/<acción>.ts` con `ActionContext` explícito; remote solo `requireRole` + delega. Es el patrón de referencia para otros dominios.
@@ -88,7 +90,8 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 ## Testing
 
-- Cores: `*.int.spec.ts` co-ubicados (lifecycle create/cancel/setStatus/update, voids con recálculo + quién/motivo, FIFO cancel/update, `saleRevertOrigin` — edición escribe `EDIT_REVERT` con motivo, cancelación `CANCEL_REVERT`, free-item enrichment).
+- Cores: `*.int.spec.ts` co-ubicados (lifecycle create/cancel/setStatus/update, voids con recálculo + quién/motivo, FIFO cancel/update, `saleRevertOrigin` — edición escribe `EDIT_REVERT` con motivo, cancelación `CANCEL_REVERT`, free-item enrichment; `updateSaleAuditDiff` — el `itemsDiff` v1 se guarda sin alterar totales/inventario, header-only y no-op, el void audita `sale_payment`).
+- Unit del diff: `server/sales/saleAuditDiff.spec.ts` (add/del/swap/mod por campo, fórmula OD/OI, montaje, tratamiento hijo sin id, descuento global, Cashea, totales numéricos, costos excluidos, tope 50+`truncated`).
 - Schemas: `schemas/sales.spec.ts` (incl. `VoidPaymentSchema`: motivo obligatorio 1–500). Unit puros espejados en `components/sales/**` (pricing, taxBreakdown, paymentForm*, editSale*, wizard*, etc.).
 - Componentes (`project=client`, browser): `editSale/EditSaleLensEditor.svelte.spec.ts` — el «Hecho» del editor de cristal debe entregar al `onApply` lo editado en el draft (precio, graduación, enlace al catálogo).
 - Listado: `shared/saleBalance.spec.ts`, `components/sales/listParams.spec.ts`, `components/sales/saleDisplay.spec.ts`; a nivel DB `queries/sales/list.int.spec.ts` (stats/facetas/selección/saldo/flags) y `queries/userPreferences.int.spec.ts` (ambos `project=integration`, requieren Docker).

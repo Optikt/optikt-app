@@ -61,6 +61,7 @@
 
 	// Audit history drawer
 	let showAuditDrawer = $state(false);
+	let expandedAuditEventId = $state<string | null>(null);
 	let auditHistory = $state(untrack(() => data.auditHistory));
 	/** Load instant comes from the audit create event — sale.createdAt is the business date now. */
 	let saleLoadedAt = $derived(
@@ -325,7 +326,10 @@
 					{auditHistory}
 					saleCreatedAt={saleLoadedAt}
 					saleCreatedBy={sale.seller?.fullName}
-					onViewAudit={() => (showAuditDrawer = true)}
+					onViewAudit={(eventId) => {
+						expandedAuditEventId = eventId ?? null;
+						showAuditDrawer = true;
+					}}
 					movementsCount={movements.length}
 					onOpenMovements={openStockModal}
 					{lastUpdatedLabel}
@@ -398,10 +402,16 @@
 
 <SaleAuditHistoryDrawer
 	open={showAuditDrawer}
-	onclose={() => (showAuditDrawer = false)}
+	onclose={() => {
+		showAuditDrawer = false;
+		expandedAuditEventId = null;
+	}}
 	{auditHistory}
+	auditTotal={data.auditTotal}
+	saleId={sale.id}
 	saleCreatedAt={saleLoadedAt}
 	saleCreatedBy={sale.seller?.fullName}
+	expandedEventId={expandedAuditEventId}
 />
 
 <style>

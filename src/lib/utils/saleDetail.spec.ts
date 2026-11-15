@@ -5,6 +5,8 @@ import {
 	auditDiffRows,
 	classifySaleAuditEntry,
 	hasAuditDetail,
+	matchesAuditFilter,
+	saleAuditTotalDelta,
 	type AuditEvent
 } from './saleDetail';
 
@@ -128,5 +130,145 @@ describe('auditDiffRows', () => {
 		});
 		expect(hasAuditDetail(withReason)).toBe(true);
 		expect(hasAuditDetail(eventOf({ action: 'create' }))).toBe(false);
+	});
+});
+
+describe('classifySaleAuditEntry with itemsDiff', () => {
+	const diff = {
+		v: 1,
+		items: [{ t: 'add', name: 'Montura X', qty: 1, unitPrice: 20, total: 20 }],
+		header: [],
+		totals: [{ label: 'Total', from: 100, to: 120 }]
+	};
+
+	it('attaches the parsed diff, delta and change count', () => {
+		const event = eventOf({
+			action: 'update',
+			changes: {
+				total: { old: 100, new: 120 },
+				itemsDiff: { old: null, new: diff }
+			}
+		});
+		expect(event.kind).toBe('update');
+		expect(event.legacyUpdate).toBe(false);
+		expect(event.itemsDiff).toEqual(diff);
+		expect(event.totalDelta).toBe(20);
+		expect(event.changeCount).toBe(2);
+		expect(hasAuditDetail(event)).toBe(true);
+	});
+
+	it('marks updates without diff as legacy', () => {
+		const event = eventOf({
+			action: 'update',
+			changes: { notes: { old: null, new: 'vieja' } }
+		});
+		expect(event.legacyUpdate).toBe(true);
+		expect(event.itemsDiff).toBeNull();
+		expect(event.totalDelta).toBeNull();
+		expect(event.changeCount).toBe(0);
+	});
+
+	it('hides diff-covered fields from the legacy rows when a diff is present', () => {
+		const event = eventOf({
+			action: 'update',
+			changes: {
+				total: { old: 100, new: 120 },
+				customerId: { old: 'a', new: 'b' },
+				itemsDiff: { old: null, new: diff }
+			}
+		});
+		const rows = auditDiffRows(event);
+		// total lives in TOTALES; customerId is not covered by the diff.
+		expect(rows.map((r) => r.field)).toEqual(['customerId']);
+	});
+
+	it('rejects malformed diff payloads as legacy', () => {
+		const event = eventOf({
+			action: 'update',
+			changes: { itemsDiff: { old: null, new: { v: 2 } } }
+		});
+		expect(event.itemsDiff).toBeNull();
+		expect(event.legacyUpdate).toBe(true);
+	});
+
+	it('computes a negative total delta', () => {
+		expect(
+			saleAuditTotalDelta({
+				v: 1,
+				items: [],
+				header: [],
+				totals: [{ label: 'Total', from: 120, to: 100 }]
+			})
+		).toBe(-20);
+	});
+});
+
+describe('sale_payment events', () => {
+	it('classifies payment registration with its BCV USD amount', () => {
+		const event = classifySaleAuditEntry(
+			entry({
+				entityType: 'sale_payment',
+				action: 'create',
+				changes: {
+					paymentMethod: { old: null, new: 'EFECTIVO_BS' },
+					amountBcvUsd: { old: null, new: 45.5 }
+				}
+			})
+		);
+		expect(event).toMatchObject({
+			label: 'Pago registrado',
+			kind: 'payment',
+			paymentAmount: 45.5
+		});
+	});
+
+	it('classifies payment voids with the stored reason', () => {
+		const event = classifySaleAuditEntry(
+			entry({
+				entityType: 'sale_payment',
+				action: 'update',
+				changes: {
+					voidedAt: { old: null, new: '2026-11-07T12:00:00.000Z' },
+					voidReason: { old: null, new: 'cobro duplicado' },
+					amountBcvUsd: { old: 45.5, new: 45.5 }
+				}
+			})
+		);
+		expect(event).toMatchObject({
+			label: 'Pago anulado',
+			kind: 'paymentVoid',
+			reason: 'cobro duplicado',
+			paymentAmount: 45.5
+		});
+	});
+
+	it('ignores non-void payment updates', () => {
+		expect(
+			classifySaleAuditEntry(
+				entry({
+					entityType: 'sale_payment',
+					action: 'update',
+					changes: { notes: { old: null, new: 'x' } }
+				})
+			)
+		).toBeNull();
+	});
+});
+
+describe('matchesAuditFilter', () => {
+	function kindEvent(kind: AuditEvent['kind']): AuditEvent {
+		return { kind } as AuditEvent;
+	}
+
+	it('splits Todos / Ediciones / Estados', () => {
+		expect(matchesAuditFilter(kindEvent('create'), 'all')).toBe(true);
+		expect(matchesAuditFilter(kindEvent('update'), 'edits')).toBe(true);
+		expect(matchesAuditFilter(kindEvent('payment'), 'edits')).toBe(true);
+		expect(matchesAuditFilter(kindEvent('paymentVoid'), 'edits')).toBe(true);
+		expect(matchesAuditFilter(kindEvent('status'), 'edits')).toBe(false);
+		expect(matchesAuditFilter(kindEvent('status'), 'states')).toBe(true);
+		expect(matchesAuditFilter(kindEvent('cancel'), 'states')).toBe(true);
+		expect(matchesAuditFilter(kindEvent('create'), 'states')).toBe(false);
+		expect(matchesAuditFilter(kindEvent('update'), 'states')).toBe(false);
 	});
 });

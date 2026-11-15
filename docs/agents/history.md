@@ -20,12 +20,13 @@ Audit trail field-level por entidad: modal de historial con diff de valores (old
 ## Patrones locales
 
 - Remote de un solo endpoint `getHistory` con limit/offset/hasMore; `entityType` validado contra `ALL_ENTITY_TYPES`.
+- Timeline fusionada de venta + sus pagos: `changeHistory.ts:getSaleAuditHistory(+Count)` (sale ∪ sale_payment por sub-select de pagos, desc, limit/offset) + remote `history.remote.ts:getSaleAuditHistory`. La UI del detalle (`SaleAuditTimeline/Event/HistoryDrawer` en `components/sales/detail/`, clasificación en `utils/saleDetail.ts`) consume el v1 `itemsDiff` de `schemas/sales.ts`.
 - `ChangeHistoryModal` (fetch lazy al abrir) + `ChangesDiff` (render old→new).
 - Extras en el query file: timeline fusionada de PO + sus pagos con sub-select y orderBy asc (`changeHistory.ts:197-231`).
 
 ## Testing
 
-- Hueco total: sin specs para queries ni componentes.
+- Hueco total: sin specs para queries ni componentes (excepto el timeline de venta: `utils/saleDetail.spec.ts` clasifica `itemsDiff`/pagos/filtros; `server/sales/saleAuditDiff.spec.ts` + `updateSaleAuditDiff.int.spec.ts` cubren el diff).
 
 ## Known gaps / tech debt
 

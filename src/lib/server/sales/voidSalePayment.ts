@@ -8,6 +8,8 @@ import { updateSale as updateSaleQuery } from '$lib/server/db/queries/sales/writ
 import { db } from '$lib/server/db';
 import { SaleStatus, canManageSaleByOwner } from '$lib/shared/enums';
 import { auditService } from '$lib/server/audit';
+import { eq } from 'drizzle-orm';
+import { salePayments } from '$lib/server/db/schema';
 import type { VoidPaymentInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -55,7 +57,13 @@ export async function voidSalePaymentCore(data: VoidPaymentInput, ctx: ActionCon
 		return newPaidAmount;
 	});
 
-	// Audit log (best-effort, after transaction succeeds)
+	// Audit logs (best-effort, after transaction succeeds)
+	const [voidedPayment] = await db.select().from(salePayments).where(eq(salePayments.id, data.id));
+	if (voidedPayment) {
+		await auditService.logUpdate('sale_payment', data.id, payment, voidedPayment, ctx, {
+			excludeFields: ['createdAt', 'updatedAt']
+		});
+	}
 	const statusChangedByVoid =
 		(sale.status === SaleStatus.COMPLETED || sale.status === SaleStatus.READY) &&
 		paidAmount < sale.total - 0.01;
