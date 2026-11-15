@@ -180,7 +180,7 @@
 
 	{#if open && filtered.length > 0}
 		<div
-			class="absolute top-full right-0 left-0 z-50 max-h-60 overflow-y-auto rounded-b-lg border-x border-b border-outline-variant bg-white shadow-lg"
+			class="absolute top-full right-auto left-0 z-50 max-h-60 w-max max-w-[min(32rem,90vw)] min-w-full overflow-y-auto rounded-b-lg border-x border-b border-outline-variant bg-white shadow-lg"
 			role="listbox"
 			id="searchcombobox-list"
 		>
@@ -203,7 +203,7 @@
 		</div>
 	{:else if open && query}
 		<div
-			class="absolute top-full right-0 left-0 z-50 rounded-b-lg border-x border-b border-outline-variant bg-white px-3 py-4 text-center text-sm text-on-surface-variant shadow-lg"
+			class="absolute top-full right-auto left-0 z-50 w-max max-w-[min(32rem,90vw)] min-w-full rounded-b-lg border-x border-b border-outline-variant bg-white px-3 py-4 text-center text-sm text-on-surface-variant shadow-lg"
 		>
 			{#if loading}
 				<span class="inline-flex items-center gap-2">
