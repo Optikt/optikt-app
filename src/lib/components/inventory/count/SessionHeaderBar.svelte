@@ -26,10 +26,13 @@
 		onStepClick: (step: 1 | 2 | 3) => void;
 		onOpenResponsibles: () => void;
 		onCancel?: () => void;
-		/** «Refrescar stock»: sincroniza la referencia con el stock vivo. */
-		onRefreshStock?: () => void;
-		/** Hay un refresco de stock en vuelo (botón aria-disabled). */
-		refreshBusy?: boolean;
+		/**
+		 * «Actualizar datos»: recarga la sesión desde el server y, si el stock
+		 * vivo difiere del snapshot, abre el modal de re-sincronización.
+		 */
+		onRefresh?: () => void;
+		/** Hay una actualización en vuelo (recarga, preview o escritura). */
+		isRefreshing?: boolean;
 	}
 
 	let {
@@ -47,8 +50,8 @@
 		onStepClick,
 		onOpenResponsibles,
 		onCancel,
-		onRefreshStock,
-		refreshBusy = false
+		onRefresh,
+		isRefreshing = false
 	}: Props = $props();
 
 	const steps = [1, 2, 3] as const;
@@ -95,6 +98,26 @@
 			</button>
 		{/snippet}
 	</TriggerTooltip>
+
+	{#if phase !== 3 && onRefresh}
+		<TriggerTooltip
+			title="Actualizar datos"
+			text="Trae el estado vigente (ventas, contajes o cierres hechos mientras tanto). Si el stock real cambió respecto al snapshot, te pide confirmación antes de re-sincronizarlo: esas líneas pierden su conteo y habrá que recontarlas."
+			side="bottom"
+		>
+			{#snippet trigger({ props })}
+				<button
+					{...props}
+					type="button"
+					aria-label="Actualizar datos de la sesión"
+					class="rounded-lg p-1.5 transition-colors hover:bg-white/10"
+					onclick={onRefresh}
+				>
+					<RefreshCw class={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+				</button>
+			{/snippet}
+		</TriggerTooltip>
+	{/if}
 
 	<h2 class="font-heading text-sm font-bold tracking-tight">
 		{title} <span class="opacity-70">· {scope}</span>
@@ -154,32 +177,6 @@
 	>
 		{#snippet child()}{ctaLabel}{/snippet}
 	</CountButton>
-
-	{#if phase !== 3 && onRefreshStock}
-		<TriggerTooltip
-			title="Refrescar stock"
-			text="Vuelve a leer el stock real del sistema (p. ej. si editaste una venta afuera). Solo cambia las líneas cuyo stock varió: esas pierden su conteo y habrá que recontarlas; las demás conservan lo que ya escribiste."
-			side="bottom"
-		>
-			{#snippet trigger({ props })}
-				<button
-					{...props}
-					type="button"
-					aria-label="Refrescar stock del sistema"
-					aria-disabled={refreshBusy}
-					class="rounded-lg p-1.5 transition-colors hover:bg-white/10 {refreshBusy
-						? 'opacity-60'
-						: ''}"
-					onclick={() => {
-						if (refreshBusy) return;
-						onRefreshStock();
-					}}
-				>
-					<RefreshCw class="h-5 w-5 {refreshBusy ? 'animate-spin' : ''}" />
-				</button>
-			{/snippet}
-		</TriggerTooltip>
-	{/if}
 
 	{#if canManage && phase !== 3 && onCancel}
 		<TriggerTooltip title="Cancelar conteo" text="Pide un motivo. No ajusta stock." side="bottom">

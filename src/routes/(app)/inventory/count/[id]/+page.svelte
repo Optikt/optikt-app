@@ -11,7 +11,6 @@
 		setSessionResponsibles,
 		upsertCountLineCmd,
 		getDiffCosts,
-		getSessionById,
 		listCountResponsibles
 	} from '$lib/remote/inventoryCount.remote';
 	import { getErrorMessage } from '$lib/utils';
@@ -42,7 +41,7 @@
 	import CountBoard from '$lib/components/inventory/count/CountBoard.svelte';
 	import AdjustStockDrawer from '$lib/components/inventory/count/AdjustStockDrawer.svelte';
 	import { createAdjustmentActions } from '$lib/components/inventory/count/adjustmentActions';
-	import { createRefreshStockModel } from '$lib/components/inventory/count/refreshStockModel.svelte';
+	import { createCountRefreshModel } from '$lib/components/inventory/count/countRefreshModel.svelte';
 	import RefreshStockModal from '$lib/components/inventory/count/RefreshStockModal.svelte';
 	import CancelCountModal from '$lib/components/inventory/count/CancelCountModal.svelte';
 	import ResponsiblesDrawer from '$lib/components/inventory/count/ResponsiblesDrawer.svelte';
@@ -145,7 +144,7 @@
 			if (!response.success) {
 				toast.error(response.error);
 				// «El stock cambió mientras guardabas»: recarga para ver la referencia nueva.
-				void refreshLines();
+				void countRefresh.reload();
 				return;
 			}
 			lines = lines.map((candidate) =>
@@ -174,7 +173,7 @@
 				return;
 			}
 			toast.success(`Stock 0 confirmado en lote (${response.data} ítems)`);
-			await refreshLines();
+			await countRefresh.reload();
 		} catch (error) {
 			toast.error(getErrorMessage(error, 'No se pudo confirmar el stock 0'));
 		} finally {
@@ -221,7 +220,24 @@
 		adjustReasonText = '';
 	}
 
-	// Acciones de ajuste (solicitar/lote/quitar) fuera de la página: size gate DT1.
+	// Refresh de la sesión (recarga de datos + re-sincronización de stock) y
+	// acciones de ajuste fuera de la página: size gate DT1.
+	const countRefresh = createCountRefreshModel({
+		sessionId: () => session.id,
+		applyDetail: (detail) => {
+			session = detail;
+			lines = detail.lines;
+			responsibles = detail.responsibles;
+		},
+		maybeRefreshCosts: (detail) => {
+			if (detail.lines.some((line) => lineNeedsCost(line, costsByLine))) void refreshCosts();
+		},
+		// Si se limpiaron conteos al refrescar stock, hay que volver a contar.
+		onCleared: (clearedCounts) => {
+			if (clearedCounts > 0) phase = 1;
+		}
+	});
+
 	const { requestAdjust, requestBatch, clearAdjust } = createAdjustmentActions({
 		// El id de sesión es constante en esta página (no cambia con refetch).
 		sessionId: untrack(() => session.id),
@@ -229,34 +245,13 @@
 		replaceLine: (line) => {
 			lines = lines.map((candidate) => (candidate.id === line.id ? line : candidate));
 		},
-		refreshLines,
+		refreshLines: () => countRefresh.reload(),
 		closeDrawer: closeAdjust,
 		isBusy: () => isAdjusting,
 		setBusy: (busy) => {
 			isAdjusting = busy;
 		}
 	});
-
-	// Refrescar stock (preview + ejecución, con su estado reactivo) fuera de
-	// la página: size gate DT1.
-	const refreshStock = createRefreshStockModel({
-		sessionId: () => session.id,
-		refreshLines,
-		// Si se limpiaron conteos hay que volver a contar: Revisar ya no aplica.
-		onCleared: (clearedCounts) => {
-			if (clearedCounts > 0) phase = 1;
-		}
-	});
-
-	async function refreshLines(): Promise<void> {
-		const detail = await getSessionById({ id: session.id });
-		if (!detail) {
-			toast.error('No se pudo recargar la sesión');
-			return;
-		}
-		lines = detail.lines;
-		if (detail.lines.some((line) => lineNeedsCost(line, costsByLine))) void refreshCosts();
-	}
 
 	// Costos FIFO: el mapa del load solo cubre las líneas ya contadas al cargar;
 	// al aparecer una diferencia nueva se piden al server. La cola evita
@@ -413,8 +408,8 @@
 		onStepClick={handleStepClick}
 		onOpenResponsibles={openResponsibles}
 		onCancel={() => (cancelModal = true)}
-		onRefreshStock={data.canCount ? () => void refreshStock.openPreview() : undefined}
-		refreshBusy={refreshStock.busy}
+		onRefresh={() => void countRefresh.refreshData()}
+		isRefreshing={countRefresh.working}
 	/>
 
 	{#if phase !== 3}
@@ -498,9 +493,9 @@
 
 	<!-- Modal: refrescar stock (preview antes de ejecutar) -->
 	<RefreshStockModal
-		bind:open={refreshStock.modal}
-		preview={refreshStock.preview}
-		onConfirm={() => void refreshStock.confirm()}
+		bind:open={countRefresh.modal}
+		preview={countRefresh.preview}
+		onConfirm={() => void countRefresh.confirm()}
 	/>
 
 	<!-- Modal: cerrar con diferencias sin ajustar -->

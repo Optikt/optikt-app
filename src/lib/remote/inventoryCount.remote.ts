@@ -274,7 +274,16 @@ export const refreshStockCmd = command(SessionIdSchema, async (data) => {
 	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 	try {
 		await requireCountWriteAccess(user.id, user.role, data.id);
-		return ok(await refreshSessionStock(data.id));
+		const result = await refreshSessionStock(data.id);
+		// Single-flight refresh: `command` NO invalida queries por sí sola (doc
+		// SvelteKit: «command does nothing … under-invalidates your app»), y el
+		// preview está cacheado en el cliente por (id, argumento) → sin esto, el
+		// segundo clic en «Actualizar datos» reabriría el modal con el plan viejo.
+		// Viaja en esta misma respuesta (patrón «Server-driven refreshes») y es
+		// seguro descartar la promise: el kit la await-ea y `.refresh()` resuelve
+		// siempre (su rechazo interno ya está manejado con un catch noop).
+		void refreshStockPreview({ id: data.id }).refresh();
+		return ok(result);
 	} catch (error) {
 		return fail(error);
 	}
