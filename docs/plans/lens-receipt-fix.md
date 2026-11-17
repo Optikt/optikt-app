@@ -1,7 +1,7 @@
 ---
 plan name: lens-receipt-fix
 plan description: Corrige cristales impresos PDF
-plan status: active
+plan status: done
 ---
 
 ## Idea

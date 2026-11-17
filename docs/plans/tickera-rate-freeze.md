@@ -1,7 +1,7 @@
 ---
 plan name: tickera-rate-freeze
 plan description: Congelar tasa BCV en venta
-plan status: active
+plan status: done
 ---
 
 ## Idea
