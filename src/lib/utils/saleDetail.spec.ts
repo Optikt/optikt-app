@@ -344,3 +344,36 @@ describe('matchesAuditFilter', () => {
 		expect(matchesAuditFilter(kindEvent('update'), 'states')).toBe(false);
 	});
 });
+
+describe('saleDetail edge branches', () => {
+	it('extractSaleAuditDiff rejects empty payloads', async () => {
+		const { extractSaleAuditDiff } = await import('./saleDetail');
+		expect(extractSaleAuditDiff(null)).toBeNull();
+		expect(extractSaleAuditDiff({})).toBeNull();
+	});
+
+	it('saleAuditTotalDelta is null without a Total row', () => {
+		expect(
+			saleAuditTotalDelta({
+				v: 1,
+				items: [],
+				header: [],
+				totals: [{ label: 'Subtotal', from: 100, to: 90 }]
+			})
+		).toBeNull();
+	});
+
+	it('ignores unknown sale_payment actions', () => {
+		expect(
+			classifySaleAuditEntry(
+				entry({ entityType: 'sale_payment', action: 'delete', changes: { notes: { old: null, new: 'x' } } })
+			)
+		).toBeNull();
+	});
+
+	it('labels singular and plural change counts', async () => {
+		const { auditChangeCountLabel } = await import('./saleDetail');
+		expect(auditChangeCountLabel({ changeCount: 1 } as AuditEvent)).toBe('1 cambio');
+		expect(auditChangeCountLabel({ changeCount: 3 } as AuditEvent)).toBe('3 cambios');
+	});
+});

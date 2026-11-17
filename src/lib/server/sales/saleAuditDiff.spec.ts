@@ -202,3 +202,317 @@ describe('buildSaleAuditDiff', () => {
 		expect(diff.totals).toEqual([]);
 	});
 });
+
+describe('buildSaleAuditDiff uncovered branches', () => {
+	it('names bare items by type and free items by description', () => {
+		const diff = buildSaleAuditDiff([], [
+			item({ itemType: 'FREE_ITEM', freeItemDescription: 'Ajuste manual' }),
+			item({ itemType: 'LENS_PAIR' }),
+			item({ itemType: 'TREATMENT' }),
+			item({ itemType: 'FREE_ITEM' }),
+			item({ itemType: 'PRODUCT' })
+		]);
+		expect(diff.items.map((c) => (c.t === 'add' ? c.name : null))).toEqual([
+			'Ajuste manual',
+			'Cristales',
+			'Tratamiento',
+			'Artículo libre',
+			'Producto'
+		]);
+	});
+
+	it('computes percentage line discounts and renders them legibly', () => {
+		const added = buildSaleAuditDiff(
+			[],
+			[
+				item({
+					snapshotName: 'Montura',
+					unitPrice: 100,
+					discount: 10,
+					discountType: DiscountType.PERCENTAGE
+				})
+			]
+		);
+		expect(added.items[0]).toMatchObject({ t: 'add', total: 90 });
+		const mod = buildSaleAuditDiff(
+			[item({ id: 'a', snapshotName: 'Montura', unitPrice: 100 })],
+			[
+				item({
+					id: 'a',
+					snapshotName: 'Montura',
+					unitPrice: 100,
+					discount: 10,
+					discountType: DiscountType.PERCENTAGE
+				})
+			]
+		);
+		expect(mod.items).toEqual([
+			{
+				t: 'mod',
+				name: 'Montura',
+				fields: [{ key: 'discount', label: 'Descuento de línea', from: null, to: '10 %' }]
+			}
+		]);
+	});
+
+	it('renders eye formulas without axis and nulls empty eyes', () => {
+		const mod = buildSaleAuditDiff(
+			[
+				item({
+					id: 'a',
+					itemType: 'LENS_PAIR',
+					snapshotName: 'Cristal',
+					odSphere: 1,
+					odCylinder: -0.5,
+					odAxis: 180
+				})
+			],
+			[
+				item({
+					id: 'a',
+					itemType: 'LENS_PAIR',
+					snapshotName: 'Cristal',
+					odSphere: 1,
+					odCylinder: -0.5
+				})
+			]
+		);
+		const fields = mod.items[0].t === 'mod' ? mod.items[0].fields : [];
+		expect(fields).toContainEqual({
+			key: 'formulaOD',
+			label: 'Fórmula OD',
+			from: '+1.00 -0.50 ×180°',
+			to: '+1.00 -0.50'
+		});
+	});
+
+	it('renders mounting measures per eye and pairs', () => {
+		const mod = buildSaleAuditDiff(
+			[item({ id: 'a', itemType: 'LENS_PAIR', snapshotName: 'Cristal' })],
+			[
+				item({
+					id: 'a',
+					itemType: 'LENS_PAIR',
+					snapshotName: 'Cristal',
+					dp: 62,
+					npRight: 31,
+					npLeft: 32
+				})
+			]
+		);
+		const fields = mod.items[0].t === 'mod' ? mod.items[0].fields : [];
+		expect(fields).toContainEqual({
+			key: 'mounting',
+			label: 'Medidas de montaje',
+			from: null,
+			to: '62mm'
+		});
+		const single = buildSaleAuditDiff(
+			[item({ id: 'b', itemType: 'LENS_PAIR', snapshotName: 'C2' })],
+			[item({ id: 'b', itemType: 'LENS_PAIR', snapshotName: 'C2', npRight: 31 })]
+		);
+		const singleFields = single.items[0].t === 'mod' ? single.items[0].fields : [];
+		expect(singleFields).toContainEqual({
+			key: 'mounting',
+			label: 'Medidas de montaje',
+			from: null,
+			to: '31mm'
+		});
+	});
+
+	it('diffs free-item category and description', () => {
+		const mod = buildSaleAuditDiff(
+			[
+				item({
+					id: 'a',
+					itemType: 'FREE_ITEM',
+					freeItemDescription: 'Ajuste',
+					freeItemCategory: 'SERVICE'
+				})
+			],
+			[
+				item({
+					id: 'a',
+					itemType: 'FREE_ITEM',
+					freeItemDescription: 'Ajuste fino',
+					freeItemCategory: 'REPAIR'
+				})
+			]
+		);
+		const fields = mod.items[0].t === 'mod' ? mod.items[0].fields : [];
+		expect(fields).toContainEqual({
+			key: 'freeItemCategory',
+			label: 'Categoría libre',
+			from: 'SERVICE',
+			to: 'REPAIR'
+		});
+		expect(fields).toContainEqual({
+			key: 'freeItemDescription',
+			label: 'Descripción',
+			from: 'Ajuste',
+			to: 'Ajuste fino'
+		});
+	});
+
+	it('renders header sale dates, invalid dates as-is, and percent global discounts', () => {
+		const diff = buildSaleAuditDiff([], [], {
+			beforeHeader: { saleDate: 'not-a-date', discount: 0, discountType: 'FIXED' },
+			afterHeader: {
+				saleDate: '2026-11-13T20:02:56.000Z',
+				discount: 10,
+				discountType: DiscountType.PERCENTAGE
+			},
+			beforeTotals: { subtotal: 100, total: 100 },
+			afterTotals: { subtotal: 100, total: 90 }
+		});
+		const byKey = Object.fromEntries(diff.header.map((r) => [r.key, r]));
+		expect(byKey.saleDate).toMatchObject({ label: 'Fecha de venta', from: 'not-a-date' });
+		expect(byKey.saleDate.to).toMatch(/2026/);
+		expect(byKey.discount).toMatchObject({ label: 'Descuento global', to: '10 %' });
+	});
+
+	it('keeps header rows when the cap cuts items first', () => {
+		const after: SaleAuditItemLike[] = [];
+		for (let i = 0; i < 49; i++) {
+			after.push(item({ snapshotName: `Nuevo ${i}`, unitPrice: 1 }));
+		}
+		const diff = buildSaleAuditDiff([], after, {
+			beforeHeader: { notes: null },
+			afterHeader: { notes: 'motivo largo' },
+			beforeTotals: { subtotal: 0, total: 0 },
+			afterTotals: { subtotal: 49, total: 49 }
+		});
+		// 49 adds + 1 header + 2 totals = 52 → 2 truncated; totals dropped first.
+		expect(countSaleAuditChanges(diff)).toBe(50);
+		expect(diff.truncated).toBe(2);
+		expect(diff.items).toHaveLength(49);
+		expect(diff.header.map((r) => r.key)).toEqual(['notes']);
+		expect(diff.totals).toEqual([]);
+	});
+
+	it('treats id-less before rows as removed', () => {
+		const diff = buildSaleAuditDiff([item({ snapshotName: 'Sin id' })], []);
+		expect(diff.items).toEqual([
+			{ t: 'del', name: 'Sin id', qty: 1, total: 20, unitPrice: 20 }
+		]);
+	});
+});
+
+describe('buildSaleAuditDiff remaining branches', () => {
+	it('renders fixed line discounts as money', () => {
+		const mod = buildSaleAuditDiff(
+			[item({ id: 'a', snapshotName: 'Montura', unitPrice: 100, discount: 5 })],
+			[item({ id: 'a', snapshotName: 'Montura', unitPrice: 100, discount: 10 })]
+		);
+		expect(mod.items).toEqual([
+			{
+				t: 'mod',
+				name: 'Montura',
+				fields: [
+					{ key: 'discount', label: 'Descuento de línea', from: 'USD 5,00', to: 'USD 10,00' }
+				]
+			}
+		]);
+	});
+
+	it('renders naso-pupilar pairs without DP', () => {
+		const mod = buildSaleAuditDiff(
+			[item({ id: 'a', itemType: 'LENS_PAIR', snapshotName: 'Cristal' })],
+			[
+				item({
+					id: 'a',
+					itemType: 'LENS_PAIR',
+					snapshotName: 'Cristal',
+					npRight: 31,
+					npLeft: 32
+				})
+			]
+		);
+		const fields = mod.items[0].t === 'mod' ? mod.items[0].fields : [];
+		expect(fields).toContainEqual({
+			key: 'mounting',
+			label: 'Medidas de montaje',
+			from: null,
+			to: '31/32mm'
+		});
+	});
+
+	it('renders fixed global discounts as money', () => {
+		const diff = buildSaleAuditDiff([], [], {
+			beforeHeader: { discount: 5, discountType: 'FIXED' },
+			afterHeader: { discount: 10, discountType: 'FIXED' },
+			beforeTotals: { subtotal: 100, total: 95 },
+			afterTotals: { subtotal: 100, total: 90 }
+		});
+		expect(diff.header).toContainEqual({
+			key: 'discount',
+			label: 'Descuento global',
+			from: 'USD 5,00',
+			to: 'USD 10,00'
+		});
+	});
+
+	it('slices mod fields and drops empty ones under the cap', () => {
+		const after: SaleAuditItemLike[] = [];
+		for (let i = 0; i < 48; i++) {
+			after.push(item({ snapshotName: `Nuevo ${i}`, unitPrice: 1 }));
+		}
+		after.push(
+			item({ id: 'm', snapshotName: 'Viejo', quantity: 1, unitPrice: 10 }),
+			item({ id: 'm2', snapshotName: 'Viejo 2', quantity: 3, unitPrice: 10 })
+		);
+		const before = [
+			item({ id: 'm', snapshotName: 'Viejo', quantity: 2, unitPrice: 20 }),
+			item({ id: 'm2', snapshotName: 'Viejo 2', quantity: 1, unitPrice: 10 })
+		];
+		const diff = buildSaleAuditDiff(before, after, {
+			beforeTotals: { subtotal: 0, total: 0 },
+			afterTotals: { subtotal: 48, total: 48 }
+		});
+		// 48 adds + mod(2 fields) + mod(sliced to 0, dropped) + 2 totals = 53 → 3 truncated.
+		expect(countSaleAuditChanges(diff)).toBe(50);
+		expect(diff.truncated).toBe(3);
+		const mods = diff.items.filter((c) => c.t === 'mod');
+		expect(mods).toHaveLength(1);
+		expect(mods[0].t === 'mod' ? mods[0].fields : []).toHaveLength(2);
+		expect(diff.totals).toEqual([]);
+	});
+
+	it('keeps partial totals when the cap lands mid-totals', () => {
+		const after: SaleAuditItemLike[] = [];
+		for (let i = 0; i < 48; i++) {
+			after.push(item({ snapshotName: `Nuevo ${i}`, unitPrice: 1 }));
+		}
+		const diff = buildSaleAuditDiff([], after, {
+			beforeHeader: { notes: null },
+			afterHeader: { notes: 'motivo' },
+			beforeTotals: { subtotal: 0, total: 0 },
+			afterTotals: { subtotal: 48, total: 48 }
+		});
+		// 48 adds + 1 header + 2 totals = 51 → 1 truncated, last total dropped.
+		expect(countSaleAuditChanges(diff)).toBe(50);
+		expect(diff.truncated).toBe(1);
+		expect(diff.items).toHaveLength(48);
+		expect(diff.header.map((r) => r.key)).toEqual(['notes']);
+		expect(diff.totals.map((r) => r.label)).toEqual(['Subtotal']);
+	});
+});
+
+describe('buildSaleAuditDiff cap at header loop', () => {
+	it('drops header rows when items consume the whole budget', () => {
+		const after: SaleAuditItemLike[] = [];
+		for (let i = 0; i < 50; i++) {
+			after.push(item({ snapshotName: `Nuevo ${i}`, unitPrice: 1 }));
+		}
+		const diff = buildSaleAuditDiff([], after, {
+			beforeHeader: { notes: null },
+			afterHeader: { notes: 'motivo' },
+			beforeTotals: { subtotal: 0, total: 0 },
+			afterTotals: { subtotal: 50, total: 50 }
+		});
+		expect(countSaleAuditChanges(diff)).toBe(50);
+		expect(diff.truncated).toBe(3);
+		expect(diff.header).toEqual([]);
+		expect(diff.totals).toEqual([]);
+	});
+});
