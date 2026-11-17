@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-import { formatPrice } from '$lib/utils';
+import { formatCurrency, formatPrice } from '$lib/utils';
 import {
 	auditDiffRows,
 	classifySaleAuditEntry,
@@ -146,6 +146,7 @@ describe('auditDiffRows', () => {
 				amountBcvUsd: { old: null, new: 70 },
 				isCasheaPayment: { old: null, new: false },
 				reference: { old: null, new: '405291' },
+				paymentDate: { old: null, new: '2026-11-13 20:02:56+00' },
 				createdById: { old: null, new: 'user-1' }
 			}
 		});
@@ -157,12 +158,15 @@ describe('auditDiffRows', () => {
 		expect(rows.map((r) => r.field)).not.toContain('createdById');
 		expect(byField.paymentMethod.label).toBe('Método de pago');
 		expect(byField.amount.label).toBe('Monto');
-		expect(byField.amount.to).toBe(formatPrice(62827.8));
+		expect(byField.amount.to).toBe(`Bs. ${formatCurrency(62827.8)}`);
 		expect(byField.rateType).toMatchObject({ label: 'Tipo de tasa', to: 'Otro' });
 		expect(byField.bcvRate.label).toBe('Tasa BCV');
 		expect(byField.amountBcvUsd.label).toBe('Equivalente en USD');
 		expect(byField.isCasheaPayment).toMatchObject({ label: 'Pago Cashea', to: 'No' });
 		expect(byField.reference).toMatchObject({ label: 'Referencia', to: '405291' });
+		// Space-separated DB timestamps format as dates, never raw.
+		expect(byField.paymentDate.label).toBe('Fecha de pago');
+		expect(byField.paymentDate.to).not.toMatch(/20:02:56|\+00/);
 	});
 });
 
@@ -238,6 +242,24 @@ describe('classifySaleAuditEntry with itemsDiff', () => {
 
 describe('sale_payment events', () => {
 	it('classifies payment registration with its BCV USD amount', () => {
+		const event = classifySaleAuditEntry(
+			entry({
+				entityType: 'sale_payment',
+				action: 'create',
+				changes: {
+					paymentMethod: { old: null, new: 'EFECTIVO_BS' },
+					amountBcvUsd: { old: null, new: 45.5 }
+				}
+			})
+		);
+		expect(event).toMatchObject({
+			label: 'Pago registrado',
+			kind: 'payment',
+			paymentAmount: 45.5
+		});
+	});
+
+	it('classifies payment voids with the stored reason', () => {
 		const event = classifySaleAuditEntry(
 			entry({
 				entityType: 'sale_payment',

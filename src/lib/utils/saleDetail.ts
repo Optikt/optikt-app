@@ -8,8 +8,13 @@ import { countSaleAuditChanges, SaleAuditDiffSchema } from '$lib/schemas/sales';
 import type { SaleAuditDiff } from '$lib/schemas/sales';
 import type { ChangeRecord as HistoryChangeRecord } from '$lib/components/history/display-utils';
 import { formatChangeValue, getFieldLabel } from '$lib/components/history/display-utils';
-import { PAYMENT_METHOD_LABELS, getSaleStatusLabel } from '$lib/shared/enums';
-import { formatPrice } from '$lib/utils';
+import {
+	PAYMENT_METHOD_LABELS,
+	getSaleStatusLabel,
+	isBsPaymentMethod,
+	type PaymentMethod
+} from '$lib/shared/enums';
+import { formatCurrency, formatPrice } from '$lib/utils';
 
 // =============================================================================
 // Types
@@ -282,6 +287,15 @@ export function auditDiffRows(event: AuditEvent): AuditDiffRow[] {
 	if (!event.changes) return [];
 	const isPayment = event.entityType === 'sale_payment';
 	const rows: AuditDiffRow[] = [];
+	// `amount` is stored in the method's native currency: Bs. for Bs methods.
+	const methodRaw = isPayment
+		? ((event.changes as Record<string, { old?: unknown; new?: unknown } | undefined>).paymentMethod
+				?.new ??
+			(event.changes as Record<string, { old?: unknown; new?: unknown } | undefined>).paymentMethod
+				?.old)
+		: undefined;
+	const isBsAmount =
+		isPayment && typeof methodRaw === 'string' && isBsPaymentMethod(methodRaw as PaymentMethod);
 	for (const [field, raw] of Object.entries(event.changes)) {
 		if (DIFF_HIDDEN_FIELDS.has(field)) continue;
 		if (isPayment && PAYMENT_HIDDEN_FIELDS.has(field)) continue;
@@ -296,6 +310,9 @@ export function auditDiffRows(event: AuditEvent): AuditDiffRow[] {
 			}
 			if (field === 'rateType' && typeof value === 'string') {
 				return RATE_TYPE_LABELS[value] ?? formatChangeValue(value);
+			}
+			if (field === 'amount' && typeof value === 'number') {
+				return isBsAmount ? `Bs. ${formatCurrency(value)}` : formatPrice(value);
 			}
 			if (MONEY_FIELDS.has(field) && typeof value === 'number') return formatPrice(value);
 			return formatChangeValue(value);

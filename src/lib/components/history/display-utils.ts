@@ -348,8 +348,12 @@ export function formatChangeValue(value: unknown): string {
 			const date = fromISODate(value);
 			return date ? formatDate(date) : value;
 		}
-		if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
-			return formatDate(fromISO(value));
+		if (/^\d{4}-\d{2}-\d{2}[T ]/.test(value)) {
+			// DB timestamps may use a space separator and a bare "+00" UTC suffix
+			// ("2026-11-13 20:02:56+00") — normalize to strict ISO before parsing.
+			const normalized = value.replace(' ', 'T').replace(/\+00$/, 'Z');
+			const parsed = fromISO(normalized);
+			if (!Number.isNaN(parsed.getTime())) return formatDate(parsed);
 		}
 		return value;
 	}
