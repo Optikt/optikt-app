@@ -1,8 +1,10 @@
 ---
 plan name: dt1-t2-cashdash
 plan description: Descomponer cash dashboard T2
-plan status: active
+plan status: done
 ---
+
+> **Estado:** DONE — merged. Verificado 2026-11-17: cash +page.svelte 77 líneas (target ~80) + CashToolbar/Summary/Pipeline/DailyTable + cashReport.ts con spec.
 
 ## Idea
 Descomponer `src/routes/(app)/cash/+page.svelte` (851 líneas) con patrón orquestador: página ~80 + 4 secciones en `src/lib/components/cash/` (CashToolbar, CashSummary, CashPipeline, CashDailyTable) + `cashReport.ts` puro (formatPct, buildCashCsvRows) + `cashClasses.ts` (tokens display compartidos) con spec espejo. Cero cambios UX. Queries (report, daily, pipeline) y CSV intactos en la página.

@@ -1,8 +1,10 @@
 ---
 plan name: dt1-t1-split
 plan description: Descomponer tres monolitos críticos
-plan status: active
+plan status: done
 ---
+
+> **Estado:** DONE — merged (PRs #120-#122/#131, lote fase 3-5 DT1). Verificado 2026-11-17: EditSaleModal 499, LensCatalogForm 463, count/[id] 513 — bajo el gate 520 con secciones + helpers con specs.
 
 ## Idea
 Descomponer los 3 archivos T1 más grandes y de mayor riesgo de DT1 en una sola fase coordinada para desbloquear DTs posteriores y testing eficiente. Patrón base: el POC componentize-purchase-detail (2221→629) con orquestador + secciones + helpers puros. Archivos: EditSaleModal.svelte (1440) — SlideOver con estado multi-panel (header fields, editableItems con flag _removed, editLensTmp, 3 paneles de agregado, preview derivados, 22 handlers/factories); LensCatalogForm.svelte (1473) — RemoteForm con validación bifásica (clientRangeValidations + serverRangeValidations), modo esfera, 20 handlers, estado pending entities y ranges dinámicos, pricing derivado vivo; inventory/count/[id]/+page.svelte (1135) — lifecycle de sesión de conteo con filtros, edición inline, mutaciones de ajuste y modales de aplicar/cancelar. Aplicar patrones pertinentes sin sobre-ingeniería: Factory (createEmptyLensDraft, existingItemToInput, createEmptyOpticalRangeEntry), Builder (buildLensInputFromDraft, expand/collapse ranges), Adapter ya existente (ItemSelect, getCatalogItemsByIds/cached), Strategy NO en este trío (reservar para pagos), Singleton NO (registries inmutables + module-level cache bastan), Context Svelte solo donde prop drilling ≥2 niveles (editar lente con tratamientos; conteo ya usa getInventoryCountContext). Cada extracción mantiene barrel index.ts para compatibilidad y tests espejo para helpers puros.

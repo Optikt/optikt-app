@@ -1,8 +1,10 @@
 ---
 plan name: dt1-t2-purchases
 plan description: Descomponer purchase form T2
-plan status: active
+plan status: done
 ---
+
+> **Estado:** DONE — merged. Verificado 2026-11-17: NewPurchaseOrderForm.svelte 493 líneas (target ~495) + secciones review/ en components/purchases.
 
 ## Idea
 Descomponer `src/lib/components/purchases/NewPurchaseOrderForm.svelte` (1003 líneas) con patrón orquestador: formulario ~495 + 4 secciones en `purchases/review/` (PurchaseStep1Section, PurchaseReviewItems, PurchaseReviewSummary, PurchaseWizardNav, PurchaseOrderModals) + `purchaseReview.ts` puro (títulos, validación de pasos, payloads, warnings, elegibilidad) con spec espejo. Cero cambios UX. Remotes create/saveDraft, guards reactivos y effects intactos en el orquestador.

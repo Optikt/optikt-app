@@ -1,8 +1,10 @@
 ---
 plan name: sale-createdat-truth
 plan description: Fecha venta en created_at
-plan status: active
+plan status: done
 ---
+
+> **Estado:** DONE — merged. Verificado 2026-11-17: sales.sale_date eliminada del schema, composeBusinessTimestamp en dates.ts:128 en uso (createSale.ts:110). Deuda del patrón medianoche (quotes.quoteDate etc.) queda registrada en PLAN.md (DT22).
 
 ## Idea
 Eliminar columna sales.sale_date y convertir sales.created_at en única fecha-verdad de ventas: día editable desde form + hora del submit compuesta en zona America/Caracas (UTC-4) explícita y persistida como UTC. Schemas conservan nombre dominio saleDate como alias que el server mapea a columna createdAt (mínimo churn). Filtros, ordenamientos, reportes, tickera e impresión leen createdAt. Migración backfill created_at := fecha(sale_date) + hora(created_at) existentes, drop de columna e índice, índice nuevo sobre created_at. Auditoría: quitar createdAt de excludeFields y re-anclar SaleAuditTimeline al evento create. Mismo patrón medianoche detectado en quotes.quoteDate, purchase_orders.orderDate, sale_payments.paymentDate, purchase_order_payments.paymentDate y prescriptions.prescriptionDate se registra como deuda técnica sin tocar en este plan.

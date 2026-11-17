@@ -1,8 +1,10 @@
 ---
 plan name: dt1-t2-purchdetail
 plan description: Descomponer purchase detail T2
-plan status: active
+plan status: done
 ---
+
+> **Estado:** DONE — merged. Verificado 2026-11-17: purchases/[id] +page.svelte 499 líneas + detail/ con PurchaseOrderModals y PurchaseOrderDrawers.
 
 ## Idea
 Descomponer `src/routes/(app)/purchases/[id]/+page.svelte` (621 líneas) ya parcialmente componentizada: extraer `detail/purchaseDetail.ts` puro (view-model de resumen, mensajes, revert target, toggle optimista) con spec espejo + `detail/PurchaseOrderModals.svelte` (7 modales) + `detail/PurchaseOrderDrawers.svelte` (3 drawers). Contexto `purchaseOrderDetail` intacto (misma interface, getters desde view-model). Remotes de escritura intactos en el orquestador. Cero cambios UX.

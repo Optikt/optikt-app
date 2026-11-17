@@ -1,8 +1,10 @@
 ---
 plan name: dt1-t2-cash
 plan description: Descomponer cash expenses T2
-plan status: active
+plan status: done
 ---
+
+> **Estado:** DONE — merged. Verificado 2026-11-17: cash/expenses +page.svelte 210 líneas (target ~210) + ExpenseToolbar/Summary/Table/CreateModal + cashClasses.ts.
 
 ## Idea
 Descomponer `src/routes/(app)/cash/expenses/+page.svelte` (912 líneas) con patrón orquestador: página ~210 + 4 secciones en `src/lib/components/cash/` (ExpenseToolbar, ExpenseSummary, ExpenseTable, ExpenseCreateModal) + `expenseForm.ts` puro (emptyExpenseForm, validateVoidReason, buildExpenseCsvRows) con spec espejo. Cero cambios UX. Remotes (list/create/void) y validaciones de submit intactos en la página.

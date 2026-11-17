@@ -1,8 +1,10 @@
 ---
 plan name: dt1-t2-sales
 plan description: Descomponer sales detail T2
-plan status: active
+plan status: done
 ---
+
+> **Estado:** DONE — merged hace tiempo vía PR #122 (`chore/dt1-t2-sale-detail`), verificado en main 2026-11-17: página orquestadora 504 líneas (creció con detalle-venta-bplus #225) + secciones en `src/lib/components/sales/detail/` + helpers puros con spec (`saleDetail.ts`).
 
 ## Idea
 Descomponer `src/routes/(app)/sales/[id]/+page.svelte` (792 líneas) con el patrón orquestador validado en fase 3: página ~300 líneas + 6 secciones en `src/lib/components/sales/detail/` + helpers puros en `saleDetail.ts` con spec espejo. Cero cambios UX. Secciones: SaleDetailHeader (back + título + 3 grupos de acciones), SaleDetailNotices (notas, cancelación/reembolso, aviso free items), SaleDetailCustomerCard (cliente/vendedor/orden/fecha/estado), SaleDetailSummary (totales + saldo + progreso + botón cobrar), SaleDetailPayments (lista de abonos Bs/USDT/efectivo), SalePaymentDrawer (SlideOver + PaymentForm). Wiring de modales (Edit, Cancel, Status, Stock, PDF, Audit) queda en la página. Helpers: customerName, customerIdNumber, refundCardClasses, refundDecisionTitle, nextStatusTargets (presets post-pago).
