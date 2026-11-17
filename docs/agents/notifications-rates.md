@@ -41,6 +41,6 @@ Tasas de cambio (BCV/USD/EUR/USDT) con caché in-memory + poller + push SSE a to
 
 ## Known gaps / tech debt
 
-- 🟠 Deuda del spec `sse-singleton-ids` pendiente: timeout de inactividad + cap 500 listeners con 429 y exclusión de healthchecks/bots por User-Agent (`sse-singleton-ids.md:25-26`).
-- 🟡 Listeners sin tracking de `lastPing` (`events.ts:6-10`) — no hay forma de podar conexiones muertas que no envían abort.
+- ~~🟠 Deuda del spec `sse-singleton-ids` pendiente: timeout de inactividad + cap 500 listeners con 429 y exclusión de healthchecks/bots por User-Agent~~ **Resuelto (2026-11-17):** cap `SSE_MAX_LISTENERS=500` con `429` + `Retry-After`, timeout idle `SSE_IDLE_TIMEOUT_MS=90s` con sweep cada 30s (`touchListener` en cada keepalive/emit exitoso), exclusión de probes por User-Agent/HEAD (`PROBE_UA_PATTERN`), y prune de zombies cuando el enqueue del keepalive falla. Tests: `events.spec.ts` (8 casos).
+- ~~🟡 Listeners sin tracking de `lastPing` (`events.ts:6-10`)~~ **Resuelto (2026-11-17):** `ListenerEntry.lastPing` + sweep de inactividad en `events.ts`.
 - 🟡 El lazy refresh puede bloquear el primer render de venta si la API de tasas está caída (sale wizard espera snapshot).

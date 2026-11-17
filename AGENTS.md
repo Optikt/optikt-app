@@ -48,6 +48,10 @@ When you add, remove or change any of these in a domain, update its `docs/agents
 
 Global patterns or repo-wide conventions go to the root `AGENTS.md`, not to a domain doc.
 
+### Plan Lifecycle Rule (mandatory)
+
+Whenever a planned piece of work lands (fix, feature, redesign, refactor — anything with a `docs/plans/<name>.md`), the plan must be marked `plan status: done` in the **same PR** that closes it (or in a follow-up docs commit before the next one starts). A plan that is implemented but still `active` is a docs bug: check `docs/plans/` for stale entries when closing any change. This also applies to spec/plan checkboxes — tick them as tasks complete, never leave a done plan with `[ ]` boxes.
+
 ### Index
 
 Todos los dominios tienen doc en `docs/agents/<id>.md`. Batch core (reglas más profundas): `sales`, `payments`, `receivables`, `purchases`, `cash`, `inventory`, `products`, `lenses`, `materials`, `brands`, `customers`, `quotes`. Batch secundario: `suppliers`, `prescriptions`, `users`, `reports`, `dashboard`, `notifications-rates`, `backups`, `history`, `support`, `printing`, `trash`, `settings` — y `shared` para lo cross-cutting (UI base, documento comercial, schemas/common, audit, utils).
