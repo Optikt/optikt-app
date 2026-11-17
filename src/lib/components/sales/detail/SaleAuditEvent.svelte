@@ -82,7 +82,21 @@
 		if (kind === 'payment') return 'bg-emerald-600 text-white';
 		return 'bg-outline-variant text-on-surface-variant';
 	}
+
+	/**
+	 * `antes → después`, but a missing `antes` renders as just `→ después`
+	 * (never a dangling `- →`).
+	 */
+	function hasBefore(value: string | null | undefined): boolean {
+		return value !== null && value !== undefined && value !== '' && value !== '-' && value !== '—';
+	}
 </script>
+
+{#snippet beforeAfter(from: string | null | undefined, to: string | null | undefined)}
+	{#if hasBefore(from)}{from} <span aria-hidden="true"> → </span>{:else}<span aria-hidden="true"
+			>→
+		</span>{/if}{to ?? '—'}
+{/snippet}
 
 <div class="relative {dense ? 'py-1.5 pr-2 pl-10' : 'py-2 pr-4 pl-10'}">
 	<!-- Continuous timeline line behind the icon -->
@@ -224,7 +238,7 @@
 										<ul class="mt-0.5 space-y-0.5 pl-4">
 											{#each change.fields as field (field.key)}
 												<li>
-													{field.label}: {field.from ?? '—'} → {field.to ?? '—'}
+													{field.label}: {@render beforeAfter(field.from, field.to)}
 												</li>
 											{/each}
 										</ul>
@@ -240,7 +254,7 @@
 								{#each diff.header as row (row.key)}
 									<li class="[overflow-wrap:anywhere] break-words text-on-surface-variant">
 										<span class="font-semibold text-on-surface">{row.label}:</span>
-										{row.from ?? '—'} → {row.to ?? '—'}
+										{@render beforeAfter(row.from, row.to)}
 									</li>
 								{/each}
 							</ul>
@@ -277,7 +291,7 @@
 							{#each rows as row (row.field)}
 								<li class="[overflow-wrap:anywhere] break-words text-on-surface-variant">
 									<span class="font-semibold text-on-surface">{row.label}:</span>
-									{row.from} → {row.to}
+									{@render beforeAfter(row.from, row.to)}
 								</li>
 							{/each}
 						</ul>

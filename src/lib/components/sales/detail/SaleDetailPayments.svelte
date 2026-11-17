@@ -71,32 +71,13 @@
 		return PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod] ?? 'Pago';
 	}
 
-	/** Line 2: original amount + frozen rate (rate travels WITH the amount, never with the date). */
-	function amountLine(payment: SalePaymentWithUsers): { amount: string; rate: string } {
+	/** Bs. figure at the payment's own frozen rate (never wraps mid-number). */
+	function bsFigure(payment: SalePaymentWithUsers): string {
 		const method = payment.paymentMethod as unknown as PaymentMethod;
-		if (isBsPaymentMethod(method)) {
-			return {
-				amount: `Bs. ${formatCurrency(Number(payment.amount))}`,
-				rate: `@ ${Number(payment.bcvRate).toFixed(2)}`
-			};
-		}
-		if (method === PaymentMethod.BINANCE_USDT) {
-			return {
-				amount: `USDT ${formatCurrency(Number(payment.amount))}`,
-				rate: `@ ${Number(payment.exchangeRate ?? 0).toFixed(2)}`
-			};
-		}
-		if (method === PaymentMethod.EFECTIVO_EUR) {
-			return {
-				amount: `€ ${formatCurrency(Number(payment.amount))}`,
-				rate: `@ ${Number(payment.bcvRate).toFixed(2)}`
-			};
-		}
-		// USD-native: show the Bs. equivalent at the payment's own frozen rate.
-		return {
-			amount: `Bs. ${formatCurrency(payment.amountBcvUsd * Number(payment.bcvRate))}`,
-			rate: `@ ${Number(payment.bcvRate).toFixed(2)}`
-		};
+		const value = isBsPaymentMethod(method)
+			? Number(payment.amount)
+			: Number(payment.amountBcvUsd) * Number(payment.bcvRate);
+		return `Bs. ${formatCurrency(value)}`;
 	}
 
 	async function confirmVoid() {
@@ -172,7 +153,6 @@
 	{:else}
 		<div class="border-t border-outline-variant/60">
 			{#each activePayments as payment (payment.id)}
-				{@const line = amountLine(payment)}
 				<div class="grid grid-cols-[32px_1fr_auto_26px] items-start gap-3 px-4 py-2.5">
 					<span
 						class="grid h-[32px] w-[32px] shrink-0 place-items-center rounded-lg bg-surface-container-high text-brand-navy"
@@ -189,21 +169,23 @@
 							{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })}
 							{#if payment.reference}&nbsp;· Ref. {payment.reference}{/if}
 						</p>
+						{#snippet rateTip({ props }: { props: Record<string, unknown> })}
+							<span
+								{...props}
+								class="mt-0.5 block cursor-help font-mono text-[11px] whitespace-nowrap text-outline tabular-nums"
+							>
+								Tasa BCV {Number(payment.bcvRate).toFixed(2)}
+							</span>
+						{/snippet}
+						<TriggerTooltip trigger={rateTip} text="Tasa BCV congelada al momento del pago" />
 					</div>
-					<div class="pt-0.5 text-right">
-						<p class="text-[13px] font-semibold text-on-surface tabular-nums">
+					<div class="shrink-0 pt-0.5 text-right">
+						<p class="text-[13px] font-semibold whitespace-nowrap text-on-surface tabular-nums">
 							{formatPrice(payment.amountBcvUsd)}
 						</p>
-						{#snippet rateTip({ props }: { props: Record<string, unknown> })}
-							<div
-								{...props}
-								class="cursor-help text-xs [overflow-wrap:anywhere] break-words text-on-surface-variant tabular-nums"
-							>
-								{line.amount}
-								<span class="font-mono text-[11px] text-outline">{line.rate}</span>
-							</div>
-						{/snippet}
-						<TriggerTooltip trigger={rateTip} text="Tasa congelada al momento del pago" />
+						<p class="mt-0.5 text-xs whitespace-nowrap text-on-surface-variant tabular-nums">
+							{bsFigure(payment)}
+						</p>
 					</div>
 					{#if canVoid()}
 						<button

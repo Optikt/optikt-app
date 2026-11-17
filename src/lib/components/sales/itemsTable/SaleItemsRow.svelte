@@ -163,7 +163,7 @@
 	{#snippet chipTooltipOuter({ props }: { props: Record<string, unknown> })}
 		<span
 			{...props}
-			class="grid h-[32px] w-[32px] shrink-0 cursor-help place-items-center rounded-lg {ITEM_KIND_ICONS[
+			class="item-chip grid h-[32px] w-[32px] shrink-0 cursor-help place-items-center rounded-lg {ITEM_KIND_ICONS[
 				kind
 			].chipClass}"
 		>
@@ -385,41 +385,55 @@
 {/if}
 
 <style>
-	/* Móvil <700 (contenedor de página): la fila es una tarjeta —
-	   cabecera (chip+título+chevron) arriba, línea de dinero full-row
-	   (USD izq / Bs der) abajo; la fórmula colapsable ya es full-row. */
+	/* Móvil <700 (contenedor de página): la fila es una tarjeta por áreas —
+	   cabecera (chip+título+chevron) arriba, USD full-row y Bs full-row
+	   (alineado der) con separación; la fórmula colapsable ya es full-row. */
 	@container (max-width: 699px) {
 		.item-row {
-			display: flex;
-			flex-wrap: wrap;
-			align-items: flex-start;
-			row-gap: 8px;
+			display: grid;
+			grid-template-columns: 32px minmax(0, 1fr) 26px;
+			grid-template-areas:
+				'chip main chev'
+				'usd usd usd'
+				'bs bs bs';
+			column-gap: 12px;
+			row-gap: 4px;
+			align-items: start;
+		}
+		.item-chip {
+			grid-area: chip;
 		}
 		.item-main {
-			flex: 1 1 0;
+			grid-area: main;
 			min-width: 0;
-			order: 2;
 		}
 		.item-chevron {
-			order: 3;
+			grid-area: chev;
 			padding-top: 2px;
+			justify-self: end;
 		}
 		.item-usd,
 		.item-bs {
-			flex: 1 1 40%;
 			min-width: 0;
+			margin-top: 4px;
+			padding-top: 8px;
+			border-top: 1px solid color-mix(in srgb, var(--color-outline-variant) 60%, transparent);
 		}
 		.item-usd {
-			order: 4;
+			grid-area: usd;
 			text-align: left;
 		}
 		.item-bs {
-			order: 5;
+			grid-area: bs;
+			margin-top: 0;
+			padding-top: 0;
+			border-top: 0;
 			text-align: right;
+			align-self: center;
 		}
 		.item-subtitle {
 			white-space: normal;
-			overflow-wrap: anywhere;
+			overflow-wrap: break-word;
 		}
 	}
 </style>

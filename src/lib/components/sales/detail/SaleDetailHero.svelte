@@ -327,9 +327,11 @@
 						style="width: {Math.min(100, Math.max(0, paymentProgressPercent))}%"
 					></div>
 				</div>
-				<div class="mt-1 mb-2.5 flex justify-between text-xs text-[#c9d3ea]">
-					<span class="tabular-nums">{formatPrice(paidAmountBcvUsd)} cubierto</span>
-					<span>{Math.round(paymentProgressPercent)}%</span>
+				<div class="mt-1 mb-2.5 flex flex-wrap justify-between gap-x-2 text-xs text-[#c9d3ea]">
+					<span class="whitespace-nowrap tabular-nums"
+						>{formatPrice(paidAmountBcvUsd)} cubierto</span
+					>
+					<span class="shrink-0 tabular-nums">{Math.round(paymentProgressPercent)}%</span>
 				</div>
 			{:else}
 				<p class="text-[11px] font-bold tracking-[0.12em] text-[#b8c4de] uppercase">
@@ -339,9 +341,11 @@
 				<div class="mt-2 h-1.5 overflow-hidden rounded-full bg-white/20">
 					<div class="h-full w-full rounded-full bg-[#62d49a]"></div>
 				</div>
-				<div class="mt-1 mb-2.5 flex justify-between text-xs text-[#c9d3ea]">
-					<span class="tabular-nums">{formatPrice(paidAmountBcvUsd)} cubierto</span>
-					<span>100%</span>
+				<div class="mt-1 mb-2.5 flex flex-wrap justify-between gap-x-2 text-xs text-[#c9d3ea]">
+					<span class="whitespace-nowrap tabular-nums"
+						>{formatPrice(paidAmountBcvUsd)} cubierto</span
+					>
+					<span class="shrink-0">100%</span>
 				</div>
 			{/if}
 		</div>
