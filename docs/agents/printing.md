@@ -37,6 +37,6 @@ PDF A4 server-side vía Chromium headless (puppeteer-core + @sparticuz/chromium)
 
 ## Known gaps / tech debt
 
-- 🟠 `docs/plans/lens-receipt-fix.md` activo (corrección de cristales en PDF) — leerlo antes de tocar labels de impresión.
+- 🟡 **pdfjs-dist pinneado en 6.0.227** (TECH_DEBT, ex-DT17): versiones 6.0.228+ regresionan el PDF viewer. Bloqueado en Dependabot (`.github/dependabot.yml`) — no subir hasta upstream fix. Se mantiene fijo con independencia de la migración a SvelteKit 3 (deferida, ver PLAN.md sección "Dependencias fijadas/deferidas").
 - 🟡 TODO: la tasa BCV del A4 quizá deba ser congelada por fecha de venta como tickera (`routes/(print)/print/sale/[id]/+page.server.ts:10`).
 - 🟡 Tickera fase 1 síncrona (sin cola de impresión).

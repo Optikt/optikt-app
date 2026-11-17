@@ -5,7 +5,7 @@ plan status: done
 ---
 
 ## Idea
-Fuente de verdad visual: docs/design/detalle-venta-mockup-b.html. Base funcional: docs/redesign-sale-view-prompt.md. Reglas de dinero verificadas: sin redondeo por línea, descuento global proporcional via computeAdjustedTaxBreakdown, tasa congelada por abono, snapshotBcvRate ya existe en el schema (Modo A disponible, resolveTicketRate resuelve A/B). Fuera de alcance: servidor de negocio, computeSaleTotals/computeAdjustedTaxBreakdown, gating de estados, EditSaleModal, PaymentRailSection interno, recibo/impresión.
+Fuente de verdad visual: docs/design/detalle-venta-mockup-b.html. Base funcional: ~~docs/redesign-sale-view-prompt.md~~ (eliminado 2026-11-17, superseded por este plan y detalle-venta-bplus). Reglas de dinero verificadas: sin redondeo por línea, descuento global proporcional via computeAdjustedTaxBreakdown, tasa congelada por abono, snapshotBcvRate ya existe en el schema (Modo A disponible, resolveTicketRate resuelve A/B). Fuera de alcance: servidor de negocio, computeSaleTotals/computeAdjustedTaxBreakdown, gating de estados, EditSaleModal, PaymentRailSection interno, recibo/impresión.
 
 ## Implementation
 - Fase 0 · Fundaciones: tokens de tinte si faltan, keyframes/utilidades de motion, contenedor de página con max-width 1280 + container query; extender findSaleByIdWithRelations con gender y address del cliente.

@@ -34,9 +34,9 @@
 
 **Riesgo de no hacerlo:** El dueño no ve la salud del negocio de un vistazo. Percepción de herramienta "básica" comparada con competidores. Decisiones sin datos.
 
-**Contras:** Agregar librería de charts (`layercake`, `chart.js`) suma peso al bundle.
+**Contras:** Ninguno relevante — LayerChart 2.x ya es la librería oficial (plan `layerchart-adopt` done, convención en `docs/specs/chart-conventions.md`).
 
-**Dificultad:** Baja. **Solución:** Agregar `layercake` (Svelte-native, más liviano) o `chart.js`. KPIs nuevos: revenue diario/semanal/mensual, top productos, top vendedores, profit margin trend, conversion rate quotes→sales. ~3 días.
+**Dificultad:** Baja. **Solución:** KPIs visuales en dashboard con LayerChart (patrón ya probado en `/reports/sales`): tendencia de revenue, top productos/vendedores, conversión quotes→sales. ~2-3 días.
 
 ---
 
@@ -80,49 +80,13 @@
 
 ---
 
-### DT17 · pdfjs-dist pinneado en 6.0.227 (TECH_DEBT) ⚪
+## Dependencias fijadas / deferidas (no es backlog de trabajo)
 
-**Problema:** `@pdfslick/core@4.0.0` compila su visor contra la API interna de `pdfjs-dist` 6.0.x. Subir a `6.1.200` rompió el worker (`edb9847 — fix: revert pdfjs-dist to 6.0.227 (version mismatch with @pdfslick/core worker)`, 2026-07-12). El `^6.0.227` volvió a resolver a `6.1.200` silenciosamente por el caret, por eso hoy se pinneó **exacto sin `^`** en `package.json:70-76` (`"pdfjs-dist": "6.0.227"`, `"@pdfslick/core": "4.0.0"`).
+- **`@sveltejs/kit` / `@sveltejs/adapter-node` 2 → 3:** migración deferida a branch propio (drafts `migrate/sveltekit-v3`, `migrate/sk3-f1-kit3-bootstrap`, baseline #195). Kit 3 stable desde 2026-10-14; majors bloqueados en Dependabot. Breakings principales: config pasa de `svelte.config.js` al plugin `sveltekit()` en `vite.config.ts`, `$lib → #lib` (~2.8k imports), `$app/environment → $app/env`, `adapter-node` pierde `ORIGIN` (→ `paths.origin`). No atacar hasta decidir ventana dedicada.
+- **`typescript 6.0.3 → 7.0.2`:** `svelte-check` y `typescript-eslint` aún no soportan TS7. Esperar soporte.
+- **`@types/node 22 → 26`:** runtime es Node 22.22.2; subir types sin subir runtime no aporta.
 
-**Por qué no se arregla ahora:** Funciona en dev y prod. Viewer cliente (`PDFViewerModal.svelte → pdfjs-dist`) no es crítico vs generación server (`puppeteer-core + @sparticuz/chromium → src/lib/server/pdf.ts`). Cambiar implica test manual del modal + esperar release de pdfslick que soporte pdfjs nuevo. ROI nulo hoy.
-
-**Riesgo de no hacerlo:** Quedarse en pdfjs 6.0.227 indefinidamente. Peer range de pdfslick (`^6.0.227`) miente — soporte real es más estricto.
-
-**Cuándo revisitar:** Cuando `@pdfslick/core` publique versión que declare soporte para `pdfjs-dist` ≥6.2.x, probar `6.2.108`+ en branch y verificar `PDFViewerModal.svelte:52-56` (worker + `GlobalWorkerOptions`).
-
-**Estado:** TECH_DEBT documentado 2026-08-27. No tocar hasta upstream fix.
-
----
-
-### DT18 · Observabilidad de latencia backend 🟢
-
-**Problema:** No se mide el tiempo de respuesta del backend. Hoy es rápido, pero no hay métrica de cuánto tarda cada `remote function`, `load` o query a DB. Cuando crezca el catálogo/ventas, no sabremos dónde se degrada.
-
-**Por qué importa:** Sin números no se puede optimizar. Detectar lento (p95, slow queries, remote functions pesadas) antes de que el usuario lo sienta. Base para SLOs y alertas futuras.
-
-**Contras:** Añade logging/metrics. Si se loggea todo sin muestreo, ruido en logs. No debe impactar latencia.
-
-**Dificultad:** Baja (1-2 días) para base, +1 día SigNoz. **Solución:**
-(a) **Hook `handle` en `src/hooks.server.ts`**: `performance.now()` al inicio/fin, log `routeId + duration` vía `logger.info` y header `Server-Timing`. Samplear 100% en dev, 10% en prod.
-(b) **Wrapper para remote functions**: decorador `withTiming('sales.createSale', fn)` que loguea `duration` (sin PII). Reusar `kit.experimental.instrumentation.server: true` ya activo en `svelte.config.js:15`.
-(c) **DB slow-query**: envolver `DbOrTx` para loggear queries >200ms (Drizzle `logger`).
-(d) **SigNoz experimental (elegido 2026-08-29):** desplegado en Dokploy (ClickHouse + SigNoz UI, ~500MB RAM) vía OpenTelemetry. Droplet actual: 3.8GB RAM, 2.1GB disponible, load 0.07 — entra justo. Queda como **TECH_DEBT** para evaluar 1-2 semanas si es suficiente. Alternativas a largo plazo: mover `optikt-database` a Supabase (libera ~150MB) o aumentar RAM del droplet.
-(e) **Fallback sin infra:** si SigNoz pesa mucho, volver a **Opción B** (`/admin/metrics` en memoria, 0MB extra) — el wrapper de (b) ya queda y solo cambia el exporter.
-
-**Estado:** En evaluación 2026-08-29 — SigNoz desplegado experimental, modo prueba. Decisión pendiente: ¿SigNoz suficiente o se necesita Supabase/RAM?
-
----
-
-### DT19 · Dependencias fuera de scope (typescript, sveltekit 3, pdfjs, types/node) ⚪
-
-**Contexto:** Tras `chore/deps-2026-08` (Tandas 1-6) + PR-A/C/D/E mergeados a `main`, `pnpm outdated` final deja 4 familias **fuera de scope** (`docs/plans/dependency-update.md` histórico).
-
-- **`typescript 6.0.3 → 7.0.2`:** Kit 3 ya es stable, pero `svelte-check` y `typescript-eslint` aún no soportan TS7. Se queda en v6 hasta ese soporte.
-- **`@sveltejs/kit 2 → 3`:** **3.1.0 stable** desde 2026-10-14 → el "esperar stable" de §7 caducó; ahora es una **migración**, no un bump de Dependabot. Breakings que aplican: config fuera de `svelte.config.js` (pasa al plugin `sveltekit()` en `vite.config.ts`), `$lib → #lib` con extensiones explícitas (~2.8k imports en ~720 archivos), `$lib`/`files.lib` eliminados, `$app/environment → $app/env`, `goto` (`keepFocus`/`noScroll` → `reset`), `adapter-node` pierde `ORIGIN` (→ `paths.origin`), tipos de `hooks` a `@sveltejs/kit/hooks`. Dependabot ignora el major de `@sveltejs/kit` y `@sveltejs/adapter-node` hasta entonces.
-- **`pdfjs-dist 6.0.227 / @pdfslick/core 4.0.0`:** ver **DT17**. Funciona por ahora (viewer `PDFViewerModal.svelte` + generación `puppeteer` server). Hay que tomar decisión futura: ¿mantener pinneado o buscar otra forma de ver PDFs (visor nativo, `pdf.js` sin `@pdfslick/core`)? Por ahora **no se toca** — funciona.
-- **`@types/node 22 → 26.4.0`:** runtime es `Node 22.22.2`. Se queda en `^22` a menos que hagamos **bump explícito de Node** (ej. a 24/26). Subir types sin subir runtime no aporta.
-
-**Estado:** Actualizado 2026-10-18: Kit 3 stable → majors de `@sveltejs/kit`/`@sveltejs/adapter-node` bloqueados en Dependabot; migración pendiente en branch propio (`npx sv migrate sveltekit-3`).
+> El pin de `pdfjs-dist 6.0.227` (ex-DT17) vive en `docs/agents/printing.md` — es deuda de impresión, no de migración, y se mantiene fijo con independencia de Kit v3.
 
 ---
 
@@ -137,20 +101,6 @@
 **Dificultad:** Media (2-3 días). **Solución:** búsqueda por palabras on-demand en el combobox (reusar `searchCatalog?q=`) + seed por chunks si la orden supera 50 líneas por tipo.
 
 **Estado:** Parche aplicado 2026-09-06 (`bddc033`), `TODO(tech-debt)` en `ItemsList.svelte:37`. Optimización pendiente.
-
----
-
-### DT21 · Edición de venta: UX del modal + sin edición por ítem 🟡
-
-**Problema:** El flujo de edición de venta (`EditSaleModal.svelte`) es confuso y con bugs: no permite editar ítems individuales de forma granular (ej. descuento por ítem, precios, notas de línea) — el usuario debe borrar y re-agregar líneas. La experiencia de edición es "super ugly" (QA 2026-09-06). Mencionado durante QA del PR #112.
-
-**Por qué importa:** Las ventas se corrigen a diario (precio mal puesto, descuento de cliente, item equivocado). Sin edición granular, cada corrección es borrar/recrear la venta completa o el modal, riesgo de error.
-
-**Contras:** Rediseñar el modal toca lógica de persistencia (updateSale con replace de items), validación de prescripción y la interacción con tratamientos/free items.
-
-**Dificultad:** Media-Alta (3-5 días). **Solución:** (a) fila editable inline en `SaleItemsTable` dentro del modal (precio, descuento, tipo de descuento, notas por línea con `isDraftItemUserEditingLocked`-style lock si ya hay pago), (b) preview de subtotal/total reactivo ya existente, (c) mantener `payload.items` siempre en updateSale (base raw del descuento global).
-
-**Estado:** TECH_DEBT documentado 2026-09-06. Sin empezar. Aprovechar fase 3 de DT1 (descomposición de `EditSaleModal.svelte` 1440 líneas) para hacerlo.
 
 ---
 
@@ -172,7 +122,7 @@
 
 ### DT23 · Conteo: diferencia sin lote cuando stock sistema es 0 🟡
 
-**Problema:** En una sesión de conteo (`inventory/count/[id]`), cuando una línea tiene diferencia y `systemStock` es 0, el botón "Ir a ajustar" lleva a adjustments sin lote para actualizar ni manera de aumentar ese stock (no existe flujo de alta/entrada desde la diferencia). Detectado en QA fase 3 DT1 (PR #120).
+**Problema (re-scoped 2026-11-17 tras el rework del conteo):** el flujo de sesión de conteo ya no navega a una página de ajustes separada (ese caso caducó). Queda el caso del **ajuste directo desde el item** (ir al producto/lote a ajustar a mano) cuando el stock es 0: no hay forma de dar de alta stock desde la diferencia (no existe flujo de entrada desde ahí) — y sí ocurre en la práctica.
 
 **Por qué importa:** Un conteo que encuentra stock físico sin registro queda sin resolución dentro del flujo; el ajuste debe hacerse fuera del sistema. El informe de diferencias queda con pendientes imposibles de cerrar.
 
@@ -180,11 +130,11 @@
 
 **Dificultad:** Media (2-4 días). **Solución:** revisar el flujo de adjustments para soportar alta de stock desde una diferencia (crear lote + movimiento de entrada inicial) o redirigir a una entrada formal (compra/ajuste de inventario); definir regla de costo para stock nacido de conteo.
 
-**Estado:** TECH_DEBT documentado 2026-09-11. Fuera de scope fase 3 DT1. Sin empezar.
+**Estado:** Re-scoped 2026-11-17 (scope original del conteo caducó con el rediseño). Vigente para ajustes directos con stock 0. Sin empezar.
 
 ---
 
-### DT24 · Clases de formulario/label duplicadas cross-domain ⚪
+### DT24 · Clases de formulario/label duplicadas cross-domain 🟡
 
 **Problema:** Las mismas clases de label (`text-[11px] font-semibold tracking-[0.18em] uppercase`), input (`rounded-xl bg-surface-container-low ... focus:border-l-brand-blue`) y select se repiten literalmente en decenas de componentes de múltiples dominios (p. ej. `SupportTicketFormModal`, `SupportTicketHistory`, `ExpenseCreateModal`, `SaleAuditHistoryDrawer`). Detectado en la review del PR #180: la repetición no es de Soporte, es del repo.
 
@@ -193,6 +143,8 @@
 **Contras:** Extraer estilos compartidos toca muchos archivos a la vez; sin snapshots visuales el "cero cambios de UX" depende de diff review. Conviene hacerlo en PRs mecánicos por lote de dominios.
 
 **Dificultad:** Media (2-3 días). **Solución:** módulo compartido de tokens de estilo (p. ej. `src/lib/components/ui/formStyles.ts` con `FORM_LABEL_CLASS`, `FORM_INPUT_CLASS`, `FORM_SELECT_CLASS`), migración mecánica por dominio y spot-check visual/E2E de cada flujo tocado.
+
+> Decisión 2026-11-17: prioridad sube a 🟡 (el dueño lo quiere). Enfoque: con Tailwind no hay "subclasses" — el consenso es **tokens de clase como constantes** (strings compartidos), no variables CSS: mismo copy-paste de clases de siempre pero con una sola fuente de verdad, cero CSS runtime nuevo.
 
 **Estado:** TECH_DEBT documentado 2026-09-27 (review PR #180). Sin empezar.
 
@@ -212,7 +164,7 @@
 
 ---
 
-### DT26 · Updates reescriben el payload completo (sin diff) ⚪
+### DT26 · Updates reescriben el payload completo (sin diff) 🟢
 
 **Problema:** Los formularios de edición envían **todos** los campos y el remote los persiste siempre, aunque el usuario haya cambiado uno solo. Caso concreto: `updateCustomerForm` (`customers.remote.ts:100-105`) usa `UpdateCustomerSchema = CreateCustomerSchema.partial()` pero fuerza `idNumber: idNumber || null`, `birthDate: birthDate || null`, `gender: gender || null`, así que un update parcial **borra** los campos omitidos (detectado en la review del PR #179: `customers.int.spec.ts` actualiza con solo `{ id, gender }` y de paso anula `idNumber`/`birthDate`). El patrón se repite en los demás `update*Form` (`products`, `suppliers`, `materials`, `users`, `brands`, `lenses`). La query `updateCustomer(id, Partial<Omit<Customer, ...>>)` ya soporta diffs; el problema está en la capa remote/UI, no en las queries.
 

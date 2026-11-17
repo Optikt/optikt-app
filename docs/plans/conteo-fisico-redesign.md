@@ -155,7 +155,7 @@ inexistente (regresión del defecto 6).
 |---|---|
 | **Prompt de implementación** (especificación total: 21 secciones) | `docs/specs/optikt-conteo-prompt-agente.md` (copia en repo) |
 | **Mockup interactivo** (3 viewports: 1280×720, 1920×1080, 390×844) | `designs/optikt-conteo-mockup.html` (copia en repo; abrirlo en el navegador) |
-| **Línea base del módulo actual** (audit con file:line, colores, tests) | `docs/specs/inventory-count-baseline.md` (en el repo) |
+| **Línea base del módulo actual** (audit con file:line, colores, tests) | ~~`docs/specs/inventory-count-baseline.md`~~ eliminado 2026-11-17 (histórico pre-rediseño; el estado actual es este repo en main) |
 
 Originales en la máquina de Nanez: `/mnt/c/Users/victo/Downloads/optikt-conteo-prompt-agente.md` y `.../optikt-conteo-mockup.html`. Las copias del repo son la referencia canónica.
 
