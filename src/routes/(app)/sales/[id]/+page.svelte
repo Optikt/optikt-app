@@ -11,6 +11,7 @@
 	import SaleDetailNotices from '$lib/components/sales/detail/SaleDetailNotices.svelte';
 	import SaleDetailPayments from '$lib/components/sales/detail/SaleDetailPayments.svelte';
 	import SalePaymentDrawer from '$lib/components/sales/detail/SalePaymentDrawer.svelte';
+	import SalePaymentsHistoryDrawer from '$lib/components/sales/detail/SalePaymentsHistoryDrawer.svelte';
 	import SaleInvoiceCalculator from '$lib/components/sales/detail/SaleInvoiceCalculator.svelte';
 	import { PDFViewerModal } from '$lib/components/pdf';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
@@ -64,6 +65,13 @@
 	let showAuditDrawer = $state(false);
 	let expandedAuditEventId = $state<string | null>(null);
 	let auditHistory = $state(untrack(() => data.auditHistory));
+
+	// «Pagos de la venta» drawer (mounted outside the @container wrapper below,
+	// next to the audit drawer — same reason: containment offsets `fixed`).
+	let showPaymentsDrawer = $state(false);
+	let paymentsCard = $state<{ requestVoid: (p: SalePaymentWithUsers) => void } | undefined>(
+		undefined
+	);
 
 	// ── Mobile bottom bar: visible only when the PAGE container is <700px.
 	// A ResizeObserver on the container (not a viewport query) so the sidebar
@@ -329,13 +337,13 @@
 				class="grid grid-cols-1 items-start gap-3 @min-[700px]:grid-cols-[1fr_1fr] @min-[1060px]:grid-cols-1"
 			>
 				<SaleDetailPayments
+					bind:this={paymentsCard}
 					{payments}
 					{canAct}
 					{isCancelled}
 					{remainingBcvUsd}
-					total={sale.total}
-					paidAmountBcvUsd={sale.paidAmountBcvUsd}
 					onRegister={openDrawer}
+					onViewDetail={() => (showPaymentsDrawer = true)}
 					onChanged={async () => {
 						await invalidateAll();
 						syncFromData();
@@ -461,6 +469,19 @@
 	saleCreatedAt={saleLoadedAt}
 	saleCreatedBy={sale.seller?.fullName}
 	expandedEventId={expandedAuditEventId}
+/>
+
+<SalePaymentsHistoryDrawer
+	open={showPaymentsDrawer}
+	onclose={() => (showPaymentsDrawer = false)}
+	{payments}
+	total={sale.total}
+	paidAmount={sale.paidAmountBcvUsd}
+	canVoid={canAct && !isCancelled}
+	onVoidRequest={(payment) => {
+		showPaymentsDrawer = false;
+		paymentsCard?.requestVoid(payment);
+	}}
 />
 
 <style>

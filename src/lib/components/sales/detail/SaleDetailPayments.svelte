@@ -3,7 +3,6 @@
 	import { toast } from 'svelte-sonner';
 	import { ConfirmModal } from '$lib/components/ui';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
-	import SalePaymentsHistoryDrawer from './SalePaymentsHistoryDrawer.svelte';
 	import { voidPayment } from '$lib/remote/sales/payments.remote';
 	import { PAYMENT_METHOD_LABELS, PaymentMethod, isBsPaymentMethod } from '$lib/shared/enums';
 	import type { SalePaymentWithUsers } from '$lib/server/db/queries/sales/payments';
@@ -18,10 +17,11 @@
 		canAct: boolean;
 		isCancelled: boolean;
 		remainingBcvUsd: number;
-		total: number;
-		paidAmountBcvUsd: number;
 		/** Opens the payment drawer (page owns the drawer). */
 		onRegister: () => void;
+		/** Opens the «Pagos de la venta» drawer (mounted at page level, outside the
+		 * container — `container-type` containment would offset `fixed` overlays). */
+		onViewDetail: () => void;
 		/** A void succeeded: the page invalidates + syncs (saldo, barra, estados). */
 		onChanged: () => void;
 	}
@@ -31,9 +31,8 @@
 		canAct,
 		isCancelled,
 		remainingBcvUsd,
-		total,
-		paidAmountBcvUsd,
 		onRegister,
+		onViewDetail,
 		onChanged
 	}: Props = $props();
 
@@ -42,7 +41,6 @@
 	const canRegister = $derived(canAct && !isCancelled && remainingBcvUsd > 0.01);
 
 	let showVoided = $state(false);
-	let showHistory = $state(false);
 	let voidTarget = $state<SalePaymentWithUsers | null>(null);
 	let voidOpen = $state(false);
 	let voiding = $state(false);
@@ -53,12 +51,20 @@
 		return canAct && !isCancelled;
 	}
 
-	function openVoidModal(payment: SalePaymentWithUsers) {
-		showHistory = false;
+	/**
+	 * Opens the void modal for a payment. Exported so the page-level history
+	 * drawer (which lives outside this card) can trigger the same single flow.
+	 */
+	export function requestVoid(payment: SalePaymentWithUsers) {
+		if (!canVoid()) return;
 		voidTarget = payment;
 		voidReason = '';
 		voidError = null;
 		voidOpen = true;
+	}
+
+	function openVoidModal(payment: SalePaymentWithUsers) {
+		requestVoid(payment);
 	}
 
 	function methodLabel(payment: SalePaymentWithUsers): string {
@@ -135,7 +141,7 @@
 		<span class="flex-1"></span>
 		<button
 			type="button"
-			onclick={() => (showHistory = true)}
+			onclick={onViewDetail}
 			class="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-outline-variant bg-white px-2.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container-low"
 		>
 			<History class="h-3.5 w-3.5" />
@@ -254,16 +260,6 @@
 		</div>
 	{/if}
 </section>
-
-<SalePaymentsHistoryDrawer
-	open={showHistory}
-	onclose={() => (showHistory = false)}
-	{payments}
-	{total}
-	paidAmount={paidAmountBcvUsd}
-	canVoid={canVoid()}
-	onVoidRequest={openVoidModal}
-/>
 
 <ConfirmModal
 	bind:open={voidOpen}
