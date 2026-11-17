@@ -325,7 +325,7 @@
 	</div>
 {/if}
 
-<style lang="postcss">
+<style>
 	/* En móvil (<700 contenedor) las acciones viven en la barra inferior fija:
 	   se ocultan aquí para no duplicarlas (spec §6: sin acciones del hero en página). */
 	@container (max-width: 699px) {
