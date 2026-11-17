@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: dt1-f5-mediano
 
 Scope: feature
@@ -20,8 +22,8 @@ Scope: feature
 
 ## QA
 
-- [ ] Receta: lente ≠ monofocal muestra adición/altura; numérico bloquea letras y normaliza a 0.25; errores visibles
-- [ ] Paso 2: quick-add producto+lente, accesorios auto, tratamientos por proveedor, copiar receta, validaciones stock/cantidad, total previo = main
+- [x] Receta: lente ≠ monofocal muestra adición/altura; numérico bloquea letras y normaliza a 0.25; errores visibles
+- [x] Paso 2: quick-add producto+lente, accesorios auto, tratamientos por proveedor, copiar receta, validaciones stock/cantidad, total previo = main
 
 ## Gates
 

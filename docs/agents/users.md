@@ -55,7 +55,7 @@ Login (Argon2), sesiones con token hash + vivacidad, gestión de usuarios ADMIN-
 
 ## Known gaps / tech debt
 
-- 🟠 Cambiar la contraseña propia **no invalida las otras sesiones** (`invalidateAllUserSessions` existe, `sessions.ts:108`, pero casi nadie la llama) — vector de seguridad real.
+- 🟠 Cambiar la contraseña propia **no invalida las otras sesiones** (`deactivateAllUserSessions` en `sessions.ts:108`, wrapper `invalidateAllUserSessions` en `server/auth.ts:79-81` — su único caller es él mismo, nadie la invoca ni en `profile.remote.ts:38-68` ni en el reset admin `users/commands.remote.ts:290-299`) — vector de seguridad real.
 - 🟡 `listUsers` es `command()` y no `query(...)` (`commands.remote.ts:41`) — rompe la convención de lectura sin efectos.
 - 🟡 Unique index global de email vs soft-delete: reactivar con email ya reasignado fallará por el índice (`restoreUser` es la vía).
 - 🟡 Argon2 params duplicados en ~5 lugares — centralizar constantes.

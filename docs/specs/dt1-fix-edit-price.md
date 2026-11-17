@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: dt1-fix-edit-price
 
 Scope: feature
@@ -20,7 +22,7 @@ omitía `items` y `hasChangesForSale` no lo detectaba (bug preexistente del mono
 
 ## QA
 
-- [ ] Editar solo precio de cristal → botón se activa → guardar → reabrir → precio nuevo
+- [x] Editar solo precio de cristal → botón se activa → guardar → reabrir → precio nuevo
 
 ## Gates
 

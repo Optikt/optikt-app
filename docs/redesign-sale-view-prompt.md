@@ -1,3 +1,5 @@
+> **Histórico (2026-11-17):** foto del estado PRE-rediseño — superseded por redesign-sale-detail-view + detalle-venta-bplus (done); los componentes que cita (SaleMovementsModal) fueron reemplazados por SaleStockDrawer/SaleDetailPayments. Se conserva como referencia.
+
 # Full Prompt — Rediseño de la vista "Detalle de Venta" (Optikt)
 
 > **Propósito de este documento:** darle a un agente todo el contexto funcional y visual de la página de detalle de una venta (`/sales/[id]`) para que pueda **rediseñarla**. Describe qué se muestra, qué datos existen, qué se resalta, qué acciones hay, sus reglas de permisos/estados y qué queda fuera de alcance.

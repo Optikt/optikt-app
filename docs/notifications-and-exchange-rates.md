@@ -6,7 +6,7 @@ Las notificaciones se publican desde el servidor y aparecen en tiempo real (poll
 
 ### Tipos y severidades disponibles
 
-**`NotificationType`** (en `src/lib/shared/enums.ts`):
+**`NotificationType`** (en `src/lib/shared/enums/`):
 
 | Valor            | Cuándo usarlo                                       |
 | ---------------- | --------------------------------------------------- |
@@ -21,7 +21,7 @@ Las notificaciones se publican desde el servidor y aparecen en tiempo real (poll
 
 ### Agregar un nuevo tipo de evento
 
-**1. Registrar el tipo en el enum** (`src/lib/shared/enums.ts`):
+**1. Registrar el tipo en el enum** (`src/lib/shared/enums/`):
 
 ```ts
 export enum NotificationType {

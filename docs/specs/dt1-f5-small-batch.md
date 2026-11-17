@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: dt1-f5-small-batch
 
 Scope: feature
@@ -22,13 +24,13 @@ Bajar 9 archivos 501-601 líneas a orquestadores <300 sin cambiar UX. Lógica ve
 
 ## QA
 
-- [ ] Tablas lenses/products: desktop/mobile, filtros, badges, costos
-- [ ] Calculadora: tasa custom, resultados, footer
-- [ ] Treatments: crear/editar inline, taxable, borrar + confirm
-- [ ] Step3: descuento global, impuestos, totales = main peso a peso
-- [ ] Print: ticket idéntico (header, items, pagos, abonos, footer, saltos página)
-- [ ] Adjusts (products + lenses): entrada/salida, lote, impacto, confirm pérdida
-- [ ] Accesorios: reglas por marca, overrides, crear/borrar/toggle
+- [x] Tablas lenses/products: desktop/mobile, filtros, badges, costos
+- [x] Calculadora: tasa custom, resultados, footer
+- [x] Treatments: crear/editar inline, taxable, borrar + confirm
+- [x] Step3: descuento global, impuestos, totales = main peso a peso
+- [x] Print: ticket idéntico (header, items, pagos, abonos, footer, saltos página)
+- [x] Adjusts (products + lenses): entrada/salida, lote, impacto, confirm pérdida
+- [x] Accesorios: reglas por marca, overrides, crear/borrar/toggle
 
 ## Gates
 

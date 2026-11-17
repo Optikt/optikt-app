@@ -30,15 +30,16 @@ Regla base: **todo cálculo monetario reusa un módulo existente**. Nunca reimpl
 
 ## Deuda conocida: no la empeores
 
-`roundCurrency` está copiado en ≥5 módulos:
+`roundCurrency` está copiado en 6 módulos (deuda en crecimiento — ya hay una sexta copia):
 
 - `src/lib/components/sales/paymentFormCalculations.ts:19`
 - `src/lib/server/db/queries/purchaseOrders/shared.ts:171`
 - `src/lib/shared/purchaseOrderPayments.ts:22`
 - `src/lib/shared/purchaseOrderCredit.ts:91`
 - `src/lib/shared/expenseCalculations.ts:12`
+- `src/lib/server/payments/purchasePayments.ts:56`
 
-No añadas una sexta copia: importa la del mismo layer o propón consolidar en `src/lib/shared/`.
+No añadas una séptima copia: importa la del mismo layer o propón consolidar en `src/lib/shared/`. Nota: `roundExchangeRate` es **privada** de `exchangeRates/service.ts` (no exportada) — no la cites como API reutilizable.
 
 ## Prueba mínima
 

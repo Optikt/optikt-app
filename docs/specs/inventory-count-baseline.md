@@ -1,3 +1,5 @@
+> **Histórico (2026-11-17):** foto del estado PRE-rediseño — superseded por el rediseño total del conteo (docs/plans/conteo-fisico-redesign.md, done). Se conserva como referencia.
+
 # Conteo Físico (Inventory Count) — Estado actual completo
 
 > Documento base para el rediseño UI/UX del módulo de conteo físico.

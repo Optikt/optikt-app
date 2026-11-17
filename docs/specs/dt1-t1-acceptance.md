@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: dt1-t1-acceptance
 
 Scope: feature
@@ -29,28 +31,28 @@ Habilitar refactorización segura de 3 archivos >1100 líneas sin cambiar compor
 
 ### EditSaleModal — Smoke
 
-- [ ] Abrir modal desde detalle de venta, editar `saleDate` / `notes` / `discount` / `reasonError` y guardar sin items → `updateSale` ok
-- [ ] Lista `activeItems` / `mainItems` / `removedCount` y preview `previewSubtotal/previewTotal` idénticos antes/después
-- [ ] Editar lente existente (startLensEdit → handleLensSelect → add/remove treatment → saveLensEdit) y cancelar (cancelLensEdit) sin leak de `editLensTmp`
-- [ ] Agregar producto (ItemSelect → handleProductSelect → addNewProduct) y agregar ítem libre (addNewFreeItem) con `freeItemCategory`
-- [ ] Cashea: marcar `isCashea`, guardar, recargar — flag persiste y no afecta a otras ventas
-- [ ] Validación `validate()` bloquea submit si falta `reason` o lente inválido; descontar no daña `hasChanges`
+- [x] Abrir modal desde detalle de venta, editar `saleDate` / `notes` / `discount` / `reasonError` y guardar sin items → `updateSale` ok
+- [x] Lista `activeItems` / `mainItems` / `removedCount` y preview `previewSubtotal/previewTotal` idénticos antes/después
+- [x] Editar lente existente (startLensEdit → handleLensSelect → add/remove treatment → saveLensEdit) y cancelar (cancelLensEdit) sin leak de `editLensTmp`
+- [x] Agregar producto (ItemSelect → handleProductSelect → addNewProduct) y agregar ítem libre (addNewFreeItem) con `freeItemCategory`
+- [x] Cashea: marcar `isCashea`, guardar, recargar — flag persiste y no afecta a otras ventas
+- [x] Validación `validate()` bloquea submit si falta `reason` o lente inválido; descontar no daña `hasChanges`
 
 ### LensCatalogForm — Smoke
 
-- [ ] Crear lente nuevo: autoName (`live` fields), selección supplier → filtra tecnologías, material/differentiators
-- [ ] Crear pendientes (`handleCreatePendingSupplier/Material/Technology`) y verlos en selects
-- [ ] Rangos: `addRange` / `removeRange` / `toggleSphereMode`, inputs por rango con `getRangeInputClass`, validación cilíndrico/eje/adición
-- [ ] Pricing vivo: `livePairPurchasePrice`, `liveOperationalCost`, `liveGrossProfit`, `liveMarginPercent`, `totalWithTax` recalculan al cambiar formData/ranges
-- [ ] Submit nuevo vs handleCreateResult / handleUpdateResult con validación server (`buildServerRangeValidations` + `toastUnboundNonRangeIssues`) sin regresión
+- [x] Crear lente nuevo: autoName (`live` fields), selección supplier → filtra tecnologías, material/differentiators
+- [x] Crear pendientes (`handleCreatePendingSupplier/Material/Technology`) y verlos en selects
+- [x] Rangos: `addRange` / `removeRange` / `toggleSphereMode`, inputs por rango con `getRangeInputClass`, validación cilíndrico/eje/adición
+- [x] Pricing vivo: `livePairPurchasePrice`, `liveOperationalCost`, `liveGrossProfit`, `liveMarginPercent`, `totalWithTax` recalculan al cambiar formData/ranges
+- [x] Submit nuevo vs handleCreateResult / handleUpdateResult con validación server (`buildServerRangeValidations` + `toastUnboundNonRangeIssues`) sin regresión
 
 ### Count Detail — Smoke
 
-- [ ] Cargar sesión OPEN, filtros `search` / `activeFilter` (`INVENTORY_COUNT_UI_FILTER_LABELS`) y contadores (total/counted/pending/diff/matched)
-- [ ] Editar línea inline (startEditing → handleSaveLine → updateLineLocally) y cancelar (stopEditing)
-- [ ] Toggle ajuste `toggleAdjustmentCompleted` / `isAdjustmentStatusUpdating` con `updatingAdjustmentLineIds`
-- [ ] Aplicar sesión `handleApplySession` y cancelar `handleCancelSession` con `cancelReason`, estado cambia y DataGrid se refresca
-- [ ] Contexto `getInventoryCountContext()` sigue proveyendo activeSession sin prop drilling adicional
+- [x] Cargar sesión OPEN, filtros `search` / `activeFilter` (`INVENTORY_COUNT_UI_FILTER_LABELS`) y contadores (total/counted/pending/diff/matched)
+- [x] Editar línea inline (startEditing → handleSaveLine → updateLineLocally) y cancelar (stopEditing)
+- [x] Toggle ajuste `toggleAdjustmentCompleted` / `isAdjustmentStatusUpdating` con `updatingAdjustmentLineIds`
+- [x] Aplicar sesión `handleApplySession` y cancelar `handleCancelSession` con `cancelReason`, estado cambia y DataGrid se refresca
+- [x] Contexto `getInventoryCountContext()` sigue proveyendo activeSession sin prop drilling adicional
 
 ## Notas para Implementación
 

@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: po-form-qa
 
 Scope: feature
@@ -18,11 +20,11 @@ Descomponer `NewPurchaseOrderForm.svelte` sin cambiar el wizard de compras.
 
 ## QA — Compras
 
-- [ ] Paso 1: validación por campo; cambio proveedor/doctype con items pide confirmar/limpiar
-- [ ] Cambio moneda con items pide confirmar y limpia precios; sync de tasa alt recalcula
-- [ ] Paso 2: agregar items; paso 3: lista + resumen + margen cuadran
-- [ ] Guardar sin warnings crea; con warnings abre modal; edit guarda borrador y navega
-- [ ] Navegación wizard bloqueada sin validez; Cancelar/Atrás correctos
+- [x] Paso 1: validación por campo; cambio proveedor/doctype con items pide confirmar/limpiar
+- [x] Cambio moneda con items pide confirmar y limpia precios; sync de tasa alt recalcula
+- [x] Paso 2: agregar items; paso 3: lista + resumen + margen cuadran
+- [x] Guardar sin warnings crea; con warnings abre modal; edit guarda borrador y navega
+- [x] Navegación wizard bloqueada sin validez; Cancelar/Atrás correctos
 
 ## Gates
 

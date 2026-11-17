@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: purchdetail-qa
 
 Scope: feature
@@ -18,11 +20,11 @@ Adelgazar `purchases/[id]/+page.svelte` sin cambiar el detalle de compra ni su c
 
 ## QA — Compra detalle
 
-- [ ] Header, overview, items, movimientos, aside cuadran con main
-- [ ] Confirmar (con/sin sugerencias), confirmar+pagar (composer precargado), ready/unready, cancelar
-- [ ] Toggle reviewed optimista con rollback; revert lote con modal y motivo
-- [ ] Precios sugeridos aplicar/omitir; pagos drawers e historial; auditoría
-- [ ] Draft banner y columna revisión solo en borrador listo
+- [x] Header, overview, items, movimientos, aside cuadran con main
+- [x] Confirmar (con/sin sugerencias), confirmar+pagar (composer precargado), ready/unready, cancelar
+- [x] Toggle reviewed optimista con rollback; revert lote con modal y motivo
+- [x] Precios sugeridos aplicar/omitir; pagos drawers e historial; auditoría
+- [x] Draft banner y columna revisión solo en borrador listo
 
 ## Gates
 

@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: dt1-f5-money
 
 Scope: feature
@@ -22,9 +24,9 @@ Scope: feature
 
 ## QA
 
-- [ ] Items: expandir receta, editar costos, completar/editar ítem libre, footer = main
-- [ ] Pagos sale: cada rail, Cashea, sobrepago, Finalizar vs Aplicar
-- [ ] Pagos purchase: tasa específica, pronto pago aplicar/anotar, sobrepago modal, liquidación
+- [x] Items: expandir receta, editar costos, completar/editar ítem libre, footer = main
+- [x] Pagos sale: cada rail, Cashea, sobrepago, Finalizar vs Aplicar
+- [x] Pagos purchase: tasa específica, pronto pago aplicar/anotar, sobrepago modal, liquidación
 
 ## Gates
 

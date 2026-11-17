@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: cash-expenses-qa
 
 Scope: feature
@@ -19,11 +21,11 @@ Descomponer `cash/expenses/+page.svelte` sin cambiar comportamiento del flujo de
 
 ## QA — Egresos
 
-- [ ] Filtros fecha/categoría/anulados + aplicar; línea de filtro activo; CSV con 11 columnas; print
-- [ ] Resumen mobile/desktop: total, cantidad, categoría, rango
-- [ ] Tabla desktop + cards mobile: estados activo/anulado, motivo, tasas; anular pide motivo ≥5
-- [ ] Crear: prefill BCV/USDT, hints aplicables, preview USD BCV, validaciones monto/tasa, éxito refresca lista
-- [ ] Monedas con/sin tasa (USD vs VES/USDT): campos condicionales + tipo de tasa
+- [x] Filtros fecha/categoría/anulados + aplicar; línea de filtro activo; CSV con 11 columnas; print
+- [x] Resumen mobile/desktop: total, cantidad, categoría, rango
+- [x] Tabla desktop + cards mobile: estados activo/anulado, motivo, tasas; anular pide motivo ≥5
+- [x] Crear: prefill BCV/USDT, hints aplicables, preview USD BCV, validaciones monto/tasa, éxito refresca lista
+- [x] Monedas con/sin tasa (USD vs VES/USDT): campos condicionales + tipo de tasa
 
 ## Gates
 

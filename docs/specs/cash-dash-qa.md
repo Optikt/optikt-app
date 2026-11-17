@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: cash-dash-qa
 
 Scope: feature
@@ -18,11 +20,11 @@ Descomponer `cash/+page.svelte` sin cambiar el reporte de caja.
 
 ## QA — Caja
 
-- [ ] Filtros período + consultar recargan reporte, diario y pipeline; totales toolbar cuadran
-- [ ] Resumen mobile/desktop: ingresos, COGS, otros, egresos, descuentos, variación, cobrado, bruta/neta, márgenes
-- [ ] Pipeline: abiertas, facturado, anticipos, por cobrar, utilidad esperada; lectura rápida desktop
-- [ ] Detalle diario mobile + tabla desktop: 11 columnas, signos/colores, vacíos
-- [ ] CSV 11 columnas; print; link Gestionar egresos
+- [x] Filtros período + consultar recargan reporte, diario y pipeline; totales toolbar cuadran
+- [x] Resumen mobile/desktop: ingresos, COGS, otros, egresos, descuentos, variación, cobrado, bruta/neta, márgenes
+- [x] Pipeline: abiertas, facturado, anticipos, por cobrar, utilidad esperada; lectura rápida desktop
+- [x] Detalle diario mobile + tabla desktop: 11 columnas, signos/colores, vacíos
+- [x] CSV 11 columnas; print; link Gestionar egresos
 
 ## Gates
 

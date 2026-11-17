@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: dt1-f5-product-form
 
 Scope: feature
@@ -19,9 +21,9 @@ Scope: feature
 
 ## QA
 
-- [ ] Crear: autosku, nombre sugerido (respeta edición), pendientes brand/supplier/material
-- [ ] Tipo FRAME→CONTACT cambia atributos y limpia material incompatible
-- [ ] Editar: carga valores, validaciones visibles, referencias solo lectura, preview imagen
+- [x] Crear: autosku, nombre sugerido (respeta edición), pendientes brand/supplier/material
+- [x] Tipo FRAME→CONTACT cambia atributos y limpia material incompatible
+- [x] Editar: carga valores, validaciones visibles, referencias solo lectura, preview imagen
 
 ## Gates
 

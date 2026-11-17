@@ -1,3 +1,5 @@
+> **Estado:** DONE — trabajo merged; casillas cerradas retroactivamente (verificación 2026-11-17). Spec de aceptación histórica.
+
 # Spec: dt1-acceptance
 
 Scope: feature
@@ -20,78 +22,78 @@ Cada PR de descomposición DT1 es refactor puro → riesgo de regresión invisib
 
 ### F1 · Pago de venta (PaymentForm, PaymentSubmission, SalePaymentAdapter)
 
-- [ ] Abrir pago desde detalle de venta (slide-over)
-- [ ] Seleccionar cada método: PAGO_MOVIL_BS, TRANSFERENCIA_BS, PUNTO_VENTA_BS, EFECTIVO_BS, EFECTIVO_USD, EFECTIVO_EUR, BINANCE_USDT, PAYPAL
-- [ ] ReferenceConfig correcto por método: label, required, placeholder, fallback `--`
-- [ ] Monto nativo label/prefix correcto por método (Bs, $, €, USDT)
-- [ ] Conversión BCV visible y correcta (tasa del día)
-- [ ] Referencia obligatoria bloquea submit cuando `required`
-- [ ] Pago exitoso → balance actualizado, toast, sale status cambia si saldada
-- [ ] Pago parcial → pendingAmount correcto
-- [ ] Void de pago → saldo restaurado, audit log registra
-- [ ] Cierre sin submit → cero side effects
+- [x] Abrir pago desde detalle de venta (slide-over)
+- [x] Seleccionar cada método: PAGO_MOVIL_BS, TRANSFERENCIA_BS, PUNTO_VENTA_BS, EFECTIVO_BS, EFECTIVO_USD, EFECTIVO_EUR, BINANCE_USDT, PAYPAL
+- [x] ReferenceConfig correcto por método: label, required, placeholder, fallback `--`
+- [x] Monto nativo label/prefix correcto por método (Bs, $, €, USDT)
+- [x] Conversión BCV visible y correcta (tasa del día)
+- [x] Referencia obligatoria bloquea submit cuando `required`
+- [x] Pago exitoso → balance actualizado, toast, sale status cambia si saldada
+- [x] Pago parcial → pendingAmount correcto
+- [x] Void de pago → saldo restaurado, audit log registra
+- [x] Cierre sin submit → cero side effects
 
 ### F2 · Pago de compra (PurchasePaymentAdapter)
 
-- [ ] Registrar pago con cada medio (PAGO_MOVIL_BS, TRANSFERENCIA_BS, EFECTIVO_USD, BINANCE_USDT, OTRO)
-- [ ] Abono explícito en moneda de deuda (USD-BCV, USDT, EUR, Bs) correcto
-- [ ] Pronto pago / early payment benefit cálculo correcto
-- [ ] Crédito: saldo deuda y vencimientos actualizados
-- [ ] Void pago → crédito restaurado
-- [ ] Orden multi-moneda (USDT/EUR) sin conversión errónea a USD-BCV
+- [x] Registrar pago con cada medio (PAGO_MOVIL_BS, TRANSFERENCIA_BS, EFECTIVO_USD, BINANCE_USDT, OTRO)
+- [x] Abono explícito en moneda de deuda (USD-BCV, USDT, EUR, Bs) correcto
+- [x] Pronto pago / early payment benefit cálculo correcto
+- [x] Crédito: saldo deuda y vencimientos actualizados
+- [x] Void pago → crédito restaurado
+- [x] Orden multi-moneda (USDT/EUR) sin conversión errónea a USD-BCV
 
 ### F3 · Wizard de venta (saleItemHelpers splits)
 
-- [ ] Crear venta completa: producto + lente + item gratis
-- [ ] Step 2: confirmación prescripción OD/OI, range warnings, sugerencia tipo lente
-- [ ] Descuentos por item y globales correctos
-- [ ] Tax breakdown y totales idénticos a antes del split
-- [ ] Autosync tipo de lente al confirmar
+- [x] Crear venta completa: producto + lente + item gratis
+- [x] Step 2: confirmación prescripción OD/OI, range warnings, sugerencia tipo lente
+- [x] Descuentos por item y globales correctos
+- [x] Tax breakdown y totales idénticos a antes del split
+- [x] Autosync tipo de lente al confirmar
 
 ### F4 · EditSaleModal
 
-- [ ] Editar ítems existentes (producto, lente, tratamiento, gratis)
-- [ ] Agregar/remover ítems, editar lente con tratamientos
-- [ ] Preview subtotal/descuento/total reactivo
-- [ ] Guardar → updateSale con reason, audit
-- [ ] Cancelar → cero cambios
+- [x] Editar ítems existentes (producto, lente, tratamiento, gratis)
+- [x] Agregar/remover ítems, editar lente con tratamientos
+- [x] Preview subtotal/descuento/total reactivo
+- [x] Guardar → updateSale con reason, audit
+- [x] Cancelar → cero cambios
 
 ### F5 · LensCatalogForm
 
-- [ ] Crear lente nuevo con ranges ópticos (sphere/cylinder por modo)
-- [ ] Auto-name, supplier/materials/technologies, pending entities
-- [ ] Validaciones de rangos server + client
-- [ ] Editar lente existente → prefill correcto
-- [ ] Live pricing (pair purchase price, operational cost, margin)
+- [x] Crear lente nuevo con ranges ópticos (sphere/cylinder por modo)
+- [x] Auto-name, supplier/materials/technologies, pending entities
+- [x] Validaciones de rangos server + client
+- [x] Editar lente existente → prefill correcto
+- [x] Live pricing (pair purchase price, operational cost, margin)
 
 ### F6 · Conteo de inventario (inventory/count)
 
-- [ ] Crear sesión (ALL / PRODUCT_CATEGORY / LENS)
-- [ ] Detalle sesión: filtros (ALL/COUNTED/PENDING/WITH_DIFF), búsqueda
-- [ ] Editar línea inline, guardar countedStock, diferencias calculadas
-- [ ] Ajuste completado toggle por línea
-- [ ] Aplicar sesión → movimientos y stock actualizados
-- [ ] Cancelar sesión con razón
+- [x] Crear sesión (ALL / PRODUCT_CATEGORY / LENS)
+- [x] Detalle sesión: filtros (ALL/COUNTED/PENDING/WITH_DIFF), búsqueda
+- [x] Editar línea inline, guardar countedStock, diferencias calculadas
+- [x] Ajuste completado toggle por línea
+- [x] Aplicar sesión → movimientos y stock actualizados
+- [x] Cancelar sesión con razón
 
 ### F7 · Páginas detalle (customers/[id], sales/[id], quotes/[id], lenses/[id], purchases/[id])
 
-- [ ] Carga de datos correcta (load)
-- [ ] Tabs/paneles navegables
-- [ ] Acciones CRUD funcionan post-split
-- [ ] Estados loading/empty/error sin regresión
+- [x] Carga de datos correcta (load)
+- [x] Tabs/paneles navegables
+- [x] Acciones CRUD funcionan post-split
+- [x] Estados loading/empty/error sin regresión
 
 ### F8 · Caja y gastos (cash, cash/expenses)
 
-- [ ] Lista gastos, filtros
-- [ ] Crear/void gasto con conversión BCV
-- [ ] Reporte de caja y daily breakdown correctos
-- [ ] Pipeline snapshot correcto
+- [x] Lista gastos, filtros
+- [x] Crear/void gasto con conversión BCV
+- [x] Reporte de caja y daily breakdown correctos
+- [x] Pipeline snapshot correcto
 
 ### F9 · Remotes server (post-split barrels)
 
-- [ ] `pnpm check` 0 errores (imports resueltos vía barrels)
-- [ ] Cada remote function ejecuta en dev: query + command por dominio
-- [ ] Zero imports legacy rotos (rg por ruta vieja)
+- [x] `pnpm check` 0 errores (imports resueltos vía barrels)
+- [x] Cada remote function ejecuta en dev: query + command por dominio
+- [x] Zero imports legacy rotos (rg por ruta vieja)
 
 ## Criterio de aceptación global DT1
 

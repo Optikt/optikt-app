@@ -21,7 +21,7 @@ await db.transaction(async (tx) => {
 });
 ```
 
-Ejemplos reales: `src/lib/server/db/queries/lenses/pending.ts:25`, `src/lib/server/db/queries/inventoryCount/lines.ts:30`, y el caso obligatorio (sin default) en `src/lib/server/payments/salePayments.ts:23`.
+Ejemplos reales: `src/lib/server/db/queries/lenses/pending.ts:25`, `src/lib/server/db/queries/inventoryCount/lines.ts:84`, y el caso obligatorio (sin default) en `src/lib/server/payments/salePayments.ts:23`.
 
 ### Reglas
 
