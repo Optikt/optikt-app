@@ -183,15 +183,20 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		isActive: 'Activo'
 	},
 	sale_payment: {
-		paymentMethod: 'Método de Pago',
-		paymentDate: 'Fecha de Pago',
+		paymentMethod: 'Método de pago',
+		paymentDate: 'Fecha de pago',
 		amount: 'Monto',
-		exchangeRate: 'Tasa de Cambio',
+		exchangeRate: 'Tasa del método',
+		rateType: 'Tipo de tasa',
 		bcvRate: 'Tasa BCV',
-		amountBcvUsd: 'Monto USD BCV',
+		amountBcvUsd: 'Equivalente en USD',
+		isCasheaPayment: 'Pago Cashea',
 		reference: 'Referencia',
 		notes: 'Notas',
-		voidedAt: 'Anulado'
+		voidedAt: 'Anulado el',
+		voidedById: 'Anulado por',
+		voidReason: 'Motivo de anulación',
+		createdById: 'Registrado por'
 	},
 	supplier_treatment: {
 		name: 'Nombre',

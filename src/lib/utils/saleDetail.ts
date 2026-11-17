@@ -8,7 +8,7 @@ import { countSaleAuditChanges, SaleAuditDiffSchema } from '$lib/schemas/sales';
 import type { SaleAuditDiff } from '$lib/schemas/sales';
 import type { ChangeRecord as HistoryChangeRecord } from '$lib/components/history/display-utils';
 import { formatChangeValue, getFieldLabel } from '$lib/components/history/display-utils';
-import { getSaleStatusLabel } from '$lib/shared/enums';
+import { PAYMENT_METHOD_LABELS, getSaleStatusLabel } from '$lib/shared/enums';
 import { formatPrice } from '$lib/utils';
 
 // =============================================================================
@@ -242,7 +242,14 @@ const DIFF_HIDDEN_FIELDS = new Set([
 	/** Diff annex itself (rendered as ARTÍCULOS/DATOS/TOTALES sections, never as a row). */
 	'itemsDiff'
 ]);
-const MONEY_FIELDS = new Set(['subtotal', 'discount', 'total', 'refundAmount']);
+const MONEY_FIELDS = new Set([
+	'subtotal',
+	'discount',
+	'total',
+	'refundAmount',
+	'amount',
+	'amountBcvUsd'
+]);
 /**
  * Fields already rendered in the new-style DATOS/TOTALES sections (from
  * `itemsDiff`) — excluded from the legacy rows only when a diff is present.
@@ -255,22 +262,47 @@ const DIFF_COVERED_FIELDS = new Set([
 	'subtotal',
 	'total'
 ]);
+/**
+ * `sale_payment` audit rows store raw row fields (ids included) — UUIDs and
+ * internal keys are noise next to the payment card, so they never render.
+ */
+const PAYMENT_HIDDEN_FIELDS = new Set(['id', 'saleId', 'createdById', 'voidedById']);
+/** Friendly `rateType` values (same map as the payments drawer). */
+const RATE_TYPE_LABELS: Record<string, string> = {
+	USDT: 'USDT',
+	USD_PAYPAL: 'PayPal',
+	EUR_BCV: 'EUR · BCV',
+	EUR_EFECTIVO: 'EUR en efectivo',
+	USD_EFECTIVO: 'USD en efectivo',
+	OTHER: 'Otro'
+};
 
 /** Rows for the expandable diff: `Campo: old → new`, formatted for display. */
 export function auditDiffRows(event: AuditEvent): AuditDiffRow[] {
 	if (!event.changes) return [];
+	const isPayment = event.entityType === 'sale_payment';
 	const rows: AuditDiffRow[] = [];
 	for (const [field, raw] of Object.entries(event.changes)) {
 		if (DIFF_HIDDEN_FIELDS.has(field)) continue;
+		if (isPayment && PAYMENT_HIDDEN_FIELDS.has(field)) continue;
 		if (event.itemsDiff && DIFF_COVERED_FIELDS.has(field)) continue;
 		const change = raw as { old?: unknown; new?: unknown };
 		const format = (value: unknown): string => {
+			if (field === 'paymentMethod' && typeof value === 'string') {
+				return (
+					PAYMENT_METHOD_LABELS[value as keyof typeof PAYMENT_METHOD_LABELS] ??
+					formatChangeValue(value)
+				);
+			}
+			if (field === 'rateType' && typeof value === 'string') {
+				return RATE_TYPE_LABELS[value] ?? formatChangeValue(value);
+			}
 			if (MONEY_FIELDS.has(field) && typeof value === 'number') return formatPrice(value);
 			return formatChangeValue(value);
 		};
 		rows.push({
 			field,
-			label: getFieldLabel('sale', field),
+			label: getFieldLabel(isPayment ? 'sale_payment' : 'sale', field),
 			from: format(change.old),
 			to: format(change.new)
 		});

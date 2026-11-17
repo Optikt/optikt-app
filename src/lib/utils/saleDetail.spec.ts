@@ -131,6 +131,39 @@ describe('auditDiffRows', () => {
 		expect(hasAuditDetail(withReason)).toBe(true);
 		expect(hasAuditDetail(eventOf({ action: 'create' }))).toBe(false);
 	});
+
+	it('renders sale_payment rows with friendly Spanish labels and values', () => {
+		const event = eventOf({
+			entityType: 'sale_payment',
+			action: 'create',
+			changes: {
+				id: { old: null, new: 'pay-1' },
+				saleId: { old: null, new: 'sale-1' },
+				paymentMethod: { old: null, new: 'PAGO_MOVIL_BS' },
+				amount: { old: null, new: 62827.8 },
+				rateType: { old: null, new: 'OTHER' },
+				bcvRate: { old: null, new: 897.54 },
+				amountBcvUsd: { old: null, new: 70 },
+				isCasheaPayment: { old: null, new: false },
+				reference: { old: null, new: '405291' },
+				createdById: { old: null, new: 'user-1' }
+			}
+		});
+		const rows = auditDiffRows(event);
+		const byField = Object.fromEntries(rows.map((r) => [r.field, r]));
+		// Raw ids never render.
+		expect(rows.map((r) => r.field)).not.toContain('id');
+		expect(rows.map((r) => r.field)).not.toContain('saleId');
+		expect(rows.map((r) => r.field)).not.toContain('createdById');
+		expect(byField.paymentMethod.label).toBe('Método de pago');
+		expect(byField.amount.label).toBe('Monto');
+		expect(byField.amount.to).toBe(formatPrice(62827.8));
+		expect(byField.rateType).toMatchObject({ label: 'Tipo de tasa', to: 'Otro' });
+		expect(byField.bcvRate.label).toBe('Tasa BCV');
+		expect(byField.amountBcvUsd.label).toBe('Equivalente en USD');
+		expect(byField.isCasheaPayment).toMatchObject({ label: 'Pago Cashea', to: 'No' });
+		expect(byField.reference).toMatchObject({ label: 'Referencia', to: '405291' });
+	});
 });
 
 describe('classifySaleAuditEntry with itemsDiff', () => {
