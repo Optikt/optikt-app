@@ -19,12 +19,14 @@ concurrency:
 
 jobs:
   docker:
-    name: Bump Version And Publish Docker Image
+    name: Preflight Checks And Publish Docker Image
     runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      RELEASE_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+      DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
 
     steps:
       - name: Ensure release runs from default branch
@@ -34,7 +36,9 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout code
+      # ==================== PREFLIGHT: validar accesos antes de publicar ====================
+
+      - name: Checkout code (validates RELEASE_PUSH_TOKEN)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
@@ -45,31 +49,99 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Bump package version
-        run: npm version "${{ inputs.bump }}" --no-git-tag-version
+      - name: Validate GitHub release token
+        run: |
+          status="$(curl -sS -o /tmp/repo.json -D /tmp/headers.txt -w '%{http_code}' \
+            -H "Authorization: Bearer $RELEASE_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}")"
 
-      - name: Read package version
+          if [ "$status" != "200" ]; then
+            echo "::error::RELEASE_PUSH_TOKEN is invalid, expired or lacks access (HTTP $status on ${{ github.repository }}). Renew the token and retry."
+            cat /tmp/repo.json
+            exit 1
+          fi
+
+          can_push="$(node -e 'const r=require("/tmp/repo.json"); console.log(r.permissions && r.permissions.push ? "yes" : "no")')"
+          if [ "$can_push" != "yes" ]; then
+            echo "::error::RELEASE_PUSH_TOKEN does not grant push (Contents read/write) on ${{ github.repository }}."
+            exit 1
+          fi
+          echo "RELEASE_PUSH_TOKEN is valid and can push to ${{ github.repository }}."
+
+          # Fine-grained/user tokens may report expiration; warn if it expires soon.
+          expiration="$(grep -i '^github-authentication-token-expiration:' /tmp/headers.txt | tr -d '\r' | awk '{print $2}')"
+          if [ -n "$expiration" ]; then
+            days_left=$(( ( $(date -d "$expiration" +%s) - $(date +%s) ) / 86400 ))
+            echo "Token expires at $expiration (~$days_left day(s) left)."
+            if [ "$days_left" -lt 7 ]; then
+              echo "::warning::RELEASE_PUSH_TOKEN expires in $days_left day(s). Renew it before the next release."
+            fi
+          fi
+
+      - name: Compute version and check tag availability
         id: version
         run: |
+          npm version "${{ inputs.bump }}" --no-git-tag-version >/dev/null
+
           VERSION="$(node -p 'JSON.parse(require("fs").readFileSync("package.json", "utf8")).version')"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Commit version bump and tag release
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag v$VERSION already exists on origin. Delete it (or bump manually) before retrying."
+            exit 1
+          fi
+          echo "Tag v$VERSION is available on origin."
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Check Dokploy reachability via Tailscale
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          git commit -m "chore(release): v${{ steps.version.outputs.version }}"
-          git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
+          host="$(node -e 'console.log(new URL(process.env.DOKPLOY_WEBHOOK_URL).hostname)')"
+          port="$(node -e 'const u=new URL(process.env.DOKPLOY_WEBHOOK_URL); console.log(u.port || (u.protocol === "https:" ? "443" : "80"))')"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+          if tailscale ping --c 3 --timeout 5s "$host" >/tmp/tsping.txt 2>&1; then
+            echo "tailscale ping to '$host' OK."
+            cat /tmp/tsping.txt
+            exit 0
+          fi
 
-      - name: Login to Docker Hub
+          echo "tailscale ping failed; trying a plain TCP connect to $host:$port..."
+          if timeout 10 bash -c "exec 3<>/dev/tcp/$host/$port" 2>/dev/null; then
+            echo "TCP connect to $host:$port OK."
+            exit 0
+          fi
+
+          echo "::error::Dokploy host '$host' is unreachable (tailscale ping and TCP connect both failed). Check the tailnet/Dokploy node before retrying."
+          cat /tmp/tsping.txt
+          exit 1
+
+      - name: Login to Docker Hub (validates DOCKER credentials)
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+
+      - name: Build image (preflight, no push)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          build-args: |
+            DATABASE_URL=postgresql://build:build@localhost:5432/build
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ==================== PUBLICACIÓN: solo si todo el preflight pasó ====================
 
       - name: Build and push image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
@@ -85,19 +157,34 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Commit version bump and tag release
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag v$VERSION appeared on origin during the run. Aborting to avoid a stale tag."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore(release): v$VERSION"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+
       - name: Push release commit and tag
         run: git push origin "HEAD:${GITHUB_REF_NAME}" --follow-tags
 
       # STEPS FOR DOKPLOY VÍA TAILSCALE
 
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: tag:ci
-
       - name: Trigger Dokploy Deployment
         run: |
           echo "Triggering deployment in Dokploy..."
-          curl -X GET "${{ secrets.DOKPLOY_WEBHOOK_URL }}"
+          status="$(curl -sS -o /tmp/dokploy-response.txt -w '%{http_code}' --max-time 60 "$DOKPLOY_WEBHOOK_URL")"
+          echo "Dokploy response (HTTP $status):"
+          cat /tmp/dokploy-response.txt
+
+          case "$status" in
+            2*) echo "Dokploy accepted the deployment trigger." ;;
+            *) echo "::error::Dokploy trigger failed with HTTP $status. Image and tag are already published; retry from the Dokploy endpoint or rerun this workflow." ; exit 1 ;;
+          esac
