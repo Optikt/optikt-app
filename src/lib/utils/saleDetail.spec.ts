@@ -366,7 +366,11 @@ describe('saleDetail edge branches', () => {
 	it('ignores unknown sale_payment actions', () => {
 		expect(
 			classifySaleAuditEntry(
-				entry({ entityType: 'sale_payment', action: 'delete', changes: { notes: { old: null, new: 'x' } } })
+				entry({
+					entityType: 'sale_payment',
+					action: 'delete',
+					changes: { notes: { old: null, new: 'x' } }
+				})
 			)
 		).toBeNull();
 	});

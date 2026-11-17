@@ -205,13 +205,16 @@ describe('buildSaleAuditDiff', () => {
 
 describe('buildSaleAuditDiff uncovered branches', () => {
 	it('names bare items by type and free items by description', () => {
-		const diff = buildSaleAuditDiff([], [
-			item({ itemType: 'FREE_ITEM', freeItemDescription: 'Ajuste manual' }),
-			item({ itemType: 'LENS_PAIR' }),
-			item({ itemType: 'TREATMENT' }),
-			item({ itemType: 'FREE_ITEM' }),
-			item({ itemType: 'PRODUCT' })
-		]);
+		const diff = buildSaleAuditDiff(
+			[],
+			[
+				item({ itemType: 'FREE_ITEM', freeItemDescription: 'Ajuste manual' }),
+				item({ itemType: 'LENS_PAIR' }),
+				item({ itemType: 'TREATMENT' }),
+				item({ itemType: 'FREE_ITEM' }),
+				item({ itemType: 'PRODUCT' })
+			]
+		);
 		expect(diff.items.map((c) => (c.t === 'add' ? c.name : null))).toEqual([
 			'Ajuste manual',
 			'Cristales',
@@ -392,9 +395,7 @@ describe('buildSaleAuditDiff uncovered branches', () => {
 
 	it('treats id-less before rows as removed', () => {
 		const diff = buildSaleAuditDiff([item({ snapshotName: 'Sin id' })], []);
-		expect(diff.items).toEqual([
-			{ t: 'del', name: 'Sin id', qty: 1, total: 20, unitPrice: 20 }
-		]);
+		expect(diff.items).toEqual([{ t: 'del', name: 'Sin id', qty: 1, total: 20, unitPrice: 20 }]);
 	});
 });
 
