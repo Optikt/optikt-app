@@ -157,12 +157,22 @@ Typical flow:
 1. Open GitHub Actions and run the Docker workflow.
 2. Select the `main` branch.
 3. Choose the version bump: `patch`, `minor`, or `major`.
-4. The workflow updates `package.json`, creates the release commit and tag, then builds and pushes the image.
+4. The workflow runs the preflight checks first: the release token is valid and can push, the computed tag does not exist yet on origin, the Dokploy host is reachable through Tailscale, and the Docker Hub login works.
+5. Only then it builds and pushes the image, creates the release commit and tag, pushes both atomically, and triggers the Dokploy deployment.
 
 Required repository secrets:
 
 - `DOCKER_USERNAME`
 - `DOCKER_PASSWORD`
+- `RELEASE_PUSH_TOKEN` — fine-grained token with `Contents: read/write` on this repository; used to push the release commit and tag
+- `TAILSCALE_OAUTH_CLIENT_ID`
+- `TAILSCALE_OAUTH_SECRET`
+- `DOKPLOY_WEBHOOK_URL` — deployment webhook reachable from the tailnet
+
+Notes:
+
+- If the Dokploy trigger fails, the image and tag are already published: re-trigger the deployment from Dokploy instead of dispatching the workflow again (a new dispatch would cut a new version).
+- Do not use _Re-run_ when the release commit and tag were already published: a re-run reuses the same `github.sha`, recomputes the same version and collides with the existing tag. Launch a new `workflow_dispatch` instead.
 
 ## Repository structure
 
