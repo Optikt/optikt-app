@@ -27,7 +27,9 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 - `paidAmountBcvUsd` **siempre se recalcula** desde la suma de pagos no-voided (`recalcSalePaidAmount`, `queries/sales/payments.ts:89-103`) — nunca incremental.
 - `amountBcvUsd` es el que **ingresa el usuario en USD** (evita drift de float; `addSalePayment.ts:19-21`). Métodos Bs no requieren `exchangeRate`; los extranjeros sí; `bcvRate` siempre obligatoria (`addSalePayment.ts:23-25`, `schema/sales.ts:287-297`).
 - El pago se registra vía factory `submitSalePayment` (`server/payments/salePayments.ts:21-43`): insert + recalc en la MISMA tx del caller.
-- Void = soft-delete con `voidedAt` (idempotente); encontrar el pago exige que pertenezca a la venta y esté sin void (cross-sale void rechazado).
+- Void = soft-delete con `voidedAt` (idempotente) + `voidedById`/`voidReason` obligatorios (`VoidPaymentSchema.reason` 1–500; mig. `0051`); encontrar el pago exige que pertenezca a la venta y esté sin void (cross-sale void rechazado).
+- Quién: `sale_payments.createdById` (cobró) y `voidedById` (anuló), nullable pre-feature; `getSalePayments` devuelve `SalePaymentWithUsers` (`createdByName`/`voidedByName` vía left join a `users`, `queries/sales/payments.ts`). Viejo sin datos ⇒ "—" en UI.
+- Historial de pagos: `SalePaymentsHistoryDrawer.svelte` (SlideOver `w-full sm:w-[440px]`): franja Total/Cobrado/Saldo + tarjeta por pago (original, tasa congelada+tipo, fecha-hora, registrado por, referencia, equiv. USD BCV, notas; anulado `bg #fbfafb` + motivo/quién/cuándo). Anular (card ⋯ o drawer) = `ConfirmModal` con motivo obligatorio inline + toast. Filas sin truncar (`overflow-wrap:anywhere`); tasa BCV mono + `TriggerTooltip`; sin `title` nativos.
 - ⚠️ Editar items reduciendo `total < paidAmount − 0.01` se **rechaza** (redirigir a cancelar + recrear) — `updateSale.ts:133-139`.
 
 **Items / modificadores**
@@ -37,7 +39,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 - `FREE_ITEM` no consume FIFO y tiene fila 1:1 `sale_item_free_details` con `enrichment_status PENDING→ENRICHED` (`server/sales/enrichFreeItem.ts:15-62`).
 - Costos snapshot post-venta solo del módulo lens: `updateItemCosts` recalcula `snapshotCostTotal/Unit` (`updateItemCosts.ts:21-37`).
 - ⚠️ **El commit del editor de cristal se construye desde el `lensDraft` (lo que el usuario editó), nunca desde `lensBase` (copia del mount)**: `EditSaleLensEditor.commitDraft` debe pasar por `editableItemFromLensEditorDraft(lensBase, lensDraft)` antes de `buildLensInputFromDraft`. Regresión del rework v2 (`4c266b58`) que descartaba precio/fórmula/cantidad **y el `lensCatalogItemId`** (items guardados sin enlace al catálogo → sin nombre ni stock). Cubierto por `EditSaleLensEditor.svelte.spec.ts` (2 tests: editar existente + agregar nuevo).
-- Edición de items = **reseteo completo del inventario** (revert con `CANCEL_REVERT` + re-consumo) en una sola tx; items viejos soft-delete en cascada (`updateSale.ts:36-37,178-308`). Falla si COMPLETED (`:51-53`) o no-ADMIN si IN_PROGRESS/READY (`:55-64`).
+- Edición de items = **reseteo completo del inventario** (revert con `EDIT_REVERT` + motivo en `notes` + re-consumo) en una sola tx; items viejos soft-delete en cascada (`updateSale.ts:36-37,178-308`). Falla si COMPLETED (`:51-53`) o no-ADMIN si IN_PROGRESS/READY (`:55-64`).
 
 **Dinero (subtotal / total / tasas)**
 
@@ -52,7 +54,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 **Inventario**
 
 - PRODUCT: FIFO completo (lotes + movimiento `SALE_OUT` + caché stock), con `sale_items.lotId` = lote primario (`queries/fifoConsumption.ts:56-120`, `schema/sales.ts:152-153`). Lente STOCK/no-product: solo decremento de contador.
-- Cancel/edición: `revertSaleInventory` devuelve **solo el neto pendiente por lote** (agrupa `SALE_OUT` + `CANCEL_REVERT` de la venta y revierte únicamente el saldo negativo) + movimiento `CANCEL_REVERT` (nunca hard-delete de movimientos) — `server/sales/revertSaleInventory.ts`, usado por `cancelSale.ts` y `updateSale.ts`. ⚠️ No reviertas cada `SALE_OUT` a ciegas: el log es inmutable y una segunda edición re-revertiría lo ya revertido (duplicaba stock del lote). Lote con neto ≥ 0 se salta (cubre datos fantasma pre-existentes).
+- Cancel/edición: `revertSaleInventory` devuelve **solo el neto pendiente por lote** (agrupa `SALE_OUT` + `*REVERT` de la venta y revierte únicamente el saldo negativo) + movimiento espejo (`EDIT_REVERT` con `notes: Edición: <motivo>` en edición, `CANCEL_REVERT` en cancelación real; lo viejo queda `CANCEL_REVERT`, sin migración de datos) — `server/sales/revertSaleInventory.ts`, usado por `cancelSale.ts` y `updateSale.ts`. ⚠️ No reviertas cada `SALE_OUT` a ciegas: el log es inmutable y una segunda edición re-revertiría lo ya revertido (duplicaba stock del lote). Lote con neto ≥ 0 se salta (cubre datos fantasma pre-existentes).
 
 **Cancelación / reembolso**
 
@@ -72,6 +74,14 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 **Numeración**: `orderNumber` secuencia MAX+1 dentro de la tx; override numérico (backfill) solo ADMIN con validación de duplicado (`createSale.ts:25-31,91-100`).
 
+**Detalle layout (B+ §3-A)**: `.page` (`routes/(app)/sales/[id]/+page.svelte`) tope 1760 + `container-type: inline-size` (sin viewport queries para layout); hero (`SaleDetailHero.svelte`) con hijos directos `hl hc2 mon acts hcta` y `grid-template-areas` (700–1499 dos cols `290px`; ≥1500 tres zonas `1.05fr/1fr/330px` vía `@container`, cliente `hc2` a toda altura). Rail `360px ≥1060 / 420px ≥1500` (container).
+
+**Detalle stock (B+ §3-C)**: `SaleStockDrawer.svelte` (SlideOver `w-full sm:w-[440px]`, reemplaza el uso de `SaleMovementsModal` — el archivo viejo se conserva) sobre los mismos `movements` del loader: subtítulo «N movimientos · efecto neto», tabla neto por producto (Producto·Salidas·Reversiones·Neto, 0 en gris), píldoras Todos/Salidas/Reversiones y grupos por operación (más reciente primero: «Edición · fecha · usuario» / «Creación de la venta» / «Cancelación», clave `referenceType+referenceId+usuario+minuto`). Lógica pura en `saleStock.ts` (+ `saleStock.spec.ts`).
+
+**Detalle auditoría (B+ §3-D)**: `updateSale` anexa `changes.itemsDiff` (schema `SaleAuditDiff v1`, `schemas/sales.ts`) al evento «Venta actualizada», calculado puro post-tx (`server/sales/saleAuditDiff.ts:buildSaleAuditDiff`, tope 50 + `truncated`). Empareja por `id` cliente; `swap` = cambio de producto; hijos tratamiento re-creados sin id = `add`/`del`. Costos internos excluidos por allowlist (nunca en el diff). Eventos viejos sin diff ⇒ aviso en cursiva sin despliegue. Timeline fusiona `sale` + `sale_payment` (registrado/anulado; el void ahora audita `sale_payment` en `voidSalePayment.ts`) vía `queries/changeHistory.ts:getSaleAuditHistory(+Count)` + remote `history.remote.ts:getSaleAuditHistory` (limit/offset, «ver más»). UI: `SaleAuditTimeline` (3 recientes + «N cambios · Total ±» abre expandido), `SaleAuditHistoryDrawer` (filtros Todos/Ediciones/Estados), `SaleAuditEvent` (secciones ARTÍCULOS/DATOS/TOTALES, chip Total ±, MOTIVO destacado, estados como pills). Sin `title` nativos.
+
+**Detalle móvil (B+ §3-E, <700px contenedor)**: el sidebar global ya es overlay en viewport móvil (hamburguesa en `AppNavbar`, velo que cierra al tocar, `translate-x-full`↔abierto) — no se tocó para no romper otras rutas; nombre oculto <640 y búsqueda en segunda fila (patrón global existente). En la página: `+page.svelte` mide el contenedor `.page` con `ResizeObserver` (`isNarrow = width < 700`, el sidebar reacomoda el switch) y solo entonces monta `SaleDetailMobileBar` (fuera del contenedor: `fixed` + `container-type` son incompatibles) + `.mobile-spacer` de 96px. Hero 1 col: título 24, stepper compacto (etiqueta solo en paso actual, resto puntos), meta 2 col, dirección envuelve (`SaleDetailHeroCustomer`), dinero 2 col (Total+Bs | Saldo+Bs con divisor) + Desglose/Calcular full-width; barras decorativas ya ocultas <700. Acciones desktop (`hero-acts`/`hero-hcta`) ocultas <700; la barra fija lleva CTA dorado Cobrar/Imprimir + «Más» (hoja `SlideOver direction="bottom"`: estados con descripción, editar, imprimir ×3, calcular, pagos, historial, stock, separador, cancelar rojo — mismos guards que `SaleDetailHeroActions`). Artículos como tarjetas (`SaleItemsRow` flex: cabecera arriba, USD izq/Bs der abajo; subtítulo envuelve), header oculto, hijos sangría 36, fórmula full-row. Drawers ya `w-full sm:w-[...]`; calculadora `w-full sm:w-[580px]` + columnas compactas `sm:`; modales `ConfirmModal`/`Dialog` ya full-width (`max-w-[calc(100%-2rem)]`). Rail pagos/historial apilado <700 (`grid-cols-1 @min-[700px]:grid-cols-[1fr_1fr]`).
+
 ## Patrones locales
 
 - **Shell/core (DT9)**: lógica = `<acción>Core(input, ctx)` en `server/sales/<acción>.ts` con `ActionContext` explícito; remote solo `requireRole` + delega. Es el patrón de referencia para otros dominios.
@@ -82,8 +92,9 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 ## Testing
 
-- Cores: `*.int.spec.ts` co-ubicados (lifecycle create/cancel/setStatus/update, voids con recálculo, FIFO cancel/update, free-item enrichment).
-- Schemas: `schemas/sales.spec.ts`. Unit puros espejados en `components/sales/**` (pricing, taxBreakdown, paymentForm*, editSale*, wizard*, etc.).
+- Cores: `*.int.spec.ts` co-ubicados (lifecycle create/cancel/setStatus/update, voids con recálculo + quién/motivo, FIFO cancel/update, `saleRevertOrigin` — edición escribe `EDIT_REVERT` con motivo, cancelación `CANCEL_REVERT`, free-item enrichment; `updateSaleAuditDiff` — el `itemsDiff` v1 se guarda sin alterar totales/inventario, header-only y no-op, el void audita `sale_payment`).
+- Unit del diff: `server/sales/saleAuditDiff.spec.ts` (add/del/swap/mod por campo, fórmula OD/OI, montaje, tratamiento hijo sin id, descuento global, Cashea, totales numéricos, costos excluidos, tope 50+`truncated`).
+- Schemas: `schemas/sales.spec.ts` (incl. `VoidPaymentSchema`: motivo obligatorio 1–500). Unit puros espejados en `components/sales/**` (pricing, taxBreakdown, paymentForm*, editSale*, wizard*, etc.).
 - Componentes (`project=client`, browser): `editSale/EditSaleLensEditor.svelte.spec.ts` — el «Hecho» del editor de cristal debe entregar al `onApply` lo editado en el draft (precio, graduación, enlace al catálogo).
 - Listado: `shared/saleBalance.spec.ts`, `components/sales/listParams.spec.ts`, `components/sales/saleDisplay.spec.ts`; a nivel DB `queries/sales/list.int.spec.ts` (stats/facetas/selección/saldo/flags) y `queries/userPreferences.int.spec.ts` (ambos `project=integration`, requieren Docker).
 - E2E de dinero: `e2e/sale-payment.test.ts`, `e2e/quote-to-sale.test.ts`.

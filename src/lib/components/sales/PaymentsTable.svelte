@@ -27,27 +27,41 @@
 	let showVoidModal = $state(false);
 	let voidingPayment = $state<SalePayment | null>(null);
 	let voidLoading = $state(false);
+	let voidReason = $state('');
+	let voidError = $state<string | null>(null);
 
 	function openVoid(payment: SalePayment) {
 		voidingPayment = payment;
+		voidReason = '';
+		voidError = null;
 		showVoidModal = true;
 	}
 
 	async function handleVoid() {
 		if (!voidingPayment) return;
+		const reason = voidReason.trim();
+		if (!reason) {
+			voidError = 'El motivo es obligatorio para anular el pago';
+			return;
+		}
+		voidError = null;
 		voidLoading = true;
 		try {
-			const result = await voidPayment({ id: voidingPayment.id, saleId });
+			const result = await voidPayment({ id: voidingPayment.id, saleId, reason });
 			if (!result.success) {
-				toast.error(result.error ?? 'Error anulando pago');
+				voidError = result.error ?? 'Error anulando pago';
+				toast.error(voidError);
 				return;
 			}
 			toast.success('Pago anulado');
 			showVoidModal = false;
 			voidingPayment = null;
+			voidReason = '';
+			voidError = null;
 			onPaymentVoided?.(result.paidAmount);
 		} catch (e) {
-			toast.error(getErrorMessage(e, 'Error anulando pago'));
+			voidError = getErrorMessage(e, 'Error anulando pago');
+			toast.error(voidError);
 		} finally {
 			voidLoading = false;
 		}
@@ -216,7 +230,7 @@
 											type="button"
 											onclick={() => openVoid(payment)}
 											class="rounded-full bg-error-container/70 p-2 text-on-error-container transition-colors hover:bg-error-container"
-											title="Anular pago"
+											aria-label="Anular pago"
 										>
 											<Ban class="h-4 w-4" />
 										</button>
@@ -241,5 +255,28 @@
 	confirmColor="red"
 	loading={voidLoading}
 	onConfirm={handleVoid}
-	onCancel={() => (showVoidModal = false)}
-/>
+	onCancel={() => {
+		showVoidModal = false;
+		voidReason = '';
+		voidError = null;
+	}}
+>
+	{#snippet body()}
+		<div class="mt-3">
+			<label for="void-payment-reason-legacy" class="mb-1 block text-sm font-semibold">
+				Motivo de la anulación
+			</label>
+			<textarea
+				id="void-payment-reason-legacy"
+				bind:value={voidReason}
+				rows="3"
+				maxlength="500"
+				placeholder="Ej. transferencia duplicada, monto incorrecto…"
+				class="w-full resize-none rounded-lg border px-3 py-2 text-sm [overflow-wrap:anywhere] outline-none"
+			></textarea>
+			{#if voidError}
+				<p class="mt-1.5 text-xs font-medium text-on-error-container">{voidError}</p>
+			{/if}
+		</div>
+	{/snippet}
+</ConfirmModal>

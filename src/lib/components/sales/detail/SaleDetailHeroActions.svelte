@@ -275,10 +275,11 @@
 	</Popover.Root>
 {/snippet}
 
-<!-- ══ Fila 2: acciones + CTA ══════════════════════════════════════ -->
+<!-- ══ acts: acciones secundarias ═════════════════════════════════ -->
 {#if hasActionsRow}
 	<div
-		class="col-start-1 row-start-2 mt-4 flex flex-nowrap items-stretch gap-2 border-t border-white/15 pt-4"
+		style="grid-area: acts"
+		class="hero-acts mt-4 flex min-w-0 flex-nowrap items-stretch gap-2 border-t border-white/15 pt-4"
 	>
 		{@render statusMenu()}
 		{#if showEdit}
@@ -313,7 +314,7 @@
 {/if}
 
 {#if showPaymentForm}
-	<div class="col-start-2 row-start-2 mt-4 border-t border-white/15 pt-4">
+	<div style="grid-area: hcta" class="hero-hcta mt-4 min-w-0 border-t border-white/15 pt-4">
 		<button
 			type="button"
 			onclick={onPay}
@@ -324,7 +325,16 @@
 	</div>
 {/if}
 
-<style lang="postcss">
+<style>
+	/* En móvil (<700 contenedor) las acciones viven en la barra inferior fija:
+	   se ocultan aquí para no duplicarlas (spec §6: sin acciones del hero en página). */
+	@container (max-width: 699px) {
+		.hero-acts,
+		.hero-hcta {
+			display: none;
+		}
+	}
+
 	/* Ghost actions over navy: stretch to fill the row (compact when the sidebar opens). */
 	:global(.hero-btn) {
 		height: 40px;

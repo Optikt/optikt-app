@@ -157,13 +157,13 @@
 	aria-expanded={isLens ? expanded : undefined}
 	onclick={handleRowClick}
 	onkeydown={isLens ? onKeydown : undefined}
-	class="grid grid-cols-[32px_1fr_104px_128px_26px] items-start gap-3 border-t border-outline-variant/60 px-4 py-2.5 transition-colors duration-150 hover:bg-[#f6f8fb] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue"
+	class="item-row grid grid-cols-[32px_1fr_104px_128px_26px] items-start gap-3 border-t border-outline-variant/60 px-4 py-2.5 transition-colors duration-150 hover:bg-[#f6f8fb] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue"
 >
 	<!-- Neutral kind chip -->
 	{#snippet chipTooltipOuter({ props }: { props: Record<string, unknown> })}
 		<span
 			{...props}
-			class="grid h-[32px] w-[32px] shrink-0 cursor-help place-items-center rounded-lg {ITEM_KIND_ICONS[
+			class="item-chip grid h-[32px] w-[32px] shrink-0 cursor-help place-items-center rounded-lg {ITEM_KIND_ICONS[
 				kind
 			].chipClass}"
 		>
@@ -173,7 +173,7 @@
 	<TriggerTooltip trigger={chipTooltipOuter} text={itemKindTooltip(kind)} />
 
 	<!-- Name + meta + rx + states -->
-	<div class="min-w-0">
+	<div class="item-main min-w-0">
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
 			{#if href}
 				<a
@@ -200,7 +200,7 @@
 		</div>
 
 		{#if subtitle}
-			<p class="mt-0.5 truncate text-xs text-on-surface-variant">{subtitle}</p>
+			<p class="item-subtitle mt-0.5 truncate text-xs text-on-surface-variant">{subtitle}</p>
 		{/if}
 
 		{#if hasRx}
@@ -334,7 +334,7 @@
 	</div>
 
 	<!-- USD / Bs. -->
-	<div class="text-right">
+	<div class="item-usd text-right">
 		<span class="block text-sm font-semibold text-on-surface tabular-nums">
 			{formatPrice(group.lineTotal)}
 		</span>
@@ -346,14 +346,14 @@
 			</span>
 		{/if}
 	</div>
-	<div class="text-right">
+	<div class="item-bs text-right">
 		{#if bsLineTotal !== null}
 			<span class="block text-xs text-on-surface-variant tabular-nums">{bsLabel(bsLineTotal)}</span>
 		{/if}
 	</div>
 
 	<!-- Expand chevron (lens rows only) -->
-	<div class="flex justify-end pt-0.5">
+	<div class="item-chevron flex justify-end pt-0.5">
 		{#if showChevron}
 			<button
 				type="button"
@@ -383,3 +383,57 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	/* Móvil <700 (contenedor de página): la fila es una tarjeta por áreas —
+	   cabecera (chip+título+chevron) arriba, USD full-row y Bs full-row
+	   (alineado der) con separación; la fórmula colapsable ya es full-row. */
+	@container (max-width: 699px) {
+		.item-row {
+			display: grid;
+			grid-template-columns: 32px minmax(0, 1fr) 26px;
+			grid-template-areas:
+				'chip main chev'
+				'usd usd usd'
+				'bs bs bs';
+			column-gap: 12px;
+			row-gap: 4px;
+			align-items: start;
+		}
+		.item-chip {
+			grid-area: chip;
+		}
+		.item-main {
+			grid-area: main;
+			min-width: 0;
+		}
+		.item-chevron {
+			grid-area: chev;
+			padding-top: 2px;
+			justify-self: end;
+		}
+		.item-usd,
+		.item-bs {
+			min-width: 0;
+			margin-top: 4px;
+			padding-top: 8px;
+			border-top: 1px solid color-mix(in srgb, var(--color-outline-variant) 60%, transparent);
+		}
+		.item-usd {
+			grid-area: usd;
+			text-align: left;
+		}
+		.item-bs {
+			grid-area: bs;
+			margin-top: 0;
+			padding-top: 0;
+			border-top: 0;
+			text-align: right;
+			align-self: center;
+		}
+		.item-subtitle {
+			white-space: normal;
+			overflow-wrap: break-word;
+		}
+	}
+</style>

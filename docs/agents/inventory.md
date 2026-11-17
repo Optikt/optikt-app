@@ -24,14 +24,14 @@ Owner rules: la creación de lotes/movimientos por PO vive en el flujo de `purch
 **Movimientos** (`schema/inventoryMovements.ts:37-43`)
 
 - Tabla **inmutable**: sin `updatedAt` ni `deletedAt`; corrección = insert de movimiento inverso.
-- Tipos: `PURCHASE_IN | SALE_OUT | ADJUSTMENT_IN | ADJUSTMENT_OUT | CANCEL_REVERT` + `RETURN_IN` (declarado, aún no usado — futuro/credit notes, `shared/enums/inventoryTypes.ts:78-87`). ⚠️ No consolidar tipos ni borrar registros.
+- Tipos: `PURCHASE_IN | SALE_OUT | ADJUSTMENT_IN | ADJUSTMENT_OUT | CANCEL_REVERT | EDIT_REVERT` + `RETURN_IN` (declarado, aún no usado — futuro/credit notes, `shared/enums/inventoryTypes.ts:78-87`). `EDIT_REVERT` = reversión por edición (con motivo en `notes`); `CANCEL_REVERT` queda solo para cancelación real. ⚠️ No consolidar tipos ni borrar registros.
 - `quantityDelta` (+ entra / − sale) con `quantityBefore/After` por lote; unitCost de ajuste solo en `ADJUSTMENT_OUT` sin `CUSTOMER_RETURN` (`inventoryTypes.ts:109-122`).
 - `CUSTOMER_RETURN` siempre fuerza `ADJUSTMENT_IN` (transform en `schemas/inventory.ts:25-31,44-49`); motivo ≥ 10 chars, cantidad ≥ 1.
 
 **FIFO**
 
 - Plan puro sin DB: `planFifoConsumption` (`utils/inventory.ts:38-81`) — lote más viejo primero; lanza si los lotes no cubren la cantidad.
-- Ventas: `consumeFifoForSaleItem` (`queries/fifoConsumption.ts:56-201`), compartido por `createSale` y `convertQuoteToSale` vía `queries/sales/saleItemInsert.ts:59`. PRODUCT → FIFO completo (descuento de lotes + movimiento `SALE_OUT` + caché `products.stock`); producto sin lotes o lente modo STOCK → solo decrementa contador (error si quedaría < 0, validación **antes** del FIFO, `:80-84`); TREATMENT → coste desde `supplier_treatments.price` o `snapshotBaseCost` override (`:178-198`). Cancalación/edición devuelven con `revertSaleInventory` (`server/sales/revertSaleInventory.ts`): neto por lote de `SALE_OUT` + `CANCEL_REVERT` → revertir solo el saldo pendiente (nunca re-revertir lo ya revertido — el log es inmutable) + movimiento `CANCEL_REVERT` espejo (`server/sales/cancelSale.ts`, `server/sales/updateSale.ts`).
+- Ventas: `consumeFifoForSaleItem` (`queries/fifoConsumption.ts:56-201`), compartido por `createSale` y `convertQuoteToSale` vía `queries/sales/saleItemInsert.ts:59`. PRODUCT → FIFO completo (descuento de lotes + movimiento `SALE_OUT` + caché `products.stock`); producto sin lotes o lente modo STOCK → solo decrementa contador (error si quedaría < 0, validación **antes** del FIFO, `:80-84`); TREATMENT → coste desde `supplier_treatments.price` o `snapshotBaseCost` override (`:178-198`). Cancalación/edición devuelven con `revertSaleInventory` (`server/sales/revertSaleInventory.ts`): neto por lote de `SALE_OUT` + `*REVERT` → revertir solo el saldo pendiente (nunca re-revertir lo ya revertido — el log es inmutable) + movimiento espejo (`EDIT_REVERT` en edición, `CANCEL_REVERT` en cancelación) (`server/sales/cancelSale.ts`, `server/sales/updateSale.ts`).
 - Lentes STOCK: los ajustes manuales sí usan lotes FIFO (`getActiveLensLotsFifo`); sin entrada previa, se fabrica una PO técnica confirmada + lote (ver deuda).
 
 **Autorización de ajustes**

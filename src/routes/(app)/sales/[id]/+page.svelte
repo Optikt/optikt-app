@@ -1,19 +1,17 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import {
-		CancelSaleModal,
-		EditSaleModal,
-		SaleMovementsModal,
-		SaleStatusModal
-	} from '$lib/components/sales';
+	import { CancelSaleModal, EditSaleModal, SaleStatusModal } from '$lib/components/sales';
+	import SaleStockDrawer from '$lib/components/sales/detail/SaleStockDrawer.svelte';
 	import SaleItemsTable from '$lib/components/sales/itemsTable/SaleItemsTable.svelte';
 	import SaleAuditTimeline from '$lib/components/sales/detail/SaleAuditTimeline.svelte';
 	import SaleAuditHistoryDrawer from '$lib/components/sales/detail/SaleAuditHistoryDrawer.svelte';
 	import SaleDetailHero from '$lib/components/sales/detail/SaleDetailHero.svelte';
+	import SaleDetailMobileBar from '$lib/components/sales/detail/SaleDetailMobileBar.svelte';
 	import SaleDetailNotices from '$lib/components/sales/detail/SaleDetailNotices.svelte';
 	import SaleDetailPayments from '$lib/components/sales/detail/SaleDetailPayments.svelte';
 	import SalePaymentDrawer from '$lib/components/sales/detail/SalePaymentDrawer.svelte';
+	import SalePaymentsHistoryDrawer from '$lib/components/sales/detail/SalePaymentsHistoryDrawer.svelte';
 	import SaleInvoiceCalculator from '$lib/components/sales/detail/SaleInvoiceCalculator.svelte';
 	import { PDFViewerModal } from '$lib/components/pdf';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
@@ -27,7 +25,7 @@
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
-	import type { SalePayment } from '$lib/server/db/schema';
+	import type { SalePaymentWithUsers } from '$lib/server/db/queries/sales/payments';
 	import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
 	import { printTickeraReceipt } from '$lib/remote/printing.remote';
 	import {
@@ -42,7 +40,7 @@
 	let { data } = $props();
 	let sale = $state<SaleWithRelations>(untrack(() => data.sale));
 	let items = $state<SaleItemWithDetails[]>(untrack(() => data.items));
-	let payments = $state<SalePayment[]>(untrack(() => data.payments));
+	let payments = $state<SalePaymentWithUsers[]>(untrack(() => data.payments));
 	let movements = $state<MovementWithDetails[]>(untrack(() => data.movements));
 	const store = getExchangeRatesStore();
 	const bcvRate = $derived(store.bcvRate);
@@ -65,7 +63,32 @@
 
 	// Audit history drawer
 	let showAuditDrawer = $state(false);
+	let expandedAuditEventId = $state<string | null>(null);
 	let auditHistory = $state(untrack(() => data.auditHistory));
+
+	// «Pagos de la venta» drawer (mounted outside the @container wrapper below,
+	// next to the audit drawer — same reason: containment offsets `fixed`).
+	let showPaymentsDrawer = $state(false);
+	let paymentsCard = $state<{ requestVoid: (p: SalePaymentWithUsers) => void } | undefined>(
+		undefined
+	);
+
+	// ── Mobile bottom bar: visible only when the PAGE container is <700px.
+	// A ResizeObserver on the container (not a viewport query) so the sidebar
+	// open/close reflow drives the switch, like every other layout rule here.
+	let pageEl = $state<HTMLElement | undefined>(undefined);
+	let isNarrow = $state(false);
+
+	$effect(() => {
+		const target = pageEl;
+		if (!target) return;
+		const observer = new ResizeObserver((entries) => {
+			const width = entries[0]?.contentRect.width;
+			if (width !== undefined) isNarrow = width < 700;
+		});
+		observer.observe(target);
+		return () => observer.disconnect();
+	});
 	/** Load instant comes from the audit create event — sale.createdAt is the business date now. */
 	let saleLoadedAt = $derived(
 		auditHistory.find((e) => e.entityType === 'sale' && e.action === 'create')?.changedAt ??
@@ -253,7 +276,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-surface">
-	<div class="anim-page @container mx-auto w-full max-w-[1280px] px-5 pt-3.5 pb-7">
+	<div bind:this={pageEl} class="page anim-page @container w-full px-5 pt-3.5 pb-7">
 		<SaleDetailHero
 			{sale}
 			{items}
@@ -292,7 +315,9 @@
 			{canAct}
 		/>
 
-		<div class="mt-3 grid grid-cols-1 items-start gap-3 @min-[1060px]:grid-cols-[1fr_330px]">
+		<div
+			class="mt-3 grid grid-cols-1 items-start gap-3 @min-[1060px]:grid-cols-[minmax(0,1fr)_360px] @min-[1500px]:grid-cols-[minmax(0,1fr)_420px]"
+		>
 			<div>
 				<SaleItemsTable
 					{items}
@@ -308,13 +333,17 @@
 				/>
 			</div>
 
-			<div class="grid grid-cols-[1fr_1fr] items-start gap-3 @min-[1060px]:grid-cols-1">
+			<div
+				class="grid grid-cols-1 items-start gap-3 @min-[700px]:grid-cols-[1fr_1fr] @min-[1060px]:grid-cols-1"
+			>
 				<SaleDetailPayments
+					bind:this={paymentsCard}
 					{payments}
 					{canAct}
 					{isCancelled}
 					{remainingBcvUsd}
 					onRegister={openDrawer}
+					onViewDetail={() => (showPaymentsDrawer = true)}
 					onChanged={async () => {
 						await invalidateAll();
 						syncFromData();
@@ -325,19 +354,51 @@
 					{auditHistory}
 					saleCreatedAt={saleLoadedAt}
 					saleCreatedBy={sale.seller?.fullName}
-					onViewAudit={() => (showAuditDrawer = true)}
+					onViewAudit={(eventId) => {
+						expandedAuditEventId = eventId ?? null;
+						showAuditDrawer = true;
+					}}
 					movementsCount={movements.length}
 					onOpenMovements={openStockModal}
 					{lastUpdatedLabel}
 				/>
 			</div>
 		</div>
+		<!-- Reserva 96px bajo la barra inferior fija en móvil (<700 contenedor). -->
+		<div class="mobile-spacer" aria-hidden="true"></div>
 	</div>
 </div>
 
+{#if isNarrow}
+	<SaleDetailMobileBar
+		{sale}
+		{canAct}
+		{canManageSale}
+		{isAdmin}
+		{remainingBcvUsd}
+		{printingTickera}
+		onChangeStatus={(target) => {
+			statusModalPreset = target ? [target] : undefined;
+			showStatusModal = true;
+		}}
+		onEdit={() => (showEditModal = true)}
+		onPreviewPdf={() => (showPdfPreview = true)}
+		onOpenPdf={openPdfReceipt}
+		onPrintTickera={printTickera}
+		onCancel={() => (showCancelModal = true)}
+		onPay={openDrawer}
+		onCalculate={() => (showCalculator = true)}
+		onOpenHistory={() => {
+			expandedAuditEventId = null;
+			showAuditDrawer = true;
+		}}
+		onOpenStock={openStockModal}
+	/>
+{/if}
+
 <!-- Fixed-position overlays live OUTSIDE the @container wrapper: container-type
      containment would make `fixed` descendants relative to the page box. -->
-<SaleMovementsModal {movements} open={showStockModal} onclose={closeStockModal} />
+<SaleStockDrawer {movements} open={showStockModal} onclose={closeStockModal} />
 
 <SalePaymentDrawer
 	bind:open={showDrawer}
@@ -398,8 +459,46 @@
 
 <SaleAuditHistoryDrawer
 	open={showAuditDrawer}
-	onclose={() => (showAuditDrawer = false)}
+	onclose={() => {
+		showAuditDrawer = false;
+		expandedAuditEventId = null;
+	}}
 	{auditHistory}
+	auditTotal={data.auditTotal}
+	saleId={sale.id}
 	saleCreatedAt={saleLoadedAt}
 	saleCreatedBy={sale.seller?.fullName}
+	expandedEventId={expandedAuditEventId}
 />
+
+<SalePaymentsHistoryDrawer
+	open={showPaymentsDrawer}
+	onclose={() => (showPaymentsDrawer = false)}
+	{payments}
+	total={sale.total}
+	paidAmount={sale.paidAmountBcvUsd}
+	canVoid={canAct && !isCancelled}
+	onVoidRequest={(payment) => {
+		showPaymentsDrawer = false;
+		paymentsCard?.requestVoid(payment);
+	}}
+/>
+
+<style>
+	/* Contenedor de página: tope 1760 y contexto para todas las container
+	   queries del detalle (hero + rail). Sin viewport queries para layout. */
+	.page {
+		max-width: 1760px;
+		margin: 0 auto;
+		container-type: inline-size;
+	}
+	/* Reserva 96px libres bajo la barra inferior fija (solo móvil <700). */
+	.mobile-spacer {
+		height: 0;
+	}
+	@container (max-width: 699px) {
+		.mobile-spacer {
+			height: 96px;
+		}
+	}
+</style>

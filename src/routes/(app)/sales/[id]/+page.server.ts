@@ -3,7 +3,8 @@ import { error } from '@sveltejs/kit';
 import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
 import { getSalePayments } from '$lib/server/db/queries/sales/payments';
 import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
-import { getEntityHistory } from '$lib/server/db/queries/changeHistory';
+import { getSaleAuditHistory } from '$lib/server/db/queries/changeHistory';
+import { getSaleAuditHistoryCount } from '$lib/server/db/queries/changeHistory';
 import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
 import { getAllSuppliers, getAllTreatments } from '$lib/server/db/queries/suppliers';
 import { getSalePrescription } from '$lib/server/db/queries/sales/reads';
@@ -20,20 +21,29 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Venta no encontrada');
 	}
 
-	const [items, payments, movements, supplierList, allTreatments, auditHistory, prescription] =
-		await Promise.all([
-			getSaleItemsWithDetails(params.id),
-			getSalePayments(params.id, { includeVoided: true }),
-			getMovementsWithDetails({
-				referenceType: MovementReferenceType.SALE,
-				referenceId: params.id,
-				orderSort: 'asc'
-			}),
-			getAllSuppliers({ orderBy: 'name' }),
-			getAllTreatments(),
-			getEntityHistory('sale', params.id),
-			getSalePrescription(params.id)
-		]);
+	const [
+		items,
+		payments,
+		movements,
+		supplierList,
+		allTreatments,
+		auditHistory,
+		auditTotal,
+		prescription
+	] = await Promise.all([
+		getSaleItemsWithDetails(params.id),
+		getSalePayments(params.id, { includeVoided: true }),
+		getMovementsWithDetails({
+			referenceType: MovementReferenceType.SALE,
+			referenceId: params.id,
+			orderSort: 'asc'
+		}),
+		getAllSuppliers({ orderBy: 'name' }),
+		getAllTreatments(),
+		getSaleAuditHistory(params.id),
+		getSaleAuditHistoryCount(params.id),
+		getSalePrescription(params.id)
+	]);
 
 	/** Lens catalog entries for the sale's crystals: factory treatments in the item meta (drawer parity). */
 	const lensIds = [
@@ -55,6 +65,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		suppliers: supplierList,
 		allTreatments,
 		auditHistory,
+		auditTotal,
 		prescription,
 		lensCatalogItems
 	};

@@ -42,7 +42,7 @@ export async function cancelSaleCore(data: CancelSaleInput, ctx: ActionContext) 
 
 		// Return only what this sale still holds (net outstanding per lot —
 		// movements already reverted by a prior edit are never re-returned).
-		await revertSaleInventory(tx, data.id, ctx.userId!);
+		await revertSaleInventory(tx, data.id, ctx.userId!, { origin: 'cancel' });
 
 		// Restore cached stock for product and lens items
 		for (const item of items) {

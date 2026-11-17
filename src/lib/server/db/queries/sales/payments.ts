@@ -2,15 +2,34 @@
  * Split from parent query module (DT1 phase 4) — logic unchanged, verbatim move: sale payments.
  */
 import { eq, isNull, and, desc, sum } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '$lib/server/db';
 
 import type { DbOrTx } from '$lib/server/db/types';
 import { nowISO } from '$lib/dates';
-import { sales, salePayments, type SalePayment, type NewSalePayment } from '$lib/server/db/schema';
+import {
+	sales,
+	salePayments,
+	users,
+	type SalePayment,
+	type NewSalePayment
+} from '$lib/server/db/schema';
 
 // SALE PAYMENTS
 // ============================================================================
+
+/**
+ * Sale payment enriched with the display names of who collected / voided it.
+ * Null names = pre-feature row (accepted, renders as "—").
+ */
+export interface SalePaymentWithUsers extends SalePayment {
+	createdByName: string | null;
+	voidedByName: string | null;
+}
+
+const createdByUser = alias(users, 'payment_created_by');
+const voidedByUser = alias(users, 'payment_voided_by');
 
 /**
  * Get payments for a sale
@@ -20,16 +39,27 @@ import { sales, salePayments, type SalePayment, type NewSalePayment } from '$lib
 export async function getSalePayments(
 	saleId: string,
 	{ includeVoided = false }: { includeVoided?: boolean } = {}
-): Promise<SalePayment[]> {
+): Promise<SalePaymentWithUsers[]> {
 	const conditions = [eq(salePayments.saleId, saleId)];
 	if (!includeVoided) {
 		conditions.push(isNull(salePayments.voidedAt));
 	}
-	return await db
-		.select()
+	const rows = await db
+		.select({
+			payment: salePayments,
+			createdByName: createdByUser.fullName,
+			voidedByName: voidedByUser.fullName
+		})
 		.from(salePayments)
+		.leftJoin(createdByUser, eq(salePayments.createdById, createdByUser.id))
+		.leftJoin(voidedByUser, eq(salePayments.voidedById, voidedByUser.id))
 		.where(and(...conditions))
 		.orderBy(desc(salePayments.paymentDate), desc(salePayments.createdAt));
+	return rows.map((r) => ({
+		...r.payment,
+		createdByName: r.createdByName,
+		voidedByName: r.voidedByName
+	}));
 }
 
 /**
@@ -67,15 +97,21 @@ export async function addSalePayment(
 }
 
 /**
- * Void a payment (soft-delete by setting voidedAt)
+ * Void a payment (soft-delete by setting voidedAt + who/reason)
  */
 export async function voidSalePayment(
 	id: string,
+	input: { voidedById: string | null; voidReason: string },
 	executor: DbOrTx = db
 ): Promise<SalePayment | null> {
 	const [payment] = await executor
 		.update(salePayments)
-		.set({ voidedAt: nowISO(), updatedAt: nowISO() })
+		.set({
+			voidedAt: nowISO(),
+			updatedAt: nowISO(),
+			voidedById: input.voidedById,
+			voidReason: input.voidReason
+		})
 		.where(and(eq(salePayments.id, id), isNull(salePayments.voidedAt)))
 		.returning();
 	return payment ?? null;

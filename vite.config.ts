@@ -47,6 +47,8 @@ export default defineConfig({
 				'src/lib/components/sales/detail/facturaCalculator.ts',
 				'src/lib/components/sales/detail/saleBreakdown.ts',
 				'src/lib/components/sales/detail/saleDetail.ts',
+				'src/lib/components/sales/detail/saleStock.ts',
+				'src/lib/components/history/display-utils.ts',
 				'src/lib/components/sales/itemsTable/costTotals.ts',
 				'src/lib/components/sales/itemsTable/itemDisplay.ts',
 				'src/lib/components/sales/listParams.ts',

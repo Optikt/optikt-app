@@ -277,8 +277,85 @@ export const AddPaymentSchema = z
 
 export const VoidPaymentSchema = z.object({
 	id: z.uuid('ID de pago requerido'),
-	saleId: z.uuid('ID de venta requerido')
+	saleId: z.uuid('ID de venta requerido'),
+	reason: z.string().trim().min(1, 'El motivo es obligatorio').max(500)
 });
+
+// ============================================================================
+// SALE AUDIT DIFF (v1) — spec docs/specs/detalle-venta-bplus-design.md §2.3
+// ============================================================================
+
+/**
+ * Diff estructurado que `updateSale` anexa (clave `itemsDiff`) al evento
+ * «Venta actualizada». Valores ya legibles para la UI; los costos internos
+ * NUNCA forman parte del diff (se comparan por allowlist explícita).
+ */
+export const SaleAuditDiffAddDelSchema = z.object({
+	t: z.enum(['add', 'del']),
+	name: z.string(),
+	qty: z.number(),
+	unitPrice: z.number(),
+	total: z.number()
+});
+
+export const SaleAuditDiffItemChangeSchema = z.union([
+	SaleAuditDiffAddDelSchema.extend({ t: z.literal('add') }),
+	SaleAuditDiffAddDelSchema.extend({ t: z.literal('del') }),
+	z.object({
+		t: z.literal('swap'),
+		from: z.object({ name: z.string(), total: z.number() }),
+		to: z.object({ name: z.string(), total: z.number() })
+	}),
+	z.object({
+		t: z.literal('mod'),
+		name: z.string(),
+		fields: z.array(
+			z.object({
+				key: z.string(),
+				label: z.string(),
+				from: z.string().nullable(),
+				to: z.string().nullable()
+			})
+		)
+	})
+]);
+
+export const SaleAuditDiffSchema = z.object({
+	v: z.literal(1),
+	items: z.array(SaleAuditDiffItemChangeSchema),
+	header: z.array(
+		z.object({
+			key: z.string(),
+			label: z.string(),
+			from: z.string().nullable(),
+			to: z.string().nullable()
+		})
+	),
+	totals: z.array(
+		z.object({
+			label: z.string(),
+			from: z.number(),
+			to: z.number()
+		})
+	),
+	truncated: z.number().int().nonnegative().optional()
+});
+
+export type SaleAuditDiff = z.infer<typeof SaleAuditDiffSchema>;
+export type SaleAuditItemChange = z.infer<typeof SaleAuditDiffItemChangeSchema>;
+
+/** Tope de cambios atómicos por diff; el resto colapsa en `truncated`. */
+export const MAX_SALE_AUDIT_CHANGES = 50;
+
+/** Tamaño atómico de un diff (add/del/swap = 1, mod = nº de campos). */
+export function countSaleAuditChanges(diff: SaleAuditDiff): number {
+	let count = 0;
+	for (const change of diff.items) {
+		count += change.t === 'mod' ? change.fields.length : 1;
+	}
+	count += diff.header.length + diff.totals.length;
+	return count;
+}
 
 // ============================================================================
 // CANCEL SALE SCHEMA

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { addSalePaymentCore } from './addSalePayment';
 import { voidSalePaymentCore } from './voidSalePayment';
 import { findSaleById } from '$lib/server/db/queries/sales/reads';
+import { getSalePayments } from '$lib/server/db/queries/sales/payments';
 import { resetDb } from '$lib/testing/integration/db';
 import { createSale, createUser } from '$lib/testing/integration/factories';
 import { PaymentMethod, SaleStatus, UserRole } from '$lib/shared/enums';
@@ -35,7 +36,7 @@ describe('voidSalePaymentCore', () => {
 		if (!added.success) throw new Error('payment was not created');
 
 		const result = await voidSalePaymentCore(
-			{ id: added.payment.id, saleId: sale.id },
+			{ id: added.payment.id, saleId: sale.id, reason: 'Transferencia duplicada' },
 			ctx(seller.id)
 		);
 
@@ -55,7 +56,7 @@ describe('voidSalePaymentCore', () => {
 		if (!added.success) throw new Error('payment was not created');
 
 		const result = await voidSalePaymentCore(
-			{ id: added.payment.id, saleId: sale.id },
+			{ id: added.payment.id, saleId: sale.id, reason: 'Monto incorrecto' },
 			ctx(seller.id)
 		);
 
@@ -73,10 +74,46 @@ describe('voidSalePaymentCore', () => {
 		if (!added.success) throw new Error('payment was not created');
 
 		const result = await voidSalePaymentCore(
-			{ id: added.payment.id, saleId: otherSale.id },
+			{ id: added.payment.id, saleId: otherSale.id, reason: 'No aplica' },
 			ctx(seller.id)
 		);
 
 		expect(result).toEqual({ success: false, error: 'Pago no encontrado' });
+	});
+
+	it('stores who voided the payment and the reason', async () => {
+		const seller = await createUser();
+		const sale = await createSale({ sellerId: seller.id, total: 100 });
+		const added = await addSalePaymentCore(payment(sale.id, 50), ctx(seller.id));
+		if (!added.success) throw new Error('payment was not created');
+
+		const result = await voidSalePaymentCore(
+			{ id: added.payment.id, saleId: sale.id, reason: 'Transferencia duplicada' },
+			ctx(seller.id)
+		);
+
+		expect(result.success).toBe(true);
+		const history = await getSalePayments(sale.id, { includeVoided: true });
+		expect(history).toHaveLength(1);
+		expect(history[0].voidedById).toBe(seller.id);
+		expect(history[0].voidReason).toBe('Transferencia duplicada');
+	});
+
+	it('exposes collector and voider names in the payment history', async () => {
+		const seller = await createUser();
+		const sale = await createSale({ sellerId: seller.id, total: 100 });
+		const added = await addSalePaymentCore(payment(sale.id, 50), ctx(seller.id));
+		if (!added.success) throw new Error('payment was not created');
+
+		const result = await voidSalePaymentCore(
+			{ id: added.payment.id, saleId: sale.id, reason: 'Monto incorrecto' },
+			ctx(seller.id)
+		);
+
+		expect(result.success).toBe(true);
+		const history = await getSalePayments(sale.id, { includeVoided: true });
+		expect(history).toHaveLength(1);
+		expect(history[0].createdByName).toBe('Integration User');
+		expect(history[0].voidedByName).toBe('Integration User');
 	});
 });

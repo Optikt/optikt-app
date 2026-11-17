@@ -183,15 +183,20 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		isActive: 'Activo'
 	},
 	sale_payment: {
-		paymentMethod: 'Método de Pago',
-		paymentDate: 'Fecha de Pago',
+		paymentMethod: 'Método de pago',
+		paymentDate: 'Fecha de pago',
 		amount: 'Monto',
-		exchangeRate: 'Tasa de Cambio',
+		exchangeRate: 'Tasa del método',
+		rateType: 'Tipo de tasa',
 		bcvRate: 'Tasa BCV',
-		amountBcvUsd: 'Monto USD BCV',
+		amountBcvUsd: 'Equivalente en USD',
+		isCasheaPayment: 'Pago Cashea',
 		reference: 'Referencia',
 		notes: 'Notas',
-		voidedAt: 'Anulado'
+		voidedAt: 'Anulado el',
+		voidedById: 'Anulado por',
+		voidReason: 'Motivo de anulación',
+		createdById: 'Registrado por'
 	},
 	supplier_treatment: {
 		name: 'Nombre',
@@ -343,8 +348,12 @@ export function formatChangeValue(value: unknown): string {
 			const date = fromISODate(value);
 			return date ? formatDate(date) : value;
 		}
-		if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
-			return formatDate(fromISO(value));
+		if (/^\d{4}-\d{2}-\d{2}[T ]/.test(value)) {
+			// DB timestamps may use a space separator and a bare "+00" UTC suffix
+			// ("2026-11-13 20:02:56+00") — normalize to strict ISO before parsing.
+			const normalized = value.replace(' ', 'T').replace(/\+00$/, 'Z');
+			const parsed = fromISO(normalized);
+			if (!Number.isNaN(parsed.getTime())) return formatDate(parsed);
 		}
 		return value;
 	}

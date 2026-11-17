@@ -1,6 +1,6 @@
 import { toSaleTotalsLine } from '$lib/remote/sales/helpers';
 import { findSaleById, getSalePrescription } from '$lib/server/db/queries/sales/reads';
-import type { Prescription } from '$lib/server/db/schema';
+import type { Prescription, SaleItem } from '$lib/server/db/schema';
 import { findCustomerById } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import { sales, saleItems, products, lensCatalogItems, prescriptions } from '$lib/server/db/schema';
@@ -8,6 +8,12 @@ import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
 import { computeDiscount } from '$lib/utils';
 import { auditService } from '$lib/server/audit';
+import { calculateDiff, hasChanges } from '$lib/server/audit/utils';
+import {
+	buildSaleAuditDiff,
+	countSaleAuditChanges,
+	type SaleAuditDiffContext
+} from '$lib/server/sales/saleAuditDiff';
 import { revertSaleInventory } from '$lib/server/sales/revertSaleInventory';
 import { nowISO } from '$lib/dates';
 import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
@@ -24,7 +30,7 @@ import type { ActionContext } from '$lib/server/actionContext';
  * - IN_PROGRESS / READY: only ADMIN/MANAGER may edit.
  * - PENDING: allowed for authorized users.
  *
- * When items change the full inventory is reset (CANCEL_REVERT) and
+ * When items change the full inventory is reset (EDIT_REVERT) and
  * re-consumed (SALE_OUT) inside the same transaction.
  */
 export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) {
@@ -147,6 +153,7 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	}
 
 	// All writes in a single transaction
+	const beforeItems: SaleItem[] = [];
 	const txResult = await db.transaction(async (tx) => {
 		let patchedPrescription: Prescription | null = null;
 		if (data.prescription) {
@@ -169,13 +176,19 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		if (hasItemChanges) {
 			// ── 1. Return only what the sale still holds (net outstanding per
 			// lot — never re-returns movements a prior edit already reverted) ──
-			await revertSaleInventory(tx, data.id, ctx.userId!);
+			await revertSaleInventory(tx, data.id, ctx.userId!, {
+				origin: 'edit',
+				reason: data.reason
+			});
 
 			// ── 2. Restore cached stock counters ────────────────────────────
 			const oldItems = await tx
 				.select()
 				.from(saleItems)
 				.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
+
+			// Snapshot for the post-tx audit diff (read before the soft-delete below).
+			beforeItems.push(...oldItems);
 
 			for (const item of oldItems) {
 				if (item.productId) {
@@ -321,15 +334,47 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		return { success: false as const, error: 'Error al actualizar la venta' };
 	}
 
-	// Audit (best-effort, after transaction succeeds)
-	await auditService.logUpdate(
-		'sale',
-		data.id,
-		existing,
-		updatedSale,
-		{ ...ctx, reason: data.reason },
-		{ excludeFields: ['updatedAt', 'deletedAt'] }
-	);
+	// Audit (best-effort, after transaction succeeds). The structured items
+	// diff is computed pure here and annexed as `changes.itemsDiff` on the same
+	// «Venta actualizada» event — the inventory tx above is never touched.
+	const headerChanges = calculateDiff(existing, updatedSale, ['updatedAt', 'deletedAt']);
+	const needsDiff = hasItemChanges || hasChanges(headerChanges);
+	let itemsDiff: { old: null; new: ReturnType<typeof buildSaleAuditDiff> } | null = null;
+	if (needsDiff) {
+		const diffContext: SaleAuditDiffContext = {
+			beforeHeader: {
+				saleDate: existing.createdAt,
+				notes: existing.notes,
+				isCashea: existing.isCashea,
+				discount: existing.discount,
+				discountType: existing.discountType
+			},
+			afterHeader: {
+				saleDate: data.saleDate ?? existing.createdAt,
+				notes: data.notes ?? existing.notes,
+				isCashea: data.isCashea ?? existing.isCashea,
+				discount: data.discount ?? existing.discount,
+				discountType: data.discountType ?? existing.discountType
+			},
+			beforeTotals: { subtotal: existing.subtotal, total: existing.total },
+			afterTotals: { subtotal: newSubtotal, total: newTotal }
+		};
+		const diff = buildSaleAuditDiff(
+			hasItemChanges ? beforeItems : [],
+			hasItemChanges ? (data.items ?? []) : [],
+			diffContext
+		);
+		itemsDiff = { old: null, new: diff };
+	}
+	if (hasChanges(headerChanges) || (itemsDiff && countSaleAuditChanges(itemsDiff.new) > 0)) {
+		await auditService.logCustom(
+			'sale',
+			data.id,
+			'update',
+			{ ...headerChanges, ...(itemsDiff ? { itemsDiff } : {}) },
+			{ ...ctx, reason: data.reason }
+		);
+	}
 
 	return { success: true as const, sale: updatedSale };
 }

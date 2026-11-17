@@ -10,7 +10,8 @@
 		auditHistory: ChangeHistoryWithUser[];
 		saleCreatedAt: string;
 		saleCreatedBy?: string | null;
-		onViewAudit: () => void;
+		/** Open the drawer; with an event id it opens that event expanded. */
+		onViewAudit: (eventId?: string) => void;
 		/** Stock movements linked to this sale (footer shortcut). */
 		movementsCount: number;
 		onOpenMovements: () => void;
@@ -45,7 +46,7 @@
 		<AppBadge variant="neutral">{auditTimeline.length} eventos</AppBadge>
 		<button
 			type="button"
-			onclick={onViewAudit}
+			onclick={() => onViewAudit()}
 			class="ml-auto text-xs font-semibold text-on-info-container underline underline-offset-2 hover:opacity-80"
 		>
 			Ver todo
@@ -55,7 +56,7 @@
 	<div class="pb-1">
 		{#if recentEvents.length > 0}
 			{#each recentEvents as event (event.id)}
-				<SaleAuditEvent {event} dense />
+				<SaleAuditEvent {event} dense onExpand={(id) => onViewAudit(id)} />
 			{/each}
 		{:else}
 			<div class="px-4 pt-1 pb-3">

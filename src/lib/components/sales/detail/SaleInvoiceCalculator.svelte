@@ -96,11 +96,11 @@
 	}
 	function rxSummaryOf(item: SaleItemWithDetails): string | null {
 		if (item.itemType !== SaleItemType.LENS_PAIR || !hasPrescriptionSnapshot(item)) return null;
-		return `${rxRowLine('OD', !hasEyeRx(item, 'od'), eyeArgs(item, 'od'))} · ${rxRowLine(
-			'OI',
-			!hasEyeRx(item, 'os'),
-			eyeArgs(item, 'os')
-		)}`;
+		// One eye per line so a long formula never runs OD and OI together.
+		return [
+			rxRowLine('OD', !hasEyeRx(item, 'od'), eyeArgs(item, 'od')),
+			rxRowLine('OI', !hasEyeRx(item, 'os'), eyeArgs(item, 'os'))
+		].join('\n');
 	}
 	function toInput(item: SaleItemWithDetails): InvoiceItemInput {
 		return {
@@ -233,7 +233,7 @@
 	</button>
 {/snippet}
 
-<SlideOver bind:open widthClass="w-[580px]">
+<SlideOver bind:open widthClass="w-full sm:w-[580px]">
 	{#snippet header({ onclose: close })}
 		<div class="flex items-center gap-3 border-b border-outline-variant/15 px-6 py-4">
 			<span
@@ -263,7 +263,7 @@
 		<p class="mb-1.5 text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase">
 			Tasa BCV a usar
 		</p>
-		<div class="grid grid-cols-3 gap-2">
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
 			{#if hasSnapshot}
 				{#snippet saleCardTip({ props: tipProps }: { props: Record<string, unknown> })}
 					{@render rateCard({
@@ -333,9 +333,10 @@
 			</div>
 		{/if}
 
-		<!-- Lines table -->
+		<!-- Lines table: mini-card on mobile (concept full row, Base · IVA · Total
+		     in three labeled columns), 4-col grid from sm up. -->
 		<div
-			class="mt-4 grid grid-cols-[1fr_104px_88px_108px] gap-x-2.5 border-b border-outline-variant/60 pb-1.5 text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase"
+			class="calc-header mt-4 hidden grid-cols-[1fr_104px_88px_108px] gap-x-2.5 border-b border-outline-variant/60 pb-1.5 text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase sm:grid"
 		>
 			<span>Concepto</span>
 			<span class="text-right">Base Bs.</span>
@@ -345,12 +346,12 @@
 
 		{#each calculation.lines as line, index (index)}
 			<div
-				class="grid grid-cols-[1fr_104px_88px_108px] items-start gap-x-2.5 gap-y-0.5 border-b border-outline-variant/40 py-1.5"
+				class="calc-row grid grid-cols-3 items-start gap-x-2.5 gap-y-1 border-b border-outline-variant/40 py-2 sm:grid-cols-[1fr_104px_88px_108px] sm:py-1.5"
 			>
-				<div class="min-w-0">
+				<div class="min-w-0 max-sm:col-span-3">
 					<p class="text-[13px] font-semibold text-on-surface">{line.name}</p>
 					{#if line.rxSummary}
-						<p class="text-xs text-on-surface-variant">{line.rxSummary}</p>
+						<p class="text-xs whitespace-pre-line text-on-surface-variant">{line.rxSummary}</p>
 					{/if}
 					<p class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-on-surface-variant">
 						<span
@@ -363,17 +364,46 @@
 						{formatPrice(line.usd)}
 					</p>
 				</div>
-				{@render copyCell({
-					props: {},
-					value: formatCurrency(line.baseBs),
-					label: 'Base'
-				})}
-				{#if line.taxable}
-					{@render copyCell({ props: {}, value: formatCurrency(line.ivaBs), label: 'IVA' })}
-				{:else}
-					<span class="text-right text-xs text-outline">—</span>
-				{/if}
-				{@render copyCell({ props: {}, value: formatCurrency(line.totalBs), label: 'Total' })}
+				<div class="calc-num min-w-0 text-right">
+					<p
+						class="text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase sm:hidden"
+					>
+						Base
+					</p>
+					{@render copyCell({
+						props: {},
+						value: formatCurrency(line.baseBs),
+						label: 'Base'
+					})}
+				</div>
+				<div class="calc-num min-w-0 text-right">
+					<p
+						class="text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase sm:hidden"
+					>
+						IVA
+					</p>
+					{#if line.taxable}
+						{@render copyCell({
+							props: {},
+							value: formatCurrency(line.ivaBs),
+							label: 'IVA'
+						})}
+					{:else}
+						<span class="text-xs text-outline">—</span>
+					{/if}
+				</div>
+				<div class="calc-num calc-total min-w-0 text-right">
+					<p
+						class="text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase sm:hidden"
+					>
+						Total
+					</p>
+					{@render copyCell({
+						props: {},
+						value: formatCurrency(line.totalBs),
+						label: 'Total'
+					})}
+				</div>
 			</div>
 		{/each}
 
@@ -458,3 +488,16 @@
 		</div>
 	{/snippet}
 </SlideOver>
+
+<style>
+	/* Móvil: números de línea legibles (15px) sin apelotonarse; el total en negrita. */
+	@media (max-width: 639px) {
+		.calc-num button {
+			font-size: 15px;
+			font-weight: 600;
+		}
+		.calc-total button {
+			font-weight: 700;
+		}
+	}
+</style>

@@ -48,7 +48,7 @@
 
 		<div class="min-w-0 flex-1">
 			<div class="block truncate text-sm font-semibold text-on-surface">{child.title}</div>
-			<div class="mt-0.5 flex items-center gap-1.5">
+			<div class="child-tags mt-0.5 flex items-center gap-1.5">
 				<span
 					class={`rounded-[4px] px-[7px] py-px text-[10px] font-bold tracking-[0.06em] uppercase ${BADGE_TONES.neutral}`}
 				>
@@ -63,12 +63,12 @@
 		</div>
 
 		<span
-			class="shrink-0 rounded-[4px] bg-surface-container-high px-1.5 py-px text-[12px] font-bold text-on-surface-variant tabular-nums"
+			class="child-qty shrink-0 rounded-[4px] bg-surface-container-high px-1.5 py-px text-[12px] font-bold text-on-surface-variant tabular-nums"
 		>
 			×{child.quantity}
 		</span>
 
-		<div class="shrink-0 text-right">
+		<div class="child-price shrink-0 text-right">
 			<div class="text-[14px] font-semibold text-on-surface tabular-nums">
 				{formatPrice(child.unitPrice * child.quantity)}
 			</div>
@@ -120,5 +120,27 @@
 		top: 50%;
 		bottom: -6px;
 		border-left: 2px solid var(--color-outline-variant);
+	}
+
+	/* Móvil <700 (contenedor de página): las etiquetas envuelven y el precio
+	   baja a su propia línea a la derecha, sin apelotonarse con las etiquetas. */
+	@container (max-width: 699px) {
+		.child-connector {
+			flex-wrap: wrap;
+			row-gap: 6px;
+		}
+		.child-tags {
+			flex-wrap: wrap;
+			row-gap: 4px;
+		}
+		.child-qty {
+			margin-left: auto;
+		}
+		.child-price {
+			flex: 1 1 100%;
+			margin-top: 2px;
+			padding-top: 6px;
+			border-top: 1px solid color-mix(in srgb, var(--color-outline-variant) 60%, transparent);
+		}
 	}
 </style>
