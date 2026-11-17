@@ -47,6 +47,8 @@ jobs:
         with:
           node-version: '22'
 
+      # Criterion (HTTP 200 + permissions.push) kept in sync with the re-validation
+      # step after the image build; error wording differs on purpose.
       - name: Validate GitHub release token
         env:
           RELEASE_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
@@ -77,6 +79,18 @@ jobs:
       - name: Compute version and check tag availability
         id: version
         run: |
+          # Early cheap check: avoid a ~4 min build when the branch already moved.
+          # The authoritative guard runs again right before the atomic push.
+          REMOTE_TIP="$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | awk '{print $1}')"
+          if [ -z "$REMOTE_TIP" ]; then
+            echo "::error::Could not resolve origin/$GITHUB_REF_NAME. Aborting before building."
+            exit 1
+          fi
+          if [ "$(git rev-parse HEAD)" != "$REMOTE_TIP" ]; then
+            echo "::error::Branch '$GITHUB_REF_NAME' advanced since this run was dispatched (local $(git rev-parse --short HEAD), origin ${REMOTE_TIP:0:7}). No build was started. Launch a new workflow_dispatch."
+            exit 1
+          fi
+
           npm version "${{ inputs.bump }}" --no-git-tag-version >/dev/null
 
           VERSION="$(node -p 'JSON.parse(require("fs").readFileSync("package.json", "utf8")).version')"
@@ -149,6 +163,8 @@ jobs:
           cache-to: type=gha,mode=max
 
       # The preflight token check ran before the build; a PAT can expire meanwhile.
+      # Same criterion as "Validate GitHub release token" above — only the timing and
+      # the wording differ. Update both if the criterion changes.
       - name: Re-validate GitHub release token before tagging
         env:
           RELEASE_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
@@ -180,7 +196,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
-          # Fail fast if the branch moved while the image was being built.
+          # Authoritative check: the branch can move again while the image builds.
           git fetch origin "$GITHUB_REF_NAME"
           LOCAL_HEAD="$(git rev-parse HEAD)"
           REMOTE_HEAD="$(git rev-parse FETCH_HEAD)"
@@ -204,7 +220,7 @@ jobs:
           # no orphan tag, and the next dispatch with the same version is safe.
           git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "refs/tags/v$VERSION"
 
-      # STEPS FOR DOKPLOY VÍA TAILSCALE
+      # ==================== TRIGGER DOKPLOY ====================
 
       - name: Trigger Dokploy Deployment
         env:
