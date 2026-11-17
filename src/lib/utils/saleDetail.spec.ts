@@ -168,6 +168,23 @@ describe('auditDiffRows', () => {
 		expect(byField.paymentDate.label).toBe('Fecha de pago');
 		expect(byField.paymentDate.to).not.toMatch(/20:02:56|\+00/);
 	});
+
+	it('formats foreign-currency amounts in USD (never as Bs.)', () => {
+		const event = eventOf({
+			entityType: 'sale_payment',
+			action: 'create',
+			changes: {
+				paymentMethod: { old: null, new: 'EFECTIVO_USD' },
+				amount: { old: null, new: 45.5 },
+				rateType: { old: null, new: 'Mystery' }
+			}
+		});
+		const rows = auditDiffRows(event);
+		const byField = Object.fromEntries(rows.map((r) => [r.field, r]));
+		expect(byField.amount.to).toBe(formatPrice(45.5));
+		// Unknown rate types fall back to the raw value.
+		expect(byField.rateType.to).toBe('Mystery');
+	});
 });
 
 describe('classifySaleAuditEntry with itemsDiff', () => {
