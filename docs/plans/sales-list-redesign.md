@@ -1,7 +1,7 @@
 ---
 plan name: sales-list-redesign
 plan description: Rediseño UI/UX del listado de ventas /sales: saldo protagonista, vistas Lista/Cuadros, filtros completos y acciones rápidas.
-plan status: active
+plan status: done
 ---
 
 ## Idea

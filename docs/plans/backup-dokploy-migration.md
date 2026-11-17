@@ -1,7 +1,7 @@
 ---
 plan name: backup-dokploy-migration
 plan description: Dokploy cron + backup UI
-plan status: active
+plan status: done
 ---
 
 ## Idea

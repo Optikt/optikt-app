@@ -1,7 +1,7 @@
 ---
 plan name: dt9-unit-e2e
 plan description: Tests para remote functions
-plan status: active
+plan status: done
 ---
 
 ## Idea

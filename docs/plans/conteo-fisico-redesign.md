@@ -1,8 +1,14 @@
 # Plan maestro · Rediseño total del Conteo Físico (Optikt)
 
+---
+plan name: conteo-fisico-redesign
+plan description: Rediseño total del módulo /inventory/count (Fase 0–3 + CI/CD verdes)
+plan status: done
+---
+
 > **Documento de referencia permanente** para el rediseño del módulo `/inventory/count`.
 > Todo lo decidido queda aquí; nada depende de memoria de sesión.
-> Creado: 2026-11-06 · Estado: decisiones de producto cerradas, Fase 0 pendiente de ejecutar.
+> Creado: 2026-11-06 · Estado: **DONE — merged a main (#210, #220, #221, verificado 2026-11-17); ramas restantes eliminadas.**
 
 ---
 

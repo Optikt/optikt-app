@@ -1,7 +1,7 @@
 ---
 plan name: rework-editar-venta-ui-ux
 plan description: Rehacer el flujo de edición de ventas con validación óptica clara y advertencias confirmables.
-plan status: active
+plan status: done
 ---
 
 ## Idea

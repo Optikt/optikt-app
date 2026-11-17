@@ -1,5 +1,13 @@
 # Detalle de venta B+ Implementation Plan
 
+---
+plan name: detalle-venta-bplus
+plan description: Opción B+ del detalle de venta en 6 slices (containers, pagos, stock, historial, móvil, buscador)
+plan status: done
+---
+
+> **Estado:** DONE — implementado y merged a main vía PR #225 (2026-11-16). Los 22 tasks/casillas quedaron cubiertos en los commits del PR.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implementar la Opción B+ del detalle de venta (6 slices) sin regresiones.
@@ -50,7 +58,7 @@
 - Consumes: nada nuevo (mismo `SearchCombobox` usado por `ItemSelect.svelte:189-246`).
 - Produces: dropdown con ancho propio para todos los consumidores.
 
-- [ ] **Step 1: Cambiar clases del dropdown**
+- [x] **Step 1: Cambiar clases del dropdown**
 
 ```svelte
 <!-- resultados:182-186 y vacío/loading:205-207 -->
@@ -59,12 +67,12 @@
 <div class="absolute top-full left-0 right-auto z-50 w-max min-w-full max-w-[min(32rem,90vw)] ...">
 ```
 
-- [ ] **Step 2: Verificar que ningún ancestro del modal recorta**
+- [x] **Step 2: Verificar que ningún ancestro del modal recorta**
 
 Run: `rg -n "overflow-hidden" src/lib/components/sales/editSale/ src/lib/components/sales/EditSaleModal.svelte | head`
 Expected: si algún padre recorta la banda del editor, poner `overflow-visible` solo en esa banda.
 
-- [ ] **Step 3: Gates y commit**
+- [x] **Step 3: Gates y commit**
 
 Run: `pnpm eslint src/lib/components/ui/SearchCombobox.svelte && pnpm check`
 Expected: PASS. Luego:
@@ -87,13 +95,13 @@ git commit -m "[optikt-app] Buscador edición: dropdown ancho independiente del 
 - Consumes: mismos datos del loader (sin cambios de datos).
 - Produces: layout `.page` con container + hero por áreas que usan B–E.
 
-- [ ] **Step 1: Contenedor página**
+- [x] **Step 1: Contenedor página**
 
 ```css
 .page { max-width: 1760px; margin: 0 auto; container-type: inline-size; }
 ```
 
-- [ ] **Step 2: Hero por áreas + rail**
+- [x] **Step 2: Hero por áreas + rail**
 
 ```css
 /* base 700–1499 */
@@ -107,7 +115,7 @@ git commit -m "[optikt-app] Buscador edición: dropdown ancho independiente del 
 
 Mover panel cliente a hijo `hc2` propio del hero. Rail: `360px` ≥1060, `420px` ≥1500 (container). Barras decorativas a la izquierda de `mon`; ocultas en móvil.
 
-- [ ] **Step 3: Gates + commit (incluye doc-sync sales.md)**
+- [x] **Step 3: Gates + commit (incluye doc-sync sales.md)**
 
 Run: `pnpm eslint <archivos> && pnpm check && bash scripts/check-file-size.sh`
 Expected: PASS, y a 1280 sin regresión visual.
@@ -132,7 +140,7 @@ git commit -m "[optikt-app] Detalle venta: layout contenedores 1760 + hero 3 zon
 - Consumes: ctx de usuario en remotes (para `createdById/voidedById`).
 - Produces: pagos con `{ createdByName, voidedByName, voidReason }` hacia el drawer.
 
-- [ ] **Step 1: Migración**
+- [x] **Step 1: Migración**
 
 ```ts
 // sale_payments +=
@@ -143,7 +151,7 @@ voidReason: varchar('void_reason', { length: 500 }),
 
 Run: `pnpm db:generate` y revisar el SQL generado.
 
-- [ ] **Step 2: Servidor (guardar quién + motivo obligatorio)**
+- [x] **Step 2: Servidor (guardar quién + motivo obligatorio)**
 
 ```ts
 // VoidPaymentSchema +=
@@ -152,9 +160,9 @@ reason: z.string().trim().min(1, 'El motivo es obligatorio').max(500)
 
 `addSalePayment` guarda `createdById`; `voidSalePayment` guarda `voidedById/voidReason` + mantiene recalcs/estado.
 
-- [ ] **Step 3: UI tarjeta + drawer nuevo (franja Total/Cobrado/Saldo + tarjetas por pago; ver spec §3-B)**
+- [x] **Step 3: UI tarjeta + drawer nuevo (franja Total/Cobrado/Saldo + tarjetas por pago; ver spec §3-B)**
 
-- [ ] **Step 4: Int specs + gates + commit**
+- [x] **Step 4: Int specs + gates + commit**
 
 Run: `pnpm exec vitest --run --project=integration src/lib/server/sales/ | tail -3`
 Expected: PASS.
@@ -179,7 +187,7 @@ git commit -m "[optikt-app] Pagos venta: quién+motivo y drawer historial"
 - Consumes: movimientos existentes (`referenceType SALE + referenceId`).
 - Produces: grupos `{ key, title, entries[] }` + resumen neto para el drawer.
 
-- [ ] **Step 1: Tipo + origin (sin migración de datos)**
+- [x] **Step 1: Tipo + origin (sin migración de datos)**
 
 ```ts
 // revertSaleInventory.ts
@@ -189,9 +197,9 @@ export async function revertSaleInventory(tx, saleId, opts?: { origin?: 'edit' |
 }
 ```
 
-- [ ] **Step 2: Drawer con resumen neto + filtros + grupos (ver spec §3-C)**
+- [x] **Step 2: Drawer con resumen neto + filtros + grupos (ver spec §3-C)**
 
-- [ ] **Step 3: Specs + gates + commit (doc-sync sales.md + inventory.md)**
+- [x] **Step 3: Specs + gates + commit (doc-sync sales.md + inventory.md)**
 
 ```bash
 git add <slice> docs/agents/sales.md docs/agents/inventory.md
@@ -212,7 +220,7 @@ git commit -m "[optikt-app] Stock venta: drawer neto + EDIT_REVERT"
 - Consumes: `before` (items leídos en tx) + `data.items` validados; `SaleItemValueSource` para emparejar por `id`.
 - Produces: `changes.itemsDiff` que la UI renderiza por secciones.
 
-- [ ] **Step 1: Función pura del diff**
+- [x] **Step 1: Función pura del diff**
 
 ```ts
 export interface SaleAuditDiff {
@@ -231,11 +239,11 @@ export function buildSaleAuditDiff(before: SaleItemValueSource[], after: SaleIte
 
 Costos internos: excluir siempre. Tope: 50 cambios, resto en `truncated`.
 
-- [ ] **Step 2: Anexar post-tx en `updateSale` (sin tocar la tx)**
+- [x] **Step 2: Anexar post-tx en `updateSale` (sin tocar la tx)**
 
-- [ ] **Step 3: Timeline + drawer (sale + sale_payment, filtros Todos/Ediciones/Estados, ver más, aviso viejos)**
+- [x] **Step 3: Timeline + drawer (sale + sale_payment, filtros Todos/Ediciones/Estados, ver más, aviso viejos)**
 
-- [ ] **Step 4: Specs + gates + commit (doc-sync sales.md + history.md)**
+- [x] **Step 4: Specs + gates + commit (doc-sync sales.md + history.md)**
 
 ```bash
 git add <slice> docs/agents/sales.md docs/agents/history.md
@@ -254,10 +262,10 @@ git commit -m "[optikt-app] Historial venta: diff por ítem + pagos en timeline"
 - Consumes: mismos guards y remotes (sin lógica nueva).
 - Produces: página móvil completa.
 
-- [ ] **Step 1: Sidebar overlay + hero 1 col (spec §3-E)**
-- [ ] **Step 2: Bottom bar + hoja «Más» con mismos guards**
-- [ ] **Step 3: Tarjetas de artículos + drawers full-width + 96px libres**
-- [ ] **Step 4: Gates + commit**
+- [x] **Step 1: Sidebar overlay + hero 1 col (spec §3-E)**
+- [x] **Step 2: Bottom bar + hoja «Más» con mismos guards**
+- [x] **Step 3: Tarjetas de artículos + drawers full-width + 96px libres**
+- [x] **Step 4: Gates + commit**
 
 ```bash
 git add <slice> docs/agents/sales.md

@@ -1,6 +1,6 @@
 # Plan: DT9 · Tests de remote functions (Unit/Integración + E2E)
 
-> Plan activo. Ejecución por fases (PR-A .. PR-F). Cada fase arranca leyendo este doc + `docs/specs/dt9-acceptance.md`.
+> Plan done (cerrado PR #173 docs(dt9): close DT9; verificado en main 2026-11-17). Ejecución por fases (PR-A .. PR-F). Cada fase arranca leyendo este doc + `docs/specs/dt9-acceptance.md`.
 
 ## Problema
 
