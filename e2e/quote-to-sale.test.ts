@@ -106,7 +106,8 @@ test.describe('presupuesto → venta', () => {
 		await dialog.getByRole('button', { name: 'Nuevo cliente' }).click();
 		await dialog.getByLabel('Nombre', { exact: true }).fill('Ana');
 		await dialog.getByLabel('Apellido', { exact: true }).fill('Pérez');
-		await dialog.getByPlaceholder('12345678').fill(`V-${documentNumber}-inline`);
+		// IdInput espera solo dígitos (prefijo V- va aparte y maxlength=10).
+		await dialog.getByPlaceholder('12345678').fill(`${documentNumber.slice(0, 7)}9`);
 
 		await dialog.getByRole('button', { name: 'Crear venta' }).click();
 
