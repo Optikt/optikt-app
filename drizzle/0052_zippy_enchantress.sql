@@ -1,1 +1,0 @@
-ALTER TYPE "public"."inventory_movement_type" ADD VALUE 'EDIT_REVERT';

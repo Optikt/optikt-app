@@ -1,8 +1,0 @@
-{
-	"files.associations": {
-		"*.css": "tailwindcss"
-	},
-	"cSpell.language": "en,es-ES",
-	"cSpell.words": ["Optikt", "picklist", "Policarbonato", "Trivex"],
-	"python.terminal.activateEnvironment": false
-}

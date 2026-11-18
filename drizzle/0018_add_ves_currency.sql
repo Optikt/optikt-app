@@ -1,1 +1,0 @@
-ALTER TYPE "public"."purchase_payment_currency" ADD VALUE 'VES' BEFORE 'OTHER';--> statement-breakpoint
