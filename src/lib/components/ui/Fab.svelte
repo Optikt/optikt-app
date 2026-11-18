@@ -1,4 +1,4 @@
-<script lang="ts" generics="IconComponent extends Component<{ class?: string }>">
+<script lang="ts">
 	import type { Component } from 'svelte';
 	import { Plus } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
@@ -20,7 +20,7 @@
 		/** Destino (enlace); sin `href` usa `onclick` (botón). */
 		href?: string;
 		onclick?: () => void;
-		icon?: IconComponent;
+		icon?: Component<{ class?: string }>;
 		/** Gate externo (permisos, p. ej. VIEWER). */
 		hidden?: boolean;
 		class?: string;
@@ -30,7 +30,7 @@
 		label,
 		href,
 		onclick,
-		icon: Icon = Plus as IconComponent,
+		icon: Icon = Plus,
 		hidden = false,
 		class: className = ''
 	}: Props = $props();

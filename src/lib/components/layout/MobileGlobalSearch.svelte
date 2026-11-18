@@ -2,6 +2,7 @@
 	import { Search, X } from '@lucide/svelte';
 	import SearchResultsList from '$lib/components/layout/SearchResultsList.svelte';
 	import { createUniversalSearch } from '$lib/components/layout/universalSearch.svelte';
+	import { getAppMainScroll } from '$lib/utils/scroll';
 
 	/**
 	 * Búsqueda global móvil (< lg): reemplaza la barra superior por un campo a
@@ -25,14 +26,16 @@
 	let inputEl: HTMLInputElement | undefined = $state();
 
 	// Foco automático al abrir (el teclado lo abre el navegador con el foco en móvil)
-	// y bloqueo del scroll del fondo mientras la búsqueda está abierta.
+	// y bloqueo del scroll del fondo mientras la búsqueda está abierta. El que
+	// desplaza es el <main> del layout (no el body): se bloquea ese contenedor.
 	$effect(() => {
 		if (open) {
 			inputEl?.focus();
-			const previous = document.body.style.overflow;
-			document.body.style.overflow = 'hidden';
+			const scroller = getAppMainScroll() ?? document.body;
+			const previous = scroller.style.overflow;
+			scroller.style.overflow = 'hidden';
 			return () => {
-				document.body.style.overflow = previous;
+				scroller.style.overflow = previous;
 			};
 		}
 		search.clear();
