@@ -53,6 +53,7 @@ export default defineConfig({
 				'src/lib/components/sales/itemsTable/itemDisplay.ts',
 				'src/lib/components/sales/listParams.ts',
 				'src/lib/components/sales/saleDisplay.ts',
+				'src/lib/components/sales/saleRowActions.ts',
 				'src/lib/components/sales/payments/paymentFormValues.ts',
 				'src/lib/components/sales/payments/paymentFormDerived.ts',
 				'src/lib/components/sales/payments/purchasePayment.ts',
@@ -61,6 +62,8 @@ export default defineConfig({
 				'src/lib/utils/index.ts',
 				'src/lib/utils/inventory.ts',
 				'src/lib/utils/saleDetail.ts',
+				'src/lib/utils/scroll.ts',
+				'src/lib/utils/urlState.ts',
 				'src/lib/components/ui/chart/chart-utils.ts'
 			],
 			thresholds: {
