@@ -139,7 +139,9 @@
 	{#if compact}
 		<div class="mt-0.5 flex items-end gap-2.5 pr-2">
 			<div class="min-w-0 flex-1 {faded}">
-				<p class="text-[14px] leading-tight font-semibold text-on-surface">{saleCustomerName(sale)}</p>
+				<p class="text-[14px] leading-tight font-semibold text-on-surface">
+					{saleCustomerName(sale)}
+				</p>
 				<p class="mt-0.5 truncate text-[12px] text-on-surface-variant">
 					{#if sale.customer?.idNumber}
 						<span class="font-mono">{sale.customer.idNumber}</span> ·
@@ -154,7 +156,9 @@
 		</div>
 	{:else}
 		<div class="mt-2 {faded}">
-			<p class="text-[14px] leading-tight font-semibold text-on-surface">{saleCustomerName(sale)}</p>
+			<p class="text-[14px] leading-tight font-semibold text-on-surface">
+				{saleCustomerName(sale)}
+			</p>
 			<p class="mt-0.5 text-[12px] text-on-surface-variant">
 				{#if sale.customer?.idNumber}
 					<span class="font-mono">{sale.customer.idNumber}</span> ·
