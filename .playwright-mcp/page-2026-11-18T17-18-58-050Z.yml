@@ -1,0 +1,115 @@
+- generic [ref=f4e2]:
+  - region "Notifications alt+T"
+  - generic [ref=f4e3]:
+    - banner [ref=f4e4]:
+      - generic [ref=f4e5]:
+        - button "Ocultar barra lateral" [ref=f4e6] [cursor=pointer]
+        - link [ref=f4e10] [cursor=pointer]:
+          - /url: /dashboard
+          - img "Optikt" [ref=f4e11]
+        - textbox "Buscar productos, lentes... (+3.50 -2.00)" [ref=f4e29]
+        - generic [ref=f4e30]:
+          - generic [ref=f4e31]:
+            - button "Abrir tasas de cambio" [ref=f4e33] [cursor=pointer]
+            - button "Abrir menú de soporte" [ref=f4e37] [cursor=pointer]:
+              - generic [ref=f4e265]: "5"
+            - button "Abrir notificaciones" [ref=f4e46] [cursor=pointer]:
+              - generic [ref=f4e266]: "44"
+          - button "Optikt Admin ADMIN O" [ref=f4e52] [cursor=pointer]:
+            - generic [ref=f4e53]:
+              - generic [ref=f4e54]: Optikt Admin
+              - generic [ref=f4e55]: ADMIN
+            - generic [ref=f4e56]: O
+    - generic [ref=f4e57]:
+      - complementary [ref=f4e58]:
+        - navigation [ref=f4e59]:
+          - link "Dashboard" [ref=f4e60] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Clientes" [ref=f4e66] [cursor=pointer]:
+            - /url: /customers
+          - link "Inventario" [ref=f4e74] [cursor=pointer]:
+            - /url: /products
+          - link "Ventas" [ref=f4e81] [cursor=pointer]:
+            - /url: /sales
+          - link "Cuentas por Cobrar" [ref=f4e89] [cursor=pointer]:
+            - /url: /receivables
+          - link "Presupuestos" [ref=f4e98] [cursor=pointer]:
+            - /url: /quotes
+          - link "Catálogo Lentes" [ref=f4e104] [cursor=pointer]:
+            - /url: /lenses
+          - link "Marcas" [ref=f4e110] [cursor=pointer]:
+            - /url: /brands
+          - link "Materiales" [ref=f4e116] [cursor=pointer]:
+            - /url: /materials
+          - link "Proveedores" [ref=f4e123] [cursor=pointer]:
+            - /url: /suppliers
+          - link "Conteo Físico" [ref=f4e131] [cursor=pointer]:
+            - /url: /inventory/count
+          - link "Compras" [ref=f4e139] [cursor=pointer]:
+            - /url: /purchases
+          - link "Caja" [ref=f4e145] [cursor=pointer]:
+            - /url: /cash
+          - link "Reportes" [ref=f4e151] [cursor=pointer]:
+            - /url: /reports
+          - link "Usuarios" [ref=f4e156] [cursor=pointer]:
+            - /url: /users
+          - link "Papelera" [ref=f4e161] [cursor=pointer]:
+            - /url: /trash
+          - link "Backups" [ref=f4e167] [cursor=pointer]:
+            - /url: /backups
+      - main [ref=f4e172]:
+        - generic [ref=f4e175]:
+          - paragraph [ref=f4e177]:
+            - link "Presupuestos" [ref=f4e178] [cursor=pointer]:
+              - /url: /quotes
+            - text: › Nuevo presupuesto
+          - generic [ref=f4e179]:
+            - generic [ref=f4e180]:
+              - paragraph [ref=f4e184]: Duplicando P-0049 · 5 artículos, fórmula y descuento copiados. Elige el cliente.
+              - button "Empezar vacío" [ref=f4e185] [cursor=pointer]
+            - generic [ref=f4e189]:
+              - generic [ref=f4e191]:
+                - generic [ref=f4e192]: P-0052
+                - button "18/11/2026" [ref=f4e267] [cursor=pointer]
+              - navigation [ref=f4e198]:
+                - generic [ref=f4e199]:
+                  - button "1 Información" [ref=f4e200] [cursor=pointer]:
+                    - generic [ref=f4e201]: "1"
+                    - generic [ref=f4e202]: Información
+                  - button "2 Productos y Lentes" [ref=f4e204] [cursor=pointer]:
+                    - generic [ref=f4e205]: "2"
+                    - generic [ref=f4e206]: Productos y Lentes
+                  - button "3 Resumen" [disabled] [ref=f4e208]:
+                    - generic [ref=f4e209]: "3"
+                    - generic [ref=f4e210]: Resumen
+            - generic [ref=f4e212]:
+              - generic [ref=f4e213]:
+                - paragraph [ref=f4e215]: "Paso 1: Información - Prepara la información base del presupuesto"
+                - generic [ref=f4e217]:
+                  - generic [ref=f4e220]:
+                    - combobox [ref=f4e221] [cursor=pointer]:
+                      - option "V" [selected]
+                      - option "E"
+                      - option "J"
+                      - option "G"
+                    - textbox "12345678" [ref=f4e222]
+                  - button "Nuevo cliente" [ref=f4e223] [cursor=pointer]
+                - generic [ref=f4e227]:
+                  - generic [ref=f4e228] [cursor=pointer]:
+                    - checkbox "Presupuesto con Cashea Se aplicará a la venta al convertir" [ref=f4e229]
+                    - generic [ref=f4e234]:
+                      - generic [ref=f4e235]: Presupuesto con Cashea
+                      - generic [ref=f4e236]: Se aplicará a la venta al convertir
+                  - generic [ref=f4e240]:
+                    - generic [ref=f4e245]:
+                      - generic [ref=f4e246]: Válido hasta
+                      - generic [ref=f4e247]: Opcional · si queda vacío, no vence
+                    - textbox "Válido hasta" [ref=f4e248]
+              - generic [ref=f4e250]:
+                - link "Cancelar" [ref=f4e252] [cursor=pointer]:
+                  - /url: /sales
+                - generic [ref=f4e257]:
+                  - generic [ref=f4e258]:
+                    - paragraph [ref=f4e259]: Presupuesto
+                    - paragraph [ref=f4e260]: P-0052
+                  - button "Continuar" [ref=f4e261] [cursor=pointer]

@@ -252,7 +252,7 @@
 				type="button"
 				onclick={() => (showBreakdown = !showBreakdown)}
 				aria-expanded={showBreakdown}
-				class="inline-flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
+				class="inline-flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-semibold whitespace-nowrap text-white transition-colors duration-150 hover:bg-white/20"
 			>
 				<List class="h-3.5 w-3.5" />
 				Desglose
@@ -266,7 +266,7 @@
 						{...props}
 						type="button"
 						onclick={onCalculate}
-						class="inline-flex cursor-help items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
+						class="inline-flex cursor-help items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-semibold whitespace-nowrap text-white transition-colors duration-150 hover:bg-white/20"
 					>
 						<Calculator class="h-3.5 w-3.5" />
 						Calcular factura

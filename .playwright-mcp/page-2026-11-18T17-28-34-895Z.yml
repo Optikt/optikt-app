@@ -1,0 +1,349 @@
+- generic [ref=f19e2]:
+  - region "Notifications alt+T"
+  - generic [ref=f19e3]:
+    - banner [ref=f19e4]:
+      - generic [ref=f19e5]:
+        - button "Ocultar barra lateral" [ref=f19e6] [cursor=pointer]
+        - link [ref=f19e10] [cursor=pointer]:
+          - /url: ./dashboard
+          - img "Optikt" [ref=f19e11]
+        - textbox "Buscar productos, lentes... (+3.50 -2.00)" [ref=f19e29]
+        - generic [ref=f19e30]:
+          - generic [ref=f19e31]:
+            - button "Abrir tasas de cambio" [ref=f19e33] [cursor=pointer]
+            - button "Abrir menú de soporte" [ref=f19e37] [cursor=pointer]
+            - button "Abrir notificaciones" [ref=f19e46] [cursor=pointer]
+          - button "Optikt Admin ADMIN O" [ref=f19e52] [cursor=pointer]:
+            - generic [ref=f19e53]:
+              - generic [ref=f19e54]: Optikt Admin
+              - generic [ref=f19e55]: ADMIN
+            - generic [ref=f19e56]: O
+    - generic [ref=f19e57]:
+      - complementary [ref=f19e58]:
+        - navigation [ref=f19e59]:
+          - link "Dashboard" [ref=f19e60] [cursor=pointer]:
+            - /url: ./dashboard
+          - link "Clientes" [ref=f19e66] [cursor=pointer]:
+            - /url: ./customers
+          - link "Inventario" [ref=f19e74] [cursor=pointer]:
+            - /url: ./products
+          - link "Ventas" [ref=f19e81] [cursor=pointer]:
+            - /url: ./sales
+          - link "Cuentas por Cobrar" [ref=f19e89] [cursor=pointer]:
+            - /url: ./receivables
+          - link "Presupuestos" [ref=f19e98] [cursor=pointer]:
+            - /url: ./quotes
+          - link "Catálogo Lentes" [ref=f19e104] [cursor=pointer]:
+            - /url: ./lenses
+          - link "Marcas" [ref=f19e110] [cursor=pointer]:
+            - /url: ./brands
+          - link "Materiales" [ref=f19e116] [cursor=pointer]:
+            - /url: ./materials
+          - link "Proveedores" [ref=f19e123] [cursor=pointer]:
+            - /url: ./suppliers
+          - link "Conteo Físico" [ref=f19e131] [cursor=pointer]:
+            - /url: ./inventory/count
+          - link "Compras" [ref=f19e139] [cursor=pointer]:
+            - /url: ./purchases
+          - link "Caja" [ref=f19e145] [cursor=pointer]:
+            - /url: ./cash
+          - link "Reportes" [ref=f19e151] [cursor=pointer]:
+            - /url: ./reports
+          - link "Usuarios" [ref=f19e156] [cursor=pointer]:
+            - /url: ./users
+          - link "Papelera" [ref=f19e161] [cursor=pointer]:
+            - /url: ./trash
+          - link "Backups" [ref=f19e167] [cursor=pointer]:
+            - /url: ./backups
+      - main [ref=f19e172]:
+        - generic [ref=f19e174]:
+          - generic [ref=f19e175]:
+            - generic [ref=f19e176]:
+              - heading "Presupuestos" [level=1] [ref=f19e177]
+              - paragraph [ref=f19e178]: 51 presupuestos registrados
+            - button "Nuevo presupuesto" [ref=f19e179] [cursor=pointer]
+          - generic [ref=f19e181]:
+            - button "Abiertos USD 6.634,00 en 30 presupuestos por convertir" [ref=f19e182] [cursor=pointer]:
+              - generic [ref=f19e183]: Abiertos
+              - generic [ref=f19e184]: USD 6.634,00
+              - generic [ref=f19e185]: en 30 presupuestos por convertir
+            - button "Presupuestos del mes 22 USD 3.965,00 presupuestados" [ref=f19e186] [cursor=pointer]:
+              - generic [ref=f19e187]: Presupuestos del mes
+              - generic [ref=f19e188]: "22"
+              - generic [ref=f19e189]: USD 3.965,00 presupuestados
+            - button "Convertidos del mes 14 64% de conversión" [ref=f19e190] [cursor=pointer]:
+              - generic [ref=f19e191]: Convertidos del mes
+              - generic [ref=f19e192]: "14"
+              - generic [ref=f19e193]: 64% de conversión
+          - generic [ref=f19e194]:
+            - generic [ref=f19e195]:
+              - searchbox "Buscar presupuestos" [ref=f19e197]
+              - generic [ref=f19e198]:
+                - generic [ref=f19e199]: Vendedor
+                - combobox "Vendedor" [ref=f19e200] [cursor=pointer]:
+                  - option "Todos los vendedores" [selected]
+                  - option "Optikt Admin"
+                  - option "Victor Hernandez"
+                  - option "Yacsuri Rios"
+                - generic [ref=f19e201]:
+                  - generic [ref=f19e202]: Fecha
+                  - combobox "Fecha" [ref=f19e203] [cursor=pointer]:
+                    - option "Todas las fechas" [selected]
+                    - option "Hoy"
+                    - option "Últimos 7 días"
+                    - option "Este mes"
+                    - option "Personalizado"
+                - generic [ref=f19e204]:
+                  - generic [ref=f19e205]: Orden
+                  - combobox "Orden" [ref=f19e206] [cursor=pointer]:
+                    - option "Más recientes" [selected]
+                    - option "Mayor total"
+                    - option "Vencen primero"
+            - group "Filtrar por estado" [ref=f19e207]:
+              - button "Todos 51" [pressed] [ref=f19e208] [cursor=pointer]:
+                - text: Todos
+                - generic [ref=f19e209]: "51"
+              - button "Borrador 30" [ref=f19e210] [cursor=pointer]:
+                - text: Borrador
+                - generic [ref=f19e211]: "30"
+              - button "Convertido 19" [ref=f19e212] [cursor=pointer]:
+                - text: Convertido
+                - generic [ref=f19e213]: "19"
+              - button "Cancelado 2" [ref=f19e214] [cursor=pointer]:
+                - text: Cancelado
+                - generic [ref=f19e215]: "2"
+          - paragraph [ref=f19e216]: 51 presupuestos
+          - generic [ref=f19e217]:
+            - table "Listado de presupuestos" [ref=f19e219]:
+              - rowgroup [ref=f19e220]:
+                - row [ref=f19e221]:
+                  - columnheader "#" [ref=f19e222]
+                  - columnheader "Cliente" [ref=f19e223]
+                  - columnheader "Fecha" [ref=f19e224]
+                  - columnheader "Total" [ref=f19e225]
+                  - columnheader "Validez" [ref=f19e226]
+                  - columnheader "Estado" [ref=f19e227]
+                  - columnheader "Vendedor" [ref=f19e228]
+                  - columnheader "Acciones" [ref=f19e229]
+              - rowgroup [ref=f19e231]:
+                - row [ref=f19e232] [cursor=pointer]:
+                  - cell [ref=f19e233]:
+                    - link "P-0051" [ref=f19e235]:
+                      - /url: ./quotes/6e13fc37-8eb6-46f9-9484-67844caedd0e
+                  - cell [ref=f19e236]:
+                    - paragraph [ref=f19e237]: Oslavio Moscatini
+                    - paragraph [ref=f19e238]: E-85302
+                  - cell [ref=f19e239]:
+                    - paragraph [ref=f19e240]: 13/11/26
+                    - paragraph [ref=f19e241]: hace 5 d
+                  - cell "USD 100,00" [ref=f19e242]
+                  - cell "Sin vencimiento" [ref=f19e243]
+                  - cell "Borrador" [ref=f19e244]
+                  - cell "YR Yacsuri Rios" [ref=f19e246]:
+                    - generic [ref=f19e247]:
+                      - generic [ref=f19e248]: YR
+                      - generic [ref=f19e249]: Yacsuri Rios
+                  - cell [ref=f19e250]:
+                    - button "Más acciones" [ref=f19e253]
+                - row [ref=f19e258] [cursor=pointer]:
+                  - cell [ref=f19e259]:
+                    - link "P-0050" [ref=f19e261]:
+                      - /url: ./quotes/dc80c4ea-d12c-4f11-b882-ec9ef41c7137
+                  - cell [ref=f19e262]:
+                    - paragraph [ref=f19e263]: Pacsy Rodriguez
+                    - paragraph [ref=f19e264]: V-13808673
+                  - cell [ref=f19e265]:
+                    - paragraph [ref=f19e266]: 11/11/26
+                    - paragraph [ref=f19e267]: hace 7 d
+                  - cell "USD 290,00" [ref=f19e268]
+                  - cell "Sin vencimiento" [ref=f19e269]
+                  - cell "Borrador" [ref=f19e270]
+                  - cell "OA Optikt Admin" [ref=f19e272]:
+                    - generic [ref=f19e273]:
+                      - generic [ref=f19e274]: OA
+                      - generic [ref=f19e275]: Optikt Admin
+                  - cell [ref=f19e276]:
+                    - button "Más acciones" [ref=f19e279]
+                - row [ref=f19e284] [cursor=pointer]:
+                  - cell [ref=f19e285]:
+                    - link "P-0049" [ref=f19e287]:
+                      - /url: ./quotes/e6fdc2b8-2e55-43bb-b1ab-ecf8406f2de5
+                  - cell [ref=f19e288]:
+                    - paragraph [ref=f19e289]: Gabriel Parra
+                    - paragraph [ref=f19e290]: V-28262891
+                  - cell [ref=f19e291]:
+                    - paragraph [ref=f19e292]: 10/11/26
+                    - paragraph [ref=f19e293]: hace 8 d
+                  - cell "USD 190,00" [ref=f19e294]
+                  - cell [ref=f19e295]:
+                    - generic [ref=f19e296]:
+                      - text: Venta
+                      - link "#0298" [ref=f19e297]:
+                        - /url: ./sales/6aa32970-2a76-4c97-a9e4-8f0ad554f832
+                  - cell "Convertido" [ref=f19e298]
+                  - cell "OA Optikt Admin" [ref=f19e300]:
+                    - generic [ref=f19e301]:
+                      - generic [ref=f19e302]: OA
+                      - generic [ref=f19e303]: Optikt Admin
+                  - cell [ref=f19e304]:
+                    - button "Más acciones" [ref=f19e307]
+                - row [ref=f19e312] [cursor=pointer]:
+                  - cell [ref=f19e313]:
+                    - link "P-0048" [ref=f19e315]:
+                      - /url: ./quotes/7034d098-1397-4ed7-a408-22a5084f400a
+                  - cell [ref=f19e316]:
+                    - paragraph [ref=f19e317]: Oslavio Moscatini
+                    - paragraph [ref=f19e318]: V-5392101
+                  - cell [ref=f19e319]:
+                    - paragraph [ref=f19e320]: 10/11/26
+                    - paragraph [ref=f19e321]: hace 8 d
+                  - cell "USD 80,00" [ref=f19e322]
+                  - cell "Sin vencimiento" [ref=f19e323]
+                  - cell "Borrador" [ref=f19e324]
+                  - cell "OA Optikt Admin" [ref=f19e326]:
+                    - generic [ref=f19e327]:
+                      - generic [ref=f19e328]: OA
+                      - generic [ref=f19e329]: Optikt Admin
+                  - cell [ref=f19e330]:
+                    - button "Más acciones" [ref=f19e333]
+                - row [ref=f19e338] [cursor=pointer]:
+                  - cell [ref=f19e339]:
+                    - link "P-0047" [ref=f19e341]:
+                      - /url: ./quotes/4dd7d88d-dbec-4cc6-b646-3c1941d19b23
+                  - cell [ref=f19e342]:
+                    - paragraph [ref=f19e343]: Angel Guilliani
+                    - paragraph [ref=f19e344]: V-11782372
+                  - cell [ref=f19e345]:
+                    - paragraph [ref=f19e346]: 07/11/26
+                    - paragraph [ref=f19e347]: hace 11 d
+                  - cell "USD 140,00" [ref=f19e348]
+                  - cell [ref=f19e349]:
+                    - generic [ref=f19e350]:
+                      - text: Venta
+                      - link "#0292" [ref=f19e351]:
+                        - /url: ./sales/f72228e7-ccd7-4eb8-8210-bd878d8aa43f
+                  - cell "Convertido" [ref=f19e352]
+                  - cell "OA Optikt Admin" [ref=f19e354]:
+                    - generic [ref=f19e355]:
+                      - generic [ref=f19e356]: OA
+                      - generic [ref=f19e357]: Optikt Admin
+                  - cell [ref=f19e358]:
+                    - button "Más acciones" [ref=f19e361]
+                - row [ref=f19e366] [cursor=pointer]:
+                  - cell [ref=f19e367]:
+                    - link "P-0046" [ref=f19e369]:
+                      - /url: ./quotes/475a6173-9768-4cfe-bbcd-88a17ab2cf63
+                  - cell [ref=f19e370]:
+                    - paragraph [ref=f19e371]: Maricruz Barreto
+                    - paragraph [ref=f19e372]: V-27299932
+                  - cell [ref=f19e373]:
+                    - paragraph [ref=f19e374]: 06/11/26
+                    - paragraph [ref=f19e375]: hace 12 d
+                  - cell "USD 130,00" [ref=f19e376]
+                  - cell [ref=f19e377]:
+                    - generic [ref=f19e378]:
+                      - text: Venta
+                      - link "#0291" [ref=f19e379]:
+                        - /url: ./sales/f7e9fab7-15fc-4248-a520-4f442d6c45de
+                  - cell "Convertido" [ref=f19e380]
+                  - cell "OA Optikt Admin" [ref=f19e382]:
+                    - generic [ref=f19e383]:
+                      - generic [ref=f19e384]: OA
+                      - generic [ref=f19e385]: Optikt Admin
+                  - cell [ref=f19e386]:
+                    - button "Más acciones" [ref=f19e389]
+                - row [ref=f19e394] [cursor=pointer]:
+                  - cell [ref=f19e395]:
+                    - link "P-0045" [ref=f19e397]:
+                      - /url: ./quotes/3979d5fc-6fe1-4ef5-9fc0-f556f1799e24
+                  - cell [ref=f19e398]:
+                    - paragraph [ref=f19e399]: Ariannys Gutierrez
+                    - paragraph [ref=f19e400]: V-15335747
+                  - cell [ref=f19e401]:
+                    - paragraph [ref=f19e402]: 06/11/26
+                    - paragraph [ref=f19e403]: hace 12 d
+                  - cell "USD 175,00" [ref=f19e404]
+                  - cell [ref=f19e405]:
+                    - generic [ref=f19e406]:
+                      - text: Venta
+                      - link "#0295" [ref=f19e407]:
+                        - /url: ./sales/4c35fe20-288e-4b54-9882-2c5e09b46665
+                  - cell "Convertido" [ref=f19e408]
+                  - cell "OA Optikt Admin" [ref=f19e410]:
+                    - generic [ref=f19e411]:
+                      - generic [ref=f19e412]: OA
+                      - generic [ref=f19e413]: Optikt Admin
+                  - cell [ref=f19e414]:
+                    - button "Más acciones" [ref=f19e417]
+                - row [ref=f19e422] [cursor=pointer]:
+                  - cell [ref=f19e423]:
+                    - link "P-0044" [ref=f19e425]:
+                      - /url: ./quotes/511d790c-0eea-4671-8990-c4e481e1fdbc
+                  - cell [ref=f19e426]:
+                    - paragraph [ref=f19e427]: Sin cliente
+                  - cell [ref=f19e428]:
+                    - paragraph [ref=f19e429]: 06/11/26
+                    - paragraph [ref=f19e430]: hace 12 d
+                  - cell "USD 110,00" [ref=f19e431]
+                  - cell "Sin vencimiento" [ref=f19e432]
+                  - cell "Borrador" [ref=f19e433]
+                  - cell "OA Optikt Admin" [ref=f19e435]:
+                    - generic [ref=f19e436]:
+                      - generic [ref=f19e437]: OA
+                      - generic [ref=f19e438]: Optikt Admin
+                  - cell [ref=f19e439]:
+                    - button "Más acciones" [ref=f19e442]
+                - row [ref=f19e447] [cursor=pointer]:
+                  - cell [ref=f19e448]:
+                    - link "P-0043" [ref=f19e450]:
+                      - /url: ./quotes/33315e3b-37c3-406e-970b-cfe395d58e39
+                  - cell [ref=f19e451]:
+                    - paragraph [ref=f19e452]: Sin cliente
+                  - cell [ref=f19e453]:
+                    - paragraph [ref=f19e454]: 05/11/26
+                    - paragraph [ref=f19e455]: hace 13 d
+                  - cell "USD 130,00" [ref=f19e456]
+                  - cell "Sin vencimiento" [ref=f19e457]
+                  - cell "Borrador" [ref=f19e458]
+                  - cell "OA Optikt Admin" [ref=f19e460]:
+                    - generic [ref=f19e461]:
+                      - generic [ref=f19e462]: OA
+                      - generic [ref=f19e463]: Optikt Admin
+                  - cell [ref=f19e464]:
+                    - button "Más acciones" [ref=f19e467]
+                - row [ref=f19e472] [cursor=pointer]:
+                  - cell [ref=f19e473]:
+                    - link "P-0042" [ref=f19e475]:
+                      - /url: ./quotes/039efc1a-d201-4358-81b8-b6ee55f6e0ea
+                  - cell [ref=f19e476]:
+                    - paragraph [ref=f19e477]: Sin cliente
+                  - cell [ref=f19e478]:
+                    - paragraph [ref=f19e479]: 05/11/26
+                    - paragraph [ref=f19e480]: hace 13 d
+                  - cell "USD 390,00" [ref=f19e481]
+                  - cell "Sin vencimiento" [ref=f19e482]
+                  - cell "Borrador" [ref=f19e483]
+                  - cell "OA Optikt Admin" [ref=f19e485]:
+                    - generic [ref=f19e486]:
+                      - generic [ref=f19e487]: OA
+                      - generic [ref=f19e488]: Optikt Admin
+                  - cell [ref=f19e489]:
+                    - button "Más acciones" [ref=f19e492]
+            - generic [ref=f19e497]:
+              - generic [ref=f19e498]:
+                - paragraph [ref=f19e499]: Mostrando 1–10 de 51 presupuestos
+                - generic [ref=f19e500]: "Selección: total USD 10.435,25"
+                - generic [ref=f19e501]:
+                  - text: Por página
+                  - combobox "Por página" [ref=f19e502] [cursor=pointer]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+              - navigation "Paginación" [ref=f19e503]:
+                - button "Página anterior" [disabled] [ref=f19e504]: ‹
+                - button "Página 1" [ref=f19e505] [cursor=pointer]: "1"
+                - button "Página 2" [ref=f19e506] [cursor=pointer]: "2"
+                - button "Página 3" [ref=f19e507] [cursor=pointer]: "3"
+                - button "Página 4" [ref=f19e508] [cursor=pointer]: "4"
+                - button "Página 5" [ref=f19e509] [cursor=pointer]: "5"
+                - button "Página siguiente" [ref=f19e510] [cursor=pointer]: ›

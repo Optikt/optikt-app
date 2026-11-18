@@ -1,0 +1,244 @@
+- generic [ref=f5e2]:
+  - region "Notifications alt+T"
+  - generic [ref=f5e3]:
+    - banner [ref=f5e4]:
+      - generic [ref=f5e5]:
+        - button "Ocultar barra lateral" [ref=f5e6] [cursor=pointer]
+        - link [ref=f5e10] [cursor=pointer]:
+          - /url: ../dashboard
+          - img "Optikt" [ref=f5e11]
+        - textbox "Buscar productos, lentes... (+3.50 -2.00)" [ref=f5e29]
+        - generic [ref=f5e30]:
+          - generic [ref=f5e31]:
+            - button "Abrir tasas de cambio" [ref=f5e33] [cursor=pointer]
+            - button "Abrir menú de soporte" [ref=f5e37] [cursor=pointer]
+            - button "Abrir notificaciones" [ref=f5e46] [cursor=pointer]
+          - button "Optikt Admin ADMIN O" [ref=f5e52] [cursor=pointer]:
+            - generic [ref=f5e53]:
+              - generic [ref=f5e54]: Optikt Admin
+              - generic [ref=f5e55]: ADMIN
+            - generic [ref=f5e56]: O
+    - generic [ref=f5e57]:
+      - complementary [ref=f5e58]:
+        - navigation [ref=f5e59]:
+          - link "Dashboard" [ref=f5e60] [cursor=pointer]:
+            - /url: ../dashboard
+          - link "Clientes" [ref=f5e66] [cursor=pointer]:
+            - /url: ../customers
+          - link "Inventario" [ref=f5e74] [cursor=pointer]:
+            - /url: ../products
+          - link "Ventas" [ref=f5e81] [cursor=pointer]:
+            - /url: ../sales
+          - link "Cuentas por Cobrar" [ref=f5e89] [cursor=pointer]:
+            - /url: ../receivables
+          - link "Presupuestos" [ref=f5e98] [cursor=pointer]:
+            - /url: ../quotes
+          - link "Catálogo Lentes" [ref=f5e104] [cursor=pointer]:
+            - /url: ../lenses
+          - link "Marcas" [ref=f5e110] [cursor=pointer]:
+            - /url: ../brands
+          - link "Materiales" [ref=f5e116] [cursor=pointer]:
+            - /url: ../materials
+          - link "Proveedores" [ref=f5e123] [cursor=pointer]:
+            - /url: ../suppliers
+          - link "Conteo Físico" [ref=f5e131] [cursor=pointer]:
+            - /url: ../inventory/count
+          - link "Compras" [ref=f5e139] [cursor=pointer]:
+            - /url: ../purchases
+          - link "Caja" [ref=f5e145] [cursor=pointer]:
+            - /url: ../cash
+          - link "Reportes" [ref=f5e151] [cursor=pointer]:
+            - /url: ../reports
+          - link "Usuarios" [ref=f5e156] [cursor=pointer]:
+            - /url: ../users
+          - link "Papelera" [ref=f5e161] [cursor=pointer]:
+            - /url: ../trash
+          - link "Backups" [ref=f5e167] [cursor=pointer]:
+            - /url: ../backups
+      - main [ref=f5e172]:
+        - generic [ref=f5e173]:
+          - generic [ref=f5e175]:
+            - generic [ref=f5e176]:
+              - generic [ref=f5e177]:
+                - paragraph [ref=f5e178]:
+                  - link "← Presupuestos" [ref=f5e179] [cursor=pointer]:
+                    - /url: ../quotes
+                  - text: · Detalle de presupuesto
+                - generic [ref=f5e180]:
+                  - heading "Presupuesto P-0007" [level=1] [ref=f5e181]
+                  - generic [ref=f5e182]: Cancelado
+              - generic [ref=f5e183]:
+                - generic [ref=f5e184]:
+                  - generic [ref=f5e185]: VH
+                  - generic [ref=f5e186]:
+                    - link "Victor Hernandez" [ref=f5e187] [cursor=pointer]:
+                      - /url: ../customers/36215ffc-c919-4773-81e2-a33b252239dc
+                    - generic [ref=f5e192]:
+                      - button "V-27783554" [ref=f5e193]
+                      - button "04244170616" [ref=f5e198]
+                      - generic [ref=f5e201]: 26 años
+                    - generic [ref=f5e202]: Maturin, El Faro, Condominio Coche
+                - generic [ref=f5e207]:
+                  - generic [ref=f5e208]:
+                    - generic [ref=f5e209]: Vendedor
+                    - generic [ref=f5e210]: Optikt Admin
+                  - generic [ref=f5e211]:
+                    - generic [ref=f5e212]: Fecha
+                    - generic [ref=f5e213]: 14 sept. 2026
+                  - generic [ref=f5e214]:
+                    - generic [ref=f5e215]: Válido hasta
+                    - generic [ref=f5e216]: "-"
+              - generic [ref=f5e217]:
+                - generic [ref=f5e218]:
+                  - paragraph [ref=f5e219]: Total
+                  - paragraph [ref=f5e220]: USD 200,00
+                - button "Desglose" [ref=f5e222] [cursor=pointer]
+                - generic [ref=f5e226]:
+                  - generic [ref=f5e227]:
+                    - generic [ref=f5e228]: Exento
+                    - generic [ref=f5e229]: USD 200,00
+                  - generic [ref=f5e230]:
+                    - generic [ref=f5e231]: Subtotal neto
+                    - generic [ref=f5e232]: USD 200,00
+              - generic [ref=f5e234]:
+                - button "Duplicar" [ref=f5e235] [cursor=pointer]
+                - button "Imprimir PDF" [ref=f5e239] [cursor=pointer]
+            - generic [ref=f5e244]:
+              - generic [ref=f5e245]: Presupuesto cancelado
+              - generic [ref=f5e246]: 14 sept. 2026, 12:10 p. m.
+            - generic [ref=f5e247]:
+              - generic [ref=f5e249]:
+                - generic [ref=f5e250]:
+                  - heading "Artículos y servicios" [level=2] [ref=f5e251]
+                  - generic [ref=f5e252]: "1"
+                  - switch "Costos internos" [ref=f5e253] [cursor=pointer]
+                - generic [ref=f5e256]:
+                  - generic [ref=f5e258]: Artículo
+                  - generic [ref=f5e259]: USD
+                  - generic [ref=f5e260]: Bs.
+                - button "Novak · Indice 1.56 · 3D EVO · FOTO · Progresivo Novak OD -2.00 -0.50 ×70 · Add +2.50 OI -2.00 -0.50 ×70 · Add +2.50 USD 160,00 Ver la fórmula completa" [ref=f5e262] [cursor=pointer]:
+                  - generic [ref=f5e267]:
+                    - link "Novak · Indice 1.56 · 3D EVO · FOTO · Progresivo" [ref=f5e269]:
+                      - /url: ../lenses/ec69aa47-7073-4b03-a454-4d877f6a4eec
+                    - paragraph [ref=f5e270]: Novak
+                    - generic [ref=f5e271]:
+                      - paragraph [ref=f5e272]: OD -2.00 -0.50 ×70 · Add +2.50
+                      - paragraph [ref=f5e273]: OI -2.00 -0.50 ×70 · Add +2.50
+                  - generic [ref=f5e274]: USD 160,00
+                  - button "Ver la fórmula completa" [ref=f5e277]
+                - generic [ref=f5e280]:
+                  - generic [ref=f5e281]: Prescripción
+                  - generic [ref=f5e287]:
+                    - generic [ref=f5e288]: ESF
+                    - generic [ref=f5e289]: CIL
+                    - generic [ref=f5e290]: EJE
+                    - generic [ref=f5e291]: ADD
+                    - generic [ref=f5e293]: ALT
+                    - generic [ref=f5e294]: DP
+                    - generic [ref=f5e295]: DNP
+                    - generic [ref=f5e296]: OD
+                    - generic [ref=f5e298]: "-2.00"
+                    - generic [ref=f5e299]: "-0.50"
+                    - generic [ref=f5e300]: 70°
+                    - generic [ref=f5e301]: "+2.50"
+                    - generic [ref=f5e303]: —
+                    - generic [ref=f5e304]: —
+                    - generic [ref=f5e305]: —
+                    - generic [ref=f5e306]: OI
+                    - generic [ref=f5e308]: "-2.00"
+                    - generic [ref=f5e309]: "-0.50"
+                    - generic [ref=f5e310]: 70°
+                    - generic [ref=f5e311]: "+2.50"
+                    - generic [ref=f5e313]: —
+                    - generic [ref=f5e314]: —
+                    - generic [ref=f5e315]: —
+                  - generic [ref=f5e316]: Faltan medidas de montaje (ALT, DNP)
+                - button "True-cleAR" [ref=f5e319] [cursor=pointer]:
+                  - generic [ref=f5e323]:
+                    - generic [ref=f5e324]: True-cleAR
+                    - generic [ref=f5e325]:
+                      - generic [ref=f5e326]: Tratamiento
+                      - generic [ref=f5e327]: Antirreflejo
+                  - generic [ref=f5e328]: ×2
+                  - generic [ref=f5e329]:
+                    - generic [ref=f5e330]: USD 40,00
+                    - generic [ref=f5e331]: USD 20,00 c/u
+              - generic [ref=f5e332]:
+                - generic [ref=f5e333]:
+                  - heading "Historial" [level=2] [ref=f5e339]
+                  - generic [ref=f5e340]: 2 eventos
+                  - button "Ver todo" [ref=f5e341] [cursor=pointer]
+                - list [ref=f5e343]:
+                  - listitem [ref=f5e344]:
+                    - generic [ref=f5e350]:
+                      - text: Presupuesto cancelado
+                      - paragraph [ref=f5e351]: Optikt Admin · 14 sept. 2026, 12:10 p. m.
+                  - listitem [ref=f5e352]:
+                    - generic [ref=f5e355]:
+                      - text: Presupuesto creado
+                      - paragraph [ref=f5e356]: Optikt Admin · 14 sept. 2026, 12:10 p. m.
+          - dialog [ref=f5e357]:
+            - generic [ref=f5e358]:
+              - generic [ref=f5e359]:
+                - heading "Modificar presupuesto P-0007" [level=1] [ref=f5e360]:
+                  - text: Modificar presupuesto
+                  - generic [ref=f5e361]: P-0007
+                - paragraph [ref=f5e362]: Victor Hernandez · V-27783554
+              - switch "Sin Cashea No · clic para marcar" [ref=f5e363] [cursor=pointer]:
+                - generic [ref=f5e368]:
+                  - generic [ref=f5e369]: Sin Cashea
+                  - generic [ref=f5e370]: No · clic para marcar
+              - button "Cerrar" [ref=f5e371] [cursor=pointer]
+            - generic [ref=f5e375]:
+              - generic [ref=f5e379]: Válido hasta — (sin vencimiento)
+              - generic [ref=f5e384]: Sin nota
+              - button "Editar" [ref=f5e388] [cursor=pointer]
+            - generic [ref=f5e391]:
+              - paragraph [ref=f5e392]: 0 artículo(s), 0 quitado(s).
+              - generic [ref=f5e393]:
+                - heading "Artículos" [level=2] [ref=f5e394]
+                - generic [ref=f5e395]: "0"
+                - button "Agregar" [ref=f5e397] [cursor=pointer]
+              - paragraph [ref=f5e401]: Sin artículos todavía — agrega el primero
+            - generic [ref=f5e403]:
+              - generic [ref=f5e404]:
+                - generic [ref=f5e405]:
+                  - generic [ref=f5e406]:
+                    - generic [ref=f5e407]: Subtotal
+                    - generic [ref=f5e408]: USD 0,00
+                  - generic [ref=f5e409]:
+                    - generic [ref=f5e410]: Descuento de la orden
+                    - button "Agregar" [ref=f5e412] [cursor=pointer]
+                  - generic [ref=f5e414]:
+                    - generic [ref=f5e415]:
+                      - group [ref=f5e416]:
+                        - button [pressed] [ref=f5e417] [cursor=pointer]: $
+                        - button [ref=f5e418] [cursor=pointer]: "%"
+                      - spinbutton [ref=f5e419]: "0"
+                    - button [ref=f5e420] [cursor=pointer]
+                - generic [ref=f5e424]:
+                  - status [ref=f5e425]: Debe quedar al menos un artículo
+                  - generic [ref=f5e426]:
+                    - button "Cancelar" [ref=f5e427] [cursor=pointer]
+                    - button "Guardar cambios" [disabled] [ref=f5e428]
+              - generic [ref=f5e429]:
+                - generic [ref=f5e430]: Total
+                - generic [ref=f5e431]: USD 0,00
+          - dialog [ref=f5e432]:
+            - generic [ref=f5e433]:
+              - heading "Historial del presupuesto" [level=2] [ref=f5e434]
+              - button "Cerrar historial" [ref=f5e435] [cursor=pointer]
+            - generic [ref=f5e439]:
+              - generic [ref=f5e440]:
+                - button "Todos" [pressed] [ref=f5e441] [cursor=pointer]
+                - button "Ediciones" [ref=f5e442] [cursor=pointer]
+                - button "Estados" [ref=f5e443] [cursor=pointer]
+              - list [ref=f5e444]:
+                - listitem [ref=f5e445]:
+                  - generic [ref=f5e451]:
+                    - text: Presupuesto cancelado
+                    - paragraph [ref=f5e452]: Optikt Admin · 14 sept. 2026, 12:10 p. m.
+                - listitem [ref=f5e453]:
+                  - generic [ref=f5e456]:
+                    - text: Presupuesto creado
+                    - paragraph [ref=f5e457]: Optikt Admin · 14 sept. 2026, 12:10 p. m.

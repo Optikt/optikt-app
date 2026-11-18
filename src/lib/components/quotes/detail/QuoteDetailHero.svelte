@@ -2,6 +2,7 @@
 	import '$lib/components/layout/heroNavy.css';
 	import {
 		ArrowRightLeft,
+		ChevronDown,
 		CircleCheck,
 		Copy,
 		EllipsisVertical,
@@ -19,12 +20,13 @@
 	import PopoverRoot from '$lib/components/ui/popover/popover.svelte';
 	import PopoverTrigger from '$lib/components/ui/popover/popover-trigger.svelte';
 	import PopoverContent from '$lib/components/ui/popover/popover-content.svelte';
-	import { CasheaIsotipo } from '$lib/components/branding';
+	import CasheaIsotipo from '$lib/components/branding/CasheaIsotipo.svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import SaleDetailHeroCustomer from '$lib/components/sales/detail/SaleDetailHeroCustomer.svelte';
 	import { formatDateOnly, formatPrice } from '$lib/utils';
 	import { formatCurrency } from '$lib/utils';
 	import { getSaleStatusLabel } from '$lib/shared/enums';
+	import { saleBalance } from '$lib/shared/saleBalance';
 	import {
 		computeSaleBreakdown,
 		saleBreakdownRows
@@ -121,9 +123,8 @@
 	const priceChangedCount = $derived(preview?.summary.priceChangedCount ?? 0);
 	const missingCustomer = $derived(preview?.summary.missingCustomer ?? !quote.customer);
 
-	const convertedBalance = $derived(
-		convertedSale ? Math.max(0, convertedSale.total - convertedSale.paidAmountBcvUsd) : 0
-	);
+	// Saldo de la venta generada: helper canónico (0 en CANCELLED y con tolerancia 0.01)
+	const convertedBalance = $derived(convertedSale ? saleBalance(convertedSale) : 0);
 
 	// ── Menú ⋮ (Cancelar + historial) ─────────────────────────────────────
 	let moreOpen = $state(false);
@@ -328,7 +329,7 @@
 				type="button"
 				onclick={() => (showBreakdown = !showBreakdown)}
 				aria-expanded={showBreakdown}
-				class="inline-flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
+				class="inline-flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-semibold whitespace-nowrap text-white transition-colors duration-150 hover:bg-white/20"
 			>
 				<List class="h-3.5 w-3.5" />
 				Desglose

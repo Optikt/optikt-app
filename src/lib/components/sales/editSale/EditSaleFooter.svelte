@@ -244,8 +244,10 @@
 						<button
 							{...props}
 							type="button"
-							onclick={onClose}
-							disabled={saving}
+							onclick={() => {
+								if (!saving) onClose();
+							}}
+							aria-disabled={saving}
 							class="h-9 rounded-lg border border-white/40 bg-transparent px-4 text-[13px] font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
 						>
 							Cancelar

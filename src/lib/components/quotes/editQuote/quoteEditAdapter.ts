@@ -9,6 +9,9 @@
  */
 
 import { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
+import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
+import type { QuoteItemInput, UpdateQuoteInput } from '$lib/schemas/quotes';
 import {
 	existingItemToInput,
 	haveItemsChanged,

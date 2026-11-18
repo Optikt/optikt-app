@@ -1,0 +1,310 @@
+- generic [ref=f3e2]:
+  - region "Notifications alt+T"
+  - generic [ref=f3e3]:
+    - banner [ref=f3e4]:
+      - generic [ref=f3e5]:
+        - button "Ocultar barra lateral" [ref=f3e6] [cursor=pointer]
+        - link [ref=f3e10] [cursor=pointer]:
+          - /url: /dashboard
+          - img "Optikt" [ref=f3e11]
+        - textbox "Buscar productos, lentes... (+3.50 -2.00)" [ref=f3e29]
+        - generic [ref=f3e30]:
+          - generic [ref=f3e31]:
+            - button "Abrir tasas de cambio" [ref=f3e33] [cursor=pointer]
+            - button "Abrir menú de soporte" [ref=f3e37] [cursor=pointer]:
+              - generic [ref=f3e471]: "5"
+            - button "Abrir notificaciones" [ref=f3e46] [cursor=pointer]:
+              - generic [ref=f3e472]: "44"
+          - button "Optikt Admin ADMIN O" [ref=f3e52] [cursor=pointer]:
+            - generic [ref=f3e53]:
+              - generic [ref=f3e54]: Optikt Admin
+              - generic [ref=f3e55]: ADMIN
+            - generic [ref=f3e56]: O
+    - generic [ref=f3e57]:
+      - complementary [ref=f3e58]:
+        - navigation [ref=f3e59]:
+          - link "Dashboard" [ref=f3e60] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Clientes" [ref=f3e66] [cursor=pointer]:
+            - /url: /customers
+          - link "Inventario" [ref=f3e74] [cursor=pointer]:
+            - /url: /products
+          - link "Ventas" [ref=f3e81] [cursor=pointer]:
+            - /url: /sales
+          - link "Cuentas por Cobrar" [ref=f3e89] [cursor=pointer]:
+            - /url: /receivables
+          - link "Presupuestos" [ref=f3e98] [cursor=pointer]:
+            - /url: /quotes
+          - link "Catálogo Lentes" [ref=f3e104] [cursor=pointer]:
+            - /url: /lenses
+          - link "Marcas" [ref=f3e110] [cursor=pointer]:
+            - /url: /brands
+          - link "Materiales" [ref=f3e116] [cursor=pointer]:
+            - /url: /materials
+          - link "Proveedores" [ref=f3e123] [cursor=pointer]:
+            - /url: /suppliers
+          - link "Conteo Físico" [ref=f3e131] [cursor=pointer]:
+            - /url: /inventory/count
+          - link "Compras" [ref=f3e139] [cursor=pointer]:
+            - /url: /purchases
+          - link "Caja" [ref=f3e145] [cursor=pointer]:
+            - /url: /cash
+          - link "Reportes" [ref=f3e151] [cursor=pointer]:
+            - /url: /reports
+          - link "Usuarios" [ref=f3e156] [cursor=pointer]:
+            - /url: /users
+          - link "Papelera" [ref=f3e161] [cursor=pointer]:
+            - /url: /trash
+          - link "Backups" [ref=f3e167] [cursor=pointer]:
+            - /url: /backups
+      - main [ref=f3e172]:
+        - generic [ref=f3e173]:
+          - generic [ref=f3e175]:
+            - generic [ref=f3e176]:
+              - generic [ref=f3e177]:
+                - paragraph [ref=f3e178]:
+                  - link "← Presupuestos" [ref=f3e179] [cursor=pointer]:
+                    - /url: /quotes
+                  - text: · Detalle de presupuesto
+                - generic [ref=f3e180]:
+                  - heading "Presupuesto P-0044" [level=1] [ref=f3e181]
+                  - generic [ref=f3e182]: Borrador
+                - generic [ref=f3e183]:
+                  - generic [ref=f3e184]: Borrador
+                  - generic [ref=f3e188]: Convertido en venta
+              - generic [ref=f3e191]:
+                - generic [ref=f3e197]:
+                  - paragraph [ref=f3e198]: Sin cliente asignado
+                  - paragraph [ref=f3e199]: Presupuesto rápido. El cliente se pide al convertir a venta.
+                  - button "Asignar cliente ahora" [ref=f3e200] [cursor=pointer]
+                - generic [ref=f3e204]:
+                  - generic [ref=f3e205]:
+                    - generic [ref=f3e206]: Vendedor
+                    - generic [ref=f3e207]: Optikt Admin
+                  - generic [ref=f3e208]:
+                    - generic [ref=f3e209]: Fecha
+                    - generic [ref=f3e210]: 6 nov. 2026
+                  - generic [ref=f3e211]:
+                    - generic [ref=f3e212]: Válido hasta
+                    - generic [ref=f3e213]: Sin vencimiento
+              - generic [ref=f3e214]:
+                - generic [ref=f3e215]:
+                  - paragraph [ref=f3e216]: Total
+                  - paragraph [ref=f3e217]: USD 110,00
+                  - paragraph [ref=f3e473]: ≈ Bs. 100.831,50
+                - button "Desglose" [ref=f3e219] [cursor=pointer]
+                - generic [ref=f3e223]:
+                  - generic [ref=f3e224]:
+                    - generic [ref=f3e225]: Base imponible
+                    - generic [ref=f3e226]: USD 34,48
+                  - generic [ref=f3e227]:
+                    - generic [ref=f3e228]: Exento
+                    - generic [ref=f3e229]: USD 70,00
+                  - generic [ref=f3e230]:
+                    - generic [ref=f3e231]: Subtotal neto
+                    - generic [ref=f3e232]: USD 104,48
+                  - generic [ref=f3e233]:
+                    - generic [ref=f3e234]: IVA (16%)
+                    - generic [ref=f3e235]: USD 5,52
+                - generic [ref=f3e236]:
+                  - paragraph [ref=f3e237]: Si se convierte hoy
+                  - generic [ref=f3e238]:
+                    - paragraph [ref=f3e239]: Falta el cliente
+                    - paragraph [ref=f3e243]: 1 ítem sin stock
+                    - paragraph [ref=f3e246]: 3 precios cambiaron en catálogo
+              - generic [ref=f3e249]:
+                - button "Editar" [ref=f3e250] [cursor=pointer]
+                - button "Duplicar" [ref=f3e253] [cursor=pointer]
+                - button "Imprimir PDF" [ref=f3e257] [cursor=pointer]
+                - button "Más acciones" [ref=f3e262] [cursor=pointer]
+              - button "Convertir a venta" [active] [ref=f3e268] [cursor=pointer]
+            - generic [ref=f3e272]:
+              - generic [ref=f3e274]:
+                - generic [ref=f3e275]:
+                  - heading "Artículos y servicios" [level=2] [ref=f3e276]
+                  - generic [ref=f3e277]: "3"
+                  - switch "Costos internos" [ref=f3e278] [cursor=pointer]
+                - generic [ref=f3e281]:
+                  - generic [ref=f3e283]: Artículo
+                  - generic [ref=f3e284]: USD
+                  - generic [ref=f3e285]: Bs.
+                - group [ref=f3e287]:
+                  - generic [ref=f3e295]:
+                    - link "Retro 97775 C7" [ref=f3e297] [cursor=pointer]:
+                      - /url: /products/3a0f392f-4c40-4eff-b38d-a2ddba30171b
+                    - paragraph [ref=f3e298]: MODA-PAS-RET-NEGRO-TRANSPARENTE-97775-C7 · Retro
+                  - generic [ref=f3e299]: USD 40,00
+                  - generic [ref=f3e474]: ≈ Bs. 36.666,00
+                - group [ref=f3e302]:
+                  - generic [ref=f3e310]:
+                    - link "ESTUCHE DIMONTI DAMA" [ref=f3e312] [cursor=pointer]:
+                      - /url: /products/61932e5f-23f9-4271-ba76-1dcc1c2a15c2
+                    - paragraph [ref=f3e313]: ACDA-TEL-TORNASOL-ES0002
+                  - generic [ref=f3e314]: USD 0,00
+                  - generic [ref=f3e476]: ≈ Bs. 0,00
+                - button "Nueva Vision · CR39 · Convencional · FOTO · BLUE · Monofocal Nueva Vision · Incluye Blue Block, Fotocromático OD -0.50 -2.50 ×180 OI -1.00 ×180 USD 70,00 ≈ Bs. 64.165,50 Ver la fórmula completa" [ref=f3e478] [cursor=pointer]:
+                  - generic [ref=f3e322]:
+                    - link "Nueva Vision · CR39 · Convencional · FOTO · BLUE · Monofocal" [ref=f3e324]:
+                      - /url: /lenses/c5a4c882-4027-441c-97de-119889f0402e
+                    - paragraph [ref=f3e325]: Nueva Vision · Incluye Blue Block, Fotocromático
+                    - generic [ref=f3e326]:
+                      - paragraph [ref=f3e327]: OD -0.50 -2.50 ×180
+                      - paragraph [ref=f3e328]: OI -1.00 ×180
+                  - generic [ref=f3e329]: USD 70,00
+                  - generic [ref=f3e479]: ≈ Bs. 64.165,50
+                  - button "Ver la fórmula completa" [ref=f3e332]
+                - generic [ref=f3e335]:
+                  - generic [ref=f3e336]: Prescripción
+                  - generic [ref=f3e342]:
+                    - generic [ref=f3e343]: ESF
+                    - generic [ref=f3e344]: CIL
+                    - generic [ref=f3e345]: EJE
+                    - generic [ref=f3e346]: ADD
+                    - generic [ref=f3e347]: OD
+                    - generic [ref=f3e349]: "-0.50"
+                    - generic [ref=f3e350]: "-2.50"
+                    - generic [ref=f3e351]: 180°
+                    - generic [ref=f3e352]: —
+                    - generic [ref=f3e353]: OI
+                    - generic [ref=f3e355]: —
+                    - generic [ref=f3e356]: "-1.00"
+                    - generic [ref=f3e357]: 180°
+                    - generic [ref=f3e358]: —
+              - generic [ref=f3e359]:
+                - generic [ref=f3e360]:
+                  - heading "Historial" [level=2] [ref=f3e366]
+                  - generic [ref=f3e367]: 1 eventos
+                  - button "Ver todo" [ref=f3e368] [cursor=pointer]
+                - list [ref=f3e370]:
+                  - listitem [ref=f3e371]:
+                    - generic [ref=f3e374]:
+                      - text: Presupuesto creado
+                      - paragraph [ref=f3e375]: Optikt Admin · 6 nov. 2026, 8:57 a. m.
+                      - paragraph [ref=f3e376]: Sin cliente
+          - generic [ref=f3e482]:
+            - button "Cerrar" [ref=f3e483]
+            - dialog "Convertir a venta" [ref=f3e484]:
+              - generic [ref=f3e485]:
+                - generic [ref=f3e486]:
+                  - heading "Convertir a venta P-0044" [level=2] [ref=f3e487]:
+                    - text: Convertir a venta
+                    - generic [ref=f3e488]: P-0044
+                  - paragraph [ref=f3e489]: "Se creará la venta #0308 y se descontará el stock"
+                - button "Cerrar" [ref=f3e490] [cursor=pointer]
+              - generic [ref=f3e492]:
+                - generic [ref=f3e493]:
+                  - paragraph [ref=f3e494]: Paso obligatorio · selecciona o registra al cliente
+                  - paragraph [ref=f3e496]: Este presupuesto no tiene cliente. La venta necesita uno.
+                  - generic [ref=f3e499]:
+                    - generic [ref=f3e502]:
+                      - combobox [ref=f3e503] [cursor=pointer]:
+                        - option "V" [selected]
+                        - option "E"
+                        - option "J"
+                        - option "G"
+                      - textbox "12345678" [ref=f3e504]
+                    - button "Nuevo cliente" [ref=f3e505] [cursor=pointer]
+                  - paragraph [ref=f3e507]: Si no existe, se registra aquí mismo con el botón de agregar.
+                  - paragraph [ref=f3e508]: Queda asignado también al presupuesto.
+                - generic [ref=f3e509] [cursor=pointer]:
+                  - checkbox "Venta con Cashea Financia el saldo a través de Cashea" [ref=f3e510]
+                  - generic [ref=f3e515]:
+                    - generic [ref=f3e516]: Venta con Cashea
+                    - generic [ref=f3e517]: Financia el saldo a través de Cashea
+                - generic [ref=f3e520]:
+                  - paragraph [ref=f3e521]: Revisión
+                  - list [ref=f3e522]:
+                    - listitem [ref=f3e523]:
+                      - generic [ref=f3e525]: Falta el cliente
+                    - listitem [ref=f3e526]:
+                      - generic [ref=f3e528]: Retro 97775 C7
+                      - generic [ref=f3e529]: stock insuficiente (0 de 1)
+                    - listitem [ref=f3e530]:
+                      - paragraph [ref=f3e531]:
+                        - generic [ref=f3e533]: Retro 97775 C7 cambió de precio en catálogo
+                        - generic [ref=f3e534]: USD 40,00 → USD 35,00
+                    - listitem [ref=f3e535]:
+                      - generic [ref=f3e537]: ESTUCHE DIMONTI DAMA
+                      - generic [ref=f3e538]: 14 en stock
+                    - listitem [ref=f3e539]:
+                      - paragraph [ref=f3e540]:
+                        - generic [ref=f3e542]: ESTUCHE DIMONTI DAMA cambió de precio en catálogo
+                        - generic [ref=f3e543]: USD 0,00 → USD 5,00
+                    - listitem [ref=f3e544]:
+                      - generic [ref=f3e546]: Nueva Vision · CR39 · Convencional · FOTO · BLUE · Monofocal
+                      - generic [ref=f3e547]: sin control de stock
+                    - listitem [ref=f3e548]:
+                      - paragraph [ref=f3e549]:
+                        - generic [ref=f3e551]: Nueva Vision · CR39 · Convencional · FOTO · BLUE · Monofocal cambió de precio en catálogo
+                        - generic [ref=f3e552]: USD 70,00 → USD 65,00
+                  - paragraph [ref=f3e553]: Se respeta el precio presupuestado. Para usar el nuevo, edita el presupuesto antes.
+              - generic [ref=f3e554]:
+                - generic [ref=f3e555]:
+                  - generic [ref=f3e556]:
+                    - paragraph [ref=f3e557]: Total de la venta
+                    - paragraph [ref=f3e558]: USD 110,00
+                  - button "Volver" [ref=f3e559] [cursor=pointer]
+                  - button "Crear venta" [disabled] [ref=f3e560]
+                - status [ref=f3e562]: "Falta completar: Cliente"
+          - dialog [ref=f3e377]:
+            - generic [ref=f3e378]:
+              - generic [ref=f3e379]:
+                - heading "Modificar presupuesto P-0044" [level=1] [ref=f3e380]:
+                  - text: Modificar presupuesto
+                  - generic [ref=f3e381]: P-0044
+                - paragraph [ref=f3e382]: Sin cliente
+              - switch "Sin Cashea No · clic para marcar" [ref=f3e383] [cursor=pointer]:
+                - generic [ref=f3e388]:
+                  - generic [ref=f3e389]: Sin Cashea
+                  - generic [ref=f3e390]: No · clic para marcar
+              - button "Cerrar" [ref=f3e391] [cursor=pointer]
+            - generic [ref=f3e395]:
+              - generic [ref=f3e399]: Válido hasta — (sin vencimiento)
+              - generic [ref=f3e404]: Sin nota
+              - button "Editar" [ref=f3e408] [cursor=pointer]
+            - generic [ref=f3e411]:
+              - paragraph [ref=f3e412]: 0 artículo(s), 0 quitado(s).
+              - generic [ref=f3e413]:
+                - heading "Artículos" [level=2] [ref=f3e414]
+                - generic [ref=f3e415]: "0"
+                - button "Agregar" [ref=f3e417] [cursor=pointer]
+              - paragraph [ref=f3e421]: Sin artículos todavía — agrega el primero
+            - generic [ref=f3e423]:
+              - generic [ref=f3e424]:
+                - generic [ref=f3e425]:
+                  - generic [ref=f3e426]:
+                    - generic [ref=f3e427]: Subtotal
+                    - generic [ref=f3e428]: USD 0,00
+                  - generic [ref=f3e429]:
+                    - generic [ref=f3e430]: Descuento de la orden
+                    - button "Agregar" [ref=f3e432] [cursor=pointer]
+                  - generic [ref=f3e434]:
+                    - generic [ref=f3e435]:
+                      - group [ref=f3e436]:
+                        - button [pressed] [ref=f3e437] [cursor=pointer]: $
+                        - button [ref=f3e438] [cursor=pointer]: "%"
+                      - spinbutton [ref=f3e439]: "0"
+                    - button [ref=f3e440] [cursor=pointer]
+                - generic [ref=f3e444]:
+                  - status [ref=f3e445]: Debe quedar al menos un artículo
+                  - generic [ref=f3e446]:
+                    - button "Cancelar" [ref=f3e447] [cursor=pointer]
+                    - button "Guardar cambios" [disabled] [ref=f3e448]
+              - generic [ref=f3e449]:
+                - generic [ref=f3e450]: Total
+                - generic [ref=f3e451]: USD 0,00
+          - dialog [ref=f3e452]:
+            - generic [ref=f3e453]:
+              - heading "Historial del presupuesto" [level=2] [ref=f3e454]
+              - button "Cerrar historial" [ref=f3e455] [cursor=pointer]
+            - generic [ref=f3e459]:
+              - generic [ref=f3e460]:
+                - button "Todos" [pressed] [ref=f3e461] [cursor=pointer]
+                - button "Ediciones" [ref=f3e462] [cursor=pointer]
+                - button "Estados" [ref=f3e463] [cursor=pointer]
+              - list [ref=f3e464]:
+                - listitem [ref=f3e465]:
+                  - generic [ref=f3e468]:
+                    - text: Presupuesto creado
+                    - paragraph [ref=f3e469]: Optikt Admin · 6 nov. 2026, 8:57 a. m.
+                    - paragraph [ref=f3e470]: Sin cliente

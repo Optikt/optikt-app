@@ -1,0 +1,530 @@
+- generic [ref=f24e1]:
+  - generic [ref=f24e2]:
+    - region "Notifications alt+T"
+    - generic [ref=f24e3]:
+      - banner [ref=f24e4]:
+        - generic [ref=f24e5]:
+          - button "Ocultar barra lateral" [ref=f24e6] [cursor=pointer]
+          - link [ref=f24e10] [cursor=pointer]:
+            - /url: /dashboard
+            - img "Optikt" [ref=f24e11]
+          - textbox "Buscar productos, lentes... (+3.50 -2.00)" [ref=f24e29]
+          - generic [ref=f24e30]:
+            - generic [ref=f24e31]:
+              - button "Abrir tasas de cambio" [ref=f24e33] [cursor=pointer]
+              - button "Abrir menú de soporte" [ref=f24e37] [cursor=pointer]:
+                - generic [ref=f24e807]: "5"
+              - button "Abrir notificaciones" [ref=f24e46] [cursor=pointer]:
+                - generic [ref=f24e808]: "44"
+            - button "Optikt Admin ADMIN O" [ref=f24e52] [cursor=pointer]:
+              - generic [ref=f24e53]:
+                - generic [ref=f24e54]: Optikt Admin
+                - generic [ref=f24e55]: ADMIN
+              - generic [ref=f24e56]: O
+      - generic [ref=f24e57]:
+        - complementary [ref=f24e58]:
+          - navigation [ref=f24e59]:
+            - link "Dashboard" [ref=f24e60] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Clientes" [ref=f24e66] [cursor=pointer]:
+              - /url: /customers
+            - link "Inventario" [ref=f24e74] [cursor=pointer]:
+              - /url: /products
+            - link "Ventas" [ref=f24e81] [cursor=pointer]:
+              - /url: /sales
+            - link "Cuentas por Cobrar" [ref=f24e89] [cursor=pointer]:
+              - /url: /receivables
+            - link "Presupuestos" [ref=f24e98] [cursor=pointer]:
+              - /url: /quotes
+            - link "Catálogo Lentes" [ref=f24e104] [cursor=pointer]:
+              - /url: /lenses
+            - link "Marcas" [ref=f24e110] [cursor=pointer]:
+              - /url: /brands
+            - link "Materiales" [ref=f24e116] [cursor=pointer]:
+              - /url: /materials
+            - link "Proveedores" [ref=f24e123] [cursor=pointer]:
+              - /url: /suppliers
+            - link "Conteo Físico" [ref=f24e131] [cursor=pointer]:
+              - /url: /inventory/count
+            - link "Compras" [ref=f24e139] [cursor=pointer]:
+              - /url: /purchases
+            - link "Caja" [ref=f24e145] [cursor=pointer]:
+              - /url: /cash
+            - link "Reportes" [ref=f24e151] [cursor=pointer]:
+              - /url: /reports
+            - link "Usuarios" [ref=f24e156] [cursor=pointer]:
+              - /url: /users
+            - link "Papelera" [ref=f24e161] [cursor=pointer]:
+              - /url: /trash
+            - link "Backups" [ref=f24e167] [cursor=pointer]:
+              - /url: /backups
+        - main [ref=f24e172]:
+          - generic [ref=f24e173]:
+            - generic [ref=f24e175]:
+              - generic [ref=f24e176]:
+                - generic [ref=f24e177]:
+                  - paragraph [ref=f24e178]:
+                    - link "← Ventas" [ref=f24e179] [cursor=pointer]:
+                      - /url: /sales
+                    - text: · Detalle de venta
+                  - generic [ref=f24e180]:
+                    - 'heading "Venta #0298" [level=1] [ref=f24e181]'
+                    - generic [ref=f24e182]: Pendiente
+                    - generic [ref=f24e183]: Cashea
+                  - generic [ref=f24e187]:
+                    - generic [ref=f24e188]: Pendiente
+                    - generic [ref=f24e192]: En Progreso
+                    - generic [ref=f24e196]: Lista para Retirar
+                    - generic [ref=f24e200]: Completada
+                - generic [ref=f24e203]:
+                  - generic [ref=f24e204]:
+                    - generic [ref=f24e205]: GP
+                    - generic [ref=f24e206]:
+                      - link "Gabriel Parra" [ref=f24e207] [cursor=pointer]:
+                        - /url: /customers/68819f9c-2210-4e77-a39c-bfbefc445d6f
+                      - generic [ref=f24e212]:
+                        - button "V-28262891" [ref=f24e213]
+                        - button "04122426121" [ref=f24e218]
+                      - generic [ref=f24e221]: maturin
+                  - generic [ref=f24e226]:
+                    - generic [ref=f24e227]:
+                      - generic [ref=f24e228]: Vendedor
+                      - generic [ref=f24e229]: Optikt Admin
+                    - generic [ref=f24e230]:
+                      - generic [ref=f24e231]: Fecha
+                      - generic [ref=f24e232]: 10 nov. 2026
+                    - generic [ref=f24e233]:
+                      - generic [ref=f24e234]: Tasa BCV
+                      - generic [ref=f24e235]: 899,27
+                      - generic [ref=f24e236]: de la venta
+                - generic [ref=f24e237]:
+                  - generic [ref=f24e238]:
+                    - paragraph [ref=f24e239]: Total
+                    - paragraph [ref=f24e240]: USD 190,00
+                    - paragraph [ref=f24e241]: Bs. 170.861,30
+                  - generic [ref=f24e242]:
+                    - button "Desglose" [ref=f24e243] [cursor=pointer]
+                    - button "Calcular factura" [ref=f24e247]
+                  - generic [ref=f24e250]:
+                    - generic [ref=f24e251]:
+                      - generic [ref=f24e252]: Base imponible
+                      - generic [ref=f24e253]: USD 68,97
+                    - generic [ref=f24e254]:
+                      - generic [ref=f24e255]: Exento
+                      - generic [ref=f24e256]: USD 110,00
+                    - generic [ref=f24e257]:
+                      - generic [ref=f24e258]: Subtotal neto
+                      - generic [ref=f24e259]: USD 178,97
+                    - generic [ref=f24e260]:
+                      - generic [ref=f24e261]: IVA (16%)
+                      - generic [ref=f24e262]: USD 11,03
+                  - generic [ref=f24e263]:
+                    - paragraph [ref=f24e264]: Saldo pendiente
+                    - paragraph [ref=f24e265]: USD 190,00
+                    - paragraph [ref=f24e266]: Bs. 170.861,30
+                    - generic [ref=f24e268]:
+                      - generic [ref=f24e269]: USD 0,00 cubierto
+                      - generic [ref=f24e270]: 0%
+                - generic [ref=f24e271]:
+                  - button "Cambiar estado" [ref=f24e272] [cursor=pointer]
+                  - button "Editar" [ref=f24e277] [cursor=pointer]
+                  - button "Imprimir" [ref=f24e280] [cursor=pointer]
+                  - button "Más acciones" [ref=f24e287] [cursor=pointer]
+                - button "Cobrar / Registrar pago" [ref=f24e293] [cursor=pointer]
+              - generic [ref=f24e294]:
+                - generic [ref=f24e296]:
+                  - generic [ref=f24e297]:
+                    - heading "Artículos y servicios" [level=2] [ref=f24e298]
+                    - generic [ref=f24e299]: "5"
+                    - switch "Costos internos" [ref=f24e300] [cursor=pointer]
+                  - generic [ref=f24e303]:
+                    - generic [ref=f24e305]: Artículo
+                    - generic [ref=f24e306]: USD
+                    - generic [ref=f24e307]: Bs.
+                  - group [ref=f24e309]:
+                    - generic [ref=f24e317]:
+                      - link "Dilusso 91701 C1" [ref=f24e319] [cursor=pointer]:
+                        - /url: /products/4e464a78-101e-425e-9728-7289d0420c3f
+                      - paragraph [ref=f24e320]: MOCA-MET-DIL-NEGRO-91701-C1 · Dilusso
+                    - generic [ref=f24e321]: USD 50,00
+                    - generic [ref=f24e323]: Bs. 44.963,50
+                  - group [ref=f24e326]:
+                    - generic [ref=f24e334]:
+                      - link "Estuche Dilusso EDIL-001" [ref=f24e336] [cursor=pointer]:
+                        - /url: /products/6da923b8-efdc-4087-93ef-21b57ff6ff6e
+                      - paragraph [ref=f24e337]: AC-DUR-DIL-VARIADO-EDIL-001 · Dilusso
+                    - generic [ref=f24e338]: USD 0,00
+                    - generic [ref=f24e340]: Bs. 0,00
+                  - button "Ópticos Autana C.A · CR39 · FOTO · BLUE · Monofocal Ópticos Autana C.A · Incluye Blue Block, Fotocromático OD 0.00 -0.50 ×70 OI 0.00 0.00 ×0 USD 75,00 Bs. 67.445,25 Ver la fórmula completa" [ref=f24e809] [cursor=pointer]:
+                    - generic [ref=f24e348]:
+                      - link "Ópticos Autana C.A · CR39 · FOTO · BLUE · Monofocal" [ref=f24e350]:
+                        - /url: /lenses/7ee0229c-6dcc-4bfb-8f19-0ed532ce4b97
+                      - paragraph [ref=f24e351]: Ópticos Autana C.A · Incluye Blue Block, Fotocromático
+                      - generic [ref=f24e352]:
+                        - paragraph [ref=f24e353]: OD 0.00 -0.50 ×70
+                        - paragraph [ref=f24e354]: OI 0.00 0.00 ×0
+                    - generic [ref=f24e355]: USD 75,00
+                    - generic [ref=f24e357]: Bs. 67.445,25
+                    - button "Ver la fórmula completa" [ref=f24e360]
+                  - generic [ref=f24e363]:
+                    - generic [ref=f24e364]: Prescripción
+                    - generic [ref=f24e370]:
+                      - generic [ref=f24e371]: ESF
+                      - generic [ref=f24e372]: CIL
+                      - generic [ref=f24e373]: EJE
+                      - generic [ref=f24e374]: ADD
+                      - generic [ref=f24e375]: OD
+                      - generic [ref=f24e377]: "+0.00"
+                      - generic [ref=f24e378]: "-0.50"
+                      - generic [ref=f24e379]: 70°
+                      - generic [ref=f24e380]: —
+                      - generic [ref=f24e381]: OI
+                      - generic [ref=f24e383]: "+0.00"
+                      - generic [ref=f24e384]: "+0.00"
+                      - generic [ref=f24e385]: 0°
+                      - generic [ref=f24e386]: —
+                  - button "Ópticos Autana C.A · CR39 · Convencional · AR · BLUE · Monofocal Ópticos Autana C.A · Incluye Antirreflejo, Blue Block OD 0.00 -1.25 ×85 OI 0.00 -2.00 ×87 USD 35,00 Bs. 31.474,45 Ver la fórmula completa" [ref=f24e810] [cursor=pointer]:
+                    - generic [ref=f24e392]:
+                      - link "Ópticos Autana C.A · CR39 · Convencional · AR · BLUE · Monofocal" [ref=f24e394]:
+                        - /url: /lenses/7d4bc9ec-bdb3-43e6-9893-3225002326c4
+                      - paragraph [ref=f24e395]: Ópticos Autana C.A · Incluye Antirreflejo, Blue Block
+                      - generic [ref=f24e396]:
+                        - paragraph [ref=f24e397]: OD 0.00 -1.25 ×85
+                        - paragraph [ref=f24e398]: OI 0.00 -2.00 ×87
+                    - generic [ref=f24e399]: USD 35,00
+                    - generic [ref=f24e401]: Bs. 31.474,45
+                    - button "Ver la fórmula completa" [ref=f24e404]
+                  - generic [ref=f24e407]:
+                    - generic [ref=f24e408]: Prescripción
+                    - generic [ref=f24e414]:
+                      - generic [ref=f24e415]: ESF
+                      - generic [ref=f24e416]: CIL
+                      - generic [ref=f24e417]: EJE
+                      - generic [ref=f24e418]: ADD
+                      - generic [ref=f24e419]: OD
+                      - generic [ref=f24e421]: "+0.00"
+                      - generic [ref=f24e422]: "-1.25"
+                      - generic [ref=f24e423]: 85°
+                      - generic [ref=f24e424]: —
+                      - generic [ref=f24e425]: OI
+                      - generic [ref=f24e427]: "+0.00"
+                      - generic [ref=f24e428]: "-2.00"
+                      - generic [ref=f24e429]: 87°
+                      - generic [ref=f24e430]: —
+                  - group [ref=f24e431]:
+                    - generic [ref=f24e439]:
+                      - link "Kalopsia tr f68612 c3" [ref=f24e441] [cursor=pointer]:
+                        - /url: /products/11f35bd6-6f56-4300-865e-882efdfec556
+                      - paragraph [ref=f24e442]: MOCA-TRM-KAL-NEGRO-TR-F68612-C3 · Kalopsia
+                    - generic [ref=f24e443]: USD 30,00
+                    - generic [ref=f24e445]: Bs. 26.978,10
+                - generic [ref=f24e448]:
+                  - generic [ref=f24e449]:
+                    - generic [ref=f24e450]:
+                      - heading "Pagos" [level=2] [ref=f24e451]
+                      - generic [ref=f24e452]: "0"
+                      - button "Ver detalle" [ref=f24e453] [cursor=pointer]
+                      - button "Registrar" [ref=f24e458] [cursor=pointer]
+                    - paragraph [ref=f24e460]: Aún no hay abonos registrados
+                  - generic [ref=f24e461]:
+                    - generic [ref=f24e462]:
+                      - heading "Historial" [level=2] [ref=f24e468]
+                      - generic [ref=f24e469]: 2 eventos
+                      - button "Ver todo" [ref=f24e470] [cursor=pointer]
+                    - generic [ref=f24e471]:
+                      - generic [ref=f24e472]:
+                        - paragraph [ref=f24e479]: Venta actualizada
+                        - paragraph [ref=f24e480]: Optikt Admin · 10 nov. 2026, 3:55 p. m.
+                        - paragraph [ref=f24e481]: Motivo ·pago sin inicial
+                      - generic [ref=f24e482]:
+                        - paragraph [ref=f24e487]: Venta creada
+                        - paragraph [ref=f24e488]: Optikt Admin · 10 nov. 2026, 3:52 p. m.
+                    - generic [ref=f24e489]:
+                      - button "Movimientos de stock (3)" [ref=f24e490] [cursor=pointer]
+                      - generic [ref=f24e491]: "Última actualización: 10 nov. 2026, 3:55 p. m."
+            - dialog [ref=f24e492]:
+              - generic [ref=f24e493]:
+                - generic [ref=f24e494]:
+                  - heading "Stock de la venta" [level=2] [ref=f24e495]
+                  - paragraph [ref=f24e496]: 3 movimientos · efecto neto por producto
+                - generic [ref=f24e497]: "3"
+                - button "Cerrar" [ref=f24e498] [cursor=pointer]
+              - generic [ref=f24e502]:
+                - region "Efecto neto por producto" [ref=f24e503]:
+                  - table [ref=f24e504]:
+                    - rowgroup [ref=f24e505]:
+                      - row [ref=f24e506]:
+                        - columnheader "Producto" [ref=f24e507]
+                        - columnheader "Salidas" [ref=f24e508]
+                        - columnheader "Reversiones" [ref=f24e509]
+                        - columnheader "Neto" [ref=f24e510]
+                    - rowgroup [ref=f24e511]:
+                      - row [ref=f24e512]:
+                        - rowheader "Dilusso 91701 C1" [ref=f24e513]
+                        - cell "−1" [ref=f24e514]
+                        - cell "+0" [ref=f24e515]
+                        - cell "−1" [ref=f24e516]
+                      - row [ref=f24e517]:
+                        - rowheader "Estuche Dilusso EDIL-001" [ref=f24e518]
+                        - cell "−1" [ref=f24e519]
+                        - cell "+0" [ref=f24e520]
+                        - cell "−1" [ref=f24e521]
+                      - row [ref=f24e522]:
+                        - rowheader "Kalopsia tr f68612 c3" [ref=f24e523]
+                        - cell "−1" [ref=f24e524]
+                        - cell "+0" [ref=f24e525]
+                        - cell "−1" [ref=f24e526]
+                - group "Filtrar movimientos" [ref=f24e527]:
+                  - button "Todos" [pressed] [ref=f24e528] [cursor=pointer]
+                  - button "Salidas" [ref=f24e529] [cursor=pointer]
+                  - button "Reversiones" [ref=f24e530] [cursor=pointer]
+                - region "Creación de la venta" [ref=f24e532]:
+                  - heading "Creación de la venta" [level=3] [ref=f24e533]
+                  - list [ref=f24e534]:
+                    - listitem [ref=f24e535]:
+                      - generic [ref=f24e539]:
+                        - generic [ref=f24e540]: Estuche Dilusso EDIL-001
+                        - generic [ref=f24e541]: Salida por venta
+                      - generic [ref=f24e542]: −1
+                    - listitem [ref=f24e543]:
+                      - generic [ref=f24e547]:
+                        - generic [ref=f24e548]: Dilusso 91701 C1
+                        - generic [ref=f24e549]: Salida por venta
+                      - generic [ref=f24e550]: −1
+                    - listitem [ref=f24e551]:
+                      - generic [ref=f24e555]:
+                        - generic [ref=f24e556]: Kalopsia tr f68612 c3
+                        - generic [ref=f24e557]: Salida por venta
+                      - generic [ref=f24e558]: −1
+            - dialog [ref=f24e559]:
+              - generic [ref=f24e560]:
+                - generic [ref=f24e565]:
+                  - generic [ref=f24e566]:
+                    - heading "Registrar pago" [level=2] [ref=f24e567]
+                    - generic [ref=f24e568]: "Saldo: USD 190,00"
+                  - paragraph [ref=f24e569]: Sin pagos registrados
+                - button "Cerrar" [ref=f24e570] [cursor=pointer]
+              - generic [ref=f24e577]:
+                - paragraph [ref=f24e578]: Moneda / tasa
+                - generic [ref=f24e579]:
+                  - button "Bs · BCV" [ref=f24e580] [cursor=pointer]
+                  - button "USD · BCV" [ref=f24e581] [cursor=pointer]
+                  - button "EUR · BCV" [ref=f24e582] [cursor=pointer]
+                  - button "USDT" [ref=f24e583] [cursor=pointer]
+                  - button "PayPal" [ref=f24e584] [cursor=pointer]
+                  - button "Otro" [ref=f24e585] [cursor=pointer]
+            - dialog [ref=f24e586]:
+              - generic [ref=f24e587]:
+                - generic [ref=f24e591]:
+                  - heading "Calculadora de factura" [level=2] [ref=f24e592]
+                  - paragraph [ref=f24e593]:
+                    - text: "Venta #0298 · Referencial, no fiscal"
+                    - button "Más información" [ref=f24e594]
+                - button "Cerrar" [ref=f24e597] [cursor=pointer]
+              - generic [ref=f24e602]:
+                - paragraph [ref=f24e603]: Tasa BCV a usar
+                - generic [ref=f24e604]:
+                  - button "Tasa de la venta 899,27 · 10 nov. 2026" [pressed] [ref=f24e605] [cursor=pointer]:
+                    - generic [ref=f24e606]: Tasa de la venta
+                    - generic [ref=f24e607]: 899,27 · 10 nov. 2026
+                  - button "Tasa actual 916,65 · en vivo" [ref=f24e811] [cursor=pointer]:
+                    - generic [ref=f24e609]: Tasa actual
+                    - generic [ref=f24e610]: 916,65 · en vivo
+                  - button "Personalizada" [ref=f24e611] [cursor=pointer]:
+                    - textbox "Tasa personalizada" [ref=f24e613]:
+                      - /placeholder: 0,00
+                - generic [ref=f24e614]:
+                  - generic [ref=f24e615]: Concepto
+                  - generic [ref=f24e616]: Base Bs.
+                  - generic [ref=f24e617]: IVA Bs.
+                  - generic [ref=f24e618]: Total Bs.
+                - generic [ref=f24e619]:
+                  - generic [ref=f24e620]:
+                    - paragraph [ref=f24e621]: Dilusso 91701 C1
+                    - paragraph [ref=f24e622]:
+                      - generic [ref=f24e623]: Gravable
+                      - text: USD 50,00
+                  - button "38.761,64" [ref=f24e625]
+                  - button "6.201,86" [ref=f24e627]
+                  - button "44.963,50" [ref=f24e629]
+                - generic [ref=f24e630]:
+                  - generic [ref=f24e631]:
+                    - paragraph [ref=f24e632]: Estuche Dilusso EDIL-001
+                    - paragraph [ref=f24e633]:
+                      - generic [ref=f24e634]: Gravable
+                      - text: USD 0,00
+                  - button "0,00" [ref=f24e636]
+                  - button "0,00" [ref=f24e638]
+                  - button "0,00" [ref=f24e640]
+                - generic [ref=f24e641]:
+                  - generic [ref=f24e642]:
+                    - paragraph [ref=f24e643]: Cristal CR-39 FOTO BLUE
+                    - paragraph [ref=f24e644]: OD 0.00 -0.50 ×70 OI 0.00 0.00 ×0
+                    - paragraph [ref=f24e645]:
+                      - generic [ref=f24e646]: Exento
+                      - text: USD 75,00
+                  - button "67.445,25" [ref=f24e648]
+                  - generic [ref=f24e649]: —
+                  - button "67.445,25" [ref=f24e651]
+                - generic [ref=f24e652]:
+                  - generic [ref=f24e653]:
+                    - paragraph [ref=f24e654]: Cristal CR-39 AR BLUE
+                    - paragraph [ref=f24e655]: OD 0.00 -1.25 ×85 OI 0.00 -2.00 ×87
+                    - paragraph [ref=f24e656]:
+                      - generic [ref=f24e657]: Exento
+                      - text: USD 35,00
+                  - button "31.474,45" [ref=f24e659]
+                  - generic [ref=f24e660]: —
+                  - button "31.474,45" [ref=f24e662]
+                - generic [ref=f24e663]:
+                  - generic [ref=f24e664]:
+                    - paragraph [ref=f24e665]: Kalopsia tr f68612 c3
+                    - paragraph [ref=f24e666]:
+                      - generic [ref=f24e667]: Gravable
+                      - text: USD 30,00
+                  - button "23.256,98" [ref=f24e669]
+                  - button "3.721,12" [ref=f24e671]
+                  - button "26.978,10" [ref=f24e673]
+                - generic [ref=f24e674]:
+                  - generic [ref=f24e675]:
+                    - generic [ref=f24e676]: Base imponible
+                    - button "62.018,62" [ref=f24e677]
+                  - generic [ref=f24e678]:
+                    - generic [ref=f24e679]: Monto exento
+                    - button "98.919,70" [ref=f24e680]
+                  - generic [ref=f24e681]:
+                    - generic [ref=f24e682]: Subtotal neto
+                    - button "160.938,32" [ref=f24e683]
+                  - generic [ref=f24e684]:
+                    - generic [ref=f24e685]: IVA (16%)
+                    - button "9.922,98" [ref=f24e686]
+                  - generic [ref=f24e687]:
+                    - generic [ref=f24e688]: Total Bs. a tasa 899,27
+                    - button "170.861,30" [ref=f24e689]
+                  - generic [ref=f24e690]:
+                    - generic [ref=f24e691]: Referencia en USD
+                    - generic [ref=f24e692]: USD 190,00
+              - generic [ref=f24e693]:
+                - button "Copiar resumen" [ref=f24e694] [cursor=pointer]
+                - button "Cerrar" [ref=f24e695] [cursor=pointer]
+            - dialog [active] [ref=f24e696]:
+              - generic [ref=f24e697]:
+                - generic [ref=f24e698]:
+                  - 'heading "Modificar orden #0298" [level=1] [ref=f24e699]':
+                    - text: Modificar orden
+                    - generic [ref=f24e700]: "#0298"
+                  - paragraph [ref=f24e701]: Gabriel Parra · V-28262891
+                - switch "Compra con Cashea Sí · clic para quitar" [checked] [ref=f24e813] [cursor=pointer]:
+                  - generic [ref=f24e707]:
+                    - generic [ref=f24e708]: Compra con Cashea
+                    - generic [ref=f24e709]: Sí · clic para quitar
+                - button "Cerrar" [ref=f24e710] [cursor=pointer]
+              - generic [ref=f24e714]:
+                - generic [ref=f24e715]: 10/11/2026
+                - generic [ref=f24e718]: Sin nota
+                - button "Editar" [ref=f24e722] [cursor=pointer]
+              - generic [ref=f24e725]:
+                - paragraph [ref=f24e726]: 5 artículo(s), 0 quitado(s).
+                - generic [ref=f24e727]:
+                  - heading "Artículos" [level=2] [ref=f24e728]
+                  - generic [ref=f24e729]: "5"
+                  - button "Agregar" [ref=f24e731] [cursor=pointer]
+                - generic [ref=f24e814]:
+                  - generic "Editar Dilusso 91701 C1" [ref=f24e816] [cursor=pointer]:
+                    - generic [ref=f24e817]:
+                      - generic [ref=f24e820]:
+                        - generic [ref=f24e821]: Dilusso 91701 C1
+                        - generic [ref=f24e822]: MOCA-MET-DIL-NEGRO-91701-C1 · Dilusso
+                      - generic [ref=f24e823]:
+                        - generic [ref=f24e824]: USD 50,00
+                        - button "Quitar" [ref=f24e827]
+                  - generic "Editar Estuche Dilusso EDIL-001" [ref=f24e832] [cursor=pointer]:
+                    - generic [ref=f24e833]:
+                      - generic [ref=f24e836]:
+                        - generic [ref=f24e837]: Estuche Dilusso EDIL-001
+                        - generic [ref=f24e838]: AC-DUR-DIL-VARIADO-EDIL-001 · Dilusso
+                      - generic [ref=f24e839]:
+                        - generic [ref=f24e840]: USD 0,00
+                        - button "Quitar" [ref=f24e843]
+                  - generic "Editar Ópticos Autana C.A · CR39 · FOTO · BLUE · Monofocal" [ref=f24e848] [cursor=pointer]:
+                    - generic [ref=f24e849]:
+                      - generic [ref=f24e852]:
+                        - generic [ref=f24e853]: Ópticos Autana C.A · CR39 · FOTO · BLUE · Monofocal
+                        - generic [ref=f24e854]: Ópticos Autana C.A · Incluye Blue Block, Fotocromático
+                        - generic [ref=f24e855]: OD 0.00 -0.50 ×70
+                        - generic [ref=f24e856]: OI 0.00 0.00 ×0
+                      - generic [ref=f24e857]:
+                        - generic [ref=f24e858]: USD 75,00
+                        - button "Quitar" [ref=f24e861]
+                  - generic "Editar Ópticos Autana C.A · CR39 · Convencional · AR · BLUE · Monofocal" [ref=f24e866] [cursor=pointer]:
+                    - generic [ref=f24e867]:
+                      - generic [ref=f24e870]:
+                        - generic [ref=f24e871]: Ópticos Autana C.A · CR39 · Convencional · AR · BLUE · Monofocal
+                        - generic [ref=f24e872]: Ópticos Autana C.A · Incluye Antirreflejo, Blue Block
+                        - generic [ref=f24e873]: OD 0.00 -1.25 ×85
+                        - generic [ref=f24e874]: OI 0.00 -2.00 ×87
+                      - generic [ref=f24e875]:
+                        - generic [ref=f24e876]: USD 35,00
+                        - button "Quitar" [ref=f24e879]
+                  - generic "Editar Kalopsia tr f68612 c3" [ref=f24e884] [cursor=pointer]:
+                    - generic [ref=f24e885]:
+                      - generic [ref=f24e888]:
+                        - generic [ref=f24e889]: Kalopsia tr f68612 c3
+                        - generic [ref=f24e890]: MOCA-TRM-KAL-NEGRO-TR-F68612-C3 · Kalopsia
+                      - generic [ref=f24e891]:
+                        - generic [ref=f24e892]: USD 30,00
+                        - button "Quitar" [ref=f24e895]
+              - generic [ref=f24e737]:
+                - generic [ref=f24e741]:
+                  - generic [ref=f24e742]:
+                    - generic [ref=f24e743]:
+                      - generic [ref=f24e744]: Subtotal
+                      - generic [ref=f24e745]: USD 190,00
+                    - generic [ref=f24e746]:
+                      - generic [ref=f24e747]: Descuento de la orden
+                      - button "Agregar" [ref=f24e749] [cursor=pointer]
+                    - generic [ref=f24e751]:
+                      - generic [ref=f24e752]:
+                        - group [ref=f24e753]:
+                          - button [pressed] [ref=f24e754] [cursor=pointer]: $
+                          - button [ref=f24e755] [cursor=pointer]: "%"
+                        - spinbutton [ref=f24e756]: "0"
+                      - button [ref=f24e757] [cursor=pointer]
+                  - generic [ref=f24e763]:
+                    - button "Cancelar" [ref=f24e764] [cursor=pointer]
+                    - button "Guardar cambios" [disabled] [ref=f24e765]
+                - generic [ref=f24e766]:
+                  - generic [ref=f24e767]: Total
+                  - generic [ref=f24e768]: USD 190,00
+            - dialog [ref=f24e769]:
+              - generic [ref=f24e770]:
+                - heading "Historial de cambios" [level=2] [ref=f24e771]
+                - generic [ref=f24e772]: 2 eventos
+                - button "Cerrar" [ref=f24e773] [cursor=pointer]
+              - generic [ref=f24e777]:
+                - group "Filtrar historial por tipo de evento" [ref=f24e778]:
+                  - button "Todos (0)" [pressed] [ref=f24e779] [cursor=pointer]
+                  - button "Ediciones (0)" [ref=f24e780] [cursor=pointer]
+                  - button "Estados (0)" [ref=f24e781] [cursor=pointer]
+                - generic [ref=f24e783]:
+                  - paragraph [ref=f24e784]: Creada por
+                  - paragraph [ref=f24e785]: Optikt Admin
+                  - paragraph [ref=f24e786]: 10 nov. 2026, 3:52 p. m.
+            - dialog [ref=f24e787]:
+              - generic [ref=f24e788]:
+                - heading "Pagos de la venta" [level=2] [ref=f24e789]
+                - generic [ref=f24e790]: "0"
+                - button "Cerrar" [ref=f24e791] [cursor=pointer]
+              - generic [ref=f24e795]:
+                - generic [ref=f24e796]:
+                  - generic [ref=f24e797]:
+                    - paragraph [ref=f24e798]: Total
+                    - paragraph [ref=f24e799]: USD 190,00
+                  - generic [ref=f24e800]:
+                    - paragraph [ref=f24e801]: Cobrado
+                    - paragraph [ref=f24e802]: USD 0,00
+                  - generic [ref=f24e803]:
+                    - paragraph [ref=f24e804]: Saldo
+                    - paragraph [ref=f24e805]: USD 190,00
+                - paragraph [ref=f24e806]: Aún no hay abonos registrados
+  - paragraph [ref=f24e901]: Clic para editar este artículo

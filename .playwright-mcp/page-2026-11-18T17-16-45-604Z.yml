@@ -1,0 +1,301 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e47]:
+    - banner [ref=e48]:
+      - generic [ref=e49]:
+        - button "Ocultar barra lateral" [ref=e50] [cursor=pointer]
+        - link [ref=e52] [cursor=pointer]:
+          - /url: /dashboard
+          - img "Optikt" [ref=e53]
+        - textbox "Buscar productos, lentes... (+3.50 -2.00)" [ref=e69]
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - button "Abrir tasas de cambio" [ref=e73] [cursor=pointer]
+            - button "Abrir menú de soporte" [ref=e75] [cursor=pointer]:
+              - generic [ref=e77]: "5"
+            - button "Abrir notificaciones" [ref=e79] [cursor=pointer]:
+              - generic [ref=e81]: "44"
+          - button "Optikt Admin ADMIN O" [ref=e84] [cursor=pointer]:
+            - generic [ref=e85]:
+              - generic [ref=e86]: Optikt Admin
+              - generic [ref=e87]: ADMIN
+            - generic [ref=e88]: O
+    - generic [ref=e89]:
+      - complementary [ref=e90]:
+        - navigation [ref=e91]:
+          - link "Dashboard" [ref=e92] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Clientes" [ref=e96] [cursor=pointer]:
+            - /url: /customers
+          - link "Inventario" [ref=e100] [cursor=pointer]:
+            - /url: /products
+          - link "Ventas" [ref=e104] [cursor=pointer]:
+            - /url: /sales
+          - link "Cuentas por Cobrar" [ref=e108] [cursor=pointer]:
+            - /url: /receivables
+          - link "Presupuestos" [ref=e112] [cursor=pointer]:
+            - /url: /quotes
+          - link "Catálogo Lentes" [ref=e116] [cursor=pointer]:
+            - /url: /lenses
+          - link "Marcas" [ref=e120] [cursor=pointer]:
+            - /url: /brands
+          - link "Materiales" [ref=e124] [cursor=pointer]:
+            - /url: /materials
+          - link "Proveedores" [ref=e128] [cursor=pointer]:
+            - /url: /suppliers
+          - link "Conteo Físico" [ref=e132] [cursor=pointer]:
+            - /url: /inventory/count
+          - link "Compras" [ref=e137] [cursor=pointer]:
+            - /url: /purchases
+          - link "Caja" [ref=e141] [cursor=pointer]:
+            - /url: /cash
+          - link "Reportes" [ref=e145] [cursor=pointer]:
+            - /url: /reports
+          - link "Usuarios" [ref=e149] [cursor=pointer]:
+            - /url: /users
+          - link "Papelera" [ref=e153] [cursor=pointer]:
+            - /url: /trash
+          - link "Backups" [ref=e157] [cursor=pointer]:
+            - /url: /backups
+      - main [ref=e161]:
+        - generic [ref=e163]:
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - paragraph [ref=e166]: Panel de Control
+              - heading "Centro de Operaciones" [level=1] [ref=e167]
+            - link "NUEVA VENTA" [ref=e168] [cursor=pointer]:
+              - /url: /sales/new
+          - generic [ref=e171]:
+            - generic [ref=e175]:
+              - paragraph [ref=e176]: Balance Pendiente Total
+              - paragraph [ref=e177]: USD 5.874,10
+              - paragraph [ref=e178]: 66 ventas pendientes
+            - link "VER COBROS" [ref=e179] [cursor=pointer]:
+              - /url: /receivables
+          - generic [ref=e181]:
+            - generic [ref=e182]:
+              - paragraph [ref=e186]: Total Clientes
+              - paragraph [ref=e187]: "269"
+            - generic [ref=e188]:
+              - generic [ref=e189]: USD 135,00
+              - paragraph [ref=e193]: Ventas de Hoy
+              - paragraph [ref=e194]: "1"
+            - generic [ref=e195]:
+              - generic [ref=e196]: Activos
+              - paragraph [ref=e200]: Presupuestos Pend.
+              - paragraph [ref=e201]: "30"
+            - generic [ref=e202]:
+              - generic [ref=e203]: Crítico
+              - paragraph [ref=e207]: Bajo Stock Mínimo
+              - paragraph [ref=e208]: "255"
+          - generic [ref=e209]:
+            - generic [ref=e210]:
+              - generic [ref=e211]:
+                - heading "Ventas Recientes" [level=2] [ref=e212]
+                - link "Ver Todas" [ref=e213] [cursor=pointer]:
+                  - /url: /sales
+              - generic [ref=e214]:
+                - 'link "VH Victor Hernandez Venta #307 • 18 nov. 2026 USD 135,00 Pendiente" [ref=e215] [cursor=pointer]':
+                  - /url: /sales/fa35cb50-5c7f-4a39-937c-d10a4e055b2c
+                  - generic [ref=e216]:
+                    - generic [ref=e217]: VH
+                    - generic [ref=e218]:
+                      - paragraph [ref=e219]: Victor Hernandez
+                      - generic [ref=e220]:
+                        - generic [ref=e221]: "Venta #307"
+                        - generic [ref=e222]: •
+                        - generic [ref=e223]: 18 nov. 2026
+                  - generic [ref=e224]:
+                    - generic [ref=e225]: USD 135,00
+                    - generic [ref=e226]: Pendiente
+                - 'link "YR Yacsuri Rios Venta #306 • 15 nov. 2026 USD 65,00 Pendiente" [ref=e227] [cursor=pointer]':
+                  - /url: /sales/e667f1ea-51af-424f-98aa-e644010ddb27
+                  - generic [ref=e228]:
+                    - generic [ref=e229]: YR
+                    - generic [ref=e230]:
+                      - paragraph [ref=e231]: Yacsuri Rios
+                      - generic [ref=e232]:
+                        - generic [ref=e233]: "Venta #306"
+                        - generic [ref=e234]: •
+                        - generic [ref=e235]: 15 nov. 2026
+                  - generic [ref=e236]:
+                    - generic [ref=e237]: USD 65,00
+                    - generic [ref=e238]: Pendiente
+                - 'link "VH Victor Hernandez Venta #305 • 15 nov. 2026 USD 1,00 Completada" [ref=e239] [cursor=pointer]':
+                  - /url: /sales/97b0442f-8eae-4871-a984-dc07885c7eba
+                  - generic [ref=e240]:
+                    - generic [ref=e241]: VH
+                    - generic [ref=e242]:
+                      - paragraph [ref=e243]: Victor Hernandez
+                      - generic [ref=e244]:
+                        - generic [ref=e245]: "Venta #305"
+                        - generic [ref=e246]: •
+                        - generic [ref=e247]: 15 nov. 2026
+                  - generic [ref=e248]:
+                    - generic [ref=e249]: USD 1,00
+                    - generic [ref=e250]: Completada
+                - 'link "GV Geormanis Velasquez Venta #304 • 13 nov. 2026 USD 70,00 En Progreso" [ref=e251] [cursor=pointer]':
+                  - /url: /sales/5e43a75f-9425-4eb3-bcb3-bf2e074bc92a
+                  - generic [ref=e252]:
+                    - generic [ref=e253]: GV
+                    - generic [ref=e254]:
+                      - paragraph [ref=e255]: Geormanis Velasquez
+                      - generic [ref=e256]:
+                        - generic [ref=e257]: "Venta #304"
+                        - generic [ref=e258]: •
+                        - generic [ref=e259]: 13 nov. 2026
+                  - generic [ref=e260]:
+                    - generic [ref=e261]: USD 70,00
+                    - generic [ref=e262]: En Progreso
+                - 'link "OB Oriana Bermudez Venta #303 • 13 nov. 2026 USD 125,00 Pendiente" [ref=e263] [cursor=pointer]':
+                  - /url: /sales/6de4f93e-965a-4320-8d61-9b2d442078e2
+                  - generic [ref=e264]:
+                    - generic [ref=e265]: OB
+                    - generic [ref=e266]:
+                      - paragraph [ref=e267]: Oriana Bermudez
+                      - generic [ref=e268]:
+                        - generic [ref=e269]: "Venta #303"
+                        - generic [ref=e270]: •
+                        - generic [ref=e271]: 13 nov. 2026
+                  - generic [ref=e272]:
+                    - generic [ref=e273]: USD 125,00
+                    - generic [ref=e274]: Pendiente
+            - generic [ref=e275]:
+              - generic [ref=e276]:
+                - generic [ref=e277]:
+                  - generic [ref=e281]:
+                    - paragraph [ref=e282]: Vencimientos proveedores
+                    - paragraph [ref=e283]: 10 ordenes con saldo próximo
+                  - generic [ref=e284]: 9 vencidas
+                - generic [ref=e285]:
+                  - generic [ref=e286]:
+                    - generic [ref=e287]: EUR_BCV
+                    - generic [ref=e289]: € 728.74
+                  - generic [ref=e290]:
+                    - generic [ref=e291]: USD BCV
+                    - generic [ref=e293]: $ 532.42
+                - list [ref=e294]:
+                  - listitem [ref=e295]:
+                    - link "PO-0049 Vencida Inmodeca € 1.74 26 sept. 2026" [ref=e296] [cursor=pointer]:
+                      - /url: /purchases/98d06174-9374-4f98-b824-0fb14b1315fd
+                      - generic [ref=e297]:
+                        - generic [ref=e298]:
+                          - generic [ref=e299]: PO-0049
+                          - generic [ref=e300]: Vencida
+                        - paragraph [ref=e301]: Inmodeca
+                      - generic [ref=e303]:
+                        - paragraph [ref=e304]: € 1.74
+                        - paragraph [ref=e305]: 26 sept. 2026
+                  - listitem [ref=e307]:
+                    - link "PO-0054 Vencida The Vision Care Corp $ 345.00 15 oct. 2026" [ref=e308] [cursor=pointer]:
+                      - /url: /purchases/c90820bb-a15a-4317-b438-0221e1dd4017
+                      - generic [ref=e309]:
+                        - generic [ref=e310]:
+                          - generic [ref=e311]: PO-0054
+                          - generic [ref=e312]: Vencida
+                        - paragraph [ref=e313]: The Vision Care Corp
+                      - generic [ref=e315]:
+                        - paragraph [ref=e316]: $ 345.00
+                        - paragraph [ref=e317]: 15 oct. 2026
+                  - listitem [ref=e319]:
+                    - link "PO-0056 Vencida Inmodeca € 331.00 15 oct. 2026" [ref=e320] [cursor=pointer]:
+                      - /url: /purchases/af82f3bd-e41f-4750-a9c1-01de257aefa2
+                      - generic [ref=e321]:
+                        - generic [ref=e322]:
+                          - generic [ref=e323]: PO-0056
+                          - generic [ref=e324]: Vencida
+                        - paragraph [ref=e325]: Inmodeca
+                      - generic [ref=e327]:
+                        - paragraph [ref=e328]: € 331.00
+                        - paragraph [ref=e329]: 15 oct. 2026
+                  - listitem [ref=e331]:
+                    - link "PO-0060 Vencida Optica La Nueva Perla $ 59.97 07 nov. 2026" [ref=e332] [cursor=pointer]:
+                      - /url: /purchases/0b1971dc-5988-4c79-abe6-6cc99dd6350b
+                      - generic [ref=e333]:
+                        - generic [ref=e334]:
+                          - generic [ref=e335]: PO-0060
+                          - generic [ref=e336]: Vencida
+                        - paragraph [ref=e337]: Optica La Nueva Perla
+                      - generic [ref=e339]:
+                        - paragraph [ref=e340]: $ 59.97
+                        - paragraph [ref=e341]: 07 nov. 2026
+                  - listitem [ref=e343]:
+                    - link "PO-0061 Vencida Optica La Nueva Perla $ 0.45 07 nov. 2026" [ref=e344] [cursor=pointer]:
+                      - /url: /purchases/88beda5f-639e-4b9f-a554-2d12efc279b2
+                      - generic [ref=e345]:
+                        - generic [ref=e346]:
+                          - generic [ref=e347]: PO-0061
+                          - generic [ref=e348]: Vencida
+                        - paragraph [ref=e349]: Optica La Nueva Perla
+                      - generic [ref=e351]:
+                        - paragraph [ref=e352]: $ 0.45
+                        - paragraph [ref=e353]: 07 nov. 2026
+                  - listitem [ref=e355]:
+                    - link "PO-0062 Vencida Optica La Nueva Perla $ 22.00 07 nov. 2026" [ref=e356] [cursor=pointer]:
+                      - /url: /purchases/388530a4-5ece-41bc-9e6a-025c692e048a
+                      - generic [ref=e357]:
+                        - generic [ref=e358]:
+                          - generic [ref=e359]: PO-0062
+                          - generic [ref=e360]: Vencida
+                        - paragraph [ref=e361]: Optica La Nueva Perla
+                      - generic [ref=e363]:
+                        - paragraph [ref=e364]: $ 22.00
+                        - paragraph [ref=e365]: 07 nov. 2026
+              - generic [ref=e367]:
+                - heading "Acciones Rápidas" [level=2] [ref=e368]
+                - generic [ref=e369]:
+                  - link "Nuevo Cliente" [ref=e370] [cursor=pointer]:
+                    - /url: /customers
+                  - link "Nuevo Presupuesto" [ref=e374] [cursor=pointer]:
+                    - /url: /quotes/new
+                  - link "Catálogo" [ref=e378] [cursor=pointer]:
+                    - /url: /lenses
+                  - link "Reportes" [ref=e382] [cursor=pointer]:
+                    - /url: /reports
+              - generic [ref=e386]:
+                - generic [ref=e390]:
+                  - paragraph [ref=e391]: Ítems Libres Pendientes
+                  - paragraph [ref=e392]: 18 ítems por completar
+                - paragraph [ref=e393]: Las siguientes ventas tienen ítems libres sin costo ni proveedor asignado. Complétalos cuando llegue el pedido.
+                - list [ref=e394]:
+                  - listitem [ref=e395]:
+                    - 'link "Venta #289 - Carolina Figuera 1 pendiente" [ref=e396] [cursor=pointer]':
+                      - /url: /sales/b36242a4-f0c9-4ae2-9864-d94aa91801a6
+                      - generic [ref=e397]: "Venta #289 - Carolina Figuera"
+                      - generic [ref=e398]: 1 pendiente
+                  - listitem [ref=e401]:
+                    - 'link "Venta #288 - MARBELIS YANEZ 3 pendientes" [ref=e402] [cursor=pointer]':
+                      - /url: /sales/91a74953-fb17-49ce-bff3-dba8be7ae3bc
+                      - generic [ref=e403]: "Venta #288 - MARBELIS YANEZ"
+                      - generic [ref=e404]: 3 pendientes
+                  - listitem [ref=e407]:
+                    - 'link "Venta #279 - Andres Pereira 3 pendientes" [ref=e408] [cursor=pointer]':
+                      - /url: /sales/9a665d4f-2532-4a90-8cbc-c1c9c7ddad66
+                      - generic [ref=e409]: "Venta #279 - Andres Pereira"
+                      - generic [ref=e410]: 3 pendientes
+                  - listitem [ref=e413]:
+                    - 'link "Venta #272 - Ana Moya 1 pendiente" [ref=e414] [cursor=pointer]':
+                      - /url: /sales/e8d5a4c7-6fc4-4738-b264-ad17ed9352fa
+                      - generic [ref=e415]: "Venta #272 - Ana Moya"
+                      - generic [ref=e416]: 1 pendiente
+                  - listitem [ref=e419]:
+                    - 'link "Venta #269 - Jose Morales 1 pendiente" [ref=e420] [cursor=pointer]':
+                      - /url: /sales/c9a32ec3-32a0-469d-ad97-127b9b37b60d
+                      - generic [ref=e421]: "Venta #269 - Jose Morales"
+                      - generic [ref=e422]: 1 pendiente
+                  - listitem [ref=e425]:
+                    - 'link "Venta #203 - Camila Velasquez 1 pendiente" [ref=e426] [cursor=pointer]':
+                      - /url: /sales/a7e71ffe-917f-4f53-adc5-54e2ce97344a
+                      - generic [ref=e427]: "Venta #203 - Camila Velasquez"
+                      - generic [ref=e428]: 1 pendiente
+                  - listitem [ref=e431]:
+                    - 'link "Venta #160 - Eudis Rivero 2 pendientes" [ref=e432] [cursor=pointer]':
+                      - /url: /sales/5db4a9d1-eaad-4e0f-8962-91a2ab843686
+                      - generic [ref=e433]: "Venta #160 - Eudis Rivero"
+                      - generic [ref=e434]: 2 pendientes
+                  - listitem [ref=e437]:
+                    - 'link "Venta #112 - Yomaira Calzadilla 6 pendientes" [ref=e438] [cursor=pointer]':
+                      - /url: /sales/2ed7e74f-4b09-49fc-952f-7f15528c8b7f
+                      - generic [ref=e439]: "Venta #112 - Yomaira Calzadilla"
+                      - generic [ref=e440]: 6 pendientes
+  - generic [ref=e45]: Dashboard - Optikt

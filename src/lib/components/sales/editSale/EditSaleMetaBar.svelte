@@ -5,6 +5,8 @@
 		saleDate: string;
 		notes: string;
 		validUntil?: string;
+		/** Muestra la fecha de validez (solo presupuestos; ventas no la tienen). */
+		showValidUntil?: boolean;
 		validUntilLabel?: string;
 		dateLabel?: string;
 	}
@@ -13,6 +15,7 @@
 		saleDate = $bindable(),
 		notes = $bindable(),
 		validUntil = $bindable(''),
+		showValidUntil = false,
 		validUntilLabel = 'Válido hasta',
 		dateLabel = 'Fecha de venta'
 	}: Props = $props();
@@ -21,7 +24,7 @@
 
 	const displayDate = $derived(saleDate.split('-').reverse().join('/'));
 	const displayValidUntil = $derived((validUntil || '').split('-').reverse().join('/'));
-	const hasValidUntil = $derived(validUntil !== undefined);
+	const hasValidUntil = $derived(showValidUntil);
 </script>
 
 <!-- Meta bar (only in list view): collapsed shows date (+ validez) + note; "Editar" expands inline -->

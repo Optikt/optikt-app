@@ -133,6 +133,9 @@
 	// Duplicar (D7): precarga ítems/descuento/Cashea/notas; resetea cliente,
 	// fecha (hoy) y validez. sourceQuoteId se envía en el create.
 	// (después de declarar items/includedAccessoryMap — ver bloque abajo)
+	const duplicateItemCount = $derived(
+		fromQuote ? fromQuote.items.filter((i) => i.itemType !== 'TREATMENT').length : 0
+	);
 
 	// Fecha editable del WizardHeader → quoteDate (mismo patrón que ventas)
 	// snapshot inicial del seed (recalculado por los effects de abajo).
@@ -316,6 +319,7 @@
 			toast.success(`Presupuesto ${formatQuoteNumber(result.quote.quoteNumber)} creado`);
 			goto(resolve(`/quotes/${result.quote.id}`));
 		} catch (e) {
+			logger.error('Error creando presupuesto', e);
 			toast.error(getErrorMessage(e, 'Error creando presupuesto'));
 		} finally {
 			submitting = false;
@@ -332,8 +336,7 @@
 			<Copy class="h-4 w-4 shrink-0" />
 			<p class="flex-1 text-[14px]">
 				<b>Duplicando {formatQuoteNumber(fromQuote.quote.quoteNumber)}</b>
-				· {fromQuote.items.filter((i) => i.itemType !== 'TREATMENT').length} artículos, fórmula y descuento
-				copiados. Elige el cliente.
+				· {duplicateItemCount} artículos, fórmula y descuento copiados. Elige el cliente.
 			</p>
 			<button
 				type="button"

@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { History } from '@lucide/svelte';
+	import { ArrowRightLeft, CircleX, History, Pen, Plus } from '@lucide/svelte';
 	import AppBadge from '$lib/components/ui/badges/AppBadge.svelte';
-	import { ArrowRightLeft, CircleX, Pen, Plus } from '@lucide/svelte';
 	import type { QuoteAuditEvent } from './quoteAudit';
 	import { formatDate } from '$lib/utils';
+
 	interface Props {
 		events: QuoteAuditEvent[];
 		createdByName?: string | null;

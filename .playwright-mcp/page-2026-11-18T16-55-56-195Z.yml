@@ -1,0 +1,27 @@
+- generic [ref=f1e2]:
+  - region "Notifications alt+T"
+  - generic [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic [ref=f1e5]:
+        - img "Optikt" [ref=f1e6]
+        - paragraph [ref=f1e16]: Transformando la visión, impulsando tu negocio.
+      - paragraph [ref=f1e17]: Optik-T App v0.40.0
+    - generic [ref=f1e18]:
+      - generic [ref=f1e19]: Sistema Operativo
+      - generic [ref=f1e22]:
+        - generic [ref=f1e23]:
+          - img "Optikt Logo" [ref=f1e24]
+          - heading "Bienvenido de nuevo" [level=2] [ref=f1e27]
+          - paragraph [ref=f1e28]: Ingrese sus credenciales para acceder al panel de control.
+        - generic [ref=f1e29]:
+          - generic [ref=f1e30]:
+            - generic [ref=f1e31]: Correo Electrónico
+            - textbox "Correo Electrónico" [ref=f1e33]:
+              - /placeholder: correo@optikt.com
+          - generic [ref=f1e34]:
+            - generic [ref=f1e35]: Contraseña
+            - generic [ref=f1e36]:
+              - textbox "Contraseña" [ref=f1e37]:
+                - /placeholder: ••••••••••••
+              - button "Mostrar contraseña" [ref=f1e38] [cursor=pointer]
+          - button "Iniciar Sesión" [ref=f1e42] [cursor=pointer]

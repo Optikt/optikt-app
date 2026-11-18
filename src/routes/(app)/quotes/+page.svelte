@@ -6,6 +6,7 @@
 	import { untrack } from 'svelte';
 	import {
 		getErrorMessage,
+		logger,
 		parsePageParam,
 		replaceUrlSearch,
 		saveReferrerParams,
@@ -95,7 +96,7 @@
 	let from = $state(initialFrom);
 	let to = $state(initialTo);
 	let sort = $state(initialSort);
-	let per = $state(quotesData.perPage);
+	let per = $state([10, 25, 50].includes(initialPer) ? initialPer : DEFAULT_QUOTE_LIST_PER_PAGE);
 	let currentPage = $state(initialPage);
 
 	const canAct = $derived(canOperate(data.user.role));
@@ -146,6 +147,7 @@
 			stats = newStats;
 			facets = newFacets.counts as unknown as Record<string, number>;
 		} catch (e) {
+			logger.error('Error cargando presupuestos', e);
 			toast.error(getErrorMessage(e, 'Error cargando presupuestos'));
 		} finally {
 			loading = false;
@@ -295,6 +297,7 @@
 				toast.error(result.error ?? 'Error cancelando presupuesto');
 			}
 		} catch (e) {
+			logger.error('Error cancelando presupuesto', e);
 			toast.error(getErrorMessage(e, 'Error cancelando presupuesto'));
 		} finally {
 			cancelling = false;
@@ -359,7 +362,7 @@
 		/>
 
 		<SaleStatusTabs
-			statuses={ALL_QUOTE_STATUSES}
+			statuses={ALL_QUOTE_STATUSES.filter((s) => s !== QuoteStatus.EXPIRED)}
 			labels={QUOTE_STATUS_LABELS}
 			counts={facets}
 			value={statuses}

@@ -1,0 +1,308 @@
+- generic [ref=f16e2]:
+  - region "Notifications alt+T"
+  - generic [ref=f16e3]:
+    - banner [ref=f16e4]:
+      - generic [ref=f16e5]:
+        - button "Ocultar barra lateral" [ref=f16e6] [cursor=pointer]
+        - link [ref=f16e10] [cursor=pointer]:
+          - /url: ./dashboard
+          - img "Optikt" [ref=f16e11]
+        - textbox "Buscar productos, lentes... (+3.50 -2.00)" [ref=f16e29]
+        - generic [ref=f16e30]:
+          - generic [ref=f16e31]:
+            - button "Abrir tasas de cambio" [ref=f16e33] [cursor=pointer]
+            - button "Abrir menú de soporte" [ref=f16e37] [cursor=pointer]
+            - button "Abrir notificaciones" [ref=f16e46] [cursor=pointer]
+          - button "Optikt Admin ADMIN O" [ref=f16e52] [cursor=pointer]:
+            - generic [ref=f16e53]:
+              - generic [ref=f16e54]: Optikt Admin
+              - generic [ref=f16e55]: ADMIN
+            - generic [ref=f16e56]: O
+    - generic [ref=f16e57]:
+      - complementary [ref=f16e58]:
+        - navigation [ref=f16e59]:
+          - link "Dashboard" [ref=f16e60] [cursor=pointer]:
+            - /url: ./dashboard
+          - link "Clientes" [ref=f16e66] [cursor=pointer]:
+            - /url: ./customers
+          - link "Inventario" [ref=f16e74] [cursor=pointer]:
+            - /url: ./products
+          - link "Ventas" [ref=f16e81] [cursor=pointer]:
+            - /url: ./sales
+          - link "Cuentas por Cobrar" [ref=f16e89] [cursor=pointer]:
+            - /url: ./receivables
+          - link "Presupuestos" [ref=f16e98] [cursor=pointer]:
+            - /url: ./quotes
+          - link "Catálogo Lentes" [ref=f16e104] [cursor=pointer]:
+            - /url: ./lenses
+          - link "Marcas" [ref=f16e110] [cursor=pointer]:
+            - /url: ./brands
+          - link "Materiales" [ref=f16e116] [cursor=pointer]:
+            - /url: ./materials
+          - link "Proveedores" [ref=f16e123] [cursor=pointer]:
+            - /url: ./suppliers
+          - link "Conteo Físico" [ref=f16e131] [cursor=pointer]:
+            - /url: ./inventory/count
+          - link "Compras" [ref=f16e139] [cursor=pointer]:
+            - /url: ./purchases
+          - link "Caja" [ref=f16e145] [cursor=pointer]:
+            - /url: ./cash
+          - link "Reportes" [ref=f16e151] [cursor=pointer]:
+            - /url: ./reports
+          - link "Usuarios" [ref=f16e156] [cursor=pointer]:
+            - /url: ./users
+          - link "Papelera" [ref=f16e161] [cursor=pointer]:
+            - /url: ./trash
+          - link "Backups" [ref=f16e167] [cursor=pointer]:
+            - /url: ./backups
+      - main [ref=f16e172]:
+        - generic [ref=f16e174]:
+          - generic [ref=f16e175]:
+            - generic [ref=f16e176]:
+              - heading "Presupuestos" [level=1] [ref=f16e177]
+              - paragraph [ref=f16e178]: 51 presupuestos registrados
+            - button "Nuevo presupuesto" [ref=f16e179] [cursor=pointer]
+          - generic [ref=f16e181]:
+            - button "Abiertos USD 6.634,00 en 30 presupuestos por convertir" [ref=f16e182] [cursor=pointer]:
+              - generic [ref=f16e183]: Abiertos
+              - generic [ref=f16e184]: USD 6.634,00
+              - generic [ref=f16e185]: en 30 presupuestos por convertir
+            - button "Presupuestos del mes 22 USD 3.965,00 presupuestados" [ref=f16e186] [cursor=pointer]:
+              - generic [ref=f16e187]: Presupuestos del mes
+              - generic [ref=f16e188]: "22"
+              - generic [ref=f16e189]: USD 3.965,00 presupuestados
+            - button "Convertidos del mes 14 64% de conversión" [ref=f16e190] [cursor=pointer]:
+              - generic [ref=f16e191]: Convertidos del mes
+              - generic [ref=f16e192]: "14"
+              - generic [ref=f16e193]: 64% de conversión
+          - generic [ref=f16e194]:
+            - generic [ref=f16e195]:
+              - searchbox "Buscar presupuestos" [ref=f16e197]
+              - generic [ref=f16e198]:
+                - generic [ref=f16e199]: Vendedor
+                - combobox "Vendedor" [ref=f16e200] [cursor=pointer]:
+                  - option "Todos los vendedores" [selected]
+                  - option "Optikt Admin"
+                  - option "Victor Hernandez"
+                  - option "Yacsuri Rios"
+                - generic [ref=f16e201]:
+                  - generic [ref=f16e202]: Fecha
+                  - combobox "Fecha" [ref=f16e203] [cursor=pointer]:
+                    - option "Todas las fechas" [selected]
+                    - option "Hoy"
+                    - option "Últimos 7 días"
+                    - option "Este mes"
+                    - option "Personalizado"
+                - generic [ref=f16e204]:
+                  - generic [ref=f16e205]: Orden
+                  - combobox "Orden" [ref=f16e206] [cursor=pointer]:
+                    - option "Más recientes" [selected]
+                    - option "Mayor total"
+                    - option "Vencen primero"
+            - group "Filtrar por estado" [ref=f16e207]:
+              - button "Todos 51" [pressed] [ref=f16e208] [cursor=pointer]:
+                - text: Todos
+                - generic [ref=f16e209]: "51"
+              - button "Borrador 30" [ref=f16e210] [cursor=pointer]:
+                - text: Borrador
+                - generic [ref=f16e211]: "30"
+              - button "Convertido 19" [ref=f16e212] [cursor=pointer]:
+                - text: Convertido
+                - generic [ref=f16e213]: "19"
+              - button "Cancelado 2" [ref=f16e214] [cursor=pointer]:
+                - text: Cancelado
+                - generic [ref=f16e215]: "2"
+          - paragraph [ref=f16e216]: 51 presupuestos
+          - generic [ref=f16e217]:
+            - table "Listado de presupuestos" [ref=f16e219]:
+              - rowgroup [ref=f16e220]:
+                - row [ref=f16e221]:
+                  - columnheader "#" [ref=f16e222]
+                  - columnheader "Cliente" [ref=f16e223]
+                  - columnheader "Fecha" [ref=f16e224]
+                  - columnheader "Total" [ref=f16e225]
+                  - columnheader "Validez" [ref=f16e226]
+                  - columnheader "Estado" [ref=f16e227]
+                  - columnheader "Acciones" [ref=f16e228]
+              - rowgroup [ref=f16e230]:
+                - row [ref=f16e231] [cursor=pointer]:
+                  - cell [ref=f16e232]:
+                    - link "P-0051" [ref=f16e234]:
+                      - /url: ./quotes/6e13fc37-8eb6-46f9-9484-67844caedd0e
+                  - cell [ref=f16e235]:
+                    - paragraph [ref=f16e236]: Oslavio Moscatini
+                    - paragraph [ref=f16e237]: E-85302
+                  - cell [ref=f16e238]:
+                    - paragraph [ref=f16e239]: 13/11/26
+                    - paragraph [ref=f16e240]: hace 5 d
+                  - cell "USD 100,00" [ref=f16e241]
+                  - cell "Sin vencimiento" [ref=f16e242]
+                  - cell "Borrador" [ref=f16e243]
+                  - cell [ref=f16e245]:
+                    - button "Más acciones" [ref=f16e248]
+                - row [ref=f16e253] [cursor=pointer]:
+                  - cell [ref=f16e254]:
+                    - link "P-0050" [ref=f16e256]:
+                      - /url: ./quotes/dc80c4ea-d12c-4f11-b882-ec9ef41c7137
+                  - cell [ref=f16e257]:
+                    - paragraph [ref=f16e258]: Pacsy Rodriguez
+                    - paragraph [ref=f16e259]: V-13808673
+                  - cell [ref=f16e260]:
+                    - paragraph [ref=f16e261]: 11/11/26
+                    - paragraph [ref=f16e262]: hace 7 d
+                  - cell "USD 290,00" [ref=f16e263]
+                  - cell "Sin vencimiento" [ref=f16e264]
+                  - cell "Borrador" [ref=f16e265]
+                  - cell [ref=f16e267]:
+                    - button "Más acciones" [ref=f16e270]
+                - row [ref=f16e275] [cursor=pointer]:
+                  - cell [ref=f16e276]:
+                    - link "P-0049" [ref=f16e278]:
+                      - /url: ./quotes/e6fdc2b8-2e55-43bb-b1ab-ecf8406f2de5
+                  - cell [ref=f16e279]:
+                    - paragraph [ref=f16e280]: Gabriel Parra
+                    - paragraph [ref=f16e281]: V-28262891
+                  - cell [ref=f16e282]:
+                    - paragraph [ref=f16e283]: 10/11/26
+                    - paragraph [ref=f16e284]: hace 8 d
+                  - cell "USD 190,00" [ref=f16e285]
+                  - cell [ref=f16e286]:
+                    - generic [ref=f16e287]:
+                      - text: Venta
+                      - link "#0298" [ref=f16e288]:
+                        - /url: ./sales/6aa32970-2a76-4c97-a9e4-8f0ad554f832
+                  - cell "Convertido" [ref=f16e289]
+                  - cell [ref=f16e291]:
+                    - button "Más acciones" [ref=f16e294]
+                - row [ref=f16e299] [cursor=pointer]:
+                  - cell [ref=f16e300]:
+                    - link "P-0048" [ref=f16e302]:
+                      - /url: ./quotes/7034d098-1397-4ed7-a408-22a5084f400a
+                  - cell [ref=f16e303]:
+                    - paragraph [ref=f16e304]: Oslavio Moscatini
+                    - paragraph [ref=f16e305]: V-5392101
+                  - cell [ref=f16e306]:
+                    - paragraph [ref=f16e307]: 10/11/26
+                    - paragraph [ref=f16e308]: hace 8 d
+                  - cell "USD 80,00" [ref=f16e309]
+                  - cell "Sin vencimiento" [ref=f16e310]
+                  - cell "Borrador" [ref=f16e311]
+                  - cell [ref=f16e313]:
+                    - button "Más acciones" [ref=f16e316]
+                - row [ref=f16e321] [cursor=pointer]:
+                  - cell [ref=f16e322]:
+                    - link "P-0047" [ref=f16e324]:
+                      - /url: ./quotes/4dd7d88d-dbec-4cc6-b646-3c1941d19b23
+                  - cell [ref=f16e325]:
+                    - paragraph [ref=f16e326]: Angel Guilliani
+                    - paragraph [ref=f16e327]: V-11782372
+                  - cell [ref=f16e328]:
+                    - paragraph [ref=f16e329]: 07/11/26
+                    - paragraph [ref=f16e330]: hace 11 d
+                  - cell "USD 140,00" [ref=f16e331]
+                  - cell [ref=f16e332]:
+                    - generic [ref=f16e333]:
+                      - text: Venta
+                      - link "#0292" [ref=f16e334]:
+                        - /url: ./sales/f72228e7-ccd7-4eb8-8210-bd878d8aa43f
+                  - cell "Convertido" [ref=f16e335]
+                  - cell [ref=f16e337]:
+                    - button "Más acciones" [ref=f16e340]
+                - row [ref=f16e345] [cursor=pointer]:
+                  - cell [ref=f16e346]:
+                    - link "P-0046" [ref=f16e348]:
+                      - /url: ./quotes/475a6173-9768-4cfe-bbcd-88a17ab2cf63
+                  - cell [ref=f16e349]:
+                    - paragraph [ref=f16e350]: Maricruz Barreto
+                    - paragraph [ref=f16e351]: V-27299932
+                  - cell [ref=f16e352]:
+                    - paragraph [ref=f16e353]: 06/11/26
+                    - paragraph [ref=f16e354]: hace 12 d
+                  - cell "USD 130,00" [ref=f16e355]
+                  - cell [ref=f16e356]:
+                    - generic [ref=f16e357]:
+                      - text: Venta
+                      - link "#0291" [ref=f16e358]:
+                        - /url: ./sales/f7e9fab7-15fc-4248-a520-4f442d6c45de
+                  - cell "Convertido" [ref=f16e359]
+                  - cell [ref=f16e361]:
+                    - button "Más acciones" [ref=f16e364]
+                - row [ref=f16e369] [cursor=pointer]:
+                  - cell [ref=f16e370]:
+                    - link "P-0045" [ref=f16e372]:
+                      - /url: ./quotes/3979d5fc-6fe1-4ef5-9fc0-f556f1799e24
+                  - cell [ref=f16e373]:
+                    - paragraph [ref=f16e374]: Ariannys Gutierrez
+                    - paragraph [ref=f16e375]: V-15335747
+                  - cell [ref=f16e376]:
+                    - paragraph [ref=f16e377]: 06/11/26
+                    - paragraph [ref=f16e378]: hace 12 d
+                  - cell "USD 175,00" [ref=f16e379]
+                  - cell [ref=f16e380]:
+                    - generic [ref=f16e381]:
+                      - text: Venta
+                      - link "#0295" [ref=f16e382]:
+                        - /url: ./sales/4c35fe20-288e-4b54-9882-2c5e09b46665
+                  - cell "Convertido" [ref=f16e383]
+                  - cell [ref=f16e385]:
+                    - button "Más acciones" [ref=f16e388]
+                - row [ref=f16e393] [cursor=pointer]:
+                  - cell [ref=f16e394]:
+                    - link "P-0044" [ref=f16e396]:
+                      - /url: ./quotes/511d790c-0eea-4671-8990-c4e481e1fdbc
+                  - cell [ref=f16e397]:
+                    - paragraph [ref=f16e398]: Sin cliente
+                  - cell [ref=f16e399]:
+                    - paragraph [ref=f16e400]: 06/11/26
+                    - paragraph [ref=f16e401]: hace 12 d
+                  - cell "USD 110,00" [ref=f16e402]
+                  - cell "Sin vencimiento" [ref=f16e403]
+                  - cell "Borrador" [ref=f16e404]
+                  - cell [ref=f16e406]:
+                    - button "Más acciones" [ref=f16e409]
+                - row [ref=f16e414] [cursor=pointer]:
+                  - cell [ref=f16e415]:
+                    - link "P-0043" [ref=f16e417]:
+                      - /url: ./quotes/33315e3b-37c3-406e-970b-cfe395d58e39
+                  - cell [ref=f16e418]:
+                    - paragraph [ref=f16e419]: Sin cliente
+                  - cell [ref=f16e420]:
+                    - paragraph [ref=f16e421]: 05/11/26
+                    - paragraph [ref=f16e422]: hace 13 d
+                  - cell "USD 130,00" [ref=f16e423]
+                  - cell "Sin vencimiento" [ref=f16e424]
+                  - cell "Borrador" [ref=f16e425]
+                  - cell [ref=f16e427]:
+                    - button "Más acciones" [ref=f16e430]
+                - row [ref=f16e435] [cursor=pointer]:
+                  - cell [ref=f16e436]:
+                    - link "P-0042" [ref=f16e438]:
+                      - /url: ./quotes/039efc1a-d201-4358-81b8-b6ee55f6e0ea
+                  - cell [ref=f16e439]:
+                    - paragraph [ref=f16e440]: Sin cliente
+                  - cell [ref=f16e441]:
+                    - paragraph [ref=f16e442]: 05/11/26
+                    - paragraph [ref=f16e443]: hace 13 d
+                  - cell "USD 390,00" [ref=f16e444]
+                  - cell "Sin vencimiento" [ref=f16e445]
+                  - cell "Borrador" [ref=f16e446]
+                  - cell [ref=f16e448]:
+                    - button "Más acciones" [ref=f16e451]
+            - generic [ref=f16e456]:
+              - generic [ref=f16e457]:
+                - paragraph [ref=f16e458]: Mostrando 1–10 de 51 presupuestos
+                - generic [ref=f16e459]: "Selección: total USD 10.435,25"
+                - generic [ref=f16e460]:
+                  - text: Por página
+                  - combobox "Por página" [ref=f16e461] [cursor=pointer]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+              - navigation "Paginación" [ref=f16e462]:
+                - button "Página anterior" [disabled] [ref=f16e463]: ‹
+                - button "Página 1" [ref=f16e464] [cursor=pointer]: "1"
+                - button "Página 2" [ref=f16e465] [cursor=pointer]: "2"
+                - button "Página 3" [ref=f16e466] [cursor=pointer]: "3"
+                - button "Página 4" [ref=f16e467] [cursor=pointer]: "4"
+                - button "Página 5" [ref=f16e468] [cursor=pointer]: "5"
+                - button "Página siguiente" [ref=f16e469] [cursor=pointer]: ›

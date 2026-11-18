@@ -117,7 +117,9 @@
 		selectedCustomer = null;
 		newCustomer = null;
 		customerMode = forceCustomerRequired || !quote.customer ? 'lookup' : 'card';
-		lookupKey += 1;
+		// Reset del CustomerLookupInput (escritura directa: no leer el contador aquí,
+		// un `+=` crearía un loop read+write en este mismo effect).
+		lookupKey = Date.now();
 		preview = null;
 
 		void (async () => {
@@ -369,9 +371,7 @@
 											<TriangleAlert class="h-4 w-4 shrink-0 text-warning" />
 											<span class="min-w-0 flex-1">{item.label} cambió de precio en catálogo</span>
 											<span class="font-semibold text-on-warning-container tabular-nums">
-												USD {formatPrice(item.price.quoted)} → {formatPrice(
-													item.price.current ?? 0
-												)}
+												{formatPrice(item.price.quoted)} → {formatPrice(item.price.current ?? 0)}
 											</span>
 										</p>
 									</li>

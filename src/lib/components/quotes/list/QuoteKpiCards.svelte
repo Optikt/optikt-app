@@ -21,14 +21,14 @@
 	);
 </script>
 
-<div class="grid grid-cols-1 gap-3 md:grid-cols-[1.35fr_1fr_1fr]">
+<div class="grid grid-cols-2 gap-3 md:grid-cols-[1.35fr_1fr_1fr]">
 	<TriggerTooltip text="Filtra los borradores y los ordena de mayor a menor total">
 		{#snippet trigger({ props })}
 			<button
 				{...props}
 				type="button"
 				onclick={() => onSelect('open')}
-				class="{cardBase} bg-brand-navy"
+				class="{cardBase} col-span-2 bg-brand-navy md:col-span-1"
 			>
 				<span class="text-[11px] font-bold tracking-[0.08em] text-white/70 uppercase">
 					Abiertos

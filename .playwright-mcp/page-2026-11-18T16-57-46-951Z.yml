@@ -1,0 +1,8 @@
+- generic [ref=f4e2]:
+  - region "Notifications alt+T"
+  - generic [ref=f4e3]:
+    - paragraph [ref=f4e4]: "500"
+    - heading "Error del servidor" [level=1] [ref=f4e5]
+    - paragraph [ref=f4e6]: ChevronDown is not defined
+    - link "Volver al inicio" [ref=f4e7] [cursor=pointer]:
+      - /url: ../

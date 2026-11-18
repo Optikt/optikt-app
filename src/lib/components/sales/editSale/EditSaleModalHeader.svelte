@@ -53,7 +53,7 @@
 </script>
 
 <header
-	class="relative flex min-h-[68px] items-center gap-3 overflow-hidden bg-brand-navy px-5 py-2.5 text-white"
+	class="header relative flex min-h-[68px] items-center gap-3 overflow-hidden bg-brand-navy px-5 py-2.5 text-white"
 >
 	<!-- Brand decorative diagonals (aria-hidden) -->
 	<span
@@ -65,8 +65,10 @@
 		class="pointer-events-none absolute top-[-10px] right-[394px] bottom-[-10px] w-3 -skew-x-[20deg] bg-brand-gold"
 	></span>
 
-	<div class="relative z-[1] min-w-0 flex-1">
-		<h1 class="font-heading flex items-center gap-2.5 text-[19px] font-bold tracking-[-0.01em]">
+	<div class="title-block relative z-[1] min-w-0 flex-1">
+		<h1
+			class="font-heading flex flex-wrap items-center gap-2.5 text-[19px] font-bold tracking-[-0.01em]"
+		>
 			{title}
 			<span class="rounded-[4px] bg-brand-blue px-2 py-px text-[13px] font-bold text-brand-navy">
 				{orderId}
@@ -82,7 +84,7 @@
 			role="switch"
 			aria-checked={isCashea}
 			onclick={toggleCashea}
-			class={`group flex items-center gap-2.5 rounded-xl border py-1.5 pr-3.5 pl-2 text-left transition-all duration-200 ${
+			class={`cashea-toggle group flex items-center gap-2.5 rounded-xl border py-1.5 pr-3.5 pl-2 text-left transition-all duration-200 ${
 				isCashea
 					? 'border-brand-gold bg-brand-gold text-brand-navy'
 					: 'border-white/30 bg-white/8 text-white'
@@ -145,6 +147,32 @@
 		button[data-clicked='true'],
 		button[data-clicked='true'] .cashea-logo-pop {
 			animation: none;
+		}
+	}
+
+	/* Móvil (<700): el título y el toggle Cashea no deben solaparse.
+	   Grid de 2 columnas: título | X en la fila 1, toggle a la derecha abajo. */
+	@media (max-width: 700px) {
+		.header {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			row-gap: 10px;
+		}
+		.title-block {
+			grid-column: 1;
+			grid-row: 1;
+		}
+		.title-block h1 {
+			font-size: 17px;
+		}
+		.header :global(.cashea-toggle) {
+			grid-column: 1 / -1;
+			grid-row: 2;
+			justify-self: end;
+		}
+		.header > button[aria-label='Cerrar'] {
+			grid-column: 2;
+			grid-row: 1;
 		}
 	}
 </style>

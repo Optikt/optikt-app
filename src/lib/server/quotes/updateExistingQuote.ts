@@ -1,12 +1,9 @@
-import { toSaleTotalsLine } from '$lib/shared/saleTotals';
-import { findQuoteById, deleteQuoteItems } from '$lib/server/db/queries/quotes';
+import { toSaleTotalsLine, computeSaleTotals } from '$lib/shared/saleTotals';
+import { findQuoteById, deleteQuoteItems, updateQuote } from '$lib/server/db/queries/quotes';
 import { db } from '$lib/server/db';
-import { quotes } from '$lib/server/db/schema';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { auditService } from '$lib/server/audit';
 import { insertQuoteItems } from '$lib/server/quotes/quoteItemInsert';
-import { eq } from 'drizzle-orm';
 import { composeBusinessTimestamp, nowISO } from '$lib/dates';
 import type { UpdateQuoteInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
@@ -43,10 +40,10 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 	const quote = await db.transaction(async (tx) => {
 		const now = nowISO();
 
-		// Update quote header
-		const [updated] = await tx
-			.update(quotes)
-			.set({
+		// Update quote header (query function con executor — sin Drizzle inline)
+		const updated = await updateQuote(
+			data.id,
+			{
 				customerId: data.customerId !== undefined ? data.customerId : existing.customerId,
 				...(data.quoteDate !== undefined
 					? { quoteDate: composeBusinessTimestamp(data.quoteDate) }
@@ -65,14 +62,15 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 						: existing.validUntil,
 				notes: data.notes !== undefined ? data.notes : existing.notes,
 				updatedAt: now
-			})
-			.where(eq(quotes.id, data.id))
-			.returning();
+			},
+			tx
+		);
 
 		// Delete existing items and recreate (cascade deletes quoteItemFreeDetails)
 		await deleteQuoteItems(data.id, tx);
 		await insertQuoteItems(tx, data.id, data.items, now);
 
+		if (!updated) throw new Error('Presupuesto no encontrado al actualizar');
 		return updated;
 	});
 

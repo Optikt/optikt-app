@@ -1,0 +1,288 @@
+- generic [ref=f14e2]:
+  - region "Notifications alt+T"
+  - generic [ref=f14e3]:
+    - banner [ref=f14e4]:
+      - generic [ref=f14e5]:
+        - button "Abrir menú de navegación" [ref=f14e6] [cursor=pointer]
+        - link [ref=f14e8] [cursor=pointer]:
+          - /url: /dashboard
+          - img "Optikt" [ref=f14e9]
+        - generic [ref=f14e21]:
+          - generic [ref=f14e22]:
+            - button "Abrir tasas de cambio" [ref=f14e24] [cursor=pointer]
+            - button "Abrir menú de soporte" [ref=f14e28] [cursor=pointer]:
+              - generic [ref=f14e494]: "5"
+            - button "Abrir notificaciones" [ref=f14e37] [cursor=pointer]:
+              - generic [ref=f14e495]: "44"
+          - button "O" [ref=f14e42] [cursor=pointer]
+      - textbox "Buscar productos, lentes... (+3.50 -2.00)" [ref=f14e50]
+    - generic [ref=f14e51]:
+      - complementary [ref=f14e52]:
+        - generic [ref=f14e53]:
+          - generic [ref=f14e54]:
+            - paragraph [ref=f14e55]: Navegación
+            - paragraph [ref=f14e56]: Accesos rápidos
+          - button "Cerrar menú" [ref=f14e57] [cursor=pointer]
+        - navigation [ref=f14e61]:
+          - link "Dashboard" [ref=f14e62] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Clientes" [ref=f14e68] [cursor=pointer]:
+            - /url: /customers
+          - link "Inventario" [ref=f14e76] [cursor=pointer]:
+            - /url: /products
+          - link "Ventas" [ref=f14e83] [cursor=pointer]:
+            - /url: /sales
+          - link "Cuentas por Cobrar" [ref=f14e91] [cursor=pointer]:
+            - /url: /receivables
+          - link "Presupuestos" [ref=f14e100] [cursor=pointer]:
+            - /url: /quotes
+          - link "Catálogo Lentes" [ref=f14e106] [cursor=pointer]:
+            - /url: /lenses
+          - link "Marcas" [ref=f14e112] [cursor=pointer]:
+            - /url: /brands
+          - link "Materiales" [ref=f14e118] [cursor=pointer]:
+            - /url: /materials
+          - link "Proveedores" [ref=f14e125] [cursor=pointer]:
+            - /url: /suppliers
+          - link "Conteo Físico" [ref=f14e133] [cursor=pointer]:
+            - /url: /inventory/count
+          - link "Compras" [ref=f14e141] [cursor=pointer]:
+            - /url: /purchases
+          - link "Caja" [ref=f14e147] [cursor=pointer]:
+            - /url: /cash
+          - link "Reportes" [ref=f14e153] [cursor=pointer]:
+            - /url: /reports
+          - link "Usuarios" [ref=f14e158] [cursor=pointer]:
+            - /url: /users
+          - link "Papelera" [ref=f14e163] [cursor=pointer]:
+            - /url: /trash
+          - link "Backups" [ref=f14e169] [cursor=pointer]:
+            - /url: /backups
+      - main [ref=f14e174]:
+        - generic [ref=f14e175]:
+          - generic [ref=f14e177]:
+            - generic [ref=f14e178]:
+              - generic [ref=f14e179]:
+                - paragraph [ref=f14e180]:
+                  - link "← Presupuestos" [ref=f14e181] [cursor=pointer]:
+                    - /url: /quotes
+                  - text: · Detalle de presupuesto
+                - generic [ref=f14e182]:
+                  - heading "Presupuesto P-0051" [level=1] [ref=f14e183]
+                  - generic [ref=f14e184]: Borrador
+                - generic [ref=f14e185]: Borrador
+              - generic [ref=f14e191]:
+                - generic [ref=f14e192]:
+                  - generic [ref=f14e193]: OM
+                  - generic [ref=f14e194]:
+                    - link "Oslavio Moscatini" [ref=f14e195] [cursor=pointer]:
+                      - /url: /customers/fa813480-a044-42b9-9fd3-e4f58c85395f
+                    - generic [ref=f14e200]:
+                      - button "E-85302" [ref=f14e201]
+                      - generic [ref=f14e206]: Masculino
+                    - generic [ref=f14e207]: Tipuro
+                - generic [ref=f14e212]:
+                  - generic [ref=f14e213]:
+                    - generic [ref=f14e214]: Vendedor
+                    - generic [ref=f14e215]: Yacsuri Rios
+                  - generic [ref=f14e216]:
+                    - generic [ref=f14e217]: Fecha
+                    - generic [ref=f14e218]: 13 nov. 2026
+                  - generic [ref=f14e219]:
+                    - generic [ref=f14e220]: Válido hasta
+                    - generic [ref=f14e221]: Sin vencimiento
+              - generic [ref=f14e222]:
+                - generic [ref=f14e223]:
+                  - paragraph [ref=f14e224]: Total
+                  - paragraph [ref=f14e225]: USD 100,00
+                  - paragraph [ref=f14e496]: ≈ Bs. 91.665,00
+                - button "Desglose" [ref=f14e227] [cursor=pointer]
+                - generic [ref=f14e231]:
+                  - generic [ref=f14e232]:
+                    - generic [ref=f14e233]: Exento
+                    - generic [ref=f14e234]: USD 100,00
+                  - generic [ref=f14e235]:
+                    - generic [ref=f14e236]: Subtotal neto
+                    - generic [ref=f14e237]: USD 100,00
+                - generic [ref=f14e238]:
+                  - paragraph [ref=f14e239]: Si se convierte hoy
+                  - generic [ref=f14e240]:
+                    - paragraph [ref=f14e241]: Stock disponible
+                    - paragraph [ref=f14e245]: 2 precios cambiaron en catálogo
+              - generic [ref=f14e248]:
+                - button "Editar" [ref=f14e249] [cursor=pointer]
+                - button "Duplicar" [ref=f14e252] [cursor=pointer]
+                - button "Imprimir PDF" [ref=f14e256] [cursor=pointer]
+                - button "Más acciones" [ref=f14e261] [cursor=pointer]
+              - button "Convertir a venta" [ref=f14e267] [cursor=pointer]
+            - generic [ref=f14e271]:
+              - generic [ref=f14e273]:
+                - generic [ref=f14e274]:
+                  - heading "Artículos y servicios" [level=2] [ref=f14e275]
+                  - generic [ref=f14e276]: "2"
+                  - switch "Costos internos" [ref=f14e277] [cursor=pointer]
+                - button "Ópticos Autana C.A · CR39 · FOTO · BLUE · Bifocal Ópticos Autana C.A · Incluye Blue Block, Fotocromático OD 0.00 0.00 · Add +3.00 OI +0.50 -0.75 ×155 · Add +3.00 USD 80,00 ≈ Bs. 73.332,00 Ver la fórmula completa" [ref=f14e497] [cursor=pointer]:
+                  - generic [ref=f14e285]:
+                    - link "Ópticos Autana C.A · CR39 · FOTO · BLUE · Bifocal" [ref=f14e287]:
+                      - /url: /lenses/8218d09b-26a6-4c05-b9f7-fb7d7a375a22
+                    - paragraph [ref=f14e288]: Ópticos Autana C.A · Incluye Blue Block, Fotocromático
+                    - generic [ref=f14e289]:
+                      - paragraph [ref=f14e290]: OD 0.00 0.00 · Add +3.00
+                      - paragraph [ref=f14e291]: OI +0.50 -0.75 ×155 · Add +3.00
+                  - generic [ref=f14e292]: USD 80,00
+                  - generic [ref=f14e498]: ≈ Bs. 73.332,00
+                  - button "Ver la fórmula completa" [ref=f14e295]
+                - generic [ref=f14e298]:
+                  - generic [ref=f14e299]: Prescripción
+                  - generic [ref=f14e304]:
+                    - generic [ref=f14e305]:
+                      - paragraph [ref=f14e306]: OD
+                      - generic [ref=f14e308]:
+                        - generic [ref=f14e309]: ESF
+                        - generic [ref=f14e310]: CIL
+                        - generic [ref=f14e311]: EJE
+                        - generic [ref=f14e312]: ADD
+                        - generic [ref=f14e313]: "+0.00"
+                        - generic [ref=f14e314]: "+0.00"
+                        - generic [ref=f14e315]: —
+                        - generic [ref=f14e316]: "+3.00"
+                      - paragraph [ref=f14e317]: ALT 14 · DP — · DNP —
+                    - generic [ref=f14e318]:
+                      - paragraph [ref=f14e319]: OI
+                      - generic [ref=f14e321]:
+                        - generic [ref=f14e322]: ESF
+                        - generic [ref=f14e323]: CIL
+                        - generic [ref=f14e324]: EJE
+                        - generic [ref=f14e325]: ADD
+                        - generic [ref=f14e326]: "+0.50"
+                        - generic [ref=f14e327]: "-0.75"
+                        - generic [ref=f14e328]: 155°
+                        - generic [ref=f14e329]: "+3.00"
+                      - paragraph [ref=f14e330]: ALT 14 · DP — · DNP —
+                  - generic [ref=f14e331]: Faltan medidas de montaje (ALT, DNP)
+                - button "Nueva Vision · CR39 · Convencional · BLUE · Monofocal Nueva Vision · Incluye Blue Block OD +3.00 OI +3.50 -0.75 ×155 USD 20,00 ≈ Bs. 18.333,00 Ver la fórmula completa" [ref=f14e500] [cursor=pointer]:
+                  - generic [ref=f14e339]:
+                    - link "Nueva Vision · CR39 · Convencional · BLUE · Monofocal" [ref=f14e341]:
+                      - /url: /lenses/5140a244-64b6-4692-89cc-b49c8f6edd6f
+                    - paragraph [ref=f14e342]: Nueva Vision · Incluye Blue Block
+                    - generic [ref=f14e343]:
+                      - paragraph [ref=f14e344]: OD +3.00
+                      - paragraph [ref=f14e345]: OI +3.50 -0.75 ×155
+                  - generic [ref=f14e346]: USD 20,00
+                  - generic [ref=f14e501]: ≈ Bs. 18.333,00
+                  - button "Ver la fórmula completa" [ref=f14e349]
+                - generic [ref=f14e352]:
+                  - generic [ref=f14e353]: Prescripción
+                  - generic [ref=f14e358]:
+                    - generic [ref=f14e359]:
+                      - paragraph [ref=f14e360]: OD
+                      - generic [ref=f14e362]:
+                        - generic [ref=f14e363]: ESF
+                        - generic [ref=f14e364]: CIL
+                        - generic [ref=f14e365]: EJE
+                        - generic [ref=f14e366]: ADD
+                        - generic [ref=f14e367]: "+3.00"
+                        - generic [ref=f14e368]: —
+                        - generic [ref=f14e369]: —
+                        - generic [ref=f14e370]: —
+                    - generic [ref=f14e371]:
+                      - paragraph [ref=f14e372]: OI
+                      - generic [ref=f14e374]:
+                        - generic [ref=f14e375]: ESF
+                        - generic [ref=f14e376]: CIL
+                        - generic [ref=f14e377]: EJE
+                        - generic [ref=f14e378]: ADD
+                        - generic [ref=f14e379]: "+3.50"
+                        - generic [ref=f14e380]: "-0.75"
+                        - generic [ref=f14e381]: 155°
+                        - generic [ref=f14e382]: —
+              - generic [ref=f14e383]:
+                - generic [ref=f14e384]:
+                  - heading "Historial" [level=2] [ref=f14e390]
+                  - generic [ref=f14e391]: 1 eventos
+                  - button "Ver todo" [ref=f14e392] [cursor=pointer]
+                - list [ref=f14e394]:
+                  - listitem [ref=f14e395]:
+                    - generic [ref=f14e398]:
+                      - text: Presupuesto creado
+                      - paragraph [ref=f14e399]: Yacsuri Rios · 13 nov. 2026, 10:14 a. m.
+          - generic [ref=f14e504]:
+            - button "Convertir a venta" [ref=f14e505] [cursor=pointer]
+            - button "Más" [ref=f14e506] [cursor=pointer]
+          - dialog [ref=f14e508]:
+            - generic [ref=f14e510]:
+              - heading "Acciones del presupuesto" [level=2] [ref=f14e511]
+              - button "Cerrar acciones" [ref=f14e512] [cursor=pointer]
+            - generic [ref=f14e515]:
+              - button "Editar Ítems, descuento, Cashea, validez" [ref=f14e516] [cursor=pointer]:
+                - generic [ref=f14e519]:
+                  - generic [ref=f14e520]: Editar
+                  - generic [ref=f14e521]: Ítems, descuento, Cashea, validez
+              - button "Duplicar Nuevo presupuesto para otro cliente" [ref=f14e522] [cursor=pointer]:
+                - generic [ref=f14e525]:
+                  - generic [ref=f14e526]: Duplicar
+                  - generic [ref=f14e527]: Nuevo presupuesto para otro cliente
+              - button "Imprimir PDF" [ref=f14e528] [cursor=pointer]
+              - button "Ver historial" [ref=f14e532] [cursor=pointer]
+              - button "Cancelar presupuesto" [ref=f14e537] [cursor=pointer]
+          - dialog [ref=f14e401]:
+            - generic [ref=f14e402]:
+              - generic [ref=f14e403]:
+                - heading "Modificar presupuesto P-0051" [level=1] [ref=f14e404]:
+                  - text: Modificar presupuesto
+                  - generic [ref=f14e405]: P-0051
+                - paragraph [ref=f14e406]: Oslavio Moscatini · E-85302
+              - switch "Sin Cashea No · clic para marcar" [ref=f14e407] [cursor=pointer]:
+                - generic [ref=f14e412]:
+                  - generic [ref=f14e413]: Sin Cashea
+                  - generic [ref=f14e414]: No · clic para marcar
+              - button "Cerrar" [ref=f14e415] [cursor=pointer]
+            - generic [ref=f14e419]:
+              - generic [ref=f14e423]: Válido hasta — (sin vencimiento)
+              - generic [ref=f14e428]: Sin nota
+              - button "Editar" [ref=f14e432] [cursor=pointer]
+            - generic [ref=f14e435]:
+              - paragraph [ref=f14e436]: 0 artículo(s), 0 quitado(s).
+              - generic [ref=f14e437]:
+                - heading "Artículos" [level=2] [ref=f14e438]
+                - generic [ref=f14e439]: "0"
+                - button "Agregar" [ref=f14e441] [cursor=pointer]
+              - paragraph [ref=f14e445]: Sin artículos todavía — agrega el primero
+            - generic [ref=f14e447]:
+              - generic [ref=f14e448]:
+                - generic [ref=f14e449]:
+                  - generic [ref=f14e450]:
+                    - generic [ref=f14e451]: Subtotal
+                    - generic [ref=f14e452]: USD 0,00
+                  - generic [ref=f14e453]:
+                    - generic [ref=f14e454]: Descuento de la orden
+                    - button "Agregar" [ref=f14e456] [cursor=pointer]
+                  - generic [ref=f14e458]:
+                    - generic [ref=f14e459]:
+                      - group [ref=f14e460]:
+                        - button [pressed] [ref=f14e461] [cursor=pointer]: $
+                        - button [ref=f14e462] [cursor=pointer]: "%"
+                      - spinbutton [ref=f14e463]: "0"
+                    - button [ref=f14e464] [cursor=pointer]
+                - generic [ref=f14e468]:
+                  - status [ref=f14e469]: Debe quedar al menos un artículo
+                  - generic [ref=f14e470]:
+                    - button "Cancelar" [ref=f14e471] [cursor=pointer]
+                    - button "Guardar cambios" [disabled] [ref=f14e472]
+              - generic [ref=f14e473]:
+                - generic [ref=f14e474]: Total
+                - generic [ref=f14e475]: USD 0,00
+          - dialog [ref=f14e476]:
+            - generic [ref=f14e477]:
+              - heading "Historial del presupuesto" [level=2] [ref=f14e478]
+              - button "Cerrar historial" [ref=f14e479] [cursor=pointer]
+            - generic [ref=f14e483]:
+              - generic [ref=f14e484]:
+                - button "Todos" [pressed] [ref=f14e485] [cursor=pointer]
+                - button "Ediciones" [ref=f14e486] [cursor=pointer]
+                - button "Estados" [ref=f14e487] [cursor=pointer]
+              - list [ref=f14e488]:
+                - listitem [ref=f14e489]:
+                  - generic [ref=f14e492]:
+                    - text: Presupuesto creado
+                    - paragraph [ref=f14e493]: Yacsuri Rios · 13 nov. 2026, 10:14 a. m.

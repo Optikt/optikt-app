@@ -99,9 +99,25 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 - Listado: `shared/saleBalance.spec.ts`, `components/sales/listParams.spec.ts`, `components/sales/saleDisplay.spec.ts`; a nivel DB `queries/sales/list.int.spec.ts` (stats/facetas/selección/saldo/flags) y `queries/userPreferences.int.spec.ts` (ambos `project=integration`, requieren Docker).
 - E2E de dinero: `e2e/sale-payment.test.ts`, `e2e/quote-to-sale.test.ts`.
 
+**Componentes compartidos con quotes (plan `quotes-redesign`)**
+
+- El CSS del hero navy se extrajo a `$lib/components/layout/heroNavy.css` (grid por áreas `hl/hc2/mon/acts/hcta`, franjas, `.hero-btn`, container queries `<700/≥700/≥1500`); `SaleDetailHero.svelte` y `QuoteDetailHero.svelte` lo importan — **no duplicar el CSS**. `SaleDetailHeroActions` ya no define `.hero-btn` (vive en el CSS compartido). Registro en `docs/agents/shared.md`.
+- `SaleDetailHeroCustomer` acepta `emptyState?: Snippet` opcional: ventas siguen con el fallback "—"; el detalle de presupuesto sin cliente pasa su propio estado vacío con "Asignar cliente ahora".
+- `SaleItemsTable` acepta `groups?: DisplayGroup[]`, `headerBadge?: Snippet` y `sectionTitle?` opcionales: por defecto calcula sus grupos igual que siempre (cero regresión); quotes pasa los grupos de `quoteItemsAdapter.ts` y el badge "Solo lectura · tal como se presupuestó".
+- `EditSaleModal` acepta `quote?`/`quoteItems?` (modo presupuesto vía `quoteEditAdapter.ts`); en modo venta (default) el comportamiento es idéntico. `EditSaleModalHeader` tiene `title`/`numberLabel`/`entityNoun` opcionales; `EditSaleMetaBar` tiene `showValidUntil` (**solo quotes**: ventas no muestran "Válido hasta"); `EditSaleFooter` tiene `requireReason`/`saveTooltipOverride` (quotes no pide motivo).
+- `SaleListHeader`, `SaleFilterBar`, `SaleStatusTabs`, `SaleFilterChips`, `SaleListFooter` se generalizaron con props opcionales para el listado de presupuestos; los call sites de ventas pasan los mismos valores de siempre (`onCreate` navega con `resolve()`).
+- `toSaleTotalsLine` y `resolveLensSnapshotCosts` viven en `$lib/shared/` (fuente única con quotes); ya no hay duplicado en `remote/sales/helpers.ts`.
+
+**D12 / D13 (decisiones del mockup de quotes aplicadas también a ventas)**
+
+- **D12:** la X de cerrar sobre header navy (`EditSaleModalHeader`) usa `bg-white/15 text-white ring-1 ring-white/30 hover:bg-white/25`; nunca el gris tenue anterior. Regla repo-wide en `.github/instructions/design-ui.instructions.md`.
+- **D13:** en `SaleDetailHero.svelte` (`.money-tools`), "Desglose" (con `List` + chevron rotativo) y "Calcular factura" (con `Calculator`) son botones visibles: `inline-flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-semibold whitespace-nowrap text-white hover:bg-white/20`. Se conservan el `TriggerTooltip` de "Calcular factura" y la rotación del chevron. El detalle de presupuesto usa el mismo estilo para su "Desglose".
+
 ## Known gaps / tech debt
 
 - 🟡 `updateSaleFifo.int.spec.ts` existe pero **su fuente `updateSaleFifo.ts` aún no** — spec avanzado del plan; extraer la lógica FIFO de update antes de confiar en el spec.
+- 🟠 **Fórmulas multi-persona (compartido con quotes):** `SaleItem.prescriptionId` apunta a UNA prescripción del cliente de la venta y no hay forma de asociar el lente a otra persona (madre e hija, pareja). Hoy la conversión desde quote deriva una sola fórmula con `firstDefined` y pisa la `isCurrent` del titular. A futuro: persona/beneficiario por ítem LENS_PAIR y no sobrescribir la fórmula vigente del cliente titular. Ver `docs/agents/quotes.md`.
+- 🟡 `getNextOrderNumber` sigue siendo MAX+1 dentro de la tx (mismo problema de concurrencia que tenía quotes); fuera de alcance del plan quotes-redesign — migrar a sequence en otro plan.
 - 🟡 `PaymentForm` family: el state factory vive en `components/sales/payments/` aunque la UI adapter está en `components/payments/` (herencia del factory transversal) — mover al unificar pagos (plan pr5).
 - 🟡 `resolveLensSnapshotCosts` duplicado (`remote/quotes/helpers.ts` vs `remote/sales/helpers.ts:35-58`) — consolidar en `src/lib/shared/`.
 - 🟡 Fecha-verdad (composición Caracas) pendiente para: `sale_payments.paymentDate`, `purchase_orders.orderDate`, `quotes.quoteDate`, `prescriptions.prescriptionDate` .

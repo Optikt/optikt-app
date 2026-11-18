@@ -9,6 +9,7 @@
 	import SaleItemsTable from '$lib/components/sales/itemsTable/SaleItemsTable.svelte';
 	import { canOperate } from '$lib/shared/enums';
 	import { getErrorMessage, replaceUrlSearch } from '$lib/utils';
+	import { logger } from '$lib/utils/logger';
 	import { toast } from 'svelte-sonner';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
@@ -76,6 +77,9 @@
 
 	// ── Tabla de ítems (solo lectura, reusa SaleItemsTable) ────────────────
 	const displayItems = $derived(data.items);
+	const saleLikeItems = $derived(
+		displayItems.map((item) => quoteItemToDisplayItem(item, quote.id))
+	);
 	const groups = $derived(buildQuoteDisplayGroups(displayItems, quote.id));
 	// Subtotal neto para el margen (desglose de ventas sobre los ítems de quote).
 	const subtotalNet = $derived.by(() => {
@@ -180,6 +184,7 @@
 				toast.error(result.error ?? 'Error cancelando presupuesto');
 			}
 		} catch (e) {
+			logger.error('Error cancelando presupuesto', e);
 			toast.error(getErrorMessage(e, 'Error cancelando presupuesto'));
 		} finally {
 			actionLoading = false;
@@ -250,7 +255,7 @@
 					{/if}
 				{/snippet}
 				<SaleItemsTable
-					items={displayItems.map((item) => quoteItemToDisplayItem(item, quote.id))}
+					items={saleLikeItems}
 					{subtotalNet}
 					allowCostEdit={false}
 					bsRate={bcvRate}

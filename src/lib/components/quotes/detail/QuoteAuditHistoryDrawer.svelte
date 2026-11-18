@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { X } from '@lucide/svelte';
-	import { ArrowRightLeft, CircleX, Pen, Plus } from '@lucide/svelte';
+	import { ArrowRightLeft, CircleX, Pen, Plus, X } from '@lucide/svelte';
 	import SlideOver from '$lib/components/ui/SlideOver.svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import { formatDate } from '$lib/utils';

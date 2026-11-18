@@ -433,6 +433,7 @@
 					toast.error(submitError);
 				}
 			} catch (e) {
+				logger.error('Error actualizando presupuesto', e);
 				submitError = getErrorMessage(e, 'Error actualizando presupuesto');
 				toast.error(submitError);
 			} finally {
@@ -523,7 +524,7 @@
 				onClose={onclose}
 			/>
 			{#if view === 'list'}
-				<EditSaleMetaBar bind:saleDate bind:notes bind:validUntil />
+				<EditSaleMetaBar bind:saleDate bind:notes bind:validUntil showValidUntil={true} />
 			{/if}
 		{:else if sale}
 			<EditSaleModalHeader
