@@ -86,3 +86,4 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 ## Planes completados
 
 - **2026-11 · quotes-altura** — Altura por ojo en presupuestos (DT15)
+- **2026-11 · quotes-redesign** — Rediseño completo de Presupuestos: lista, detalle (hero/móvil/historial), drawer de edición y modal de conversión reutilizando componentes de ventas; backend con Cashea, sequence, guard de concurrencia, cliente inline en una tx y preview de conversión; duplicar desde cualquier estado con sourceQuoteId; docs y deuda multi-persona documentada. Verificación: /verify 3 PASS (125 archivos, 1356 tests), coverage 99.9%, screenshots 390/1280/2560, subagentes PASS con hallazgos corregidos. PR #229. (#229)
