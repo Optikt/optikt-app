@@ -4,7 +4,8 @@ import {
 	quoteValidity,
 	quoteValidityDetailText,
 	quoteValidityListText,
-	shortDateLabel
+	shortDateLabel,
+	businessDateISO
 } from './quoteValidity';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 
@@ -93,5 +94,12 @@ describe('textos', () => {
 
 	it('shortDateLabel', () => {
 		expect(shortDateLabel('2026-11-09')).toBe('09/11');
+	});
+});
+
+describe('businessDateISO', () => {
+	it('usa el día de Caracas, no el UTC (01:30Z del 15 ≈ 21:30 del 14)', () => {
+		expect(businessDateISO('2026-11-15T01:30:00.000Z')).toBe('2026-11-14');
+		expect(businessDateISO('2026-11-14T20:10:00.000Z')).toBe('2026-11-14');
 	});
 });
