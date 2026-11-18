@@ -50,7 +50,7 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 
 ## Planes completados
 
-- **2026-11 · sales-list-mobile** — Kit móvil compartido (SlideOver drag-close, ScrollableRow, Carousel, Fab, búsqueda global plegable <lg con lógica compartida) + NavLink min-h-11 + urlState con wrapper replaceState
+- **2026-11 · sales-list-mobile** — Kit móvil compartido (SlideOver drag-close, ScrollableRow, Carousel, Fab, búsqueda global plegable <lg con lógica compartida) + NavLink min-h-11 + urlState con wrapper replaceState (#228)
 - **2026-11 · agents-md-por-dominio** — Doc por dominio: índice machine-readable (scripts/agents-domains.json), plantilla, check CI y sembrado core
 - **2026-11 · dt1-decompose** — Programa de descomposición de 39 archivos >500 líneas: completado, gate check-file-size bloqueante en CI (PRs #120-#151)
 - **2026-11 · dt1-t1-split** — Split de los 3 monolitos T1: EditSaleModal 499, LensCatalogForm 463, inventory/count/[id] 513, bajo el gate 520

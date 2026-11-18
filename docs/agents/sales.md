@@ -120,7 +120,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 ## Planes completados
 
-- **2026-11 · sales-list-mobile** — Listado /sales en móvil + búsqueda global plegable en el shell (kit móvil compartido, mockup ventas-listado-mobile)
+- **2026-11 · sales-list-mobile** — Listado /sales en móvil + búsqueda global plegable en el shell (kit móvil compartido, mockup ventas-listado-mobile) (#228)
 - **2026-11 · detalle-venta-bplus** — Detalle de venta B+: pantallas grandes, pagos con quién+motivo, stock drawer, historial con diff y móvil (#225)
 - **2026-11 · dt1-t2-sales** — sales/[id] 792→~300 (luego 504 con B+) + 6 secciones detail/ + saleDetail.ts con spec (#122)
 - **2026-11 · redesign-sale-detail-view** — Rediseño total de /sales/[id] según mockup B: hero navy, artículos, pagos, calculadora de factura, tasa Modo A/B (#216)
