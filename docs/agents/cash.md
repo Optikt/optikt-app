@@ -65,6 +65,7 @@ Egresos operativos de efectivo (`cash_expenses`) + reporte P&L "on-the-fly" de c
 - 🟠 Categoría REFUND con doble significado (compensa pagos de ventas canceladas) — invariant documentado solo en comentario de `report.ts:199-203`; cualquier cambio en el P&L debe considerla.
 
 ## Planes completados
+
 - **2026-11 · dt1-t2-cash** — cash/expenses 912→210 + ExpenseToolbar/Summary/Table/CreateModal + cashClasses
 - **2026-11 · dt1-t2-cashdash** — cash 851→77 + CashToolbar/Summary/Pipeline/DailyTable + cashReport.ts con spec
 - **2026-11 · expense-currency** — Gastos con moneda nativa + labels unificados

@@ -67,4 +67,5 @@ Owner rules: los materiales del producto son del dominio `materials` (referencia
 - 🟡 Barrels legacy en `components/products/**` (y `lenses/**`) — consumibles, no extendibles.
 
 ## Planes completados
+
 - **2026-11 · lazy-catalog-search** — Búsqueda de catálogo lazy con debounce + race-guard

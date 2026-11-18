@@ -35,4 +35,5 @@ Reportes read-only (ventas, pagos, inventario de cristales) con resúmenes agreg
 - 🟠 El resumen de pagos duplica la regla de negocio de reembolsos/retenciones (misma lógica que el P&L de `cash`) — si la tocas, sync con el doc `cash`; candidata a extraerse a un spec.
 
 ## Planes completados
+
 - **2026-11 · layerchart-adopt** — LayerChart 2.x adoptado como librería de charts; tendencia diaria + barras por marca en /reports/sales (#177)

@@ -57,4 +57,5 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 - 🟡 `cancelQuote`/`assignQuoteCustomer` usan audit con `updated!` no-null assertion y sin tx compartida (`lifecycle.remote.ts:57,85`).
 
 ## Planes completados
+
 - **2026-11 · quotes-altura** — Altura por ojo en presupuestos (DT15)

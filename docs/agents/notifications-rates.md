@@ -46,4 +46,5 @@ Tasas de cambio (BCV/USD/EUR/USDT) con caché in-memory + poller + push SSE a to
 - 🟡 El lazy refresh puede bloquear el primer render de venta si la API de tasas está caída (sale wizard espera snapshot).
 
 ## Planes completados
+
 - **2026-11 · rates-sse-fix** — SSE de tasas estabilizado: singleton cliente, cid tracking, poller en hooks.server.ts (resuelto 2026-10-25)

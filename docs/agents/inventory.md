@@ -87,4 +87,5 @@ Owner rules: la creación de lotes/movimientos por PO vive en el flujo de `purch
 - 🟡 Acoplamiento de bordes: `fifoConsumption` de inventory vive en `queries/` (raíz) y `purchases/lifecycle` escribe lotes/movimientos — mantener el borde documentado al refinar cualquier lado.
 
 ## Planes completados
+
 - **2026-11 · conteo-fisico-redesign** — Rediseño total de /inventory/count: Fase 0-3 + CI/CD verdes (#210, #220, #221); ramas restantes eliminadas

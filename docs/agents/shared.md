@@ -46,6 +46,7 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 - Deliberado que NO todos los dominios tienen `int.spec.ts`: solo query fns con escrituras/lecturas monetarias o de inventario — sigue ese criterio en vez de "todos los archivos".
 
 ## Planes completados
+
 - **2026-11 · agents-md-por-dominio** — Doc por dominio: índice machine-readable (scripts/agents-domains.json), plantilla, check CI y sembrado core
 - **2026-11 · dt1-decompose** — Programa de descomposición de 39 archivos >500 líneas: completado, gate check-file-size bloqueante en CI (PRs #120-#151)
 - **2026-11 · dt1-t1-split** — Split de los 3 monolitos T1: EditSaleModal 499, LensCatalogForm 463, inventory/count/[id] 513, bajo el gate 520

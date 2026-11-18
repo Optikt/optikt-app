@@ -42,5 +42,6 @@ PDF A4 server-side vía Chromium headless (puppeteer-core + @sparticuz/chromium)
 - 🟡 Tickera fase 1 síncrona (sin cola de impresión).
 
 ## Planes completados
+
 - **2026-11 · lens-receipt-fix** — Tokens sueltos FOTO/BLUE detectados en labels de PDF y tickera; getPrintItemLabel unificado (#6c645549, #d0d01e7b)
 - **2026-11 · tickera-rate-freeze** — Tasa BCV congelada por venta (snapshot_bcv_rate + resolveTicketRate): reimpresiones deterministas (#966ed371)

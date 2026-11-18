@@ -38,5 +38,6 @@ UI super-admin para historial/estado de backups de PostgreSQL + trigger manual v
 - 🟡 Si la DB está caída el webhook **responde 200 igual**: `publishNotification` traga el error (`notifications/service.ts:29-45`) y la notificación se pierde en silencio — sin retry del remitente. Además el spec `backup-dokploy-spec.md:318` menciona `useCommand()`, que no existe en el código.
 
 ## Planes completados
+
 - **2026-11 · backup-dokploy-migration** — Backup efímero vía cron Dokploy (container sin crond, DNS fresco) + UI /backups con historial, status y trigger manual
 - **2026-11 · backup-ui** — UI de backups con badge de estado, tabla e trigger manual (absorbido por backup-dokploy-migration)

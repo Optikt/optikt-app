@@ -37,4 +37,5 @@ Owner rules: el pago reutiliza tal cual `addPayment` del dominio `sales` (valida
 - 🟠 `setSaleStatus` sin guard de saldo (fuera del alcance del spec, mejora futura — coordinar con doc `sales`).
 
 ## Planes completados
+
 - **2026-11 · receivables-statuses** — Estados múltiples de cobranza

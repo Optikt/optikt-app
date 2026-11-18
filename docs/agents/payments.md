@@ -65,4 +65,5 @@ Owner rules: aquí vive el mecanismo transversal de dinero; las **semánticas po
 - 🟡 `.spec.ts` de `purchaseOrderPayments` vive en `db/queries/` pero testea fns de `src/lib/shared/` — placement mismatch a corregir al refactor.
 
 ## Planes completados
+
 - **2026-11 · pr5-payment-factory** — PaymentForm 518→142 con state factory + paymentFormValues/Derived con specs + 4 flujos E2E de dinero (#171, #172)

@@ -80,6 +80,7 @@ Owner rules: el factory de pago es de `payments` (leyó también `server/payment
 - 🟡 La UI de submit de pagos de compra vive en `components/sales/payments/` (herencia del split F5) — candidata a moverse a `components/purchases/` al unificar pagos (plan pr5).
 
 ## Planes completados
+
 - **2026-11 · dt1-t2-purchases** — NewPurchaseOrderForm 1003→493 + secciones review/
 - **2026-11 · dt1-t2-purchdetail** — purchases/[id] 621→499 + detail/PurchaseOrderModals + PurchaseOrderDrawers
 - **2026-11 · componentize-purchase-detail** — PurchaseDetail 2221→629 con patrón orquestador (POC del patrón DT1)
