@@ -15,6 +15,7 @@
 	import type { DisplayGroup } from './itemDisplay';
 	import EnrichItemModal from './EnrichItemModal.svelte';
 	import SaleItemsRow from './SaleItemsRow.svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		items: SaleItemWithDetails[];
@@ -26,6 +27,12 @@
 		bsRate: number | null;
 		bsApproximate: boolean;
 		onCostsUpdated?: () => void;
+		/** Grupos precomputados (adapter de presupuestos); por defecto se agrupan aquí. */
+		groups?: DisplayGroup[];
+		/** Badge extra junto al título (presupuesto convertido: "Solo lectura…"). */
+		headerBadge?: Snippet;
+		/** Título de la sección ("Artículos y servicios"). */
+		sectionTitle?: string;
 	}
 
 	let {
@@ -35,7 +42,10 @@
 		suppliers = [],
 		bsRate,
 		bsApproximate,
-		onCostsUpdated
+		onCostsUpdated,
+		groups: groupsProp,
+		headerBadge,
+		sectionTitle = 'Artículos y servicios'
 	}: Props = $props();
 
 	// ── Cost editing (lens rows) ──────────────────────────────────────────
@@ -64,14 +74,15 @@
 
 	const mainItems = $derived(items.filter((item) => item.itemType !== SaleItemType.TREATMENT));
 
-	const displayGroups: DisplayGroup[] = $derived.by(() =>
-		buildPersistedDisplayGroups(
-			items,
-			mainItems,
-			SaleItemType.LENS_PAIR,
-			SaleItemType.TREATMENT,
-			(item) => item.parentSaleItemId
-		)
+	const displayGroups: DisplayGroup[] = $derived(
+		groupsProp ??
+			buildPersistedDisplayGroups(
+				items,
+				mainItems,
+				SaleItemType.LENS_PAIR,
+				SaleItemType.TREATMENT,
+				(item) => item.parentSaleItemId
+			)
 	);
 
 	const totalInternalCost = $derived(computeInternalCostTotal(displayGroups));
@@ -235,10 +246,13 @@
 	class="items-section overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm"
 >
 	<div class="flex items-center gap-3 px-4 pt-3.5 pb-3">
-		<h2 class="font-heading text-[15px] font-bold text-brand-navy">Artículos y servicios</h2>
+		<h2 class="font-heading text-[15px] font-bold text-brand-navy">{sectionTitle}</h2>
 		<span class="rounded bg-brand-navy px-[7px] text-[12px] font-bold text-white tabular-nums">
 			{displayGroups.length}
 		</span>
+		{#if headerBadge}
+			{@render headerBadge()}
+		{/if}
 		<span class="flex-1"></span>
 		<TriggerTooltip
 			trigger={costsSwitch}

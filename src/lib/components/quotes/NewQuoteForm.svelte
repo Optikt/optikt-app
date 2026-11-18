@@ -2,26 +2,36 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { createNewQuote } from '$lib/remote/quotes/commands.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
-	import { getErrorMessage, dateToISODateString, logger } from '$lib/utils';
-	import { nowUTC } from '$lib/dates';
+	import { getErrorMessage, dateToISODateString, logger, replaceUrlSearch } from '$lib/utils';
+	import { nowUTC, fromISODate, toISODate } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import type { IncludedAccessoryMap } from '$lib/components/sales/includedAccessories';
-	import { setContext } from 'svelte';
-	import { WizardHeader } from '$lib/components/ui';
+	import { setContext, untrack, type Snippet } from 'svelte';
+	import WizardHeader from '$lib/components/ui/WizardHeader.svelte';
 	import { CATALOG_KEY } from '$lib/components/sales/wizardContext';
-	import { buildStep2PrescriptionConfirmation } from '$lib/components/sales/saleItemHelpers';
+	import {
+		buildStep2PrescriptionConfirmation,
+		getAvailableProductStock,
+		hasLensPrescriptionErrors,
+		isItemDiscountValid
+	} from '$lib/components/sales/saleItemHelpers';
 	import { buildQuoteItemsFromWizard } from '$lib/components/sales/wizardSubmission';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 	import SaleStep1Info from '$lib/components/sales/step1/SaleStep1Info.svelte';
 	import SaleStep2Items from '$lib/components/sales/step2/SaleStep2Items.svelte';
+	import SaleStep3Summary from '$lib/components/sales/step3/SaleStep3Summary.svelte';
 	import PrescriptionValidationModal from '$lib/components/sales/PrescriptionValidationModal.svelte';
-	import QuoteStep3Summary from './QuoteStep3Summary.svelte';
+	import { Copy } from '@lucide/svelte';
+	import { quoteToWizardDraft } from './duplicate/quoteToWizardDraft';
+	import { formatQuoteNumber } from './list/quoteListDisplay';
+	import type { QuoteWithRelations, QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
 
 	interface Props {
 		products: ProductWithRelations[];
@@ -29,6 +39,9 @@
 		suppliers: Supplier[];
 		nextQuoteNumber?: number;
 		defaultTaxRate?: number;
+		/** Duplicar (D7): `?from=<id>` — el loader entrega el detalle del origen. */
+		fromQuote?: { quote: QuoteWithRelations; items: QuoteItemWithDetails[] } | null;
+		breadcrumbs?: Snippet;
 	}
 
 	let {
@@ -36,7 +49,9 @@
 		lensItems,
 		suppliers: _suppliers,
 		nextQuoteNumber,
-		defaultTaxRate
+		defaultTaxRate,
+		fromQuote = null,
+		breadcrumbs
 	}: Props = $props();
 
 	setContext(CATALOG_KEY, {
@@ -112,7 +127,34 @@
 	let discountType = $state<DiscountTypeEnum>(DiscountType.FIXED);
 	let notes = $state('');
 	let validUntil = $state('');
+	let isCashea = $state(false);
 	let submitting = $state(false);
+
+	// Duplicar (D7): precarga ítems/descuento/Cashea/notas; resetea cliente,
+	// fecha (hoy) y validez. sourceQuoteId se envía en el create.
+	// (después de declarar items/includedAccessoryMap — ver bloque abajo)
+
+	// Fecha editable del WizardHeader → quoteDate (mismo patrón que ventas)
+	// snapshot inicial del seed (recalculado por los effects de abajo).
+	// svelte-ignore state_referenced_locally
+	let orderDateIso = $state(dateToISODateString(quoteDate));
+
+	$effect(() => {
+		if (/^\d{4}-\d{2}-\d{2}$/.test(orderDateIso)) {
+			const parsed = fromISODate(orderDateIso);
+			if (parsed && parsed.getTime() !== quoteDate.getTime()) {
+				quoteDate = parsed;
+			}
+		}
+	});
+	$effect(() => {
+		if (quoteDate instanceof Date && !isNaN(quoteDate.getTime())) {
+			const iso = dateToISODateString(quoteDate);
+			if (iso !== orderDateIso) {
+				orderDateIso = iso;
+			}
+		}
+	});
 
 	// ============================================================================
 	// CUSTOMER PRESCRIPTION STATE
@@ -148,6 +190,40 @@
 
 	let items = $state<SaleItemRow[]>([]);
 	let includedAccessoryMap = $state<IncludedAccessoryMap>({});
+	let sourceQuoteId = $state<string | null>(null);
+
+	// Duplicar (D7): precarga ítems/descuento/Cashea/notas; resetea cliente,
+	// fecha (hoy) y validez (sourceQuoteId se envía en el create).
+	{
+		const seed = untrack(() => fromQuote);
+		if (seed) {
+			const draft = quoteToWizardDraft(seed);
+			items = draft.items;
+			includedAccessoryMap = {};
+			discount = draft.discount;
+			discountType = draft.discountType as DiscountTypeEnum;
+			notes = draft.notes;
+			isCashea = draft.isCashea;
+			sourceQuoteId = seed.quote.id;
+			quoteDate = nowUTC();
+		}
+	}
+
+	function startEmpty() {
+		items = [];
+		includedAccessoryMap = {};
+		customerId = '';
+		selectedCustomer = null;
+		newCustomer = null;
+		discount = 0;
+		discountType = DiscountType.FIXED;
+		notes = '';
+		isCashea = false;
+		sourceQuoteId = null;
+		quoteDate = nowUTC();
+		validUntil = '';
+		replaceUrlSearch(page.url, (params) => params.delete('from'));
+	}
 
 	const step2PrescriptionConfirmation = $derived(
 		buildStep2PrescriptionConfirmation(items, lensItems)
@@ -157,7 +233,7 @@
 	// VALIDATION
 	// ============================================================================
 
-	// Step 1: always valid (customer optional for quotes)
+	// Step 1: siempre válido (el cliente es opcional en presupuestos)
 
 	const itemsValid = $derived(
 		items.length > 0 &&
@@ -180,18 +256,29 @@
 				return (
 					(i.lensPair?.catalogItemId ?? '') !== '' &&
 					(i.lensPair!.od.enabled || i.lensPair!.oi.enabled) &&
-					i.unitPrice >= 0
+					i.unitPrice >= 0 &&
+					!hasLensPrescriptionErrors(i)
 				);
 			})
 	);
 
-	const step2Valid = $derived(itemsValid);
+	const hasOutOfStockItem = $derived(
+		items.some((i) => {
+			if (i.kind === 'product' && i.productId) {
+				const availableForItem = getAvailableProductStock(items, products, i.productId, i.id);
+				if (availableForItem === null) return false;
 
-	const canSubmit = $derived(step2Valid && !submitting);
+				return availableForItem <= 0 || i.quantity > availableForItem;
+			}
+			return false;
+		})
+	);
 
-	// ============================================================================
-	// STEP NAVIGATION HELPERS
-	// ============================================================================
+	const step2Valid = $derived(itemsValid && !hasOutOfStockItem);
+
+	const hasInvalidItemDiscount = $derived(items.some((item) => !isItemDiscountValid(item)));
+
+	const canSubmit = $derived(step2Valid && !hasInvalidItemDiscount && !submitting);
 
 	// ============================================================================
 	// SUBMIT
@@ -209,10 +296,12 @@
 				customerId: customerId || undefined,
 				newCustomer:
 					newCustomer && newCustomer.firstName && newCustomer.lastName ? newCustomer : undefined,
-				quoteDate: dateToISODateString(quoteDate),
+				quoteDate: toISODate(quoteDate),
 				discount,
 				discountType,
 				snapshotTaxRate,
+				isCashea,
+				sourceQuoteId: sourceQuoteId ?? undefined,
 				validUntil: validUntil || undefined,
 				notes: notes || undefined,
 				items: quoteItems
@@ -223,7 +312,8 @@
 				return;
 			}
 
-			toast.success('Presupuesto creado exitosamente');
+			// El número real lo asigna la sequence (puede diferir del preview)
+			toast.success(`Presupuesto ${formatQuoteNumber(result.quote.quoteNumber)} creado`);
 			goto(resolve(`/quotes/${result.quote.id}`));
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error creando presupuesto'));
@@ -233,13 +323,36 @@
 	}
 </script>
 
-<div class="w-full">
+<div class="w-full space-y-2">
+	<!-- Banner de duplicado (D7) -->
+	{#if fromQuote}
+		<div
+			class="flex flex-wrap items-center gap-3 rounded-xl bg-info-container px-4 py-2.5 text-on-info-container"
+		>
+			<Copy class="h-4 w-4 shrink-0" />
+			<p class="flex-1 text-[14px]">
+				<b>Duplicando {formatQuoteNumber(fromQuote.quote.quoteNumber)}</b>
+				· {fromQuote.items.filter((i) => i.itemType !== 'TREATMENT').length} artículos, fórmula y descuento
+				copiados. Elige el cliente.
+			</p>
+			<button
+				type="button"
+				onclick={startEmpty}
+				class="text-[13px] font-semibold underline underline-offset-2 hover:opacity-80"
+			>
+				Empezar vacío
+			</button>
+		</div>
+	{/if}
+
 	<WizardHeader
-		title="Nuevo Presupuesto"
 		steps={STEPS}
 		{currentStep}
 		{canNavigateToStep}
 		onStepSelect={(step) => goToStep(step as WizardStep)}
+		orderNumber={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
+		bind:orderDate={orderDateIso}
+		{breadcrumbs}
 	/>
 
 	<!-- Step 1: Información -->
@@ -251,7 +364,10 @@
 			bind:saleDate={quoteDate}
 			bind:secondaryDate={validUntil}
 			bind:notes
-			entityNumberValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
+			bind:isCashea
+			showSecondaryDate={true}
+			casheaLabel="Presupuesto con Cashea"
+			casheaHint="Se aplicará a la venta al convertir"
 			stepTitle="Prepara la información base del presupuesto"
 			summaryLabel="Presupuesto"
 			summaryValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
@@ -282,16 +398,25 @@
 		/>
 	</div>
 
-	<!-- Step 3: Resumen -->
+	<!-- Step 3: Resumen (SaleStep3Summary — QuoteStep3Summary eliminado) -->
 	<div class:hidden={currentStep !== 3}>
-		<QuoteStep3Summary
+		<SaleStep3Summary
 			{items}
 			{selectedCustomer}
 			{newCustomer}
 			bind:discount
 			bind:discountType
-			{notes}
+			bind:notes
+			bind:isCashea
 			{defaultTaxRate}
+			customerFallbackName="Presupuesto sin cliente"
+			customerFallbackDocument="Cliente opcional"
+			submittingStatusLabel="Creando presupuesto"
+			readyStatusLabel="Listo para crear"
+			pendingStatusLabel="Revisa el presupuesto"
+			primaryLabel="Crear presupuesto"
+			cancelLabel="Cancelar"
+			onCancel={goToQuotes}
 			{submitting}
 			{canSubmit}
 			onprev={prevStep}

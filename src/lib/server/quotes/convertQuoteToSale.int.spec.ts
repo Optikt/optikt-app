@@ -251,18 +251,18 @@ describe('convertQuoteToSaleCore', () => {
 		const salesRows = await db.select().from(sales);
 		expect(salesRows).toHaveLength(1);
 
-		const fulfilled = [a, b].filter(
-			(r): r is PromiseFulfilledResult<{ success: true; sale: { id: string } }> =>
-				r.status === 'fulfilled' && r.value.success
-		);
+		const fulfilled = [a, b].filter((r) => r.status === 'fulfilled' && r.value.success);
 		const rejectedOrFailed = [a, b].filter(
 			(r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)
 		);
 		expect(fulfilled).toHaveLength(1);
 		expect(rejectedOrFailed).toHaveLength(1);
-		if (fulfilled[0].status !== 'fulfilled') throw new Error('unreachable');
+		const fulfilledValue = fulfilled[0] as PromiseFulfilledResult<{
+			success: true;
+			sale: { id: string };
+		}>;
 		const [quoteAfter] = await db.select().from(quotes).where(eq(quotes.id, quote.id));
-		expect(quoteAfter.conversionSaleId).toBe(fulfilled[0].value.sale.id);
+		expect(quoteAfter.conversionSaleId).toBe(fulfilledValue.value.sale.id);
 	});
 
 	it('rejects conversion when product stock is insufficient (misma política que venta nueva)', async () => {

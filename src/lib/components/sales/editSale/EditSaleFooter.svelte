@@ -20,6 +20,10 @@
 		/** An item editor is open on top: «Hecho» owns saving there, so the
 		 *  order-level reason input and «Guardar cambios» stay out of view. */
 		editing?: boolean;
+		/** Presupuestos: sin motivo (no revierte stock, no audita diff obligatorio). */
+		requireReason?: boolean;
+		/** Override del tooltip de guardar (presupuestos: otro texto). */
+		saveTooltipOverride?: string;
 		onClose: () => void;
 		onSubmit: () => void;
 	}
@@ -37,6 +41,8 @@
 		hasChanges,
 		hasItems,
 		editing = false,
+		requireReason = true,
+		saveTooltipOverride,
 		onClose,
 		onSubmit
 	}: Props = $props();
@@ -73,7 +79,7 @@
 	}
 
 	// ── Missing-anything hint + save enablement ─────────────────────────────
-	const reasonMissing = $derived(!reason.trim());
+	const reasonMissing = $derived(requireReason && !reason.trim());
 	const missingHint = $derived(
 		!hasItems
 			? 'Debe quedar al menos un artículo'
@@ -85,11 +91,12 @@
 
 	// ── Save / cancel tooltips ──────────────────────────────────────────────
 	const saveTooltip = $derived(
-		canSave
-			? 'Guardar y registrar en la auditoría de ventas'
-			: !hasChanges
-				? 'No hay cambios para guardar'
-				: missingHint
+		saveTooltipOverride ??
+			(canSave
+				? 'Guardar y registrar en la auditoría de ventas'
+				: !hasChanges
+					? 'No hay cambios para guardar'
+					: missingHint)
 	);
 	const cancelTooltip = $derived(hasChanges ? 'Descartar los cambios' : 'Cerrar sin cambios');
 
@@ -121,7 +128,7 @@
 <footer
 	class="shrink-0 bg-brand-navy px-5 pt-2.5 pb-3 text-white shadow-[0_-8px_24px_rgba(21,35,70,0.18)]"
 >
-	{#if hasChanges && !editing}
+	{#if requireReason && hasChanges && !editing}
 		<div class="relative mb-2" class:reason-in={reasonAnim && !reduceMotion}>
 			{#snippet reasonTrigger({ props }: { props: Record<string, unknown> })}
 				<span class="relative block w-full">

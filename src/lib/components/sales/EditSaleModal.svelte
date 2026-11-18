@@ -1,11 +1,14 @@
 <script lang="ts">
-	import { SlideOver, ConfirmModal } from '$lib/components/ui';
+	import SlideOver from '$lib/components/ui/SlideOver.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSale } from '$lib/remote/sales/update.remote';
+	import { updateExistingQuote } from '$lib/remote/quotes/commands.remote';
 	import { getErrorMessage, logger } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
+	import type { QuoteItemWithDetails, QuoteWithRelations } from '$lib/server/db/queries/quotes';
 	import type { SupplierTreatment, Prescription } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
@@ -33,25 +36,39 @@
 	} from './editSaleDraft';
 	import { collectLensRangeWarnings } from './editSale/editSaleLensAdapter';
 	import { validateEditSale } from './editSaleValidation';
+	import {
+		buildQuoteUpdatePayload,
+		quoteHasChanges,
+		quoteItemToEditable
+	} from '$lib/components/quotes/editQuote/quoteEditAdapter';
+	import { formatQuoteNumber } from '$lib/components/quotes/list/quoteListDisplay';
 
 	interface Props {
 		open: boolean;
-		sale: SaleWithRelations;
-		items: SaleItemWithDetails[];
+		sale?: SaleWithRelations;
+		items?: SaleItemWithDetails[];
 		treatments: SupplierTreatment[];
 		/** Sale prescription row (DP / nasal measures source for lens pairs). */
 		prescription?: Prescription | null;
+		/** Adapter quote (D1): mutually exclusive with `sale`. */
+		quote?: QuoteWithRelations;
+		quoteItems?: QuoteItemWithDetails[];
 		onSuccess?: () => void;
 	}
 
 	let {
 		open = $bindable(),
 		sale,
-		items,
+		items = [],
 		treatments = [],
 		prescription = null,
+		quote,
+		quoteItems = [],
 		onSuccess
 	}: Props = $props();
+
+	/** Modo del drawer: 'sale' (default, cero regresión) | 'quote'. */
+	const mode = $derived(quote ? 'quote' : 'sale');
 
 	let saving = $state(false);
 	let submitError = $state('');
@@ -60,6 +77,7 @@
 	// Clear the reason error as soon as the user types again.
 
 	// ── Prescription measures (per-eye DP/DNP) — patched to the server save ─
+	// Solo ventas: los presupuestos no registran medidas de montaje.
 	function measuresFromSeed(): Measures {
 		return {
 			odDp: prescription?.dp ?? null,
@@ -79,6 +97,7 @@
 	let measures = $state<Measures>(measuresFromSeed());
 
 	const measuresChanged = $derived.by(() => {
+		if (mode === 'quote') return false;
 		const seed = {
 			dp: prescription?.dp ?? null,
 			npRight: prescription?.npRight ?? null,
@@ -93,6 +112,8 @@
 	let saleDate = $state('');
 	let notes = $state('');
 	let isCashea = $state(false);
+	/** Solo quotes: validez editable ('' = sin vencimiento). */
+	let validUntil = $state('');
 
 	// ── Order-level discount ────────────────────────────────────────────────
 	let discount = $state(0);
@@ -131,10 +152,25 @@
 	}
 
 	// ── Derived ─────────────────────────────────────────────────────────────
+	let originalQuoteItems = $state<QuoteItemWithDetails[]>([]);
+	let quoteChanges = $derived.by(() => {
+		if (mode !== 'quote' || !quote) return { changed: false, itemsChanged: false };
+		return quoteHasChanges(quote, originalQuoteItems, {
+			dateIso: saleDate,
+			validUntilIso: validUntil,
+			notes,
+			isCashea,
+			discount,
+			discountType,
+			items: editableItems
+		});
+	});
+
 	let hasChanges = $derived.by(() => {
+		if (mode === 'quote') return quoteChanges.changed;
 		return (
 			hasChangesForSale(
-				sale,
+				sale!,
 				saleDate,
 				notes,
 				discount,
@@ -156,22 +192,41 @@
 
 	// ── Seed state (mount + each open) ──────────────────────────────────────
 	function seedFromProps() {
-		saleDate = fromISO(sale.saleDate).toISOString().slice(0, 10);
-		notes = sale.notes ?? '';
-		isCashea = sale.isCashea ?? false;
-		discount = sale.discount;
-		discountType = sale.discountType;
-		reason = '';
-		reasonError = '';
 		submitError = '';
 		confirmDiscard = false;
-		editableItems = items.map(existingItemToInput);
-		measures = measuresFromSeed();
 		editingId = null;
 		editorKind = null;
 		creating = false;
 		view = 'list';
 		staggerRows = false;
+
+		if (mode === 'quote' && quote) {
+			saleDate = quote.createdAt.slice(0, 10);
+			validUntil = quote.validUntil ? quote.validUntil.slice(0, 10) : '';
+			notes = quote.notes ?? '';
+			isCashea = quote.isCashea ?? false;
+			discount = quote.discount;
+			discountType = quote.discountType;
+			reason = '';
+			reasonError = '';
+			editableItems = quoteItems.map(quoteItemToEditable);
+			originalQuoteItems = quoteItems;
+			measures = { odDp: null, osDp: null, odDnp: null, osDnp: null };
+			void seedCatalogCacheForItems(quoteItems).catch((error) => {
+				logger.error('No se pudo cargar el catálogo de cristales del presupuesto', error);
+			});
+			return;
+		}
+
+		saleDate = sale ? fromISO(sale.saleDate).toISOString().slice(0, 10) : '';
+		notes = sale?.notes ?? '';
+		isCashea = sale?.isCashea ?? false;
+		discount = sale?.discount ?? 0;
+		discountType = sale?.discountType ?? DiscountType.FIXED;
+		reason = '';
+		reasonError = '';
+		editableItems = items.map(existingItemToInput);
+		measures = measuresFromSeed();
 		void seedCatalogCacheForItems(items).catch((error) => {
 			logger.error('No se pudo cargar el catálogo de cristales de la venta', error);
 		});
@@ -334,6 +389,13 @@
 			toast.error('Termina de editar el artículo abierto con «Hecho ✓».');
 			return false;
 		}
+		if (mode === 'quote') {
+			if (activeItems.length === 0) {
+				toast.error('El presupuesto debe tener al menos un artículo');
+				return false;
+			}
+			return true;
+		}
 		const result = validateEditSale(reason, activeItems, {
 			requireReason: SALE_CAPABILITIES.requiredReason
 		});
@@ -349,7 +411,37 @@
 		if (!validate()) return;
 		saving = true;
 
-		const payload = buildUpdateSalePayload(sale, {
+		if (mode === 'quote' && quote) {
+			try {
+				const payload = buildQuoteUpdatePayload(quote, {
+					dateIso: saleDate,
+					validUntilIso: validUntil,
+					notes,
+					isCashea,
+					discount,
+					discountType,
+					items: editableItems
+				});
+				const result = await updateExistingQuote(payload);
+				if (result.success) {
+					toast.success('Presupuesto actualizado');
+					confirmDiscard = false;
+					open = false;
+					onSuccess?.();
+				} else {
+					submitError = result.error ?? 'Error actualizando presupuesto';
+					toast.error(submitError);
+				}
+			} catch (e) {
+				submitError = getErrorMessage(e, 'Error actualizando presupuesto');
+				toast.error(submitError);
+			} finally {
+				saving = false;
+			}
+			return;
+		}
+
+		const payload = buildUpdateSalePayload(sale!, {
 			saleDate,
 			notes,
 			isCashea,
@@ -419,15 +511,31 @@
 	bodyClass="p-0 bg-surface-drawer"
 >
 	{#snippet header({ onclose })}
-		<EditSaleModalHeader
-			orderNumber={sale.orderNumber}
-			customer={sale.customer}
-			bind:isCashea
-			{saving}
-			onClose={onclose}
-		/>
-		{#if view === 'list'}
-			<EditSaleMetaBar bind:saleDate bind:notes />
+		{#if mode === 'quote' && quote}
+			<EditSaleModalHeader
+				orderNumber={0}
+				numberLabel={formatQuoteNumber(quote.quoteNumber)}
+				title="Modificar presupuesto"
+				entityNoun="presupuesto"
+				customer={quote.customer}
+				bind:isCashea
+				{saving}
+				onClose={onclose}
+			/>
+			{#if view === 'list'}
+				<EditSaleMetaBar bind:saleDate bind:notes bind:validUntil />
+			{/if}
+		{:else if sale}
+			<EditSaleModalHeader
+				orderNumber={sale.orderNumber}
+				customer={sale.customer}
+				bind:isCashea
+				{saving}
+				onClose={onclose}
+			/>
+			{#if view === 'list'}
+				<EditSaleMetaBar bind:saleDate bind:notes />
+			{/if}
 		{/if}
 	{/snippet}
 
@@ -479,6 +587,8 @@
 			{hasChanges}
 			hasItems={activeItems.length > 0}
 			editing={view === 'editor'}
+			requireReason={mode === 'sale'}
+			saveTooltipOverride={mode === 'quote' ? 'Guardar los cambios del presupuesto' : undefined}
 			onClose={() => {
 				if (guardClose()) open = false;
 			}}
@@ -490,7 +600,9 @@
 <ConfirmModal
 	bind:open={confirmDiscard}
 	title="Descartar cambios"
-	message="Tienes cambios sin guardar en esta venta. Si cierras ahora se perderán."
+	message={mode === 'quote'
+		? 'Tienes cambios sin guardar en este presupuesto. Si cierras ahora se perderán.'
+		: 'Tienes cambios sin guardar en esta venta. Si cierras ahora se perderán.'}
 	confirmLabel="Descartar y cerrar"
 	cancelLabel="Seguir editando"
 	confirmColor="red"

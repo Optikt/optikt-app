@@ -46,7 +46,17 @@ import {
 // ============================================================================
 
 export type QuoteWithRelations = Quote & {
-	customer: { id: string; firstName: string; lastName: string; idNumber: string | null } | null;
+	/** Card de cliente del hero (mismos campos que ventas). */
+	customer: {
+		id: string;
+		firstName: string;
+		lastName: string;
+		idNumber: string | null;
+		birthDate: string | null;
+		primaryPhone: string | null;
+		gender: string | null;
+		address: string | null;
+	} | null;
 	seller: { id: string; fullName: string } | null;
 	/** Número de la venta generada (para "Venta #0298" en la lista y el detalle). */
 	convertedOrderNumber: number | null;
@@ -183,7 +193,11 @@ export async function getAllQuotes(options?: GetQuotesOptions): Promise<QuoteWit
 				id: customers.id,
 				firstName: customers.firstName,
 				lastName: customers.lastName,
-				idNumber: customers.idNumber
+				idNumber: customers.idNumber,
+				birthDate: customers.birthDate,
+				primaryPhone: customers.primaryPhone,
+				gender: customers.gender,
+				address: customers.address
 			},
 			seller: { id: users.id, fullName: users.fullName },
 			convertedOrderNumber: sales.orderNumber
@@ -369,6 +383,18 @@ export async function sumQuotesForSelection(
 	return { count: row?.count ?? 0, totalUsd: row?.totalUsd ?? 0 };
 }
 
+/**
+ * Vendedores distintos que aparecen en presupuestos no borrados (select de filtros).
+ */
+export async function listQuoteSellers(): Promise<{ id: string; fullName: string }[]> {
+	return db
+		.selectDistinct({ id: users.id, fullName: users.fullName })
+		.from(users)
+		.innerJoin(quotes, eq(quotes.sellerId, users.id))
+		.where(isNull(quotes.deletedAt))
+		.orderBy(users.fullName);
+}
+
 // ============================================================================
 // PREVIEW DE CONVERSIÓN (hero "Si se convierte hoy" + modal "Revisión")
 // ============================================================================
@@ -474,7 +500,11 @@ export async function findQuoteByIdWithRelations(
 				id: customers.id,
 				firstName: customers.firstName,
 				lastName: customers.lastName,
-				idNumber: customers.idNumber
+				idNumber: customers.idNumber,
+				birthDate: customers.birthDate,
+				primaryPhone: customers.primaryPhone,
+				gender: customers.gender,
+				address: customers.address
 			},
 			seller: { id: users.id, fullName: users.fullName },
 			convertedOrderNumber: sales.orderNumber

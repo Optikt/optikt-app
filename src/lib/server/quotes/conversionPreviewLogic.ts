@@ -50,6 +50,10 @@ export interface ConversionCatalogEntry {
 	currentSalePrice?: number | null;
 	stock?: number | null;
 	inventoryMode?: string | null;
+	/** Solo lentes: costo base del par + montaje + envío (fallback del precio). */
+	pairPurchasePrice?: number | null;
+	mountingPrice?: number | null;
+	shippingPrice?: number | null;
 }
 
 export interface QuoteConversionItemRow {
@@ -64,13 +68,7 @@ export interface QuoteConversionItemRow {
 	treatment: ConversionCatalogEntry | null;
 }
 
-function lensSalePrice(
-	lens: ConversionCatalogEntry & {
-		pairPurchasePrice?: number;
-		mountingPrice?: number;
-		shippingPrice?: number;
-	}
-): number | null {
+function lensSalePrice(lens: ConversionCatalogEntry): number | null {
 	if (lens.currentSalePrice != null && lens.currentSalePrice > 0) return lens.currentSalePrice;
 	if (lens.pairPurchasePrice == null) return null;
 	return lens.pairPurchasePrice + (lens.mountingPrice ?? 0) + (lens.shippingPrice ?? 0);

@@ -1,0 +1,182 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Hero navy compartido (ventas / presupuestos) — grid por áreas, franjas y
+   botones .hero-btn. Extraído de SaleDetailHero.svelte (plan quotes-redesign)
+   para que el detalle de presupuesto reuse EXACTAMENTE el mismo lenguaje
+   visual sin duplicar el CSS. Los umbrales son container queries contra el
+   contenedor de página (nunca viewport).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.hero {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-areas:
+		'hl'
+		'hc2'
+		'mon'
+		'acts'
+		'hcta';
+}
+.hero > * {
+	min-width: 0;
+}
+/* Textos largos siempre envuelven (el `truncate` con tooltip sigue recortando). */
+.hero :where(.hl, .hc2, .mon) {
+	overflow-wrap: anywhere;
+}
+
+/* ── Móvil <700 (contenedor): 1 col, título 24, stepper compacto,
+   meta 2 col, dinero 2 col (Total | Saldo) + herramientas full-width. */
+@container (max-width: 699px) {
+	.hero-title {
+		font-size: 24px;
+		white-space: normal;
+	}
+	/* Stepper compacto: solo el paso actual conserva etiqueta; el resto, puntos. */
+	.hero .step-label {
+		display: none;
+	}
+	.hero .step-current .step-label {
+		display: inline;
+	}
+	.hero .step-link {
+		display: none;
+	}
+	.hero-meta {
+		grid-template-columns: repeat(2, max-content);
+		column-gap: 24px;
+		row-gap: 8px;
+	}
+	.mon {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		column-gap: 16px;
+		align-items: start;
+	}
+	.money-total {
+		grid-column: 1;
+		grid-row: 1;
+		min-width: 0;
+	}
+	.mon :where(.money-total, .money-balance) > p.font-heading {
+		font-size: 22px;
+	}
+	.money-balance {
+		grid-column: 2;
+		grid-row: 1;
+		min-width: 0;
+		margin-top: 0;
+		border-top: 0;
+		padding-top: 0;
+		border-left: 1px solid rgba(255, 255, 255, 0.15);
+		padding-left: 16px;
+	}
+	.money-tools {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+	.money-breakdown {
+		grid-column: 1 / -1;
+		grid-row: 3;
+	}
+}
+
+/* Barras decorativas a la izquierda de `mon`; ocultas en móvil (<700). */
+.hero::before,
+.hero::after {
+	content: '';
+	position: absolute;
+	top: -10px;
+	bottom: -10px;
+	transform: skewX(-20deg);
+	display: none;
+}
+.mon {
+	border-top: 1px solid rgba(255, 255, 255, 0.15);
+	padding-top: 12px;
+}
+@container (min-width: 700px) {
+	.hero {
+		grid-template-columns: minmax(0, 1fr) 290px;
+		grid-template-areas:
+			'hl mon'
+			'hc2 mon'
+			'acts hcta';
+	}
+	.hero::before {
+		display: block;
+		right: 338px;
+		width: 34px;
+		background: var(--color-brand-blue);
+		opacity: 0.9;
+	}
+	.hero::after {
+		display: block;
+		right: 384px;
+		width: 10px;
+		background: var(--color-brand-gold);
+	}
+	.mon {
+		border-top: 0;
+		padding-top: 0;
+		border-left: 1px solid rgba(255, 255, 255, 0.15);
+		padding-left: 24px;
+	}
+}
+@container (min-width: 1500px) {
+	.hero {
+		grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) 330px;
+		grid-template-areas:
+			'hl hc2 mon'
+			'acts acts hcta';
+	}
+	.hero::before {
+		right: 378px;
+	}
+	.hero::after {
+		right: 424px;
+	}
+}
+
+/* ── Ghost actions over navy (hero-btn; también los usan quote/drawer headers) */
+.hero-btn {
+	height: 40px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 0 12px;
+	border: 1px solid rgba(255, 255, 255, 0.35);
+	border-radius: 8px;
+	background: transparent;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 600;
+	white-space: nowrap;
+	transition:
+		background 0.15s var(--ds-ease-out),
+		transform 0.15s var(--ds-ease-out);
+}
+.hero-btn:hover {
+	background: rgba(255, 255, 255, 0.12);
+}
+.hero-btn:active {
+	transform: scale(0.97);
+}
+.hero-btn-primary {
+	background: var(--color-brand-blue);
+	border-color: var(--color-brand-blue);
+	color: var(--color-brand-navy);
+}
+.hero-btn-primary:hover {
+	background: var(--color-brand-blue-light);
+	border-color: var(--color-brand-blue-light);
+}
+.hero-btn:focus-visible {
+	outline: 2px solid var(--color-brand-blue);
+	outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+	.hero-btn {
+		transition: none;
+	}
+}

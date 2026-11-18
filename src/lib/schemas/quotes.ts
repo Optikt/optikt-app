@@ -135,6 +135,8 @@ export const CreateQuoteSchema = z.object({
 export const UpdateQuoteSchema = z.object({
 	id: z.uuid('ID de presupuesto inválido'),
 	customerId: z.uuid().optional().nullable(),
+	/** Fecha del presupuesto (YYYY-MM-DD): día del form + hora del submit, Caracas. */
+	quoteDate: z.iso.date().optional(),
 	discount: CoercedNumber.min(0).optional(),
 	discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
 	snapshotTaxRate: CoercedNumber.min(0).optional(),

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft } from '@lucide/svelte';
+	import { ArrowLeft, CalendarClock } from '@lucide/svelte';
 	import CustomerLookupInput from '../CustomerLookupInput.svelte';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
@@ -11,7 +11,10 @@
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
 		saleDate: Date;
+		/** Presupuestos: "Válido hasta" (opcional; vacío = no vence). Enlazado ⇒ se muestra la card. */
 		secondaryDate?: string;
+		/** Muestra la card "Válido hasta" (presupuestos). */
+		showSecondaryDate?: boolean;
 		notes: string;
 		isCashea?: boolean;
 		nextOrderNumber?: number;
@@ -21,7 +24,9 @@
 		summaryLabel?: string;
 		summaryValue?: string;
 		primaryLabel?: string;
-		valid: boolean;
+		casheaLabel?: string;
+		casheaHint?: string;
+		valid?: boolean;
 		onnext: () => void;
 	}
 
@@ -40,6 +45,9 @@
 		summaryLabel = 'Orden',
 		summaryValue,
 		primaryLabel = 'Continuar',
+		casheaLabel,
+		casheaHint,
+		showSecondaryDate = false,
 		valid,
 		onnext
 	}: Props = $props();
@@ -85,7 +93,34 @@
 			resetKey={resetCounter}
 		/>
 
-		<CasheaCheckbox bind:isCashea size="lg" class="mt-3" />
+		{#if showSecondaryDate}
+			<!-- Presupuestos: Cashea + "Válido hasta" en dos columnas (mockup 5) -->
+			<div class="mt-3 grid gap-3 md:grid-cols-[1fr_360px]">
+				<CasheaCheckbox
+					bind:isCashea
+					size="lg"
+					label={casheaLabel ?? 'Venta con Cashea'}
+					hint={casheaHint ?? 'Financia el saldo a través de Cashea'}
+				/>
+				<label
+					class="flex items-center gap-3 rounded-xl border border-outline-variant/60 px-3.5 py-2.5"
+				>
+					<CalendarClock class="h-5 w-5 shrink-0 text-on-surface-variant" />
+					<span class="flex-1">
+						<span class="block text-[13px] font-semibold">Válido hasta</span>
+						<span class="block text-[12px] text-outline">Opcional · si queda vacío, no vence</span>
+					</span>
+					<input
+						type="date"
+						bind:value={secondaryDate}
+						aria-label="Válido hasta"
+						class="h-8 w-[130px] rounded-md border border-outline-variant/60 px-2 text-[13px]"
+					/>
+				</label>
+			</div>
+		{:else}
+			<CasheaCheckbox bind:isCashea size="lg" class="mt-3" />
+		{/if}
 	</div>
 
 	<SaleWizardFloatingActions

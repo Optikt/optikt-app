@@ -9,11 +9,15 @@
 		perPage: number;
 		total: number;
 		totalPages: number;
-		selection: SalesSelectionSummary;
+		selection: SalesSelectionSummary | { totalUsd: number };
 		/** El selector "por página" solo aparece en la vista Lista (spec §6.4). */
 		showPerPage: boolean;
 		onPageChange: (page: number) => void;
 		onPerPageChange: (perPage: number) => void;
+		/** Generalización quotes: unidad del contador y texto del tooltip. */
+		unitNounOne?: string;
+		unitNounMany?: string;
+		selectionTooltip?: string;
 	}
 
 	let {
@@ -24,8 +28,14 @@
 		selection,
 		showPerPage,
 		onPageChange,
-		onPerPageChange
+		onPerPageChange,
+		unitNounOne = 'venta',
+		unitNounMany = 'ventas',
+		selectionTooltip = 'Suma de las {total} ventas que cumplen los filtros (sin canceladas)'
 	}: Props = $props();
+
+	const selectionBalance = $derived('balanceUsd' in selection ? selection.balanceUsd : undefined);
+	const selectionTooltipText = $derived(selectionTooltip.replace('{total}', String(total)));
 
 	const from = $derived((page - 1) * perPage + 1);
 	const to = $derived(Math.min(page * perPage, total));
@@ -54,19 +64,21 @@
 			<b class="font-semibold text-on-surface tabular-nums">{from}–{to}</b>
 			de
 			<b class="font-semibold text-on-surface tabular-nums">{total}</b>
-			ventas
+			{total === 1 ? unitNounOne : unitNounMany}
 		</p>
 
-		<TriggerTooltip text="Suma de las {total} ventas que cumplen los filtros (sin canceladas)">
+		<TriggerTooltip text={selectionTooltipText}>
 			{#snippet trigger({ props })}
 				<span {...props} class="cursor-default">
 					Selección: total <b class="font-semibold text-on-surface tabular-nums">
 						{formatPrice(selection.totalUsd)}
 					</b>
-					· saldo
-					<b class="font-semibold text-on-surface tabular-nums">
-						{formatPrice(selection.balanceUsd)}
-					</b>
+					{#if selectionBalance !== undefined}
+						· saldo
+						<b class="font-semibold text-on-surface tabular-nums">
+							{formatPrice(selectionBalance)}
+						</b>
+					{/if}
 				</span>
 			{/snippet}
 		</TriggerTooltip>

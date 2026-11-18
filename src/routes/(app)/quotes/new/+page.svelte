@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { NewQuoteForm } from '$lib/components/quotes';
+	import NewQuoteForm from '$lib/components/quotes/NewQuoteForm.svelte';
 
 	let { data } = $props();
 </script>
@@ -26,6 +26,7 @@
 			suppliers={data.suppliers}
 			nextQuoteNumber={data.nextQuoteNumber}
 			defaultTaxRate={data.defaultTaxRate}
+			fromQuote={data.fromQuote}
 		/>
 	</div>
 </div>

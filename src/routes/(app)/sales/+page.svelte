@@ -41,7 +41,7 @@
 		type SaleListSort,
 		type SaleListView
 	} from '$lib/components/sales/listParams';
-	import { canOperate, SaleStatus, SALE_STATUS_LABELS } from '$lib/shared/enums';
+	import { canOperate, SaleStatus, SALE_STATUS_LABELS, ALL_SALE_STATUSES } from '$lib/shared/enums';
 	import type {
 		SaleListItem,
 		SaleWithRelations,
@@ -351,8 +351,8 @@
 		{view}
 		canCreate={canAct}
 		onViewChange={handleViewChange}
+		onCreate={() => void goto(resolve('/sales/new'))}
 	/>
-
 	<SaleKpiCards {stats} onSelect={handleKpiSelect} />
 
 	<section
@@ -373,10 +373,16 @@
 			onPresetChange={handlePresetChange}
 			onRangeChange={handleRangeChange}
 			onToggle={handleToggle}
-			onSortChange={handleSortChange}
+			onSortChange={(next) => handleSortChange(next as SaleListSort)}
 		/>
 
-		<SaleStatusTabs counts={salesData.facets} value={statuses} onchange={handleStatusesChange} />
+		<SaleStatusTabs
+			statuses={ALL_SALE_STATUSES}
+			labels={SALE_STATUS_LABELS}
+			counts={salesData.facets}
+			value={statuses}
+			onchange={(next) => handleStatusesChange(next as SaleStatus[])}
+		/>
 
 		<SaleFilterChips {chips} onClear={clearFilters} />
 	</section>

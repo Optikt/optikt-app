@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Calculator, ChevronDown, MessageSquare } from '@lucide/svelte';
+	import '$lib/components/layout/heroNavy.css';
+	import { Calculator, ChevronDown, List, MessageSquare } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { CasheaIsotipo } from '$lib/components/branding';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
@@ -250,11 +251,13 @@
 			<button
 				type="button"
 				onclick={() => (showBreakdown = !showBreakdown)}
-				class="inline-flex items-center gap-1 py-0.5 text-xs font-semibold text-[#9fd6ea] transition-colors hover:text-white"
+				aria-expanded={showBreakdown}
+				class="inline-flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
 			>
+				<List class="h-3.5 w-3.5" />
 				Desglose
 				<ChevronDown
-					class="h-3 w-3 transition-transform duration-200 {showBreakdown ? 'rotate-180' : ''}"
+					class="h-3.5 w-3.5 transition-transform duration-200 {showBreakdown ? 'rotate-180' : ''}"
 				/>
 			</button>
 			{#if onCalculate}
@@ -263,9 +266,9 @@
 						{...props}
 						type="button"
 						onclick={onCalculate}
-						class="inline-flex cursor-help items-center gap-1 py-0.5 text-xs font-semibold text-[#9fd6ea] transition-colors hover:text-white"
+						class="inline-flex cursor-help items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
 					>
-						<Calculator class="h-3 w-3" />
+						<Calculator class="h-3.5 w-3.5" />
 						Calcular factura
 					</button>
 				{/snippet}
@@ -367,136 +370,3 @@
 		{onPay}
 	/>
 </section>
-
-<style>
-	/* Hero por áreas (hijos directos hl hc2 mon acts hcta). Los umbrales son
-	   container queries contra `.page` (nunca viewport): el sidebar reacomoda suave. */
-	.hero {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		grid-template-areas:
-			'hl'
-			'hc2'
-			'mon'
-			'acts'
-			'hcta';
-	}
-	.hero > * {
-		min-width: 0;
-	}
-	/* Textos largos siempre envuelven (el `truncate` con tooltip sigue recortando). */
-	.hero :where(.hl, .hc2, .mon) {
-		overflow-wrap: anywhere;
-	}
-	/* ── Móvil <700 (contenedor): 1 col, título 24, stepper compacto,
-	   meta 2 col, dinero 2 col (Total | Saldo) + herramientas full-width. */
-	@container (max-width: 699px) {
-		.hero-title {
-			font-size: 24px;
-			white-space: normal;
-		}
-		/* Stepper compacto: solo el paso actual conserva etiqueta; el resto, puntos. */
-		.hero .step-label {
-			display: none;
-		}
-		.hero .step-current .step-label {
-			display: inline;
-		}
-		.hero .step-link {
-			display: none;
-		}
-		.hero-meta {
-			grid-template-columns: repeat(2, max-content);
-			column-gap: 24px;
-			row-gap: 8px;
-		}
-		.mon {
-			display: grid;
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-			column-gap: 16px;
-			align-items: start;
-		}
-		.money-total {
-			grid-column: 1;
-			grid-row: 1;
-			min-width: 0;
-		}
-		.mon :where(.money-total, .money-balance) > p.font-heading {
-			font-size: 22px;
-		}
-		.money-balance {
-			grid-column: 2;
-			grid-row: 1;
-			min-width: 0;
-			margin-top: 0;
-			border-top: 0;
-			padding-top: 0;
-			border-left: 1px solid rgba(255, 255, 255, 0.15);
-			padding-left: 16px;
-		}
-		.money-tools {
-			grid-column: 1 / -1;
-			grid-row: 2;
-		}
-		.money-breakdown {
-			grid-column: 1 / -1;
-			grid-row: 3;
-		}
-	}
-	/* Barras decorativas a la izquierda de `mon`; ocultas en móvil (<700). */
-	.hero::before,
-	.hero::after {
-		content: '';
-		position: absolute;
-		top: -10px;
-		bottom: -10px;
-		transform: skewX(-20deg);
-		display: none;
-	}
-	.mon {
-		border-top: 1px solid rgba(255, 255, 255, 0.15);
-		padding-top: 12px;
-	}
-	@container (min-width: 700px) {
-		.hero {
-			grid-template-columns: minmax(0, 1fr) 290px;
-			grid-template-areas:
-				'hl mon'
-				'hc2 mon'
-				'acts hcta';
-		}
-		.hero::before {
-			display: block;
-			right: 338px;
-			width: 34px;
-			background: var(--color-brand-blue);
-			opacity: 0.9;
-		}
-		.hero::after {
-			display: block;
-			right: 384px;
-			width: 10px;
-			background: var(--color-brand-gold);
-		}
-		.mon {
-			border-top: 0;
-			padding-top: 0;
-			border-left: 1px solid rgba(255, 255, 255, 0.15);
-			padding-left: 24px;
-		}
-	}
-	@container (min-width: 1500px) {
-		.hero {
-			grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) 330px;
-			grid-template-areas:
-				'hl hc2 mon'
-				'acts acts hcta';
-		}
-		.hero::before {
-			right: 378px;
-		}
-		.hero::after {
-			right: 424px;
-		}
-	}
-</style>

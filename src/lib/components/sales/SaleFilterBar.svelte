@@ -4,7 +4,7 @@
 	import PopoverTrigger from '$lib/components/ui/popover/popover-trigger.svelte';
 	import PopoverContent from '$lib/components/ui/popover/popover-content.svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
-	import type { SaleDatePreset, SaleListSort } from './listParams';
+	import type { SaleDatePreset } from './listParams';
 
 	type ToggleKey = 'cashea' | 'shippingPending' | 'freeItem' | 'balance';
 
@@ -15,15 +15,20 @@
 		preset: SaleDatePreset;
 		from: string | null;
 		to: string | null;
-		sort: SaleListSort;
-		toggles: Record<ToggleKey, boolean>;
-		activeToggleCount: number;
+		sort: string;
+		/** Toggles del popover; ausente = sin popover (listado de presupuestos). */
+		toggles?: Record<ToggleKey, boolean>;
+		activeToggleCount?: number;
 		onSearch: (value: string) => void;
 		onSellerChange: (sellerId: string) => void;
 		onPresetChange: (preset: SaleDatePreset) => void;
 		onRangeChange: (from: string | null, to: string | null) => void;
-		onToggle: (key: ToggleKey) => void;
-		onSortChange: (sort: SaleListSort) => void;
+		onToggle?: (key: ToggleKey) => void;
+		onSortChange: (sort: string) => void;
+		/** Generalización quotes: placeholder y opciones de orden (valores libres). */
+		searchPlaceholder?: string;
+		sortOptions?: { value: string; label: string }[];
+		ariaLabel?: string;
 	}
 
 	let {
@@ -35,13 +40,16 @@
 		to,
 		sort,
 		toggles,
-		activeToggleCount,
+		activeToggleCount = 0,
 		onSearch,
 		onSellerChange,
 		onPresetChange,
 		onRangeChange,
 		onToggle,
-		onSortChange
+		onSortChange,
+		searchPlaceholder = 'Buscar por cliente, vendedor o # de orden…',
+		sortOptions,
+		ariaLabel = 'Buscar ventas'
 	}: Props = $props();
 
 	let mobileOpen = $state(false);
@@ -49,12 +57,24 @@
 	const control =
 		'h-9 rounded-[var(--ds-radius-md)] border border-outline-variant bg-white px-2.5 text-sm font-medium text-on-surface transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30 focus:outline-none';
 
-	const TOGGLES: { key: ToggleKey; label: string }[] = [
+	const DEFAULT_TOGGLES: { key: ToggleKey; label: string }[] = [
 		{ key: 'cashea', label: 'Cashea' },
 		{ key: 'shippingPending', label: 'Envío pendiente' },
 		{ key: 'freeItem', label: 'Ítem libre' },
 		{ key: 'balance', label: 'Solo con saldo pendiente' }
 	];
+	const hasToggles = $derived(toggles !== undefined && onToggle !== undefined);
+	const togglesState: Record<ToggleKey, boolean> = $derived(
+		toggles ?? { cashea: false, shippingPending: false, freeItem: false, balance: false }
+	);
+
+	const DEFAULT_SORTS: { value: string; label: string }[] = [
+		{ value: 'recent', label: 'Más recientes' },
+		{ value: 'balance', label: 'Mayor saldo' },
+		{ value: 'total', label: 'Mayor total' },
+		{ value: 'old', label: 'Más antiguas' }
+	];
+	const SORTS = $derived(sortOptions ?? DEFAULT_SORTS);
 
 	const PRESETS: { value: SaleDatePreset; label: string }[] = [
 		{ value: 'all', label: 'Todas las fechas' },
@@ -62,13 +82,6 @@
 		{ value: '7d', label: 'Últimos 7 días' },
 		{ value: 'month', label: 'Este mes' },
 		{ value: 'custom', label: 'Personalizado' }
-	];
-
-	const SORTS: { value: SaleListSort; label: string }[] = [
-		{ value: 'recent', label: 'Más recientes' },
-		{ value: 'balance', label: 'Mayor saldo' },
-		{ value: 'total', label: 'Mayor total' },
-		{ value: 'old', label: 'Más antiguas' }
 	];
 
 	const collapsedCount = $derived(
@@ -92,8 +105,8 @@
 			type="search"
 			value={search}
 			oninput={(e) => onSearch(e.currentTarget.value)}
-			placeholder="Buscar por cliente, vendedor o # de orden…"
-			aria-label="Buscar ventas"
+			placeholder={searchPlaceholder}
+			aria-label={ariaLabel}
 			class="{control} w-full pl-9"
 		/>
 	</div>
@@ -170,7 +183,7 @@
 				class="{visInline} h-9 items-center gap-1.5 rounded-[var(--ds-radius-md)] border px-3 text-sm font-semibold transition-colors lg:inline-flex {activeToggleCount >
 				0
 					? 'border-brand-blue bg-info-container text-on-info-container'
-					: 'border-outline-variant bg-white text-on-surface'}"
+					: 'border-outline-variant bg-white text-on-surface'} {hasToggles ? '' : '!hidden'}"
 			>
 				<SlidersHorizontal class="h-4 w-4" />
 				Filtros
@@ -187,26 +200,23 @@
 				sideOffset={6}
 				class="w-64 gap-0 rounded-[var(--ds-radius-lg)] bg-white p-1.5 shadow-[var(--ds-shadow-lg)]"
 			>
-				{#each TOGGLES as toggle (toggle.key)}
+				{#each DEFAULT_TOGGLES as toggle (toggle.key)}
+					{@const on = togglesState[toggle.key] ?? false}
 					<button
 						type="button"
 						role="switch"
-						aria-checked={toggles[toggle.key]}
-						onclick={() => onToggle(toggle.key)}
+						aria-checked={on}
+						onclick={() => onToggle?.(toggle.key)}
 						class="flex w-full items-center gap-2.5 rounded-[var(--ds-radius-md)] px-2.5 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low"
 					>
 						{toggle.label}
 						<span
-							class="ml-auto inline-flex h-[18px] w-[30px] items-center rounded-full p-0.5 transition-colors duration-200 {toggles[
-								toggle.key
-							]
+							class="ml-auto inline-flex h-[18px] w-[30px] items-center rounded-full p-0.5 transition-colors duration-200 {on
 								? 'bg-brand-blue'
 								: 'bg-outline-variant'}"
 						>
 							<span
-								class="h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out {toggles[
-									toggle.key
-								]
+								class="h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out {on
 									? 'translate-x-3'
 									: ''}"
 							></span>
@@ -224,7 +234,7 @@
 						id="sales-sort"
 						class={control}
 						value={sort}
-						onchange={(e) => onSortChange(e.currentTarget.value as SaleListSort)}
+						onchange={(e) => onSortChange(e.currentTarget.value)}
 					>
 						{#each SORTS as option (option.value)}
 							<option value={option.value}>{option.label}</option>

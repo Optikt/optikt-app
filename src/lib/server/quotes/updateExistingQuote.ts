@@ -7,7 +7,7 @@ import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { auditService } from '$lib/server/audit';
 import { insertQuoteItems } from '$lib/server/quotes/quoteItemInsert';
 import { eq } from 'drizzle-orm';
-import { nowISO } from '$lib/dates';
+import { composeBusinessTimestamp, nowISO } from '$lib/dates';
 import type { UpdateQuoteInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -48,6 +48,9 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 			.update(quotes)
 			.set({
 				customerId: data.customerId !== undefined ? data.customerId : existing.customerId,
+				...(data.quoteDate !== undefined
+					? { quoteDate: composeBusinessTimestamp(data.quoteDate) }
+					: {}),
 				subtotal,
 				discount,
 				discountType,
