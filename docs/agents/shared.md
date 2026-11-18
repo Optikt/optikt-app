@@ -9,7 +9,7 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 
 ## Scope
 
-- `src/lib/components/ui/**` (102 componentes base), `layout/**`, `commercialDocument/**`, `documentEditor/**`, `branding/**`, `background/**` (nota: `components/forms/**` = login, pertenece a `users`)
+- `src/lib/components/ui/**` (102+ componentes base), `layout/**`, `commercialDocument/**`, `documentEditor/**`, `branding/**`, `background/**` (nota: `components/forms/**` = login, pertenece a `users`)
 - `src/lib/schemas/common/**` (contacts/dates/identity/numbers/optical/pagination) + `schemas/search.ts` + `schemas/index.ts`
 - `src/lib/server/audit/**`, `documentTotals.ts`, `treatmentValidation.ts`, `server/db/{index,types,search}.ts`, `server/db/schema/{utils,index}.ts`
 - `src/lib/actions/**`, `context/**`, `dates.ts`, `utils/**`, `stores/**`, `types/**`
@@ -24,6 +24,9 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 - **`src/lib/dates.ts`**: toda manipulación de fechas pasa por acá (`nowISO()`); no usar `new Date().toISOString()` sueltos ni aritmética de timezone ad-hoc.
 - **Schemas primitivos** (`schemas/common/`): cuando el schema de un dominio repite un patrón de una primitiva, componer desde `common/`, no copiar.
 - **`components/ui/**`**: los componentes base se importan de `$lib/components/ui/`, nunca se copian a un dominio. `components/index.ts` es barrel legacy: consumible por código existente, no extendible (regla global No Barrels). Extender un kit-component solo con **props opcionales** que no cambien a los consumidores actuales (ej.: `SegmentedToggle` ganó `variant: 'default'|'light'`, `icon` por opción y `class` — el default sigue idéntico — más `role=tablist` + navegación con flechas; `SaleStatusBadge` ganó `label` y `class`).
+- **Kit móvil** (plan `sales-list-mobile`): piezas compartidas, NO duplicar por sección. `SlideOver` soporta `direction="bottom"` con `dragClose` (asa arrastrable > 90 px cierra; el velo también cierra vía `handleClose`, respeta `closeGuard`) y safe-area inferior (`env(safe-area-inset-bottom)`). `ScrollableRow` = fila de píldoras desplazable (una línea, máscara de desvanecimiento a la derecha, re-alinea el hijo `[data-active]` cuando cambia `activeKey`). `Carousel` = scroll-snap horizontal genérico con `items` + snippet `item` (itemWidthPx/gapPx/edgePx, indicador de puntos que sigue al scroll). `Fab` = FAB extendido (label arriba, contraído > 60 px, oculto al bajar rápido; monitorea el `<main>` del layout). `SegmentedToggle` ganó `iconOnly` (44 px, label sr-only). ⚠️ `fixed` + `container-type` son incompatibles: toda pieza `fixed` (FAB, hojas, barra móvil) debe montarse FUERA de contenedores `@container`.
+- **Búsqueda global** (`layout/`): la lógica vive en `universalSearch.svelte.ts` (`createUniversalSearch`: debounce 250 ms + remote `universalSearch`) y los resultados en `SearchResultsList` — consumidos por `CommandSearch` (escritorio, inline ≥lg) y `MobileGlobalSearch` (móvil <lg: icono de lupa → campo a ancho completo con foco + panel de ayuda/chips de ejemplo + velo; cierra con ✕/velo/Esc). No reimplementar la búsqueda en otra pieza.
+- **`utils/urlState.ts`**: `replaceUrlSearch` usa el wrapper `replaceState` de `$app/navigation` (no `history.replaceState` crudo: SvelteKit lo advierte y rompe su router). Contrato: replace sin entradas de historial.
 - **`commercialDocument/`** es la capa compartida de fila de documento (ventas/cotizaciones): items, qty, descuento. Reglas exclusivas de un dominio van en el doc de ese dominio, no acá.
 
 ## Patrones locales
@@ -47,6 +50,7 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 
 ## Planes completados
 
+- **2026-11 · sales-list-mobile** — Kit móvil compartido (SlideOver drag-close, ScrollableRow, Carousel, Fab, búsqueda global plegable <lg con lógica compartida) + NavLink min-h-11 + urlState con wrapper replaceState
 - **2026-11 · agents-md-por-dominio** — Doc por dominio: índice machine-readable (scripts/agents-domains.json), plantilla, check CI y sembrado core
 - **2026-11 · dt1-decompose** — Programa de descomposición de 39 archivos >500 líneas: completado, gate check-file-size bloqueante en CI (PRs #120-#151)
 - **2026-11 · dt1-t1-split** — Split de los 3 monolitos T1: EditSaleModal 499, LensCatalogForm 463, inventory/count/[id] 513, bajo el gate 520

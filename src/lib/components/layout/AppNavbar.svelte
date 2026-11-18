@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Settings, X } from '@lucide/svelte';
+	import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Search, Settings, X } from '@lucide/svelte';
 	import { ImagotipoHorizontal } from '$lib/components';
+	import Isotipo from '$lib/components/branding/Isotipo.svelte';
 	import { logout } from '$lib/remote/auth.remote';
 	import { isAdminRole, UserRole } from '$lib/shared/enums';
 	import { CommandSearch, ExchangeRates, Notifications } from '$lib/components/layout';
+	import MobileGlobalSearch from '$lib/components/layout/MobileGlobalSearch.svelte';
 	import SupportTicketsButton from '$lib/components/layout/SupportTicketsButton.svelte';
 	import SupportTicketsOpenCount from '$lib/components/layout/SupportTicketsOpenCount.svelte';
 	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
@@ -26,7 +28,12 @@
 	}: NavbarProps = $props();
 
 	let profileOpen = $state(false);
+	let mobileSearchOpen = $state(false);
 	const canManageSupport = $derived(isAdminRole(user.role));
+
+	function closeMobileSearch(): void {
+		mobileSearchOpen = false;
+	}
 
 	function getRoleBadgeClass(role: UserRole) {
 		const base =
@@ -58,11 +65,13 @@
 <svelte:document onclick={handleClickOutside} />
 
 <header class="sticky top-0 z-50 bg-brand-navy print:hidden">
-	<div class="flex min-h-14 items-center gap-3 px-4 py-2 sm:px-6">
+	<div
+		class="flex min-h-14 items-center gap-1.5 px-3 pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-2 sm:gap-3 sm:px-6"
+	>
 		<button
 			type="button"
 			onclick={onToggleNav}
-			class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-white transition-colors hover:bg-white/10 lg:hidden"
+			class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-white transition-colors hover:bg-white/10 sm:h-10 sm:w-10 lg:hidden"
 			aria-controls="app-mobile-sidebar"
 			aria-expanded={mobileNavOpen}
 			aria-label={mobileNavOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'}
@@ -89,12 +98,28 @@
 		</button>
 
 		<a href={resolve('/dashboard')} class="flex shrink-0 items-center no-underline">
-			<ImagotipoHorizontal theme="light" ariaLabel="Optikt" class="h-7 w-auto sm:h-8" />
+			<!-- xs: isotipo solo (la barra completa no cabe); ≥sm: imagotipo horizontal como hoy. -->
+			<Isotipo theme="light" height={28} ariaLabel="Optikt" class="sm:hidden" />
+			<ImagotipoHorizontal
+				theme="light"
+				ariaLabel="Optikt"
+				class="hidden h-7 w-auto sm:block lg:h-8"
+			/>
 		</a>
 
-		<div class="hidden min-w-0 flex-1 md:ml-4 md:block">
+		<div class="hidden min-w-0 flex-1 md:ml-4 lg:block">
 			<CommandSearch />
 		</div>
+
+		<!-- Móvil (< lg): la búsqueda global se pliega en el icono de lupa. -->
+		<button
+			type="button"
+			onclick={() => (mobileSearchOpen = true)}
+			class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10 lg:hidden"
+			aria-label="Abrir búsqueda global"
+		>
+			<Search class="h-[22px] w-[22px]" />
+		</button>
 
 		<div class="ml-auto flex items-center gap-1.5 sm:gap-2">
 			<div class="flex items-center gap-0.5 sm:gap-1">
@@ -121,7 +146,7 @@
 						<span class={getRoleBadgeClass(user.role)}>{user.role}</span>
 					</div>
 					<div
-						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-blue to-brand-blue-dark text-sm font-semibold text-white"
+						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-blue to-brand-blue-dark text-sm font-semibold text-white sm:h-10 sm:w-10"
 					>
 						{user.fullName?.charAt(0) ?? 'U'}
 					</div>
@@ -162,7 +187,6 @@
 		</div>
 	</div>
 
-	<div class="border-t border-white/10 px-4 pb-2 sm:px-6 md:hidden">
-		<CommandSearch />
-	</div>
+	<!-- Búsqueda global móvil (overlay con velo; cerrar: ✕ / velo / Esc) -->
+	<MobileGlobalSearch open={mobileSearchOpen} onclose={closeMobileSearch} />
 </header>

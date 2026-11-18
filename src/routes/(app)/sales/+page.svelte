@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { setContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -15,17 +16,11 @@
 	} from '$lib/utils';
 	import { listSales, getSalesStats } from '$lib/remote/sales/queries.remote';
 	import { saveUserPreference } from '$lib/remote/users/preferences.remote';
-	import SaleListHeader from '$lib/components/sales/SaleListHeader.svelte';
-	import SaleKpiCards from '$lib/components/sales/SaleKpiCards.svelte';
-	import SaleFilterBar from '$lib/components/sales/SaleFilterBar.svelte';
-	import SaleStatusTabs from '$lib/components/sales/SaleStatusTabs.svelte';
-	import SaleFilterChips from '$lib/components/sales/SaleFilterChips.svelte';
-	import SalesListView from '$lib/components/sales/SalesListView.svelte';
-	import SalesGridView from '$lib/components/sales/SalesGridView.svelte';
-	import SaleListFooter from '$lib/components/sales/SaleListFooter.svelte';
 	import CancelSaleModal from '$lib/components/sales/CancelSaleModal.svelte';
-	import EmptyState from '$lib/components/ui/EmptyState.svelte';
-	import { ReceiptText } from '@lucide/svelte';
+	import SaleListDesktop from '$lib/components/sales/SaleListDesktop.svelte';
+	import SaleListMobile from '$lib/components/sales/SaleListMobile.svelte';
+	import SaleMobileOverlays from '$lib/components/sales/SaleMobileOverlays.svelte';
+	import Fab from '$lib/components/ui/Fab.svelte';
 	import { parseSaleStatuses, serializeSaleStatuses } from '$lib/components/sales/statusFilter';
 	import {
 		DEFAULT_SALE_LIST_PER_PAGE,
@@ -41,12 +36,13 @@
 		type SaleListSort,
 		type SaleListView
 	} from '$lib/components/sales/listParams';
+	import {
+		SALE_LIST_KEY,
+		type SaleListContext,
+		type SaleMobileUi
+	} from '$lib/components/sales/saleListContext';
 	import { canOperate, SaleStatus, SALE_STATUS_LABELS } from '$lib/shared/enums';
-	import type {
-		SaleListItem,
-		SaleWithRelations,
-		SalesStats
-	} from '$lib/server/db/queries/sales/types';
+	import type { SaleListItem, SalesStats } from '$lib/server/db/queries/sales/types';
 	import type { PaginatedSales } from '$lib/remote/sales/helpers';
 
 	// ── Datos iniciales (SSR) ────────────────────────────────────────────────
@@ -127,7 +123,7 @@
 	}
 
 	// ── Fetch ────────────────────────────────────────────────────────────────
-	async function fetchSales(nextPage: number): Promise<void> {
+	async function fetchSales(nextPage: number, opts?: { scrollTop?: boolean }): Promise<void> {
 		currentPage = nextPage;
 		syncUrl(nextPage);
 		loading = true;
@@ -150,6 +146,10 @@
 			toast.error(getErrorMessage(e, 'Error cargando ventas'));
 		} finally {
 			loading = false;
+			// Móvil: al cambiar de página, volver al inicio de la lista (mockup §3.8).
+			if (opts?.scrollTop) {
+				document.querySelector('main')?.scrollTo({ top: 0 });
+			}
 		}
 	}
 
@@ -215,6 +215,13 @@
 	// ── Cancelación (modal en el listado, como hasta ahora) ──────────────────
 	let cancelTarget = $state<SaleListItem | null>(null);
 	let cancelOpen = $state(false);
+
+	// UI móvil (hojas): vive fuera del contenedor `@container` (fixed + containment).
+	let mobileUi = $state<SaleMobileUi>({
+		filtersOpen: false,
+		actionsOpen: false,
+		actionsSale: null
+	});
 
 	function handleCancelRequest(sale: SaleListItem): void {
 		cancelTarget = sale;
@@ -311,6 +318,7 @@
 		if (next === view) return;
 		view = next;
 		syncUrl(currentPage);
+		toast.success(`Vista «${next === 'list' ? 'Lista' : 'Cuadros'}» guardada en tu perfil`);
 		void persistView(next);
 	}
 
@@ -327,7 +335,7 @@
 	}
 
 	// ── Navegación ───────────────────────────────────────────────────────────
-	function handleView(sale: SaleWithRelations): void {
+	function handleView(sale: SaleListItem): void {
 		void goto(resolve(`/sales/${sale.id}`));
 	}
 
@@ -337,6 +345,112 @@
 			saveReferrerParams('/sales');
 		}
 	});
+
+	// ── Contexto compartido (escritorio y móvil consumen el mismo estado) ────
+	const ctx: SaleListContext = {
+		get salesData() {
+			return salesData;
+		},
+		get stats() {
+			return stats;
+		},
+		get sellers() {
+			return sellers;
+		},
+		get loading() {
+			return loading;
+		},
+		get view() {
+			return view;
+		},
+		get search() {
+			return search;
+		},
+		get statuses() {
+			return statuses;
+		},
+		get sellerId() {
+			return sellerId;
+		},
+		get preset() {
+			return preset;
+		},
+		get from() {
+			return from;
+		},
+		get to() {
+			return to;
+		},
+		get sort() {
+			return sort;
+		},
+		get per() {
+			return per;
+		},
+		get currentPage() {
+			return currentPage;
+		},
+		get cashea() {
+			return cashea;
+		},
+		get shippingPending() {
+			return shippingPending;
+		},
+		get freeItem() {
+			return freeItem;
+		},
+		get balance() {
+			return balance;
+		},
+		get canAct() {
+			return canAct;
+		},
+		get user() {
+			return data.user;
+		},
+		get chips() {
+			return chips;
+		},
+		get activeToggleCount() {
+			return activeToggleCount;
+		},
+		get mobileUi() {
+			return mobileUi;
+		},
+		handlers: {
+			onSearch: handleSearch,
+			onStatusesChange: handleStatusesChange,
+			onSellerChange: handleSellerChange,
+			onPresetChange: handlePresetChange,
+			onRangeChange: handleRangeChange,
+			onToggle: handleToggle,
+			onSortChange: handleSortChange,
+			onPerPageChange: handlePerPageChange,
+			onKpiSelect: handleKpiSelect,
+			onViewChange: handleViewChange,
+			onClearFilters: clearFilters,
+			onOpenSale: handleView,
+			onCancelRequest: handleCancelRequest,
+			onPageChange: (next, opts) => void fetchSales(next, opts)
+		}
+	};
+	setContext(SALE_LIST_KEY, ctx);
+	// ── Detección de móvil (contenedor, igual que el detalle: <700 px) ───────
+	// ResizeObserver sobre el contenedor de la página — no viewport query — para
+	// que el reflow del sidebar también reacomode (mismo patrón del detalle).
+	let pageEl = $state<HTMLElement | undefined>(undefined);
+	let isNarrow = $state(false);
+
+	$effect(() => {
+		const target = pageEl;
+		if (!target) return;
+		const observer = new ResizeObserver((entries) => {
+			const width = entries[0]?.contentRect.width;
+			if (width !== undefined) isNarrow = width < 700;
+		});
+		observer.observe(target);
+		return () => observer.disconnect();
+	});
 </script>
 
 <svelte:head>
@@ -344,147 +458,16 @@
 </svelte:head>
 
 <div
-	class="animate-rise @container mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-5 pt-3.5 pb-7 min-[1440px]:max-w-[1440px] min-[1920px]:max-w-[1600px] min-[2400px]:max-w-[1920px]"
+	bind:this={pageEl}
+	class="animate-rise @container mx-auto flex w-full max-w-[1280px] flex-col gap-3 min-[1440px]:max-w-[1440px] min-[1920px]:max-w-[1600px] min-[2400px]:max-w-[1920px] {isNarrow
+		? 'px-3 pt-3 pb-24'
+		: 'px-5 pt-3.5 pb-7'}"
 >
-	<SaleListHeader
-		totalCount={stats.total}
-		{view}
-		canCreate={canAct}
-		onViewChange={handleViewChange}
-	/>
-
-	<SaleKpiCards {stats} onSelect={handleKpiSelect} />
-
-	<section
-		class="flex flex-col gap-2.5 rounded-[var(--ds-radius-lg)] bg-white p-2.5 shadow-[var(--ds-shadow-sm)] lg:p-3"
-	>
-		<SaleFilterBar
-			{search}
-			{sellerId}
-			{sellers}
-			{preset}
-			{from}
-			{to}
-			{sort}
-			toggles={{ cashea, shippingPending, freeItem, balance }}
-			{activeToggleCount}
-			onSearch={handleSearch}
-			onSellerChange={handleSellerChange}
-			onPresetChange={handlePresetChange}
-			onRangeChange={handleRangeChange}
-			onToggle={handleToggle}
-			onSortChange={handleSortChange}
-		/>
-
-		<SaleStatusTabs counts={salesData.facets} value={statuses} onchange={handleStatusesChange} />
-
-		<SaleFilterChips {chips} onClear={clearFilters} />
-	</section>
-
-	<p class="sr-only" aria-live="polite">{salesData.total} ventas</p>
-
-	<div
-		class="overflow-hidden rounded-[var(--ds-radius-lg)] bg-white shadow-[var(--ds-shadow-sm)] {loading &&
-		salesData.sales.length > 0
-			? 'pointer-events-none opacity-60'
-			: ''}"
-		aria-busy={loading}
-	>
-		{#if loading && salesData.sales.length === 0}
-			{#if view === 'list'}
-				<div class="h-[38px] border-b border-outline-variant/70 bg-surface-container-low"></div>
-				{#each Array(7) as _, i (i)}
-					<div class="flex h-[58px] items-center gap-4 border-b border-outline-variant/40 px-3">
-						<div class="h-3 w-16 animate-pulse rounded bg-surface-container-high"></div>
-						<div class="h-3 w-40 animate-pulse rounded bg-surface-container-high"></div>
-						<div class="h-3 w-20 animate-pulse rounded bg-surface-container-high"></div>
-						<div class="h-3 w-16 animate-pulse rounded bg-surface-container-high"></div>
-						<div class="h-3 w-32 animate-pulse rounded bg-surface-container-high"></div>
-					</div>
-				{/each}
-			{:else}
-				<div class="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{#each Array(6) as _, i (i)}
-						<div
-							class="h-[132px] animate-pulse rounded-[var(--ds-radius-lg)] bg-surface-container-high"
-						></div>
-					{/each}
-				</div>
-			{/if}
-		{:else if salesData.sales.length === 0}
-			{#snippet receiptIcon()}
-				<ReceiptText class="h-10 w-10" />
-			{/snippet}
-			<div class="flex flex-col items-center px-4 py-10">
-				<EmptyState
-					icon={receiptIcon}
-					message={stats.total === 0
-						? 'Registra una venta para comenzar'
-						: 'No se encontraron ventas'}
-				/>
-				{#if stats.total > 0}
-					<p class="-mt-2 text-[13px] text-on-surface-variant">
-						Prueba con otros filtros o límpialos.
-					</p>
-				{/if}
-				{#if chips.length > 0 || search.trim().length > 0}
-					<button
-						type="button"
-						onclick={clearFilters}
-						class="mt-3 inline-flex h-9 items-center rounded-[var(--ds-radius-md)] bg-brand-navy px-4 text-[13px] font-semibold text-white transition-colors hover:bg-brand-navy-dark"
-					>
-						Limpiar filtros
-					</button>
-				{/if}
-			</div>
-		{:else}
-			{#if view === 'list'}
-				<!-- Mobile: ambas vistas usan el mismo layout de tarjetas (la tabla no cabe) -->
-				<div class="p-3 lg:hidden">
-					<SalesGridView
-						sales={salesData.sales}
-						canManage={canAct}
-						currentUserId={data.user.id}
-						currentUserRole={data.user.role}
-						onOpen={handleView}
-						onCancel={handleCancelRequest}
-					/>
-				</div>
-				<div class="hidden lg:block">
-					<SalesListView
-						sales={salesData.sales}
-						canManage={canAct}
-						currentUserId={data.user.id}
-						currentUserRole={data.user.role}
-						onOpen={handleView}
-						onCancel={handleCancelRequest}
-					/>
-				</div>
-			{:else}
-				<div class="p-3">
-					<SalesGridView
-						sales={salesData.sales}
-						canManage={canAct}
-						currentUserId={data.user.id}
-						currentUserRole={data.user.role}
-						onOpen={handleView}
-						onCancel={handleCancelRequest}
-					/>
-				</div>
-			{/if}
-
-			<SaleListFooter
-				page={salesData.page}
-				perPage={salesData.perPage}
-				total={salesData.total}
-				totalPages={salesData.totalPages}
-				selection={salesData.selection}
-				showPerPage={view === 'list'}
-				onPageChange={(next) => void fetchSales(next)}
-				onPerPageChange={handlePerPageChange}
-			/>
-		{/if}
-	</div>
+	{#if isNarrow}
+		<SaleListMobile />
+	{:else}
+		<SaleListDesktop />
+	{/if}
 
 	{#if cancelTarget}
 		<CancelSaleModal
@@ -498,3 +481,11 @@
 		/>
 	{/if}
 </div>
+
+<!-- Hojas móviles: FUERA del contenedor (@container + fixed son incompatibles). -->
+{#if isNarrow}
+	<SaleMobileOverlays />
+{/if}
+
+<!-- FAB fuera del contenedor (@container + fixed son incompatibles). -->
+<Fab label="Nueva venta" href={resolve('/sales/new')} hidden={!isNarrow || !canAct} />

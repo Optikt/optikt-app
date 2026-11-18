@@ -5,13 +5,19 @@
 import type { PaginatedSales, SaleDetail } from './helpers';
 import { query } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
-import { ListSalesSchema, SaleIdSchema, CustomerLookupSchema } from '$lib/schemas/';
+import {
+	ListSalesSchema,
+	CountSalesSchema,
+	SaleIdSchema,
+	CustomerLookupSchema
+} from '$lib/schemas/';
 import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
 import { getSalePayments } from '$lib/server/db/queries/sales/payments';
 import {
 	getSalesListPage,
 	getSalesStats as getSalesStatsQuery,
-	findSaleByIdWithRelations
+	findSaleByIdWithRelations,
+	countSales as countSalesQuery
 } from '$lib/server/db/queries/sales/reads';
 import { saleListSortToOrder } from '$lib/components/sales/listParams';
 import type { SalesStats } from '$lib/server/db/queries/';
@@ -72,6 +78,27 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
 		facets: result.facets,
 		selection: result.selection
 	};
+});
+
+/**
+ * Conteo de ventas con los filtros del listado, sin traer filas.
+ * «Ver N ventas» de la hoja de filtros móvil (conteo en vivo).
+ */
+export const countSales = query(CountSalesSchema, async (data): Promise<number> => {
+	requireAuth();
+
+	return countSalesQuery({
+		statuses: data.statuses ?? undefined,
+		customerId: data.customerId ?? undefined,
+		sellerId: data.sellerId ?? undefined,
+		dateFrom: data.dateFrom ?? undefined,
+		dateTo: data.dateTo ?? undefined,
+		search: data.search ?? undefined,
+		shippingCostPending: data.shippingCostPending ?? undefined,
+		hasFreeItem: data.hasFreeItem ?? undefined,
+		isCashea: data.isCashea ?? undefined,
+		balanceOnly: data.balance ?? undefined
+	});
 });
 
 /**

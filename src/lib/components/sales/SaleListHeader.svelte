@@ -11,9 +11,11 @@
 		view: SaleListView;
 		canCreate: boolean;
 		onViewChange: (view: SaleListView) => void;
+		/** Móvil: título 26, selector solo iconos y «Nueva venta» fuera (va al FAB). */
+		narrow?: boolean;
 	}
 
-	let { totalCount, view, canCreate, onViewChange }: Props = $props();
+	let { totalCount, view, canCreate, onViewChange, narrow = false }: Props = $props();
 
 	const viewOptions = [
 		{ value: 'list', label: 'Lista', icon: List },
@@ -23,8 +25,14 @@
 
 <div class="flex flex-wrap items-center gap-3">
 	<div class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-0.5">
-		<h1 class="font-heading text-[28px] leading-none font-bold text-brand-navy">Ventas</h1>
-		<p class="text-[13px] text-on-surface-variant">
+		<h1
+			class="font-heading leading-none font-bold text-brand-navy {narrow
+				? 'text-[26px]'
+				: 'text-[28px]'}"
+		>
+			Ventas
+		</h1>
+		<p class="text-[12px] text-on-surface-variant {narrow ? '' : 'text-[13px]'}">
 			{totalCount}
 			{totalCount === 1 ? 'venta registrada' : 'ventas registradas'}
 		</p>
@@ -37,6 +45,7 @@
 					value={view}
 					options={viewOptions}
 					variant="light"
+					iconOnly={narrow}
 					class="w-auto"
 					onchange={(v) => onViewChange(v as SaleListView)}
 				/>
@@ -44,7 +53,7 @@
 		{/snippet}
 	</TriggerTooltip>
 
-	{#if canCreate}
+	{#if canCreate && !narrow}
 		<button
 			type="button"
 			onclick={() => void goto(resolve('/sales/new'))}

@@ -28,6 +28,10 @@
 
 	function handleWindowError(event: Event) {
 		const errorEvent = event as ErrorEvent;
+		// Ruido benigno del navegador (loop interno de ResizeObserver): no es un
+		// fallo de la app ni bloquea nada — no reportar ni toastear.
+		if (errorEvent.message?.startsWith('ResizeObserver loop')) return;
+
 		const error =
 			errorEvent.error ?? new Error(errorEvent.message || 'Error inesperado en la aplicación');
 

@@ -1,3 +1,5 @@
+import { replaceState } from '$app/navigation';
+
 export function parsePageParam(value: string | null, fallback = 1): number {
 	if (!value) return fallback;
 	const parsed = Number.parseInt(value, 10);
@@ -25,7 +27,11 @@ export function setQueryParam(
 export function replaceUrlSearch(url: URL, updater: (params: URLSearchParams) => void): void {
 	const nextUrl = new URL(url);
 	updater(nextUrl.searchParams);
-	history.replaceState(history.state, '', nextUrl);
+	if (typeof window === 'undefined') return;
+	// Wrapper de SvelteKit: mismo contrato (replace, sin historial) sin chocar con su router.
+	// Es la MISMA url actual con query nueva — no hay ruta nueva que resolver.
+	// eslint-disable-next-line svelte/no-navigation-without-resolve
+	replaceState(nextUrl.href, {});
 }
 
 function referrerKey(basePath: string): string {
