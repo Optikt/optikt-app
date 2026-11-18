@@ -12,9 +12,10 @@
 	interface Props {
 		open: boolean;
 		events: QuoteAuditEvent[];
+		onclose: () => void;
 	}
 
-	let { open, events }: Props = $props();
+	let { open, events, onclose }: Props = $props();
 
 	let filter = $state<QuoteAuditFilter>('all');
 
@@ -27,7 +28,7 @@
 	const visible = $derived(events.filter((e) => matchesQuoteAuditFilter(e, filter)));
 </script>
 
-<SlideOver bind:open direction="right" widthClass="w-full sm:w-[440px]" bodyClass="p-0">
+<SlideOver {open} {onclose} direction="right" widthClass="w-full sm:w-[440px]" bodyClass="p-0">
 	{#snippet header({ onclose: close })}
 		<div class="flex items-center justify-between px-5 pt-4 pb-2">
 			<h2 class="font-heading text-lg font-bold text-brand-navy">Historial del presupuesto</h2>

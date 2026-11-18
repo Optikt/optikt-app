@@ -30,6 +30,8 @@
 		DEFAULT_QUOTE_LIST_SORT,
 		parseIsoDateOnly,
 		parseQuoteListSort,
+		parseQuoteStatuses,
+		serializeQuoteStatuses,
 		saleListDatePreset,
 		saleListPresetRange,
 		type QuoteListSort,
@@ -43,7 +45,7 @@
 		QuoteStatus,
 		type QuoteStatus as QuoteStatusType
 	} from '$lib/shared/contracts/quotes';
-	import type { QuoteWithRelations, QuoteStats } from '$lib/server/db/queries/quotes';
+	import type { QuoteWithRelations, QuoteStats } from '$lib/server/db/queries/quotes/types';
 	import type { PaginatedQuotes } from '$lib/remote/quotes/queries.remote';
 
 	// ── Datos iniciales (SSR) ────────────────────────────────────────────────
@@ -61,12 +63,7 @@
 
 	const initialPage = parsePageParam(initialQuery.get('page'));
 	const initialSearch = initialQuery.get('q') ?? '';
-	const initialStatus = initialQuery.get('status');
-	const initialStatuses = initialStatus
-		? ALL_QUOTE_STATUSES.includes(initialStatus as QuoteStatusType)
-			? [initialStatus as QuoteStatusType]
-			: []
-		: [];
+	const initialStatuses = parseQuoteStatuses(initialQuery.get('status'));
 	const initialSeller = initialQuery.get('seller') ?? '';
 	const initialFrom = parseIsoDateOnly(initialQuery.get('from'));
 	const initialTo = parseIsoDateOnly(initialQuery.get('to'));
@@ -105,7 +102,7 @@
 	function syncUrl(nextPage: number): void {
 		replaceUrlSearch(page.url, (params) => {
 			setQueryParam(params, 'q', search.trim());
-			setQueryParam(params, 'status', statuses[0] ?? null);
+			setQueryParam(params, 'status', serializeQuoteStatuses(statuses));
 			setQueryParam(params, 'seller', sellerId);
 			setQueryParam(params, 'from', from);
 			setQueryParam(params, 'to', to);
@@ -126,7 +123,7 @@
 					page: nextPage,
 					perPage: per,
 					search: search.trim() || undefined,
-					status: statuses[0] ?? undefined,
+					statuses: statuses.length > 0 ? statuses : undefined,
 					sellerId: sellerId || undefined,
 					dateFrom: from ?? undefined,
 					dateTo: to ?? undefined,
@@ -137,7 +134,7 @@
 					page: 1,
 					perPage: 1,
 					search: search.trim() || undefined,
-					status: statuses[0] ?? undefined,
+					statuses: statuses.length > 0 ? statuses : undefined,
 					sellerId: sellerId || undefined,
 					dateFrom: from ?? undefined,
 					dateTo: to ?? undefined

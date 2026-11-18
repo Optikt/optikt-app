@@ -86,7 +86,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 - **Shell/core (DT9)**: lógica = `<acción>Core(input, ctx)` en `server/sales/<acción>.ts` con `ActionContext` explícito; remote solo `requireRole` + delega. Es el patrón de referencia para otros dominios.
 - **Int specs co-ubicados** junto al core (`server/sales/*.int.spec.ts`, Postgres real/Testcontainers).
-- Lógica pura de negocio en `src/lib/shared/` (ver Scope). Helper compartido de snapshot costs con quotes: `resolveLensSnapshotCosts` (⚠️ duplicado, ver deuda).
+- Lógica pura de negocio en `src/lib/shared/` (ver Scope). Helper compartido de snapshot costs con quotes: `resolveLensSnapshotCosts` (consolidado; ya no hay duplicado).
 - Queries `queries/sales/` divididas (DT1): `reads|writes|items|payments|shared|types` — algunas aún usan `db` fijo.
 - Gate de tamaño de archivo (`scripts/check-file-size.sh`) activo en este dominio; partes descompuestas por plan `dt1-t2-sales`.
 
@@ -119,7 +119,6 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 - 🟠 **Fórmulas multi-persona (compartido con quotes):** `SaleItem.prescriptionId` apunta a UNA prescripción del cliente de la venta y no hay forma de asociar el lente a otra persona (madre e hija, pareja). Hoy la conversión desde quote deriva una sola fórmula con `firstDefined` y pisa la `isCurrent` del titular. A futuro: persona/beneficiario por ítem LENS_PAIR y no sobrescribir la fórmula vigente del cliente titular. Ver `docs/agents/quotes.md`.
 - 🟡 `getNextOrderNumber` sigue siendo MAX+1 dentro de la tx (mismo problema de concurrencia que tenía quotes); fuera de alcance del plan quotes-redesign — migrar a sequence en otro plan.
 - 🟡 `PaymentForm` family: el state factory vive en `components/sales/payments/` aunque la UI adapter está en `components/payments/` (herencia del factory transversal) — mover al unificar pagos (plan pr5).
-- 🟡 `resolveLensSnapshotCosts` duplicado (`remote/quotes/helpers.ts` vs `remote/sales/helpers.ts:35-58`) — consolidar en `src/lib/shared/`.
 - 🟡 Fecha-verdad (composición Caracas) pendiente para: `sale_payments.paymentDate`, `purchase_orders.orderDate`, `quotes.quoteDate`, `prescriptions.prescriptionDate` .
 
 ## Planes completados

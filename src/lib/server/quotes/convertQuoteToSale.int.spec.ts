@@ -87,7 +87,13 @@ describe('convertQuoteToSaleCore', () => {
 	});
 
 	it('requires a customer when the quote has none (D5)', async () => {
+		// El quote necesita ítems: sin ellos gana el error "no tiene ítems" y no
+		// se llega a la validación de cliente que verifica este caso.
+		const { product } = await seedStockProduct();
 		const quote = await createQuote();
+		await db
+			.insert(quoteItems)
+			.values(buildQuoteItemValues(productItem(product.id), quote.id, nowISO()));
 
 		const result = await convertQuoteToSaleCore({ id: quote.id }, ctx(quote.sellerId));
 

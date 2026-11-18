@@ -51,3 +51,7 @@ docs/rework-edit-sale/redesign-drawer-modificar-orden.html
 
 # Config local con credenciales (keys de MCP): no versionar
 .cursor/mcp.json
+
+# Artefactos locales de Playwright y screenshots (no versionar; se adjuntan al PR)
+.playwright-mcp/
+/shots/

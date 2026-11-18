@@ -3,7 +3,6 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
-	import { PDFViewerModal } from '$lib/components/pdf';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { cancelQuote } from '$lib/remote/quotes/lifecycle.remote';
 	import SaleItemsTable from '$lib/components/sales/itemsTable/SaleItemsTable.svelte';
@@ -13,8 +12,11 @@
 	import { toast } from 'svelte-sonner';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
-	import type { QuoteItemWithDetails, QuoteWithRelations } from '$lib/server/db/queries/quotes';
-	import type { QuoteConversionPreview } from '$lib/server/quotes/conversionPreviewLogic';
+	import type {
+		QuoteItemWithDetails,
+		QuoteWithRelations
+	} from '$lib/server/db/queries/quotes/types';
+	import type { QuoteConversionPreview } from '$lib/shared/quotes/conversionPreview';
 	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
 	import {
 		buildQuoteDisplayGroups,
@@ -31,6 +33,7 @@
 		type QuoteAuditEvent
 	} from '$lib/components/quotes/detail/quoteAudit';
 	import { cacheLensItem } from '$lib/components/sales/catalogCache.svelte';
+	import { computeSaleBreakdown } from '$lib/components/sales/detail/saleBreakdown';
 	import { formatQuoteNumber } from '$lib/components/quotes/list/quoteListDisplay';
 	import { formatDate } from '$lib/utils';
 
@@ -49,10 +52,6 @@
 	let showEditDrawer = $state(false);
 	let showAuditDrawer = $state(false);
 	let actionLoading = $state(false);
-
-	// PDF (D9: solo PDF, botón directo)
-	let showPdfPreview = $state(false);
-	let pdfUrl = $derived(resolve(`/api/pdf/quote/${quote.id}`));
 
 	let formattedQuoteNumber = $derived(formatQuoteNumber(quote.quoteNumber));
 	let canAct = $derived(canOperate(data.user.role));
@@ -81,15 +80,9 @@
 		displayItems.map((item) => quoteItemToDisplayItem(item, quote.id))
 	);
 	const groups = $derived(buildQuoteDisplayGroups(displayItems, quote.id));
-	// Subtotal neto para el margen (desglose de ventas sobre los ítems de quote).
-	const subtotalNet = $derived.by(() => {
-		let gross = 0;
-		for (const item of displayItems) {
-			const line = item.unitPrice * item.quantity;
-			gross += line;
-		}
-		return Math.max(0, gross - quote.discount);
-	});
+	// Misma fuente que ventas: respeta discountType, descuento por línea e IVA.
+	const breakdown = $derived(computeSaleBreakdown(quote, displayItems));
+	const subtotalNet = $derived(breakdown.subtotalNet);
 
 	// ── Historial ─────────────────────────────────────────────────────────
 	const auditEvents = $derived.by<QuoteAuditEvent[]>(() => {
@@ -301,31 +294,23 @@
 	open={showConvertModal}
 	forceCustomerRequired={convertForceCustomer}
 	onclose={() => (showConvertModal = false)}
-	onConverted={() => {
-		showConvertModal = false;
-		void refresh();
-	}}
 />
 
 <EditSaleModal
 	bind:open={showEditDrawer}
 	{quote}
 	quoteItems={items}
-	treatments={[]}
+	treatments={data.allTreatments}
 	onSuccess={async () => {
 		await refresh();
 	}}
 />
 
-<QuoteAuditHistoryDrawer open={showAuditDrawer} events={auditEvents} />
-{#if showPdfPreview}
-	<PDFViewerModal
-		url={pdfUrl}
-		title="Presupuesto {formattedQuoteNumber}"
-		fileName={`presupuesto-${String(quote.quoteNumber).padStart(4, '0')}.pdf`}
-		onClose={() => (showPdfPreview = false)}
-	/>
-{/if}
+<QuoteAuditHistoryDrawer
+	open={showAuditDrawer}
+	events={auditEvents}
+	onclose={() => (showAuditDrawer = false)}
+/>
 
 <ConfirmModal
 	bind:open={showCancelModal}

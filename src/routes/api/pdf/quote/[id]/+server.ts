@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { findQuoteByIdWithRelations } from '$lib/server/db/queries/quotes';
+import { findQuoteByIdWithRelations } from '$lib/server/db/queries/quotes/reads';
 import { buildPrintUrl, generatePdf } from '$lib/server/pdf';
 
 export const GET: RequestHandler = async ({ params, locals, request, url }) => {

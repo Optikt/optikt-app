@@ -8,6 +8,7 @@ import {
 	createCustomer,
 	createMaterial,
 	createProduct,
+	createQuote,
 	createSupplier,
 	createUser
 } from '$lib/testing/integration/factories';
@@ -185,13 +186,15 @@ describe('createNewQuoteCore', () => {
 	it('stores isCashea and sourceQuoteId (duplicar)', async () => {
 		const seller = await createUser();
 		const product = await seedProduct();
+		// source_quote_id tiene FK a quotes(id): el origen debe existir.
+		const sourceQuote = await createQuote({ sellerId: seller.id });
 		const input: CreateQuoteInput = {
 			quoteDate: '2026-09-15',
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotTaxRate: 16,
 			isCashea: true,
-			sourceQuoteId: crypto.randomUUID(),
+			sourceQuoteId: sourceQuote.id,
 			items: [item(product.id)]
 		};
 

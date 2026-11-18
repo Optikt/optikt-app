@@ -5,7 +5,8 @@
 import { command } from '$app/server';
 import { requireRole } from '$lib/server/guards';
 import { CancelQuoteSchema, ConvertQuoteSchema } from '$lib/schemas/quotes';
-import { findQuoteById, updateQuote } from '$lib/server/db/queries/quotes';
+import { findQuoteById } from '$lib/server/db/queries/quotes/reads';
+import { updateQuote } from '$lib/server/db/queries/quotes/writes';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { UserRole } from '$lib/shared/enums';
 import { auditService, getAuditContext } from '$lib/server/audit';

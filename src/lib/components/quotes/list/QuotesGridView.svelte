@@ -1,6 +1,6 @@
 <script lang="ts">
 	import QuoteCard from './QuoteCard.svelte';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
+	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes/types';
 
 	interface Props {
 		quotes: QuoteWithRelations[];

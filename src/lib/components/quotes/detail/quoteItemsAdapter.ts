@@ -9,7 +9,7 @@
  * consume inventario ni mide montaje.
  */
 
-import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes/types';
 import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 import { buildPersistedDisplayGroups } from '$lib/components/sales/helpers/items';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';

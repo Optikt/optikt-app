@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildQuoteDisplayGroups, quoteItemToDisplayItem } from './quoteItemsAdapter';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes/types';
 
 const QUOTE_ID = 'q-1';
 

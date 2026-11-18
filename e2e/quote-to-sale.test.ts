@@ -52,7 +52,7 @@ test.describe('presupuesto → venta', () => {
 		});
 		await seedCustomer(sql, {
 			firstName: 'Cliente',
-			lastName: `E2E ${runId}`,
+			lastName: 'E2E',
 			idNumber: `V-${documentNumber}`
 		});
 	});
@@ -61,13 +61,14 @@ test.describe('presupuesto → venta', () => {
 		await closeDatabase(sql);
 	});
 
-	test('creates a quote from the wizard and converts it into a sale', async ({ page }) => {
-		await loginAsAdmin(page);
-
+	/** Wizard completo: step 1 (cliente opcional) → step 2 (ítem) → step 3 (crear). */
+	async function createQuote(page: import('@playwright/test').Page, withCustomer: boolean) {
 		await page.goto('/quotes/new');
 
-		await page.getByPlaceholder('12345678').fill(documentNumber);
-		await expect(page.getByText('Seleccionado')).toBeVisible();
+		if (withCustomer) {
+			await page.getByPlaceholder('12345678').fill(documentNumber);
+			await expect(page.getByText('Seleccionado')).toBeVisible();
+		}
 		await page.getByRole('button', { name: 'Continuar' }).click();
 
 		await page.getByPlaceholder('Buscar items...').fill(productName);
@@ -78,14 +79,38 @@ test.describe('presupuesto → venta', () => {
 		await page.getByRole('button', { name: 'Continuar' }).click();
 		await page.getByRole('button', { name: 'Continuar' }).last().click();
 
-		await page.getByRole('button', { name: 'Crear Presupuesto' }).click();
-		await expect(page.getByText('Presupuesto creado exitosamente')).toBeVisible();
+		await page.getByRole('button', { name: 'Crear presupuesto' }).click();
+		await expect(page.getByText(/Presupuesto P-\d+ creado/)).toBeVisible();
 		await expect(page).toHaveURL(/\/quotes\/[0-9a-f-]{36}$/);
+	}
 
-		await page.getByRole('button', { name: /Convertir a venta/ }).click();
-		await page.getByRole('button', { name: 'Convertir a Venta' }).last().click();
+	test('creates a quote with a customer and converts it into a sale', async ({ page }) => {
+		await loginAsAdmin(page);
+		await createQuote(page, true);
 
-		await expect(page.getByText('Presupuesto convertido a venta exitosamente')).toBeVisible();
+		await page.getByRole('button', { name: 'Convertir a venta' }).click();
+		await expect(page.getByRole('dialog')).toBeVisible();
+		await page.getByRole('button', { name: 'Crear venta' }).click();
+
+		await expect(page.getByText(/Venta #\d+ creada desde P-\d+/)).toBeVisible();
+		await expect(page).toHaveURL(/\/sales\/[0-9a-f-]{36}$/);
+	});
+
+	test('registers a customer inline in the convert modal (D5)', async ({ page }) => {
+		await loginAsAdmin(page);
+		await createQuote(page, false);
+
+		await page.getByRole('button', { name: 'Convertir a venta' }).click();
+		const dialog = page.getByRole('dialog');
+		await expect(dialog.getByText('Paso obligatorio')).toBeVisible();
+		await dialog.getByRole('button', { name: 'Nuevo cliente' }).click();
+		await dialog.getByLabel('Nombre', { exact: true }).fill('Ana');
+		await dialog.getByLabel('Apellido', { exact: true }).fill('Pérez');
+		await dialog.getByPlaceholder('12345678').fill(`V-${documentNumber}-inline`);
+
+		await dialog.getByRole('button', { name: 'Crear venta' }).click();
+
+		await expect(page.getByText(/Venta #\d+ creada desde P-\d+/)).toBeVisible();
 		await expect(page).toHaveURL(/\/sales\/[0-9a-f-]{36}$/);
 	});
 });

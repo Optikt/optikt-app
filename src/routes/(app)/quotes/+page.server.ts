@@ -8,12 +8,12 @@ import {
 	sumQuotesForSelection,
 	getQuoteStats,
 	listQuoteSellers
-} from '$lib/server/db/queries/quotes';
-import { ALL_QUOTE_STATUSES, type QuoteStatus } from '$lib/shared/contracts/quotes';
+} from '$lib/server/db/queries/quotes/list';
 import { monthStart, toUTCString } from '$lib/dates';
 import {
 	parseIsoDateOnly,
 	parseQuoteListSort,
+	parseQuoteStatuses,
 	quoteListSortToOrder,
 	DEFAULT_QUOTE_LIST_PER_PAGE
 } from '$lib/components/quotes/list/quoteListParams';
@@ -29,17 +29,19 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	const perPage = [10, 25, 50].includes(rawPer) ? rawPer : DEFAULT_QUOTE_LIST_PER_PAGE;
 
 	const search = searchParams.get('q')?.trim() || undefined;
-	const rawStatus = searchParams.get('status');
-	const status =
-		rawStatus && ALL_QUOTE_STATUSES.includes(rawStatus as QuoteStatus)
-			? (rawStatus as QuoteStatus)
-			: undefined;
+	const statuses = parseQuoteStatuses(searchParams.get('status'));
 	const sellerId = searchParams.get('seller') || undefined;
 	const dateFrom = parseIsoDateOnly(searchParams.get('from')) ?? undefined;
 	const dateTo = parseIsoDateOnly(searchParams.get('to')) ?? undefined;
 	const { orderBy, orderSort } = quoteListSortToOrder(parseQuoteListSort(searchParams.get('sort')));
 
-	const filters = { status, sellerId, dateFrom, dateTo, search };
+	const filters = {
+		statuses: statuses.length > 0 ? statuses : undefined,
+		sellerId,
+		dateFrom,
+		dateTo,
+		search
+	};
 
 	const [quotes, total, facets, selection, stats, sellers] = await Promise.all([
 		getAllQuotes({

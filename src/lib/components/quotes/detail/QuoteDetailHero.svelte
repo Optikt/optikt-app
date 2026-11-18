@@ -23,8 +23,7 @@
 	import CasheaIsotipo from '$lib/components/branding/CasheaIsotipo.svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import SaleDetailHeroCustomer from '$lib/components/sales/detail/SaleDetailHeroCustomer.svelte';
-	import { formatDateOnly, formatPrice } from '$lib/utils';
-	import { formatCurrency } from '$lib/utils';
+	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
 	import { getSaleStatusLabel } from '$lib/shared/enums';
 	import { saleBalance } from '$lib/shared/saleBalance';
 	import {
@@ -38,21 +37,16 @@
 		quoteValidityDetailText
 	} from '$lib/shared/quotes/quoteValidity';
 	import { QuoteStatus, getQuoteStatusLabel } from '$lib/shared/contracts/quotes';
-	import type { QuoteItemWithDetails, QuoteWithRelations } from '$lib/server/db/queries/quotes';
-	import type { QuoteConversionPreview } from '$lib/server/quotes/conversionPreviewLogic';
+	import type {
+		QuoteItemWithDetails,
+		QuoteWithRelations
+	} from '$lib/server/db/queries/quotes/types';
+	import type { QuoteConversionPreview } from '$lib/shared/quotes/conversionPreview';
+	import type { ConvertedSaleInfo } from '$lib/shared/quotes/convertedSale';
 	import {
 		formatQuoteNumber,
 		formatConvertedSaleRef
 	} from '$lib/components/quotes/list/quoteListDisplay';
-
-	interface ConvertedSaleInfo {
-		id: string;
-		orderNumber: number;
-		status: string;
-		total: number;
-		paidAmountBcvUsd: number;
-		createdAt: string;
-	}
 
 	interface Props {
 		quote: QuoteWithRelations;
@@ -100,7 +94,6 @@
 	const validity = $derived(quoteValidity(quote.validUntil, quote.status as QuoteStatus, today));
 	const validityText = $derived(quoteValidityDetailText(validity));
 
-	// ── Dinero ────────────────────────────────────────────────────────────
 	const breakdown = $derived(computeSaleBreakdown(quote, items));
 	const breakdownRows = $derived(saleBreakdownRows(breakdown).filter((r) => r.key !== 'total'));
 	let showBreakdown = $state(false);
@@ -116,7 +109,6 @@
 		return `≈ Bs. ${formatCurrency(bsEquivalent(amountUsd, bcvRate) ?? 0)}`;
 	}
 
-	// ── "Si se convierte hoy" ─────────────────────────────────────────────
 	const outOfStockCount = $derived(
 		preview?.items.filter((i) => i.stock.kind === 'insufficient').length ?? 0
 	);
@@ -126,13 +118,12 @@
 	// Saldo de la venta generada: helper canónico (0 en CANCELLED y con tolerancia 0.01)
 	const convertedBalance = $derived(convertedSale ? saleBalance(convertedSale) : 0);
 
-	// ── Menú ⋮ (Cancelar + historial) ─────────────────────────────────────
 	let moreOpen = $state(false);
 	const showMore = $derived(canAct && isDraft);
 </script>
 
 <section
-	class="hero relative gap-x-[28px] gap-y-0 overflow-hidden rounded-xl bg-brand-navy p-4 px-5 text-white shadow-[var(--ds-shadow-md)] [&>*]:relative [&>*]:z-[1]"
+	class="hero navy-hero relative gap-x-[28px] gap-y-0 overflow-hidden rounded-xl bg-brand-navy p-4 px-5 text-white shadow-[var(--ds-shadow-md)] [&>*]:relative [&>*]:z-[1]"
 >
 	<!-- ══ hl: encabezado (título + pill + stepper) ════════════════════ -->
 	<div style="grid-area: hl" class="hl min-w-0">
@@ -516,6 +507,14 @@
 		}
 		.hero-acts {
 			padding-right: 130px;
+		}
+	}
+
+	/* Móvil (<700): las acciones van en la barra inferior y en "Más", no aquí. */
+	@container (max-width: 699px) {
+		.hero-acts,
+		.hero-hcta {
+			display: none;
 		}
 	}
 </style>

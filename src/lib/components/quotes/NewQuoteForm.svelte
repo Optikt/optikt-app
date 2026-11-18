@@ -18,7 +18,6 @@
 	import { CATALOG_KEY } from '$lib/components/sales/wizardContext';
 	import {
 		buildStep2PrescriptionConfirmation,
-		getAvailableProductStock,
 		hasLensPrescriptionErrors,
 		isItemDiscountValid
 	} from '$lib/components/sales/saleItemHelpers';
@@ -31,7 +30,10 @@
 	import { Copy } from '@lucide/svelte';
 	import { quoteToWizardDraft } from './duplicate/quoteToWizardDraft';
 	import { formatQuoteNumber } from './list/quoteListDisplay';
-	import type { QuoteWithRelations, QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+	import type {
+		QuoteWithRelations,
+		QuoteItemWithDetails
+	} from '$lib/server/db/queries/quotes/types';
 
 	interface Props {
 		products: ProductWithRelations[];
@@ -265,19 +267,9 @@
 			})
 	);
 
-	const hasOutOfStockItem = $derived(
-		items.some((i) => {
-			if (i.kind === 'product' && i.productId) {
-				const availableForItem = getAvailableProductStock(items, products, i.productId, i.id);
-				if (availableForItem === null) return false;
-
-				return availableForItem <= 0 || i.quantity > availableForItem;
-			}
-			return false;
-		})
-	);
-
-	const step2Valid = $derived(itemsValid && !hasOutOfStockItem);
+	// Un presupuesto NO mueve inventario: el stock se valida al convertir (D8),
+	// donde el modal solo avisa. Por eso aquí no se bloquea ningún ítem.
+	const step2Valid = $derived(itemsValid);
 
 	const hasInvalidItemDiscount = $derived(items.some((item) => !isItemDiscountValid(item)));
 

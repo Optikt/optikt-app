@@ -5,7 +5,7 @@
  * (vacía) y número (el wizard muestra el preview nuevo).
  */
 
-import type { QuoteItemWithDetails, QuoteWithRelations } from '$lib/server/db/queries/quotes';
+import type { QuoteItemWithDetails, QuoteWithRelations } from '$lib/server/db/queries/quotes/types';
 import type {
 	SaleItemRow,
 	LensSaleItemRow,

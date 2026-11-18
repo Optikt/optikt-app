@@ -138,3 +138,26 @@ describe('buildSaleTaxItems', () => {
 		);
 	});
 });
+
+describe('computeSaleBreakdown aplicado al detalle de presupuesto', () => {
+	it('respeta descuento global en PORCENTAJE al calcular el subtotal neto', () => {
+		// 2 líneas gravables de 100 = 200 brutos; 10% global ⇒ total 180.
+		// El neto NO es 200 − 10 (como hacía el viejo cálculo inline).
+		const bd = computeSaleBreakdown({ total: 180, snapshotTaxRate: 16 }, [
+			item({ unitPrice: 100, snapshotIsTaxable: true }),
+			item({ unitPrice: 100, snapshotIsTaxable: true })
+		]);
+		expect(bd.subtotalBeforeGlobal).toBeCloseTo(200 / 1.16, 6);
+		expect(bd.subtotalNet).toBeCloseTo(180 / 1.16, 6);
+		expect(bd.discountOnBase).toBeCloseTo(20 / 1.16, 6);
+	});
+
+	it('incluye descuento por línea antes del global', () => {
+		const bd = computeSaleBreakdown({ total: 171, snapshotTaxRate: 16 }, [
+			item({ unitPrice: 100, discount: 10, discountType: 'PERCENTAGE', snapshotIsTaxable: true }),
+			item({ unitPrice: 90, snapshotIsTaxable: true })
+		]);
+		expect(bd.subtotalBeforeGlobal).toBeCloseTo(180 / 1.16, 6);
+		expect(bd.subtotalNet).toBeCloseTo(171 / 1.16, 6);
+	});
+});

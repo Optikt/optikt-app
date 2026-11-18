@@ -14,7 +14,7 @@
 		type QuoteValidity
 	} from '$lib/shared/quotes/quoteValidity';
 	import { QuoteStatus, getQuoteStatusLabel } from '$lib/shared/contracts/quotes';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
+	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes/types';
 
 	interface Props {
 		quotes: QuoteWithRelations[];

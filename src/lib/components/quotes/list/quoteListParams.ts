@@ -11,6 +11,21 @@ import {
 	DEFAULT_SALE_LIST_PER_PAGE,
 	type SaleDatePreset
 } from '$lib/components/sales/listParams';
+import { ALL_QUOTE_STATUSES, type QuoteStatus } from '$lib/shared/contracts/quotes';
+
+/** `?status=DRAFT,CONVERTIDO` → estados válidos (inválidos se ignoran). */
+export function parseQuoteStatuses(value: string | null): QuoteStatus[] {
+	if (!value) return [];
+	return value
+		.split(',')
+		.map((v) => v.trim())
+		.filter((v): v is QuoteStatus => ALL_QUOTE_STATUSES.includes(v as QuoteStatus));
+}
+
+/** Estados → `?status=` (array vacío limpia el parámetro). */
+export function serializeQuoteStatuses(statuses: QuoteStatus[]): string | null {
+	return statuses.length > 0 ? statuses.join(',') : null;
+}
 
 export type QuoteListSort = 'recent' | 'total' | 'expiring';
 

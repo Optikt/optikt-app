@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '$lib/components/layout/heroNavy.css';
 	import { Check, CircleCheck, Info, TriangleAlert, UserRound, X } from '@lucide/svelte';
+	import { Dialog as DialogPrimitive } from 'bits-ui';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -12,8 +13,8 @@
 	import CasheaCheckbox from '$lib/components/sales/CasheaCheckbox.svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import { logger } from '$lib/utils/logger';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
-	import type { QuoteConversionPreview } from '$lib/server/quotes/conversionPreviewLogic';
+	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes/types';
+	import type { QuoteConversionPreview } from '$lib/shared/quotes/conversionPreview';
 	import type { NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import type { Customer } from '$lib/server/db/schema';
 	import {
@@ -27,11 +28,9 @@
 		/** Abre directo en modo "selecciona o registra al cliente" (hero sin cliente). */
 		forceCustomerRequired?: boolean;
 		onclose: () => void;
-		/** Se navega a /sales/[id] al convertir (comportamiento actual de la app). */
-		onConverted?: (saleId: string) => void;
 	}
 
-	let { quote, open, forceCustomerRequired = false, onclose, onConverted }: Props = $props();
+	let { quote, open, forceCustomerRequired = false, onclose }: Props = $props();
 
 	// ── Estado del cliente ────────────────────────────────────────────────
 	// El cliente nuevo NO se crea al tipear: se manda como `newCustomer` en el
@@ -169,17 +168,11 @@
 			});
 			if (result.success) {
 				toast.success(
-					`Venta ${formatConvertedSaleRef(result.sale.orderNumber)} creada desde ${formatQuoteNumber(quote.quoteNumber)}`,
-					{
-						action: {
-							label: 'Ver venta',
-							onClick: () => goto(resolve(`/sales/${result.sale.id}`))
-						}
-					}
+					`Venta ${formatConvertedSaleRef(result.sale.orderNumber)} creada desde ${formatQuoteNumber(quote.quoteNumber)}`
 				);
 				onclose();
-				if (onConverted) onConverted(result.sale.id);
-				else goto(resolve(`/sales/${result.sale.id}`));
+				// Comportamiento previo de la app: tras convertir se abre la venta generada.
+				await goto(resolve(`/sales/${result.sale.id}`));
 			} else {
 				toast.error(result.error ?? 'Error convirtiendo el presupuesto');
 			}
@@ -203,21 +196,17 @@
 	}
 </script>
 
-{#if open}
-	<!-- Overlay: hoja inferior en móvil (<sm), modal centrado en escritorio -->
-	<div class="fixed inset-0 z-[60] grid place-items-end sm:place-items-center">
-		<button
-			type="button"
-			class="absolute inset-0 cursor-default bg-[#000d2f]/50"
-			aria-label="Cerrar"
-			onclick={onclose}
-		></button>
-
-		<div
-			role="dialog"
-			aria-modal="true"
+<DialogPrimitive.Root
+	{open}
+	onOpenChange={(next) => {
+		if (!next) onclose();
+	}}
+>
+	<DialogPrimitive.Portal>
+		<DialogPrimitive.Overlay class="fixed inset-0 z-60 bg-[#000d2f]/50" />
+		<DialogPrimitive.Content
 			aria-label="Convertir a venta"
-			class="relative flex max-h-[94%] w-full flex-col overflow-hidden rounded-t-2xl bg-surface-drawer shadow-2xl sm:max-h-[90%] sm:max-w-[600px] sm:rounded-2xl"
+			class="fixed inset-x-0 bottom-0 z-60 flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface-drawer shadow-2xl outline-none sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[90vh] sm:max-w-[600px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
 		>
 			<!-- Header navy (franjas) -->
 			<header
@@ -446,6 +435,6 @@
 					</p>
 				{/if}
 			</footer>
-		</div>
-	</div>
-{/if}
+		</DialogPrimitive.Content>
+	</DialogPrimitive.Portal>
+</DialogPrimitive.Root>

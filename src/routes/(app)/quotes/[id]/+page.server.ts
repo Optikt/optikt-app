@@ -3,13 +3,12 @@ import { error } from '@sveltejs/kit';
 import {
 	findQuoteByIdWithRelations,
 	getQuoteItemsWithDetails,
-	getQuoteConversionPreview,
 	findQuoteById
-} from '$lib/server/db/queries/quotes';
+} from '$lib/server/db/queries/quotes/reads';
+import { getQuoteConversionPreview } from '$lib/server/db/queries/quotes/conversion';
+import { findConvertedSaleSummaryById } from '$lib/server/db/queries/sales/reads';
 import { getEntityHistory } from '$lib/server/db/queries/changeHistory';
-import { eq } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { sales } from '$lib/server/db/schema';
+import { getAllTreatments } from '$lib/server/db/queries/suppliers';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { findLensCatalogItemByIdWithRelations } from '$lib/server/db/queries/lenses/catalog';
 
@@ -24,26 +23,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Presupuesto no encontrado');
 	}
 
-	const [items, preview, auditHistory, sourceQuote, convertedSale] = await Promise.all([
-		getQuoteItemsWithDetails(params.id),
-		getQuoteConversionPreview(params.id),
-		getEntityHistory('quote', params.id, { limit: 50 }),
-		quote.sourceQuoteId ? findQuoteById(quote.sourceQuoteId) : Promise.resolve(null),
-		quote.conversionSaleId
-			? db
-					.select({
-						id: sales.id,
-						orderNumber: sales.orderNumber,
-						status: sales.status,
-						total: sales.total,
-						paidAmountBcvUsd: sales.paidAmountBcvUsd,
-						createdAt: sales.createdAt
-					})
-					.from(sales)
-					.where(eq(sales.id, quote.conversionSaleId))
-					.limit(1)
-			: Promise.resolve([])
-	]);
+	const [items, preview, auditHistory, sourceQuote, convertedSale, allTreatments] =
+		await Promise.all([
+			getQuoteItemsWithDetails(params.id),
+			getQuoteConversionPreview(params.id),
+			getEntityHistory('quote', params.id, { limit: 50 }),
+			quote.sourceQuoteId ? findQuoteById(quote.sourceQuoteId) : Promise.resolve(null),
+			quote.conversionSaleId
+				? findConvertedSaleSummaryById(quote.conversionSaleId)
+				: Promise.resolve(null),
+			// Igual que /sales/[id]: el drawer de edición necesita el catálogo de tratamientos.
+			getAllTreatments()
+		]);
 
 	/** Catálogo de los cristales del presupuesto (tratamientos de fábrica en el meta). */
 	const lensIds = [
@@ -63,7 +54,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		preview,
 		auditHistory,
 		sourceQuoteNumber: sourceQuote?.quoteNumber ?? null,
-		convertedSale: convertedSale[0] ?? null,
+		convertedSale,
+		allTreatments,
 		lensCatalogItems
 	};
 };

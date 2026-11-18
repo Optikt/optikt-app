@@ -119,7 +119,7 @@
 {/snippet}
 
 <section
-	class="hero relative gap-x-[28px] gap-y-0 overflow-hidden rounded-xl bg-brand-navy p-4 px-5 text-white shadow-[var(--ds-shadow-md)] [&>*]:relative [&>*]:z-[1]"
+	class="hero navy-hero relative gap-x-[28px] gap-y-0 overflow-hidden rounded-xl bg-brand-navy p-4 px-5 text-white shadow-[var(--ds-shadow-md)] [&>*]:relative [&>*]:z-[1]"
 >
 	<!-- ══ hl: encabezado (título + stepper) ═══════════════════════════ -->
 	<div style="grid-area: hl" class="hl min-w-0">

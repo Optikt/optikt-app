@@ -27,7 +27,7 @@ export function businessTodayISO(now: Date = new Date()): string {
 }
 
 /** Fecha "YYYY-MM-DD" (business tz) de un timestamp ISO de la DB. */
-function businessDateOf(iso: string): string {
+export function businessDateISO(iso: string): string {
 	return CARACAS_DATE_FMT.format(new Date(iso));
 }
 
@@ -61,7 +61,7 @@ export function quoteValidity(
 		return { kind: 'none' };
 	}
 
-	const validUntilDate = businessDateOf(validUntil);
+	const validUntilDate = businessDateISO(validUntil);
 	const daysLeft = daysBetween(todayISO, validUntilDate);
 
 	if (daysLeft < 0) {

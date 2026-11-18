@@ -372,3 +372,23 @@ export async function findSaleByIdWithRelations(
 		refundedBy: result.refundedBy?.id ? result.refundedBy : null
 	};
 }
+
+/**
+ * Resumen mínimo de la venta generada por un presupuesto (detalle de quote).
+ * Evita Drizzle inline en el loader de `/quotes/[id]`.
+ */
+export async function findConvertedSaleSummaryById(id: string) {
+	const [row] = await db
+		.select({
+			id: sales.id,
+			orderNumber: sales.orderNumber,
+			status: sales.status,
+			total: sales.total,
+			paidAmountBcvUsd: sales.paidAmountBcvUsd,
+			createdAt: sales.createdAt
+		})
+		.from(sales)
+		.where(eq(sales.id, id))
+		.limit(1);
+	return row ?? null;
+}

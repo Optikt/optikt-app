@@ -10,18 +10,19 @@ import {
 	countQuotes,
 	countQuotesByStatus,
 	sumQuotesForSelection,
-	getQuoteStats as getQuoteStatsQuery,
+	getQuoteStats as getQuoteStatsQuery
+} from '$lib/server/db/queries/quotes/list';
+import {
 	findQuoteByIdWithRelations,
-	getQuoteItemsWithDetails,
-	getQuoteConversionPreview as getQuoteConversionPreviewQuery,
-	getQuoteNumberPreview as getQuoteNumberPreviewQuery
-} from '$lib/server/db/queries/quotes';
+	getQuoteItemsWithDetails
+} from '$lib/server/db/queries/quotes/reads';
+import { getQuoteConversionPreview as getQuoteConversionPreviewQuery } from '$lib/server/db/queries/quotes/conversion';
 import type {
 	QuoteWithRelations,
 	QuoteItemWithDetails,
 	QuoteStats
-} from '$lib/server/db/queries/quotes';
-import type { QuoteConversionPreview } from '$lib/server/quotes/conversionPreviewLogic';
+} from '$lib/server/db/queries/quotes/types';
+import type { QuoteConversionPreview } from '$lib/shared/quotes/conversionPreview';
 import type { QuoteStatus } from '$lib/shared/contracts/quotes';
 
 import { monthStart, toUTCString } from '$lib/dates';
@@ -51,7 +52,7 @@ export interface QuoteDetail {
 	items: QuoteItemWithDetails[];
 }
 
-export type { QuoteStats } from '$lib/server/db/queries/quotes';
+export type { QuoteStats } from '$lib/server/db/queries/quotes/types';
 
 // ============================================================================
 // QUERIES
@@ -64,12 +65,6 @@ export const getQuoteStats = query(EmptySchema, async (): Promise<QuoteStats> =>
 });
 
 /** Preview del próximo número (MAX+1, no reservante — puede cambiar al guardar). */
-export const getQuoteNumberPreview = query(EmptySchema, async (): Promise<number> => {
-	requireAuth();
-
-	return getQuoteNumberPreviewQuery();
-});
-
 /** Preview de conversión (hero "Si se convierte hoy" + modal "Revisión"). */
 export const getQuoteConversionPreview = query(
 	QuoteIdSchema,
@@ -90,6 +85,7 @@ export const listQuotes = query(ListQuotesSchema, async (data): Promise<Paginate
 
 	const filterOptions = {
 		status: data.status ?? undefined,
+		statuses: data.statuses ?? undefined,
 		customerId: data.customerId ?? undefined,
 		sellerId: data.sellerId ?? undefined,
 		dateFrom: data.dateFrom ?? undefined,

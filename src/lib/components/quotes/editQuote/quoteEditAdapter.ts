@@ -9,7 +9,8 @@
  */
 
 import { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+import { businessDateISO } from '$lib/shared/quotes/quoteValidity';
+import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes/types';
 import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 import type { QuoteItemInput, UpdateQuoteInput } from '$lib/schemas/quotes';
 import {
@@ -94,7 +95,7 @@ export interface QuoteEditDraft {
 /** ¿Cambió algo respecto al presupuesto original? (ítems vía firma estable) */
 export function quoteHasChanges(
 	quote: {
-		createdAt: string;
+		quoteDate: string;
 		validUntil: string | null;
 		notes: string | null;
 		isCashea: boolean | null;
@@ -114,7 +115,7 @@ export function quoteHasChanges(
 	return {
 		itemsChanged,
 		changed:
-			draft.dateIso !== quote.createdAt.slice(0, 10) ||
+			draft.dateIso !== businessDateISO(quote.quoteDate) ||
 			draft.validUntilIso !== (quote.validUntil ? quote.validUntil.slice(0, 10) : '') ||
 			draft.notes !== (quote.notes ?? '') ||
 			draft.isCashea !== (quote.isCashea ?? false) ||
@@ -129,7 +130,7 @@ export function quoteHasChanges(
 export function buildQuoteUpdatePayload(
 	quote: {
 		id: string;
-		createdAt: string;
+		quoteDate: string;
 		validUntil: string | null;
 		notes: string | null;
 		isCashea: boolean | null;
@@ -141,7 +142,7 @@ export function buildQuoteUpdatePayload(
 ): UpdateQuoteInput {
 	const payload: UpdateQuoteInput = { id: quote.id, items: [] };
 
-	if (draft.dateIso !== quote.createdAt.slice(0, 10)) payload.quoteDate = draft.dateIso;
+	if (draft.dateIso !== businessDateISO(quote.quoteDate)) payload.quoteDate = draft.dateIso;
 	if (draft.validUntilIso !== (quote.validUntil ? quote.validUntil.slice(0, 10) : '')) {
 		payload.validUntil = draft.validUntilIso || null;
 	}

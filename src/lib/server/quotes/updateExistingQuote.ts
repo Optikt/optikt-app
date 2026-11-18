@@ -1,5 +1,6 @@
 import { toSaleTotalsLine, computeSaleTotals } from '$lib/shared/saleTotals';
-import { findQuoteById, deleteQuoteItems, updateQuote } from '$lib/server/db/queries/quotes';
+import { findQuoteById } from '$lib/server/db/queries/quotes/reads';
+import { deleteQuoteItems, updateQuote } from '$lib/server/db/queries/quotes/writes';
 import { db } from '$lib/server/db';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { auditService } from '$lib/server/audit';

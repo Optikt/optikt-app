@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { quoteToWizardDraft } from './quoteToWizardDraft';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import type { QuoteItemWithDetails, QuoteWithRelations } from '$lib/server/db/queries/quotes';
+import type { QuoteItemWithDetails, QuoteWithRelations } from '$lib/server/db/queries/quotes/types';
 
 const quote = {
 	id: 'q-1',

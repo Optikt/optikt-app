@@ -1,4 +1,4 @@
-import { createQuote } from '$lib/server/db/queries/quotes';
+import { createQuote } from '$lib/server/db/queries/quotes/writes';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { auditService } from '$lib/server/audit';

@@ -1,10 +1,7 @@
 import { toSaleTotalsLine, computeSaleTotals } from '$lib/shared/saleTotals';
 import { derivePrescriptionFromQuoteItems } from './quoteHelpers';
-import {
-	findQuoteById,
-	getQuoteItemsWithDetails,
-	markQuoteConverted
-} from '$lib/server/db/queries/quotes';
+import { findQuoteById, getQuoteItemsWithDetails } from '$lib/server/db/queries/quotes/reads';
+import { markQuoteConverted } from '$lib/server/db/queries/quotes/conversion';
 import {
 	findCustomerById,
 	createPrescription,

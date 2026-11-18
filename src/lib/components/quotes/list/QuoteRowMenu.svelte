@@ -5,7 +5,7 @@
 	import { ArrowRightLeft, CircleX, Copy, Ellipsis, Eye, Pen } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
+	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes/types';
 
 	interface Props {
 		quote: QuoteWithRelations;

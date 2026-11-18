@@ -15,6 +15,7 @@ import {
 import { DiscountType, UserRole } from '$lib/shared/enums';
 import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
+import { businessDateISO } from '$lib/shared/quotes/quoteValidity';
 import type { ActionContext } from '$lib/server/actionContext';
 import type { CreateQuoteInput, QuoteItemInput, UpdateQuoteInput } from '$lib/schemas/quotes';
 
@@ -171,5 +172,30 @@ describe('updateExistingQuoteCore', () => {
 		if (!result.success) throw new Error('quote was not updated');
 		expect(result.quote.isCashea).toBe(true);
 		expect(result.quote.validUntil).toBeNull();
+	});
+	it('persiste quoteDate editado (día de negocio, no createdAt)', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		const created = await createNewQuoteCore(
+			{
+				quoteDate: '2026-09-15',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				isCashea: false,
+				items: [item(product.id)]
+			},
+			ctx(seller.id)
+		);
+		if (!created.success) throw new Error('quote was not created');
+
+		const result = await updateExistingQuoteCore(
+			{ id: created.quote.id, quoteDate: '2026-10-20', items: [item(product.id, 25)] },
+			ctx(seller.id)
+		);
+
+		expect(result.success).toBe(true);
+		if (!result.success) throw new Error('quote was not updated');
+		expect(businessDateISO(result.quote.quoteDate)).toBe('2026-10-20');
 	});
 });

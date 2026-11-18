@@ -4,7 +4,7 @@
  * deuda resuelta en el plan quotes-redesign).
  */
 
-import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes/types';
 
 import { ALL_LENS_TYPES, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 

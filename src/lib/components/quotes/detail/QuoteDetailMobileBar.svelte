@@ -13,7 +13,7 @@
 	import { goto } from '$app/navigation';
 	import SlideOver from '$lib/components/ui/SlideOver.svelte';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
+	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes/types';
 	import { formatConvertedSaleRef } from '$lib/components/quotes/list/quoteListDisplay';
 
 	interface Props {

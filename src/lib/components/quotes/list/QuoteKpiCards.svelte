@@ -1,7 +1,7 @@
 <script lang="ts">
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import { formatPrice } from '$lib/utils';
-	import type { QuoteStats } from '$lib/server/db/queries/quotes';
+	import type { QuoteStats } from '$lib/server/db/queries/quotes/types';
 
 	type KpiId = 'open' | 'month' | 'converted';
 

@@ -4,7 +4,7 @@ import { getSettings } from '$lib/server/db/queries/settings';
 import {
 	findQuoteByIdWithRelations,
 	getQuoteItemsWithDetails
-} from '$lib/server/db/queries/quotes';
+} from '$lib/server/db/queries/quotes/reads';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {

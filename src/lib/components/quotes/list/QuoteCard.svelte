@@ -13,7 +13,7 @@
 	} from '$lib/shared/quotes/quoteValidity';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
 	import { formatQuoteNumber, formatConvertedSaleRef } from './quoteListDisplay';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
+	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes/types';
 
 	interface Props {
 		quote: QuoteWithRelations;

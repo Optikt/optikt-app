@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeSaleTotals, type SaleTotalsLine } from './saleTotals';
+import { computeSaleTotals, toSaleTotalsLine, type SaleTotalsLine } from './saleTotals';
+import { SaleItemType } from './enums/lensTypes';
 
 function makeLine(overrides: Partial<SaleTotalsLine> = {}): SaleTotalsLine {
 	return {
@@ -111,5 +112,49 @@ describe('computeSaleTotals', () => {
 		expect(result.subtotal).toBeCloseTo(225, 2); // 75 + 150
 		expect(result.taxAmount).toBeCloseTo(12, 2);
 		expect(result.total).toBe(237);
+	});
+});
+
+describe('toSaleTotalsLine (fuente única ventas/quotes)', () => {
+	it('PRODUCT es gravable por omisión', () => {
+		expect(
+			toSaleTotalsLine(
+				{
+					itemType: SaleItemType.PRODUCT,
+					unitPrice: 100,
+					quantity: 1,
+					discount: 0,
+					discountType: 'FIXED'
+				},
+				16
+			)
+		).toMatchObject({ isTaxable: true, taxRate: 16 });
+	});
+
+	it('LENS_PAIR y TREATMENT no son gravables por omisión', () => {
+		for (const itemType of [SaleItemType.LENS_PAIR, SaleItemType.TREATMENT]) {
+			expect(
+				toSaleTotalsLine(
+					{ itemType, unitPrice: 100, quantity: 1, discount: 0, discountType: 'FIXED' },
+					16
+				).isTaxable
+			).toBe(false);
+		}
+	});
+
+	it('respeta el snapshot de gravabilidad del ítem', () => {
+		expect(
+			toSaleTotalsLine(
+				{
+					itemType: SaleItemType.LENS_PAIR,
+					unitPrice: 100,
+					quantity: 1,
+					discount: 0,
+					discountType: 'FIXED',
+					snapshotIsTaxable: true
+				},
+				16
+			).isTaxable
+		).toBe(true);
 	});
 });
