@@ -55,9 +55,6 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 	sort: z.enum(['recent', 'balance', 'total', 'old']).optional()
 });
 
-/** Mismos filtros que `ListSalesSchema` sin paginación — conteo en vivo (hoja de filtros móvil). */
-export const CountSalesSchema = ListSalesSchema.omit({ page: true, perPage: true });
-
 // ============================================================================
 // PRESCRIPTION SNAPSHOT SCHEMA (reusable)
 // ============================================================================

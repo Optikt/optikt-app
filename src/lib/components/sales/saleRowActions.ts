@@ -12,8 +12,10 @@
  * - Cancelar venta: gestionable + estado PENDING + ownership
  *   (`canManageSaleByOwner`). Abre `CancelSaleModal` (motivo + reembolso).
  */
+import { CircleX, Eye, Play, Wallet } from '@lucide/svelte';
 import { SaleStatus, canManageSaleByOwner, type UserRole } from '$lib/shared/enums';
 import { isSaleCancelled, saleHasBalance } from '$lib/shared/saleBalance';
+import { resolve } from '$app/paths';
 import type { SaleListItem } from '$lib/server/db/queries/sales/types';
 
 export type SaleRowActionId = 'detail' | 'pay' | 'status' | 'cancel';
@@ -25,6 +27,21 @@ export interface SaleRowAction {
 	description?: string;
 	/** La acción cancel es destructiva: fila roja en la hoja móvil. */
 	danger?: boolean;
+}
+
+/** Icono lucide de cada acción — única fuente para popover y hoja móvil. */
+export const SALE_ROW_ACTION_ICONS = {
+	detail: Eye,
+	pay: Wallet,
+	status: Play,
+	cancel: CircleX
+} as const;
+
+/** Destino de cada acción (`?action=pay|status` según el contrato del detalle). */
+export function saleRowActionHref(sale: SaleListItem, id: SaleRowActionId): string {
+	if (id === 'pay') return resolve(`/sales/${sale.id}?action=pay`);
+	if (id === 'status') return resolve(`/sales/${sale.id}?action=status`);
+	return resolve(`/sales/${sale.id}`);
 }
 
 export interface SaleRowActionContext {

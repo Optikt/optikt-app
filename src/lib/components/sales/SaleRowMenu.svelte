@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { DropdownMenu } from 'bits-ui';
-	import { CircleX, Eye, MoreHorizontal, Play, Wallet } from '@lucide/svelte';
+	import { MoreHorizontal } from '@lucide/svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import {
+		SALE_ROW_ACTION_ICONS,
+		saleRowActionHref,
 		saleRowActions,
 		type SaleRowActionContext,
 		type SaleRowActionId
@@ -26,10 +27,13 @@
 		'flex w-full cursor-pointer items-start gap-2.5 rounded-[var(--ds-radius-md)] px-2.5 py-2 text-left text-[13px] font-semibold text-on-surface outline-none select-none data-[highlighted]:bg-surface-container-low';
 
 	function handleAction(id: SaleRowActionId): void {
-		if (id === 'detail') void goto(resolve(`/sales/${sale.id}`));
-		else if (id === 'pay') void goto(resolve(`/sales/${sale.id}?action=pay`));
-		else if (id === 'status') void goto(resolve(`/sales/${sale.id}?action=status`));
-		else if (id === 'cancel') onCancel(sale);
+		if (id === 'cancel') {
+			onCancel(sale);
+			return;
+		}
+		// `saleRowActionHref` resuelve con `resolve()` internamente.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		void goto(saleRowActionHref(sale, id));
 	}
 </script>
 
@@ -56,6 +60,7 @@
 			class="data-[state=open]:animate-pop z-[70] w-64 origin-top-right rounded-[var(--ds-radius-lg)] border border-outline-variant/30 bg-white p-1.5 shadow-[var(--ds-shadow-lg)]"
 		>
 			{#each actions as action (action.id)}
+				{@const Icon = SALE_ROW_ACTION_ICONS[action.id]}
 				{#if action.id === 'cancel'}
 					<DropdownMenu.Separator class="my-1 h-px bg-outline-variant/60" />
 				{/if}
@@ -65,15 +70,7 @@
 						: ''}"
 					onSelect={() => handleAction(action.id)}
 				>
-					{#if action.id === 'detail'}
-						<Eye class="mt-0.5 h-4 w-4 shrink-0 text-outline" />
-					{:else if action.id === 'pay'}
-						<Wallet class="mt-0.5 h-4 w-4 shrink-0 text-outline" />
-					{:else if action.id === 'status'}
-						<Play class="mt-0.5 h-4 w-4 shrink-0 text-outline" />
-					{:else}
-						<CircleX class="mt-0.5 h-4 w-4 shrink-0" />
-					{/if}
+					<Icon class="mt-0.5 h-4 w-4 shrink-0 {action.danger ? '' : 'text-outline'}" />
 					<span class="flex flex-col gap-0.5">
 						<span>{action.label}</span>
 						{#if action.description}

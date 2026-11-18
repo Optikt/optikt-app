@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" generics="T">
 	import type { Snippet } from 'svelte';
 
 	/**
@@ -10,9 +10,9 @@
 	 */
 	interface Props {
 		/** Items a renderizar (define también el número de puntos del indicador). */
-		items: readonly unknown[];
+		items: readonly T[];
 		/** Snippet por item: `(item, index)`. */
-		item: Snippet<[unknown, number]>;
+		item: Snippet<[T, number]>;
 		/** Ancho fijo de cada tarjeta (px). */
 		itemWidthPx: number;
 		/** Gap entre tarjetas (px, default 10). */
@@ -36,11 +36,15 @@
 		active = Math.min(items.length - 1, Math.max(0, idx));
 	}
 
-	// Reset del indicador si cambia la cantidad de items.
+	// Reset del indicador solo si cambia la CANTIDAD de items (no la identidad del array).
+	let lastCount: number | null = null;
 	$effect(() => {
-		void items;
-		active = 0;
-		if (scroller) scroller.scrollTo({ left: 0 });
+		const count = items.length;
+		if (lastCount !== null && count !== lastCount) {
+			active = 0;
+			scroller?.scrollTo({ left: 0 });
+		}
+		lastCount = count;
 	});
 </script>
 

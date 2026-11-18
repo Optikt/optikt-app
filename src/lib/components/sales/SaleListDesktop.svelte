@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { ReceiptText } from '@lucide/svelte';
-	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import SaleListHeader from './SaleListHeader.svelte';
 	import SaleKpiCards from './SaleKpiCards.svelte';
 	import SaleFilterBar from './SaleFilterBar.svelte';
@@ -10,6 +8,7 @@
 	import SalesListView from './SalesListView.svelte';
 	import SalesGridView from './SalesGridView.svelte';
 	import SaleListFooter from './SaleListFooter.svelte';
+	import SaleListEmpty from './SaleListEmpty.svelte';
 	import { SALE_LIST_KEY, type SaleListContext } from './saleListContext';
 
 	/**
@@ -94,31 +93,11 @@
 			</div>
 		{/if}
 	{:else if ctx.salesData.sales.length === 0}
-		{#snippet receiptIcon()}
-			<ReceiptText class="h-10 w-10" />
-		{/snippet}
-		<div class="flex flex-col items-center px-4 py-10">
-			<EmptyState
-				icon={receiptIcon}
-				message={ctx.stats.total === 0
-					? 'Registra una venta para comenzar'
-					: 'No se encontraron ventas'}
-			/>
-			{#if ctx.stats.total > 0}
-				<p class="-mt-2 text-[13px] text-on-surface-variant">
-					Prueba con otros filtros o límpialos.
-				</p>
-			{/if}
-			{#if ctx.chips.length > 0 || ctx.search.trim().length > 0}
-				<button
-					type="button"
-					onclick={ctx.handlers.onClearFilters}
-					class="mt-3 inline-flex h-9 items-center rounded-[var(--ds-radius-md)] bg-brand-navy px-4 text-[13px] font-semibold text-white transition-colors hover:bg-brand-navy-dark"
-				>
-					Limpiar filtros
-				</button>
-			{/if}
-		</div>
+		<SaleListEmpty
+			totalSales={ctx.stats.total}
+			hasFilters={ctx.chips.length > 0 || ctx.search.trim().length > 0}
+			onClearFilters={ctx.handlers.onClearFilters}
+		/>
 	{:else}
 		{#if ctx.view === 'list'}
 			<div class="p-3">

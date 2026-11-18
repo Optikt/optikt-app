@@ -32,7 +32,7 @@
 		>
 			Ventas
 		</h1>
-		<p class="text-[12px] text-on-surface-variant {narrow ? '' : 'text-[13px]'}">
+		<p class="{narrow ? 'text-[12px]' : 'text-[13px]'} text-on-surface-variant">
 			{totalCount}
 			{totalCount === 1 ? 'venta registrada' : 'ventas registradas'}
 		</p>

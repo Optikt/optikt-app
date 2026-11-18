@@ -1,39 +1,48 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
 	import SlideOver from '$lib/components/ui/SlideOver.svelte';
-	import { SALE_DATE_PRESETS, type SaleDatePreset, type SaleListSort } from './listParams';
+	import {
+		SALE_DATE_PRESETS,
+		SALE_DATE_PRESET_LABELS,
+		SALE_LIST_SORT_OPTIONS,
+		SALE_LIST_TOGGLES,
+		type SaleDatePreset,
+		type SaleListSort,
+		type SaleListToggleKey
+	} from './listParams';
 
 	/**
 	 * Hoja inferior de filtros (móvil): vendedor, fecha, «mostrar solo» y orden.
 	 * Los cambios se aplican al instante (URL incluida, handlers del listado);
-	 * «Ver N ventas» solo cierra — su número llega por prop y se actualiza en vivo.
+	 * «Ver N ventas» solo cierra — el conteo es el `total` que ya devuelve `listSales`.
+	 * El estado de apertura vive en la página: cierre notificado vía `onclose`.
 	 */
 	interface Props {
 		open: boolean;
-		/** Conteo en vivo de ventas con los filtros actuales. */
-		liveCount: number | null;
 		sellers: { id: string; fullName: string }[];
 		sellerId: string;
 		preset: SaleDatePreset;
 		from: string | null;
 		to: string | null;
 		sort: SaleListSort;
-		toggles: Record<ToggleKey, boolean>;
+		toggles: Record<SaleListToggleKey, boolean>;
 		/** Nº total de filtros activos (para «Limpiar (n)»). */
 		activeCount: number;
+		/** Cargando la página actual: «Ver … ventas» mientras tanto. */
+		loading: boolean;
+		/** Ventas que cumplen los filtros (= total de la página actual). */
+		resultCount: number;
 		onSellerChange: (sellerId: string) => void;
 		onPresetChange: (preset: SaleDatePreset) => void;
 		onRangeChange: (from: string | null, to: string | null) => void;
-		onToggle: (key: ToggleKey) => void;
+		onToggle: (key: SaleListToggleKey) => void;
 		onSortChange: (sort: SaleListSort) => void;
 		onClear: () => void;
+		onclose: () => void;
 	}
 
-	type ToggleKey = 'cashea' | 'shippingPending' | 'freeItem' | 'balance';
-
 	let {
-		open = $bindable(false),
-		liveCount,
+		open,
 		sellers,
 		sellerId,
 		preset,
@@ -42,35 +51,16 @@
 		sort,
 		toggles,
 		activeCount,
+		loading,
+		resultCount,
 		onSellerChange,
 		onPresetChange,
 		onRangeChange,
 		onToggle,
 		onSortChange,
-		onClear
+		onClear,
+		onclose
 	}: Props = $props();
-
-	const PRESET_LABELS: Record<SaleDatePreset, string> = {
-		all: 'Todas las fechas',
-		today: 'Hoy',
-		'7d': 'Últimos 7 días',
-		month: 'Este mes',
-		custom: 'Personalizado'
-	};
-
-	const SORTS: { value: SaleListSort; label: string }[] = [
-		{ value: 'recent', label: 'Más recientes' },
-		{ value: 'balance', label: 'Mayor saldo' },
-		{ value: 'total', label: 'Mayor total' },
-		{ value: 'old', label: 'Más antiguas' }
-	];
-
-	const TOGGLES: { key: ToggleKey; label: string }[] = [
-		{ key: 'cashea', label: 'Cashea' },
-		{ key: 'shippingPending', label: 'Envío pendiente' },
-		{ key: 'freeItem', label: 'Ítem libre' },
-		{ key: 'balance', label: 'Con saldo pendiente' }
-	];
 
 	const pillBase = 'h-10 rounded-full border px-3.5 text-[13px] font-semibold transition-colors';
 
@@ -86,8 +76,8 @@
 	}
 </script>
 
-<SlideOver bind:open direction="bottom" dragClose bodyClass="px-4 py-3">
-	{#snippet header({ onclose })}
+<SlideOver {open} direction="bottom" dragClose closeOnVeil {onclose}>
+	{#snippet header()}
 		<div class="flex items-center justify-between px-1 pb-1">
 			<p class="font-heading text-[18px] font-bold text-brand-navy">Filtros</p>
 			<button
@@ -131,7 +121,7 @@
 					onclick={() => onPresetChange(presetOption)}
 					class={pillClasses(preset === presetOption)}
 				>
-					{PRESET_LABELS[presetOption]}
+					{SALE_DATE_PRESET_LABELS[presetOption]}
 				</button>
 			{/each}
 		</div>
@@ -158,7 +148,7 @@
 		<p class="mt-2 text-[11px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
 			Mostrar solo
 		</p>
-		{#each TOGGLES as toggle (toggle.key)}
+		{#each SALE_LIST_TOGGLES as toggle (toggle.key)}
 			<button
 				type="button"
 				role="switch"
@@ -190,7 +180,7 @@
 			Ordenar por
 		</p>
 		<div class="flex flex-wrap gap-2">
-			{#each SORTS as sortOption (sortOption.value)}
+			{#each SALE_LIST_SORT_OPTIONS as sortOption (sortOption.value)}
 				<button
 					type="button"
 					aria-pressed={sort === sortOption.value}
@@ -216,11 +206,11 @@
 			</button>
 			<button
 				type="button"
-				onclick={() => (open = false)}
+				onclick={onclose}
 				class="flex h-11 flex-[2] items-center justify-center rounded-[var(--ds-radius-md)] bg-brand-navy text-sm font-bold text-white transition-colors hover:bg-brand-navy-dark"
 			>
-				Ver {liveCount ?? '…'}
-				{liveCount === 1 ? 'venta' : 'ventas'}
+				Ver {loading ? '…' : resultCount}
+				{resultCount === 1 && !loading ? 'venta' : 'ventas'}
 			</button>
 		</div>
 	{/snippet}

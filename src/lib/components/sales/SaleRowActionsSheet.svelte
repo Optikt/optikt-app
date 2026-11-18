@@ -1,10 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { CircleX, Eye, Play, Wallet, X } from '@lucide/svelte';
+	import { X } from '@lucide/svelte';
 	import SlideOver from '$lib/components/ui/SlideOver.svelte';
-	import { saleRowActions, type SaleRowActionId } from './saleRowActions';
-	import { formatOrderNumber, saleListStatusLabel } from './saleDisplay';
+	import {
+		SALE_ROW_ACTION_ICONS,
+		saleRowActionHref,
+		saleRowActions,
+		type SaleRowActionId
+	} from './saleRowActions';
+	import { formatOrderNumber, saleCustomerName, saleListStatusLabel } from './saleDisplay';
 	import { formatPrice } from '$lib/utils';
 	import { saleBalance } from '$lib/shared/saleBalance';
 	import type { UserRole } from '$lib/shared/enums';
@@ -12,8 +16,9 @@
 
 	/**
 	 * Hoja inferior de acciones del ⋯ en móvil (no popover).
-	 * Mismo gating que `SaleRowMenu` (helper `saleRowActions`) y mismas
-	 * navegaciones `?action=pay|status`; cancelar delega en `CancelSaleModal`.
+	 * Mismo gating, hrefs e iconos que `SaleRowMenu` (helper `saleRowActions`);
+	 * cancelar delega en `CancelSaleModal` del listado. El cierre notifica vía
+	 * `onclose` (el estado vive en la página) — el `open` de SlideOver queda local.
 	 */
 	interface Props {
 		open: boolean;
@@ -22,57 +27,40 @@
 		currentUserId?: string;
 		currentUserRole?: UserRole;
 		onCancel: (sale: SaleListItem) => void;
+		onclose: () => void;
 	}
 
-	let {
-		open = $bindable(false),
-		sale,
-		canManage,
-		currentUserId,
-		currentUserRole,
-		onCancel
-	}: Props = $props();
+	let { open, sale, canManage, currentUserId, currentUserRole, onCancel, onclose }: Props =
+		$props();
 
 	const actions = $derived(
 		sale ? saleRowActions(sale, { canManage, currentUserId, currentUserRole }) : []
 	);
 	const balance = $derived(sale ? saleBalance(sale) : 0);
-	const customerName = $derived(
-		sale?.customer ? `${sale.customer.firstName} ${sale.customer.lastName}` : '-'
-	);
-
-	const ICONS = {
-		detail: Eye,
-		pay: Wallet,
-		status: Play,
-		cancel: CircleX
-	} as const;
 
 	function run(id: SaleRowActionId): void {
 		if (!sale) return;
-		open = false;
+		onclose();
 		// Cancel no navega: abre CancelSaleModal en el listado.
 		if (id === 'cancel') {
 			onCancel(sale);
 			return;
 		}
-		if (id === 'pay' || id === 'status') {
-			void goto(resolve(`/sales/${sale.id}?action=${id}`));
-			return;
-		}
-		void goto(resolve(`/sales/${sale.id}`));
+		// `saleRowActionHref` resuelve con `resolve()` internamente.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		void goto(saleRowActionHref(sale, id));
 	}
 </script>
 
-<SlideOver bind:open direction="bottom" dragClose>
-	{#snippet header({ onclose })}
+<SlideOver {open} direction="bottom" dragClose closeOnVeil {onclose}>
+	{#snippet header()}
 		<div
 			class="flex items-start justify-between gap-3 border-b border-outline-variant/50 px-4 pb-3"
 		>
 			<div class="min-w-0">
 				{#if sale}
 					<p class="font-mono text-[14px] font-bold text-brand-navy">
-						{formatOrderNumber(sale.orderNumber)} · {customerName}
+						{formatOrderNumber(sale.orderNumber)} · {saleCustomerName(sale)}
 					</p>
 					<p class="mt-0.5 text-[12px] text-on-surface-variant">
 						{saleListStatusLabel(sale.status)} · saldo
@@ -93,7 +81,7 @@
 
 	<div class="flex flex-col gap-0.5 p-2">
 		{#each actions as action (action.id)}
-			{@const Icon = ICONS[action.id]}
+			{@const Icon = SALE_ROW_ACTION_ICONS[action.id]}
 			{#if action.id === 'cancel'}
 				<hr class="my-1.5 border-outline-variant/60" />
 			{/if}

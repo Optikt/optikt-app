@@ -97,7 +97,7 @@
 		ariaLabel="Resumen de ventas"
 	>
 		{#snippet item(kpi, _index)}
-			{@render kpiCard(kpi as KpiId, true)}
+			{@render kpiCard(kpi, true)}
 		{/snippet}
 	</Carousel>
 {:else}

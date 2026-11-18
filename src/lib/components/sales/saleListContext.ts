@@ -35,6 +35,11 @@ export interface SaleListHandlers {
 	onOpenSale(sale: SaleListItem): void;
 	onCancelRequest(sale: SaleListItem): void;
 	onPageChange(next: number, opts?: { scrollTop?: boolean }): void;
+	/** UI móvil (hojas): apertura/cierre — la página es la dueña del estado. */
+	openMobileFilters(): void;
+	closeMobileFilters(): void;
+	openMobileActions(sale: SaleListItem): void;
+	closeMobileActions(): void;
 }
 
 export interface SaleMobileUi {

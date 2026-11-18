@@ -6,7 +6,11 @@
 	import CasheaIsotipo from '$lib/components/branding/CasheaIsotipo.svelte';
 	import SaleBalanceCell from '$lib/components/sales/SaleBalanceCell.svelte';
 	import SaleRowMenu from '$lib/components/sales/SaleRowMenu.svelte';
-	import { formatOrderNumber, relativeDaysLabel } from '$lib/components/sales/saleDisplay';
+	import {
+		formatOrderNumber,
+		relativeDaysLabel,
+		saleCustomerName
+	} from '$lib/components/sales/saleDisplay';
 	import { isSaleCancelled } from '$lib/shared/saleBalance';
 	import type { UserRole } from '$lib/shared/enums';
 	import type { SaleListItem } from '$lib/server/db/queries/sales/types';
@@ -41,11 +45,6 @@
 	const compact = $derived(density === 'compact');
 	const cancelled = $derived(isSaleCancelled(sale));
 	const faded = $derived(cancelled ? 'opacity-[0.65]' : '');
-
-	function customerName(): string {
-		if (!sale.customer) return '-';
-		return `${sale.customer.firstName} ${sale.customer.lastName}`;
-	}
 </script>
 
 <!-- La accesibilidad la garantiza el enlace del número de orden dentro de la tarjeta (spec §6.4). -->
@@ -140,7 +139,7 @@
 	{#if compact}
 		<div class="mt-0.5 flex items-end gap-2.5 pr-2">
 			<div class="min-w-0 flex-1 {faded}">
-				<p class="text-[14px] leading-tight font-semibold text-on-surface">{customerName()}</p>
+				<p class="text-[14px] leading-tight font-semibold text-on-surface">{saleCustomerName(sale)}</p>
 				<p class="mt-0.5 truncate text-[12px] text-on-surface-variant">
 					{#if sale.customer?.idNumber}
 						<span class="font-mono">{sale.customer.idNumber}</span> ·
@@ -155,7 +154,7 @@
 		</div>
 	{:else}
 		<div class="mt-2 {faded}">
-			<p class="text-[14px] leading-tight font-semibold text-on-surface">{customerName()}</p>
+			<p class="text-[14px] leading-tight font-semibold text-on-surface">{saleCustomerName(sale)}</p>
 			<p class="mt-0.5 text-[12px] text-on-surface-variant">
 				{#if sale.customer?.idNumber}
 					<span class="font-mono">{sale.customer.idNumber}</span> ·

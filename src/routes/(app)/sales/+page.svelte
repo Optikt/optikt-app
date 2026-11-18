@@ -5,6 +5,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
+	import { getAppMainScroll } from '$lib/utils/scroll';
 	import {
 		getErrorMessage,
 		logger,
@@ -20,12 +21,14 @@
 	import SaleListDesktop from '$lib/components/sales/SaleListDesktop.svelte';
 	import SaleListMobile from '$lib/components/sales/SaleListMobile.svelte';
 	import SaleMobileOverlays from '$lib/components/sales/SaleMobileOverlays.svelte';
+	import SaleListSkeleton from '$lib/components/sales/SaleListSkeleton.svelte';
 	import Fab from '$lib/components/ui/Fab.svelte';
 	import { parseSaleStatuses, serializeSaleStatuses } from '$lib/components/sales/statusFilter';
 	import {
 		DEFAULT_SALE_LIST_PER_PAGE,
 		DEFAULT_SALE_LIST_SORT,
 		DEFAULT_SALE_LIST_VIEW,
+		SALE_DATE_PRESET_LABELS,
 		parseIsoDateOnly,
 		parseSaleListPerPage,
 		parseSaleListSort,
@@ -38,6 +41,7 @@
 	} from '$lib/components/sales/listParams';
 	import {
 		SALE_LIST_KEY,
+		type SaleFilterChip,
 		type SaleListContext,
 		type SaleMobileUi
 	} from '$lib/components/sales/saleListContext';
@@ -147,9 +151,7 @@
 		} finally {
 			loading = false;
 			// Móvil: al cambiar de página, volver al inicio de la lista (mockup §3.8).
-			if (opts?.scrollTop) {
-				document.querySelector('main')?.scrollTo({ top: 0 });
-			}
+			if (opts?.scrollTop) getAppMainScroll()?.scrollTo({ top: 0 });
 		}
 	}
 
@@ -216,7 +218,7 @@
 	let cancelTarget = $state<SaleListItem | null>(null);
 	let cancelOpen = $state(false);
 
-	// UI móvil (hojas): vive fuera del contenedor `@container` (fixed + containment).
+	// UI móvil (hojas): estado dueño de la página; los hijos lo tocan solo vía handlers.
 	let mobileUi = $state<SaleMobileUi>({
 		filtersOpen: false,
 		actionsOpen: false,
@@ -243,15 +245,14 @@
 	}
 
 	// ── Chips (una sola fuente de verdad de "filtros activos") ───────────────
-	const PRESET_LABELS: Record<string, string> = {
-		today: 'Hoy',
-		'7d': 'Últimos 7 días',
-		month: 'Este mes',
+	const PRESET_LABELS: Record<SaleDatePreset, string> = {
+		...SALE_DATE_PRESET_LABELS,
+		// El chip dice qué filtra: «Rango de fechas» en vez de «Personalizado».
 		custom: 'Rango de fechas'
 	};
 
 	const chips = $derived.by(() => {
-		const list: { id: string; label: string; onRemove: () => void }[] = [];
+		const list: SaleFilterChip[] = [];
 		for (const status of statuses) {
 			list.push({
 				id: `status:${status}`,
@@ -318,19 +319,22 @@
 		if (next === view) return;
 		view = next;
 		syncUrl(currentPage);
-		toast.success(`Vista «${next === 'list' ? 'Lista' : 'Cuadros'}» guardada en tu perfil`);
 		void persistView(next);
 	}
 
-	async function persistView(next: SaleListView): Promise<void> {
+	/** true si la preferencia quedó guardada (el toast solo informa éxito real). */
+	async function persistView(next: SaleListView): Promise<boolean> {
 		try {
 			await saveUserPreference({ key: 'sales.view', value: next });
+			toast.success(`Vista «${next === 'list' ? 'Lista' : 'Cuadros'}» guardada en tu perfil`);
+			return true;
 		} catch (e) {
 			// La vista cambió igual; reintento silencioso (sin toast, sin error alarmante).
 			logger.error('No se pudo guardar la preferencia de vista', e);
 			setTimeout(() => {
 				void saveUserPreference({ key: 'sales.view', value: next }).catch(() => undefined);
 			}, 1500);
+			return false;
 		}
 	}
 
@@ -431,22 +435,40 @@
 			onClearFilters: clearFilters,
 			onOpenSale: handleView,
 			onCancelRequest: handleCancelRequest,
-			onPageChange: (next, opts) => void fetchSales(next, opts)
+			onPageChange: (next, opts) => void fetchSales(next, opts),
+			openMobileFilters: () => {
+				mobileUi.filtersOpen = true;
+			},
+			closeMobileFilters: () => {
+				mobileUi.filtersOpen = false;
+			},
+			openMobileActions: (sale) => {
+				mobileUi.actionsSale = sale;
+				mobileUi.actionsOpen = true;
+			},
+			closeMobileActions: () => {
+				mobileUi.actionsOpen = false;
+				mobileUi.actionsSale = null;
+			}
 		}
 	};
 	setContext(SALE_LIST_KEY, ctx);
+
 	// ── Detección de móvil (contenedor, igual que el detalle: <700 px) ───────
-	// ResizeObserver sobre el contenedor de la página — no viewport query — para
-	// que el reflow del sidebar también reacomode (mismo patrón del detalle).
+	// ResizeObserver sobre el WRAPPER sin padding variable (mismo patrón del
+	// detalle): si midiera el div con padding, cambiar `isNarrow` cambiaría el
+	// ancho medido y provocaría el loop de ResizeObserver. `null` = sin medir
+	// aún: esqueleto neutro, sin flash de escritorio en teléfono.
 	let pageEl = $state<HTMLElement | undefined>(undefined);
-	let isNarrow = $state(false);
+	let isNarrow = $state<boolean | null>(null);
 
 	$effect(() => {
 		const target = pageEl;
 		if (!target) return;
 		const observer = new ResizeObserver((entries) => {
 			const width = entries[0]?.contentRect.width;
-			if (width !== undefined) isNarrow = width < 700;
+			if (width === undefined) return;
+			isNarrow = width < 700;
 		});
 		observer.observe(target);
 		return () => observer.disconnect();
@@ -459,27 +481,30 @@
 
 <div
 	bind:this={pageEl}
-	class="animate-rise @container mx-auto flex w-full max-w-[1280px] flex-col gap-3 min-[1440px]:max-w-[1440px] min-[1920px]:max-w-[1600px] min-[2400px]:max-w-[1920px] {isNarrow
-		? 'px-3 pt-3 pb-24'
-		: 'px-5 pt-3.5 pb-7'}"
+	class="animate-rise @container mx-auto w-full max-w-[1280px] min-[1440px]:max-w-[1440px] min-[1920px]:max-w-[1600px] min-[2400px]:max-w-[1920px]"
 >
-	{#if isNarrow}
-		<SaleListMobile />
-	{:else}
-		<SaleListDesktop />
-	{/if}
+	<!-- El padding va en el hijo: el observer mide un ancho estable (sin loop). -->
+	<div class="flex flex-col gap-3 {isNarrow ? 'px-3 pt-3 pb-24' : 'px-5 pt-3.5 pb-7'}">
+		{#if isNarrow === null}
+			<SaleListSkeleton />
+		{:else if isNarrow}
+			<SaleListMobile />
+		{:else}
+			<SaleListDesktop />
+		{/if}
 
-	{#if cancelTarget}
-		<CancelSaleModal
-			bind:open={cancelOpen}
-			saleId={cancelTarget.id}
-			paidAmountBcvUsd={cancelTarget.paidAmountBcvUsd}
-			onSuccess={() => {
-				void fetchSales(currentPage);
-				void refreshStats();
-			}}
-		/>
-	{/if}
+		{#if cancelTarget}
+			<CancelSaleModal
+				bind:open={cancelOpen}
+				saleId={cancelTarget.id}
+				paidAmountBcvUsd={cancelTarget.paidAmountBcvUsd}
+				onSuccess={() => {
+					void fetchSales(currentPage);
+					void refreshStats();
+				}}
+			/>
+		{/if}
+	</div>
 </div>
 
 <!-- Hojas móviles: FUERA del contenedor (@container + fixed son incompatibles). -->
@@ -488,4 +513,4 @@
 {/if}
 
 <!-- FAB fuera del contenedor (@container + fixed son incompatibles). -->
-<Fab label="Nueva venta" href={resolve('/sales/new')} hidden={!isNarrow || !canAct} />
+<Fab label="Nueva venta" href="/sales/new" hidden={isNarrow !== true || !canAct} />

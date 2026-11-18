@@ -19,18 +19,23 @@
 
 	const search = createUniversalSearch();
 
-	/** Chips de ejemplo que rellenan el campo (mismo placeholder que escritorio). */
-	const EXAMPLES = ['+3.50 -2.00', 'GIO g616', 'Novak', 'True-cleAR'];
+	/** Chips de ejemplo genéricos que rellenan el campo (mismo placeholder que escritorio). */
+	const EXAMPLES = ['+3.50 -2.00', 'montura', 'lente', 'accesorio'];
 
 	let inputEl: HTMLInputElement | undefined = $state();
 
-	// Foco automático al abrir (el teclado lo abre el navegador con el foco en móvil).
+	// Foco automático al abrir (el teclado lo abre el navegador con el foco en móvil)
+	// y bloqueo del scroll del fondo mientras la búsqueda está abierta.
 	$effect(() => {
 		if (open) {
 			inputEl?.focus();
-		} else {
-			search.clear();
+			const previous = document.body.style.overflow;
+			document.body.style.overflow = 'hidden';
+			return () => {
+				document.body.style.overflow = previous;
+			};
 		}
+		search.clear();
 	});
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -55,7 +60,12 @@
 		aria-hidden="true"
 	></div>
 
-	<div class="fixed inset-x-0 top-0 z-51 flex max-h-full flex-col">
+	<div
+		class="fixed inset-x-0 top-0 z-51 flex max-h-full flex-col"
+		role="dialog"
+		aria-modal="true"
+		aria-label="Búsqueda global"
+	>
 		<!-- Barra reemplazada por el campo de búsqueda -->
 		<div
 			class="flex items-center gap-2 bg-brand-navy p-2 pt-[max(0.5rem,env(safe-area-inset-top,0px))]"

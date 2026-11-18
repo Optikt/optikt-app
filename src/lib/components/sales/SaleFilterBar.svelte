@@ -4,9 +4,10 @@
 	import PopoverTrigger from '$lib/components/ui/popover/popover-trigger.svelte';
 	import PopoverContent from '$lib/components/ui/popover/popover-content.svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
-	import type { SaleDatePreset, SaleListSort } from './listParams';
+	import type { SaleDatePreset, SaleListSort, SaleListToggleKey } from './listParams';
+	import { SALE_DATE_PRESET_LABELS, SALE_LIST_SORT_OPTIONS, SALE_LIST_TOGGLES } from './listParams';
 
-	type ToggleKey = 'cashea' | 'shippingPending' | 'freeItem' | 'balance';
+	type ToggleKey = SaleListToggleKey;
 
 	interface Props {
 		search: string;
@@ -49,27 +50,9 @@
 	const control =
 		'h-9 rounded-[var(--ds-radius-md)] border border-outline-variant bg-white px-2.5 text-sm font-medium text-on-surface transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30 focus:outline-none';
 
-	const TOGGLES: { key: ToggleKey; label: string }[] = [
-		{ key: 'cashea', label: 'Cashea' },
-		{ key: 'shippingPending', label: 'Envío pendiente' },
-		{ key: 'freeItem', label: 'Ítem libre' },
-		{ key: 'balance', label: 'Solo con saldo pendiente' }
-	];
-
-	const PRESETS: { value: SaleDatePreset; label: string }[] = [
-		{ value: 'all', label: 'Todas las fechas' },
-		{ value: 'today', label: 'Hoy' },
-		{ value: '7d', label: 'Últimos 7 días' },
-		{ value: 'month', label: 'Este mes' },
-		{ value: 'custom', label: 'Personalizado' }
-	];
-
-	const SORTS: { value: SaleListSort; label: string }[] = [
-		{ value: 'recent', label: 'Más recientes' },
-		{ value: 'balance', label: 'Mayor saldo' },
-		{ value: 'total', label: 'Mayor total' },
-		{ value: 'old', label: 'Más antiguas' }
-	];
+	const PRESETS: { value: SaleDatePreset; label: string }[] = Object.entries(
+		SALE_DATE_PRESET_LABELS
+	).map(([value, label]) => ({ value: value as SaleDatePreset, label }));
 
 	const collapsedCount = $derived(
 		(sellerId ? 1 : 0) + (preset !== 'all' ? 1 : 0) + activeToggleCount
@@ -187,7 +170,7 @@
 				sideOffset={6}
 				class="w-64 gap-0 rounded-[var(--ds-radius-lg)] bg-white p-1.5 shadow-[var(--ds-shadow-lg)]"
 			>
-				{#each TOGGLES as toggle (toggle.key)}
+				{#each SALE_LIST_TOGGLES as toggle (toggle.key)}
 					<button
 						type="button"
 						role="switch"
@@ -226,7 +209,7 @@
 						value={sort}
 						onchange={(e) => onSortChange(e.currentTarget.value as SaleListSort)}
 					>
-						{#each SORTS as option (option.value)}
+						{#each SALE_LIST_SORT_OPTIONS as option (option.value)}
 							<option value={option.value}>{option.label}</option>
 						{/each}
 					</select>
