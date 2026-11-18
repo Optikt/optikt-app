@@ -323,10 +323,16 @@
 	}
 
 	/** true si la preferencia quedó guardada (el toast solo informa éxito real). */
+	const SALES_VIEW_TOAST_ID = 'sales.view.toast';
+
 	async function persistView(next: SaleListView): Promise<boolean> {
 		try {
 			await saveUserPreference({ key: 'sales.view', value: next });
-			toast.success(`Vista «${next === 'list' ? 'Lista' : 'Cuadros'}» guardada en tu perfil`);
+			// ID fijo: al volver a cambiar de vista se ACTUALIZA este toast en vez
+			// de apilar uno nuevo (si ya se cerró, svelte-sonner crea uno fresco).
+			toast.success(`Vista «${next === 'list' ? 'Lista' : 'Cuadros'}» guardada en tu perfil`, {
+				id: SALES_VIEW_TOAST_ID
+			});
 			return true;
 		} catch (e) {
 			// La vista cambió igual; reintento silencioso (sin toast, sin error alarmante).
