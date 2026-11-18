@@ -43,11 +43,11 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 **Dinero (subtotal / total / tasas)**
 
-- Semántica de subtotal (`docs/specs/sale-subtotal-semantics.md`): la suma cruda de líneas con IVA incluido (post descuentos de línea). Cobrado: `total = max(0, rawSubtotal − descuento global)`. Helper puro `computeSaleTotals` (`shared/saleTotals.ts:37-72`; impuestos: PRODUCT gravable por default, resto exento).
-- ⚠️ Tasa BCV congelada `snapshotBcvRate` (NULL = pre-feature): se captura viva al submit de create/edit; si la API cae queda NULL y tickera cae a tasa viva vía `resolveTicketRate` (`createSale.ts:59-61`, `docs/plans/tickera-rate-freeze.md`). Cambiar la fecha NO cambia la tasa (pertenece al evento).
+- Semántica de subtotal: la suma cruda de líneas con IVA incluido (post descuentos de línea). Cobrado: `total = max(0, rawSubtotal − descuento global)`. Helper puro `computeSaleTotals` (`shared/saleTotals.ts:37-72`; impuestos: PRODUCT gravable por default, resto exento).
+- ⚠️ Tasa BCV congelada `snapshotBcvRate` (NULL = pre-feature): se captura viva al submit de create/edit; si la API cae queda NULL y tickera cae a tasa viva vía `resolveTicketRate` (`createSale.ts:59-61`). Cambiar la fecha NO cambia la tasa (pertenece al evento).
 - Comparaciones de "¿pagado?" usan tolerancia 0.01.
 
-**created_at como fecha-verdad** (`docs/plans/sale-createdat-truth.md`)
+**created_at como fecha-verdad** (plan sale-createdat-truth, en git history)
 
 - `sale_date` eliminada: `created_at` es la única fecha (día del form + hora del submit, compuesta en Caracas UTC-4 por `composeBusinessTimestamp`). El alias `saleDate` del schema lo mapea el server (`createSale.ts:108-110`, `updateSale.ts:293-294`). No reintroducir `saleDate` como columna.
 
@@ -101,10 +101,17 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 ## Known gaps / tech debt
 
-- 🟠 `routes/(app)/sales/[id]/+page.svelte` (792 líneas) — descomposición en curso (`docs/plans/dt1-t2-sales.md`, activo).
-- 🟠 Plan `docs/plans/pr5-payment-factory.md` activo: specs pendientes de `paymentFormModel` y fns derivadas.
 - 🟡 `updateSaleFifo.int.spec.ts` existe pero **su fuente `updateSaleFifo.ts` aún no** — spec avanzado del plan; extraer la lógica FIFO de update antes de confiar en el spec.
 - 🟡 `PaymentForm` family: el state factory vive en `components/sales/payments/` aunque la UI adapter está en `components/payments/` (herencia del factory transversal) — mover al unificar pagos (plan pr5).
 - 🟡 `resolveLensSnapshotCosts` duplicado (`remote/quotes/helpers.ts` vs `remote/sales/helpers.ts:35-58`) — consolidar en `src/lib/shared/`.
-- 🟡 Fecha-verdad (composición Caracas) pendiente para: `sale_payments.paymentDate`, `purchase_orders.orderDate`, `quotes.quoteDate`, `prescriptions.prescriptionDate` (`docs/plans/sale-createdat-truth.md:18`).
-- 🟡 Flujo de edición de venta por rehacer (validación óptica + advertencias): plan `docs/plans/rework-editar-venta-ui-ux.md` (activo).
+- 🟡 Fecha-verdad (composición Caracas) pendiente para: `sale_payments.paymentDate`, `purchase_orders.orderDate`, `quotes.quoteDate`, `prescriptions.prescriptionDate` .
+
+## Planes completados
+- **2026-11 · detalle-venta-bplus** — Detalle de venta B+: pantallas grandes, pagos con quién+motivo, stock drawer, historial con diff y móvil (#225)
+- **2026-11 · dt1-t2-sales** — sales/[id] 792→~300 (luego 504 con B+) + 6 secciones detail/ + saleDetail.ts con spec (#122)
+- **2026-11 · redesign-sale-detail-view** — Rediseño total de /sales/[id] según mockup B: hero navy, artículos, pagos, calculadora de factura, tasa Modo A/B (#216)
+- **2026-11 · rework-editar-venta-ui-ux** — Editor de venta rehacedo: cristal con errores inline, rango óptico warning-confirmable, documentEditor compartido listo para quotes (#193, #208, #209)
+- **2026-11 · sale-createdat-truth** — sales.sale_date eliminada: created_at única fecha-verdad con composeBusinessTimestamp (día form + hora Caracas); resto de módulos queda como DT22
+- **2026-11 · sale-subtotal-fix** — subtotal = BI+Exento pre-impuesto en ventas y quotes; total intacto; helper computeSaleTotals + backfill 0042
+- **2026-11 · sales-list-redesign** — Listado /sales rediseñado: KPIs globales, vistas Lista/Cuadros, pestañas facetadas, ?action= (patrón agnóstico), user_preferences por perfil
+- **2026-11 · tickera-rate-freeze** — Tasa BCV congelada por venta (snapshot_bcv_rate + resolveTicketRate): reimpresiones deterministas (#966ed371)

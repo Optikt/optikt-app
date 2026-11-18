@@ -51,8 +51,10 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 
 ## Known gaps / tech debt
 
-- 🟠 `getNextQuoteNumber` = MAX+1 — no a prueba de concurrencia; viola el unique index con `maxWorkers > 1` del harness de integración (`docs/specs/dt9-acceptance.md:111`) — los tests de este dominio no pueden correr en paralelo hasta migrar a secuencia.
+- 🟠 `getNextQuoteNumber` = MAX+1 — no a prueba de concurrencia; viola el unique index con `maxWorkers > 1` del harness de integración — los tests de este dominio no pueden correr en paralelo hasta migrar a secuencia.
 - 🟡 ⚠️ Inversión de capas: `server/quotes/*` importa helpers desde `$lib/remote/quotes/` (`updateExistingQuote.ts:1`, `convertQuoteToSale.ts:1`, `quoteItemInsert.ts:3`) — mover a `server/quotes/` o `src/lib/shared/`, igual que el duplicado de `resolveLensSnapshotCosts` (doc `sales`).
 - 🟡 `firstDefined` mezcla od/os de distintos LENS_PAIR sin prioridad explícita (`helpers.ts:89-97`).
 - 🟡 `cancelQuote`/`assignQuoteCustomer` usan audit con `updated!` no-null assertion y sin tx compartida (`lifecycle.remote.ts:57,85`).
-- 🟡 Spec `docs/specs/quotes-altura.md` pendiente de crear.
+
+## Planes completados
+- **2026-11 · quotes-altura** — Altura por ojo en presupuestos (DT15)

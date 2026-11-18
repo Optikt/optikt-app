@@ -31,6 +31,10 @@ Reglas de negocio **reales del código**, cada una con referencia a archivos (m�
 
 Patrones que SOLO aplican aquí aunque difieran del resto del repo (y por qué). Si es el patrón general del root, NO está en este documento.
 
+## Planes completados
+
+Una línea por plan cerrado: `- **YYYY-MM · <slug>** — <qué se hizo> (<PR>)`. El archivo del plan se elimina al cerrar (vive en git history); la línea es su único rastro en el repo. Mantener entradas de 1-3 líneas máximo — nunca pegar el contenido completo de un plan aquí.
+
 ## Known gaps / tech debt
 
 Bullets con severidad: 🟡 menor, 🟠 medio, 🔴 grave. Referencia a los plan/spec del repo en lugar de duplicarlos (`docs/plans/…`, `docs/specs/…`).

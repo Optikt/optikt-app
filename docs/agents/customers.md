@@ -46,3 +46,6 @@ CRUD de clientes con soft-delete/reactivación, búsqueda con ranking de relevan
 - 🟡 `reactivateCustomerForm` y `reactivateCustomer` (command) son código idéntico duplicado (`customers.remote.ts:144-188`) — unificar.
 - 🟡 `listCustomers` fetch-all + filtro/orden/paginación en memoria (`:44-71`) — escala con nº de clientes.
 - 🟠 `getCustomerHistory` trae **todos** los salePayments y filtra en JS (`customerHistory.ts:163-171`) — el peso crece con la base; mover el filtro a SQL antes de que explote con un cliente recurrente.
+
+## Planes completados
+- **2026-11 · customer-gender-age** — Sexo opcional + edad visual en cliente (#179)

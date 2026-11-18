@@ -64,4 +64,3 @@ Owner rules: el stock de lentes-STOCK lo gestiona `inventory` (ajustes con lotes
 - 🟡 `renameDifferentiator`/`deleteDifferentiator` corren **sin transacción** ni verificación de impacto, afectando todos los ítems (`technologies.ts:117-144`).
 - 🟡 Carga de catálogo: trae **todo** el catálogo y filtra/rankea en memoria; sin paginación real en `ListLensCatalogSchema` (`schemas/lenses.ts:205`) — escalará mal.
 - 🟡 `createLensCatalogItem`/`updateLensCatalogItem` tienen query fns equivalentes sin uso (`queries/lenses/catalog.ts:218-291`) mientras la remote hace inserts inline — mover la responsabilidad a las query fns.
-- 🟡 Impresión de cristales en PDF (tokens) tienen plan propio: `docs/plans/lens-receipt-fix.md` (activo).

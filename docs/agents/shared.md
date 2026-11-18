@@ -44,3 +44,15 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 
 - `.spec.ts` co-ubicado es el estándar; `.test.ts` existe como legacy (`tax.test.ts`) — no repliques.
 - Deliberado que NO todos los dominios tienen `int.spec.ts`: solo query fns con escrituras/lecturas monetarias o de inventario — sigue ese criterio en vez de "todos los archivos".
+
+## Planes completados
+- **2026-11 · agents-md-por-dominio** — Doc por dominio: índice machine-readable (scripts/agents-domains.json), plantilla, check CI y sembrado core
+- **2026-11 · dt1-decompose** — Programa de descomposición de 39 archivos >500 líneas: completado, gate check-file-size bloqueante en CI (PRs #120-#151)
+- **2026-11 · dt1-t1-split** — Split de los 3 monolitos T1: EditSaleModal 499, LensCatalogForm 463, inventory/count/[id] 513, bajo el gate 520
+- **2026-11 · dt9-remote-tests** — Cobertura de remote functions: harness Testcontainers, 14 cores shell/core contra DB real, 7 E2E sin skips, coverage ratchet en CI (#156-#173)
+- **2026-11 · dt9-unit-e2e** — Mismo programa DT9 (doc espejo; cierre en dt9-remote-tests)
+- **2026-11 · date-tz-normalize** — Normalización de fechas TZ (expenseDate date-only intencional)
+- **2026-11 · dead-code-cleanup** — Limpieza de código muerto verificado con Knip
+- **2026-11 · dependency-update** — Actualización de dependencias en tandas (2026-08); restantes deferidas en PLAN.md
+- **2026-11 · dt12-table-migrate** — DataTable y DataGrid consolidados (uno solo, el otro eliminado)
+- **2026-11 · preserve-list-filters** — Filtros de listado preservados al volver de un detalle

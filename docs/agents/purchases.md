@@ -63,11 +63,11 @@ Owner rules: el factory de pago es de `payments` (leyó también `server/payment
 - Doble lectura de guardas: Zod `superRefine` **y** re-validación imperativa (`getPurchaseOrderFinanceIssues`) antes de la tx — la UI repite mensajes; no confiar solo en el schema.
 - `computePurchaseOrderState` deduplica items+payments+benefits+balance+dueStatus dentro de la tx (`purchasePayments.ts:89-113`).
 - Hidratación de listas: `addFinancialMetadata` calcula balance+dueStatus por fila (`shared.ts:106-169`).
-- UI: wizard `step1/step2`, `review/`, `draft/` (helpers puros con spec), `detail/` (drawers de crédito/pagos/pronto pago). QA: `docs/specs/po-form-qa.md`, `docs/specs/dt1-f5-money.md`.
+- UI: wizard `step1/step2`, `review/`, `draft/` (helpers puros con spec), `detail/` (drawers de crédito/pagos/pronto pago).
 
 ## Testing
 
-- Int (harness DT9): `payments.int.spec.ts` (401/400, beneficio en ventana, rejects por deadline/cap, retroactivo, void), `lifecycle.int.spec.ts` (confirm crea lote+stock+movement; rejects not-ready/unreviewed/cancelada). Detalle: `docs/specs/dt9-test-harness.md:21-22`.
+- Int (harness DT9): `payments.int.spec.ts` (401/400, beneficio en ventana, rejects por deadline/cap, retroactivo, void), `lifecycle.int.spec.ts` (confirm crea lote+stock+movement; rejects not-ready/unreviewed/cancelada).
 - Unit espejo: `schemas/purchaseOrders.spec.ts`, `shared/purchaseOrder{Credit,Currencies,Payments,Rules,LineNumbers}.spec.ts`, specs de componentes draft/review/detail.
 
 ## Known gaps / tech debt
@@ -78,3 +78,12 @@ Owner rules: el factory de pago es de `payments` (leyó también `server/payment
 - 🟡 `getPurchaseOrderDetail` reutiliza `ConfirmPurchaseOrderSchema` como `{id}` prestado (`queries.remote.ts:69`).
 - 🟡 Barrels legacy `components/purchases/index.ts` y `purchases/detail/index.ts` — consumibles, no extendibles.
 - 🟡 La UI de submit de pagos de compra vive en `components/sales/payments/` (herencia del split F5) — candidata a moverse a `components/purchases/` al unificar pagos (plan pr5).
+
+## Planes completados
+- **2026-11 · dt1-t2-purchases** — NewPurchaseOrderForm 1003→493 + secciones review/
+- **2026-11 · dt1-t2-purchdetail** — purchases/[id] 621→499 + detail/PurchaseOrderModals + PurchaseOrderDrawers
+- **2026-11 · componentize-purchase-detail** — PurchaseDetail 2221→629 con patrón orquestador (POC del patrón DT1)
+- **2026-11 · purchase-detail-fix** — Fixes de detalle de compra
+- **2026-11 · purchase-order-multicurrency-native-debt** — Multimoneda de compras nativa (sourceCurrency/settlementCurrency)
+- **2026-11 · purchase-ux-fix** — Fixes UX de compras
+- **2026-11 · purchase-ux-harmonize** — Harmonización UX de compras

@@ -50,7 +50,12 @@ Global patterns or repo-wide conventions go to the root `AGENTS.md`, not to a do
 
 ### Plan Lifecycle Rule (mandatory)
 
-Whenever a planned piece of work lands (fix, feature, redesign, refactor — anything with a `docs/plans/<name>.md`), the plan must be marked `plan status: done` in the **same PR** that closes it (or in a follow-up docs commit before the next one starts). A plan that is implemented but still `active` is a docs bug: check `docs/plans/` for stale entries when closing any change. This also applies to spec/plan checkboxes — tick them as tasks complete, never leave a done plan with `[ ]` boxes.
+Planning lives in two states only — **active** and **retired**:
+
+- **Active:** full plan file at `docs/plans/<name>.md` (created via `create_plan`). Specs it needs go to `docs/specs/`.
+- **Retire (the same moment work lands):** call `mark_plan_done` with `summary` (1-3 lines), `domains` (slugs from `docs/agents/`) and `pr`. The tool appends **one line** under `## Planes completados` in each domain doc and **deletes the plan file** — the full content lives in git history, never as a dead file in the repo. Snapshot specs (QA/acceptance checklists) are deleted with it (`specs` param); living contract specs (patterns/conventions like `dt1-patterns`, `chart-conventions`) stay in `docs/specs/`.
+- Plans with no clear domain fall back to `docs/plans/archive.md` (append-only, one line per plan).
+- Anti-patterns: leaving a done plan as `active` anywhere; leaving a full planning file behind for work already merged; leaving un-ticked `[ ]` boxes in retired work. If `mark_plan_done` is called without `summary`, the file stays — follow up and retire it.
 
 ### Index
 

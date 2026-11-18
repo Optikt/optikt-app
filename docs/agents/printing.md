@@ -18,7 +18,7 @@ PDF A4 server-side vía Chromium headless (puppeteer-core + @sparticuz/chromium)
 - **Shutdown registered-once** (`pdf.ts:147`): flag global `__optiktPdfShutdownRegistered`; handlers SIGINT/SIGTERM **re-emiten la señal** después de cerrar el browser (`:125-141`) — no eliminar el re-emit (rompe el exit code del proceso).
 - `generatePdf` reenvía la cookie del request al headless y `emulateMediaType('print')`; `page.close()` en `finally` (`:162-182`).
 - ⚠️ **Tasa BCV congelada en tickera**: `resolveTicketRate(sale.snapshotBcvRate, live)` — el snapshot > 0 gana (reimpresiones idénticas); ventas pre-feature (NULL) usan la viva (`printing.remote.ts:82-83`, `shared/ticketRate.ts:12`, plan `tickera-rate-freeze`). No "arreglar" el snapshot NULL a la fecha de hoy.
-- ⚠️ **Tokens de cristales**: única fuente de verdad `getPrintItemLabel` en `utils/printDocumentItems.ts`, usada por PDF **y** tickera. **Prohibido duplicar la lógica** en `printing.remote.ts` o `tickera.ts` (`docs/specs/lens-print-tokens.md:32-34`). Orden de sufijos fijo: `Fotocromático` → `AR` → `Blueblock`.
+- ⚠️ **Tokens de cristales**: única fuente de verdad `getPrintItemLabel` en `utils/printDocumentItems.ts`, usada por PDF **y** tickera. **Prohibido duplicar la lógica** en `printing.remote.ts` o `tickera.ts` (regla del plan lens-receipt-fix, historial en git). Orden de sufijos fijo: `Fotocromático` → `AR` → `Blueblock`.
 - **Tickera**: POST síncrono al agente con `x-auth-token` (`PRINT_AGENT_TOKEN`), timeout 10s con AbortController; config ausente → `{success:false}` sin throw; mensajes de error amigables ("¿Está encendida la PC?") (`printing.remote.ts:25,136-171`).
 - Roles tickera: ADMIN/MANAGER/SELLER; páginas `(print)` con guard `locals.user` → 401.
 - Recibo A4 inline con `Cache-Control: no-store` (`routes/api/pdf/sale/[id]/+server.ts:24-32`).
@@ -40,3 +40,7 @@ PDF A4 server-side vía Chromium headless (puppeteer-core + @sparticuz/chromium)
 - 🟡 **pdfjs-dist pinneado en 6.0.227** (TECH_DEBT, ex-DT17): versiones 6.0.228+ regresionan el PDF viewer. Bloqueado en Dependabot (`.github/dependabot.yml`) — no subir hasta upstream fix. Se mantiene fijo con independencia de la migración a SvelteKit 3 (deferida, ver PLAN.md sección "Dependencias fijadas/deferidas").
 - 🟡 TODO: la tasa BCV del A4 quizá deba ser congelada por fecha de venta como tickera (`routes/(print)/print/sale/[id]/+page.server.ts:10`).
 - 🟡 Tickera fase 1 síncrona (sin cola de impresión).
+
+## Planes completados
+- **2026-11 · lens-receipt-fix** — Tokens sueltos FOTO/BLUE detectados en labels de PDF y tickera; getPrintItemLabel unificado (#6c645549, #d0d01e7b)
+- **2026-11 · tickera-rate-freeze** — Tasa BCV congelada por venta (snapshot_bcv_rate + resolveTicketRate): reimpresiones deterministas (#966ed371)

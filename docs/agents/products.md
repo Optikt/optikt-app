@@ -65,3 +65,6 @@ Owner rules: los materiales del producto son del dominio `materials` (referencia
 - 🟡 `products.stock` cacheado sin constraint DB que garantice igualdad con la SUM de lotes; divergencia solo se corrige con ajustes manuales de `inventory`.
 - 🟡 `updateSalePrice` audit usa cast `as never` (`products.remote.ts:370-377`).
 - 🟡 Barrels legacy en `components/products/**` (y `lenses/**`) — consumibles, no extendibles.
+
+## Planes completados
+- **2026-11 · lazy-catalog-search** — Búsqueda de catálogo lazy con debounce + race-guard

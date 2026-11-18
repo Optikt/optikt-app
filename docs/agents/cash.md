@@ -52,7 +52,6 @@ Egresos operativos de efectivo (`cash_expenses`) + reporte P&L "on-the-fly" de c
 ## Testing
 
 - Unit: `db/queries/cash.spec.ts` (variación cambiaria), `schemas/cash.spec.ts` (validación por moneda, motivos, fechas), `components/cash/expenseForm.spec.ts` (CSV/void), `cashReport.spec.ts`.
-- QA checklists: `docs/specs/cash-expenses-qa.md`, `docs/specs/cash-dash-qa.md` (CSV 11 columnas, monedas con/sin tasa, pipeline).
 - Hueco: sin tests de pipeline ni del reporte P&L completo.
 
 ## Known gaps / tech debt
@@ -64,3 +63,8 @@ Egresos operativos de efectivo (`cash_expenses`) + reporte P&L "on-the-fly" de c
 - 🟡 `pipeline.ts:48-91`: 3 queries separadas donde un `count(*) FILTER` bastaría.
 - 🟠 Enums `@deprecated` vivos (`EXPENSE_CURRENCY_LABELS/SYMBOLS/isUsdLike`, `cashTypes.ts:70-88`) — migrar a `getCurrencyLabel`.
 - 🟠 Categoría REFUND con doble significado (compensa pagos de ventas canceladas) — invariant documentado solo en comentario de `report.ts:199-203`; cualquier cambio en el P&L debe considerla.
+
+## Planes completados
+- **2026-11 · dt1-t2-cash** — cash/expenses 912→210 + ExpenseToolbar/Summary/Table/CreateModal + cashClasses
+- **2026-11 · dt1-t2-cashdash** — cash 851→77 + CashToolbar/Summary/Pipeline/DailyTable + cashReport.ts con spec
+- **2026-11 · expense-currency** — Gastos con moneda nativa + labels unificados

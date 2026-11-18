@@ -58,8 +58,11 @@ Owner rules: aquí vive el mecanismo transversal de dinero; las **semánticas po
 
 ## Known gaps / tech debt
 
-- 🟠 Plan `docs/plans/pr5-payment-factory.md` activo: hecho el split del form; pendiente `paymentFormModel.svelte.spec.ts` y specs de las ~20 fns derivadas (`docs/specs/pr5-payment-factory.md:43-45`).
+- 🟠 Residual de pr5-payment-factory (hecho, en git history): falta `paymentFormModel.svelte.spec.ts` y specs de las ~20 fns derivadas.
 - ~~🟡 `voidSalePayment` de venta **no persiste `voidedById`**~~ **Resuelto (2026-11-17):** persiste `voidedById + voidReason` (`src/lib/server/sales/voidSalePayment.ts:39`, `sale_payments.voided_by_id/void_reason` en schema).
 - 🟡 `getPurchaseOrderPaidAmount` convive con `computePurchaseOrderBalance` — código nuevo que calcule saldo debe usar el segundo.
 - 🟡 `components/payments/index.ts` es barrel — contra la política No Barrels; consumible, no extendible.
 - 🟡 `.spec.ts` de `purchaseOrderPayments` vive en `db/queries/` pero testea fns de `src/lib/shared/` — placement mismatch a corregir al refactor.
+
+## Planes completados
+- **2026-11 · pr5-payment-factory** — PaymentForm 518→142 con state factory + paymentFormValues/Derived con specs + 4 flujos E2E de dinero (#171, #172)

@@ -9,7 +9,7 @@ Tasas de cambio (BCV/USD/EUR/USDT) con caché in-memory + poller + push SSE a to
 
 ## Scope
 
-`server/exchangeRates/**` (client, events, health, poller, service), `server/notifications/**`, `routes/(app)/api/exchange-rates/**` (SSE), `remote/exchangeRates.remote.ts` + `notifications.remote.ts`, `stores/exchangeRates.svelte.ts`, `shared/exchangeRates.ts` + `notifications.ts` + `enums/notificationTypes.ts`, `schemas/notifications*`, `queries/notifications.ts`, `schema/notifications.ts`. Docs: `docs/notifications-and-exchange-rates.md`, `docs/specs/sse-singleton-ids.md`.
+`server/exchangeRates/**` (client, events, health, poller, service), `server/notifications/**`, `routes/(app)/api/exchange-rates/**` (SSE), `remote/exchangeRates.remote.ts` + `notifications.remote.ts`, `stores/exchangeRates.svelte.ts`, `shared/exchangeRates.ts` + `notifications.ts` + `enums/notificationTypes.ts`, `schemas/notifications*`, `queries/notifications.ts`, `schema/notifications.ts`. Docs: `docs/notifications-and-exchange-rates.md`.
 
 ## Reglas de dominio / invarianzas
 
@@ -24,7 +24,7 @@ Tasas de cambio (BCV/USD/EUR/USDT) con caché in-memory + poller + push SSE a to
 **SSE** (`routes/(app)/api/exchange-rates/stream/+server.ts`, `exchangeRates/events.ts`)
 
 - 401 sin sesión; emite `event: hello` (cid + snapshot inicial) de inmediato; heartbeat cada 30s como comment; cleanup en `abort` no puede duplicar close (`:18-45`).
-- Server listeners: `Map<cid, {send,userId,connectedAt}>`; **unsubscribe solo borra si `send` coincide** (evita que una reconexión borre la entrada nueva, `events.ts:25-31`); error en send → listener eliminado (`:43-48`); mismo cid reemplaza la entrada (`docs/specs/sse-singleton-ids.md:23`).
+- Server listeners: `Map<cid, ListenerEntry>` con `send/close/userId/connectedAt/lastPing`; **unsubscribe solo borra si `send` coincide** (una reconexión same-cid reemplaza la entrada); error en send → listener eliminado y stream cerrado; sweep cada 30s poda idle >90s (`SSE_IDLE_TIMEOUT_MS`); cap 500 con 429 (`events.ts`, spec `events.spec.ts`).
 - Cliente (`stores/exchangeRates.svelte.ts`): **singleton de EventSource por tab** con cid en `sessionStorage`; reconexión con backoff cap 30s + jitter; poll HTTP fallback 60s; el snapshot con `lastFetchedAt` igual se descarta (`:16-21`).
 - Force-refresh manual desde remote: asegura snapshot y **emite SSE** después (`remote/exchangeRates.remote.ts:51-61,73-84`).
 
@@ -37,10 +37,13 @@ Tasas de cambio (BCV/USD/EUR/USDT) con caché in-memory + poller + push SSE a to
 ## Testing
 
 - `server/exchangeRates/health.spec.ts` (transiciones stale/recovered).
-- Verificación del SSE singleton: checklist manual en `docs/specs/sse-singleton-ids.md` (2 tabs = 2 cid, reload no crece).
+- Verificación: `events.spec.ts` (replace-on-reconnect, sweep idle, touch sobrevive, prune por throw, cap 500) + checklist manual (2 tabs = 2 cid, reload no crece).
 
 ## Known gaps / tech debt
 
 - ~~🟠 Deuda del spec `sse-singleton-ids` pendiente: timeout de inactividad + cap 500 listeners con 429 y exclusión de healthchecks/bots por User-Agent~~ **Resuelto (2026-11-17):** cap `SSE_MAX_LISTENERS=500` con `429` + `Retry-After`, timeout idle `SSE_IDLE_TIMEOUT_MS=90s` con sweep cada 30s (`touchListener` en cada keepalive/emit exitoso), exclusión de probes por User-Agent/HEAD (`PROBE_UA_PATTERN`), y prune de zombies cuando el enqueue del keepalive falla. Tests: `events.spec.ts` (8 casos).
 - ~~🟡 Listeners sin tracking de `lastPing` (`events.ts:6-10`)~~ **Resuelto (2026-11-17):** `ListenerEntry.lastPing` + sweep de inactividad en `events.ts`.
 - 🟡 El lazy refresh puede bloquear el primer render de venta si la API de tasas está caída (sale wizard espera snapshot).
+
+## Planes completados
+- **2026-11 · rates-sse-fix** — SSE de tasas estabilizado: singleton cliente, cid tracking, poller en hooks.server.ts (resuelto 2026-10-25)
