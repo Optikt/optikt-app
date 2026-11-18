@@ -108,10 +108,10 @@ export async function findCustomerById(
  */
 export async function findCustomerByIdNumber(
 	idNumber: string,
-	{ deleted = false }: { deleted?: boolean } = {}
+	{ deleted = false, executor = db }: { deleted?: boolean; executor?: DbOrTx } = {}
 ): Promise<Customer | null> {
 	const deletedFilter = deleted ? isNotNull(customers.deletedAt) : isNull(customers.deletedAt);
-	const [customer] = await db
+	const [customer] = await executor
 		.select()
 		.from(customers)
 		.where(and(eq(customers.idNumber, idNumber), deletedFilter));
@@ -181,7 +181,7 @@ export async function resolveInlineCustomer(
 	executor: DbOrTx = db
 ): Promise<{ customer: Customer; error?: never } | { customer?: never; error: string }> {
 	const normalizedIdNumber = data.idNumber.trim().toUpperCase();
-	const existing = await findCustomerByIdNumber(normalizedIdNumber);
+	const existing = await findCustomerByIdNumber(normalizedIdNumber, { executor });
 	if (existing) {
 		return { error: 'Ya existe un cliente con ese documento' };
 	}

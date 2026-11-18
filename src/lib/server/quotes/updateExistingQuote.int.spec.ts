@@ -52,6 +52,7 @@ describe('updateExistingQuoteCore', () => {
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotTaxRate: 16,
+			isCashea: false,
 			items: [item(product.id)]
 		};
 		const created = await createNewQuoteCore(createInput, ctx(seller.id));
@@ -103,6 +104,7 @@ describe('updateExistingQuoteCore', () => {
 				discount: 0,
 				discountType: DiscountType.FIXED,
 				snapshotTaxRate: 16,
+				isCashea: false,
 				items: [item(product.id)]
 			},
 			ctx(seller.id)
@@ -136,5 +138,38 @@ describe('updateExistingQuoteCore', () => {
 			.where(eq(quoteItemFreeDetails.quoteItemId, storedItems[0].id));
 		expect(storedItems).toHaveLength(1);
 		expect(details).toHaveLength(1);
+	});
+
+	it('updates isCashea and clears validUntil (D3/D4)', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		const created = await createNewQuoteCore(
+			{
+				quoteDate: '2026-09-15',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				isCashea: false,
+				validUntil: '2026-09-30',
+				items: [item(product.id)]
+			},
+			ctx(seller.id)
+		);
+		if (!created.success) throw new Error('quote was not created');
+		expect(created.quote.validUntil).toBeTruthy();
+
+		const update: UpdateQuoteInput = {
+			id: created.quote.id,
+			isCashea: true,
+			validUntil: null,
+			items: [item(product.id)]
+		};
+
+		const result = await updateExistingQuoteCore(update, ctx(seller.id));
+
+		expect(result.success).toBe(true);
+		if (!result.success) throw new Error('quote was not updated');
+		expect(result.quote.isCashea).toBe(true);
+		expect(result.quote.validUntil).toBeNull();
 	});
 });

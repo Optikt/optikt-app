@@ -8,15 +8,21 @@ import { ListQuotesSchema, QuoteIdSchema } from '$lib/schemas/quotes';
 import {
 	getAllQuotes,
 	countQuotes,
+	countQuotesByStatus,
+	sumQuotesForSelection,
 	getQuoteStats as getQuoteStatsQuery,
 	findQuoteByIdWithRelations,
-	getQuoteItemsWithDetails
+	getQuoteItemsWithDetails,
+	getQuoteConversionPreview as getQuoteConversionPreviewQuery,
+	getQuoteNumberPreview as getQuoteNumberPreviewQuery
 } from '$lib/server/db/queries/quotes';
 import type {
 	QuoteWithRelations,
 	QuoteItemWithDetails,
 	QuoteStats
 } from '$lib/server/db/queries/quotes';
+import type { QuoteConversionPreview } from '$lib/server/quotes/conversionPreviewLogic';
+import type { QuoteStatus } from '$lib/shared/contracts/quotes';
 
 import { monthStart, toUTCString } from '$lib/dates';
 
@@ -32,6 +38,12 @@ export interface PaginatedQuotes {
 	page: number;
 	perPage: number;
 	totalPages: number;
+	/** Suma de la selección completa (pie del listado). */
+	selection: { count: number; totalUsd: number };
+}
+
+export interface QuoteFacets {
+	counts: Record<QuoteStatus, number>;
 }
 
 export interface QuoteDetail {
@@ -51,6 +63,23 @@ export const getQuoteStats = query(EmptySchema, async (): Promise<QuoteStats> =>
 	return getQuoteStatsQuery(toUTCString(monthStart()));
 });
 
+/** Preview del próximo número (MAX+1, no reservante — puede cambiar al guardar). */
+export const getQuoteNumberPreview = query(EmptySchema, async (): Promise<number> => {
+	requireAuth();
+
+	return getQuoteNumberPreviewQuery();
+});
+
+/** Preview de conversión (hero "Si se convierte hoy" + modal "Revisión"). */
+export const getQuoteConversionPreview = query(
+	QuoteIdSchema,
+	async (data): Promise<QuoteConversionPreview | null> => {
+		requireAuth();
+
+		return getQuoteConversionPreviewQuery(data.id);
+	}
+);
+
 /**
  * List quotes with pagination and filters
  */
@@ -65,21 +94,48 @@ export const listQuotes = query(ListQuotesSchema, async (data): Promise<Paginate
 		sellerId: data.sellerId ?? undefined,
 		dateFrom: data.dateFrom ?? undefined,
 		dateTo: data.dateTo ?? undefined,
-		search: data.search ?? undefined
+		search: data.search ?? undefined,
+		isCashea: data.isCashea ?? undefined
 	};
 
-	const [quotesPage, total] = await Promise.all([
+	const orderBy =
+		data.sort === 'total'
+			? { orderBy: 'total' as const, orderSort: 'desc' as const }
+			: data.sort === 'expiring'
+				? { orderBy: 'validUntil' as const, orderSort: 'asc' as const }
+				: { orderBy: 'quoteDate' as const, orderSort: 'desc' as const };
+
+	const [quotesPage, total, selection] = await Promise.all([
 		getAllQuotes({
 			...filterOptions,
+			...orderBy,
 			limit: perPage,
 			offset: (page - 1) * perPage
 		}),
-		countQuotes(filterOptions)
+		countQuotes(filterOptions),
+		sumQuotesForSelection(filterOptions)
 	]);
 
 	const totalPages = Math.ceil(total / perPage);
 
-	return { quotes: quotesPage, total, page, perPage, totalPages };
+	return { quotes: quotesPage, total, page, perPage, totalPages, selection };
+});
+
+/**
+ * Conteos por estado (pestañas del listado), respetando los demás filtros.
+ */
+export const getQuoteFacets = query(ListQuotesSchema, async (data): Promise<QuoteFacets> => {
+	requireAuth();
+
+	const counts = await countQuotesByStatus({
+		customerId: data.customerId ?? undefined,
+		sellerId: data.sellerId ?? undefined,
+		dateFrom: data.dateFrom ?? undefined,
+		dateTo: data.dateTo ?? undefined,
+		search: data.search ?? undefined,
+		isCashea: data.isCashea ?? undefined
+	});
+	return { counts };
 });
 
 /**

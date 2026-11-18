@@ -9,8 +9,10 @@ import {
 	boolean,
 	integer,
 	doublePrecision,
-	foreignKey
+	foreignKey,
+	type AnyPgColumn
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { users } from './users';
 import { customers } from './customers';
 import { products } from './products';
@@ -35,8 +37,10 @@ export const quotes = pgTable(
 	'quotes',
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
-		/** Sequential quote number assigned inside the transaction */
-		quoteNumber: integer('quote_number').notNull(),
+		/** Sequential quote number — assigned by the DB sequence `quotes_quote_number_seq` (migration 0053). */
+		quoteNumber: integer('quote_number')
+			.notNull()
+			.default(sql`nextval('quotes_quote_number_seq')`),
 		/** Customer is optional at quote time, required at conversion */
 		customerId: uuid('customer_id'),
 		/** Who created the quote */
@@ -55,6 +59,12 @@ export const quotes = pgTable(
 		total: doublePrecision().notNull(),
 		/** FK to created sale when converted */
 		conversionSaleId: uuid('conversion_sale_id'),
+		/** Purchase flag: copied to the sale on conversion (D4). The quote PDF does NOT show Cashea. */
+		isCashea: boolean('is_cashea').notNull().default(false),
+		/** Origin quote when this one is a duplicate (D7) — cascade history shows "Duplicado de P-XXXX". */
+		sourceQuoteId: uuid('source_quote_id').references((): AnyPgColumn => quotes.id, {
+			onDelete: 'set null'
+		}),
 		/** Optional expiration date */
 		validUntil: timestamp('valid_until', { withTimezone: true, mode: 'string' }),
 		notes: varchar(),
@@ -77,6 +87,10 @@ export const quotes = pgTable(
 		uniqueIndex('ix_quotes_quote_number').using(
 			'btree',
 			table.quoteNumber.asc().nullsLast().op('int4_ops')
+		),
+		index('ix_quotes_source_quote_id').using(
+			'btree',
+			table.sourceQuoteId.asc().nullsLast().op('uuid_ops')
 		),
 		foreignKey({
 			columns: [table.customerId],

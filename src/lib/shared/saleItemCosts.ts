@@ -25,3 +25,34 @@ export function computeSnapshotCostUnit(totalCost: number, quantity: number): nu
 
 	return totalCost / quantity;
 }
+
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
+
+/**
+ * Snapshot de costos por ítem: total y unitario, solo para LENS_PAIR.
+ * Fuente única (antes duplicada en remote/quotes/helpers y remote/sales/helpers).
+ */
+export function resolveLensSnapshotCosts(item: {
+	itemType: string;
+	quantity: number;
+	snapshotBaseCost?: number | null;
+	snapshotMountingPrice?: number | null;
+	snapshotShippingPrice?: number | null;
+	shippingCostPending?: boolean | null;
+}): { snapshotCostTotal: number | null; snapshotCostUnit: number | null } {
+	if (item.itemType !== SaleItemType.LENS_PAIR) {
+		return { snapshotCostTotal: null, snapshotCostUnit: null };
+	}
+
+	const snapshotCostTotal = computeLensSnapshotCostTotal({
+		snapshotBaseCost: item.snapshotBaseCost,
+		snapshotMountingPrice: item.snapshotMountingPrice,
+		snapshotShippingPrice: item.snapshotShippingPrice,
+		shippingCostPending: item.shippingCostPending ?? false
+	});
+
+	return {
+		snapshotCostTotal,
+		snapshotCostUnit: computeSnapshotCostUnit(snapshotCostTotal, item.quantity)
+	};
+}

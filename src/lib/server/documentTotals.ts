@@ -1,4 +1,4 @@
-import { toSaleTotalsLine } from '$lib/remote/quotes/helpers';
+import { toSaleTotalsLine } from '$lib/shared/saleTotals';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { DiscountType } from '$lib/shared/enums';
 

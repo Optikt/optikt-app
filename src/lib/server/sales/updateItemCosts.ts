@@ -1,4 +1,4 @@
-import { resolveLensSnapshotCosts } from '$lib/remote/sales/helpers';
+import { resolveLensSnapshotCosts } from '$lib/shared/saleItemCosts';
 import { updateSaleItemCosts } from '$lib/server/db/queries/';
 import { db } from '$lib/server/db';
 import { saleItems } from '$lib/server/db/schema';

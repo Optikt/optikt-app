@@ -1,4 +1,4 @@
-import { toSaleTotalsLine } from '$lib/remote/quotes/helpers';
+import { toSaleTotalsLine } from '$lib/shared/saleTotals';
 import { findQuoteById, deleteQuoteItems } from '$lib/server/db/queries/quotes';
 import { db } from '$lib/server/db';
 import { quotes } from '$lib/server/db/schema';
@@ -14,6 +14,9 @@ import type { ActionContext } from '$lib/server/actionContext';
 /**
  * Update a quote (only DRAFT quotes can be edited).
  * Replaces all items.
+ *
+ * D4: acepta `isCashea` (toggle del drawer). D3: `validUntil: null` = sin
+ * vencimiento (la validez se calcula al leer; nunca se escribe EXPIRED).
  */
 export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: ActionContext) {
 	const existing = await findQuoteById(data.id);
@@ -49,6 +52,7 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 				discount,
 				discountType,
 				snapshotTaxRate: data.snapshotTaxRate ?? existing.snapshotTaxRate,
+				isCashea: data.isCashea ?? existing.isCashea,
 				total,
 				validUntil:
 					data.validUntil !== undefined

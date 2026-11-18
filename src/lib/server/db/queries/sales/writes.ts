@@ -10,11 +10,12 @@ import { nowISO } from '$lib/dates';
 import { sales, type Sale, type NewSale } from '$lib/server/db/schema';
 
 /**
- * Create a new sale
+ * Create a new sale. Acepta `executor` para correr dentro de la tx del caller
+ * (conversión de presupuesto).
  */
-export async function createSale(data: NewSale): Promise<Sale> {
+export async function createSale(data: NewSale, executor: DbOrTx = db): Promise<Sale> {
 	const now = nowISO();
-	const [sale] = await db
+	const [sale] = await executor
 		.insert(sales)
 		.values({
 			...data,

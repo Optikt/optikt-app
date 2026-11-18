@@ -3,7 +3,7 @@ import { requirePageRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { getAllProductsWithRelations } from '$lib/server/db/queries/products';
 import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import { getNextQuoteNumber } from '$lib/server/db/queries/quotes';
+import { getQuoteNumberPreview } from '$lib/server/db/queries/quotes';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const [products, lensItems, nextQuoteNumber, suppliers] = await Promise.all([
 		getAllProductsWithRelations({ orderBy: 'name' }),
 		getLensCatalogItemsWithRelations(),
-		getNextQuoteNumber(),
+		getQuoteNumberPreview(),
 		getAllSuppliers({ orderBy: 'name' })
 	]);
 
