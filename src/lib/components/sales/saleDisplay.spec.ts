@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { SaleStatus } from '$lib/shared/enums';
-import { formatOrderNumber, relativeDaysLabel, saleListStatusLabel } from './saleDisplay';
+import {
+	formatOrderNumber,
+	relativeDaysLabel,
+	saleCustomerName,
+	saleListStatusLabel
+} from './saleDisplay';
+import type { SaleListItem } from '$lib/server/db/queries/sales/types';
 
 const NOW = new Date(2026, 10, 10, 23, 30); // 10/11/2026
 
@@ -48,5 +54,18 @@ describe('saleListStatusLabel', () => {
 
 	it('devuelve el valor crudo ante estados desconocidos', () => {
 		expect(saleListStatusLabel('DESCONOCIDO')).toBe('DESCONOCIDO');
+	});
+});
+
+describe('saleCustomerName', () => {
+	it('compone firstName + lastName', () => {
+		const sale = {
+			customer: { firstName: 'Yacsuri', lastName: 'Rios' }
+		} as unknown as SaleListItem;
+		expect(saleCustomerName(sale)).toBe('Yacsuri Rios');
+	});
+
+	it('devuelve "-" sin cliente', () => {
+		expect(saleCustomerName({ customer: null } as unknown as SaleListItem)).toBe('-');
 	});
 });

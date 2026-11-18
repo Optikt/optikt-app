@@ -15,6 +15,8 @@
 		disabled?: boolean;
 		/** 'default': pill navy activo (kit). 'light': activo en blanco con sombra. */
 		variant?: 'default' | 'light';
+		/** Solo icono (móvil): label en sr-only, botón de 44 px y icono de 20 px. */
+		iconOnly?: boolean;
 		class?: string;
 	}
 
@@ -24,6 +26,7 @@
 		onchange = undefined,
 		disabled = false,
 		variant = 'default',
+		iconOnly = false,
 		class: className = 'w-full'
 	}: Props = $props();
 
@@ -79,12 +82,12 @@
 				? isLight
 					? 'text-brand-navy'
 					: 'text-white'
-				: 'text-on-surface-variant hover:text-brand-navy'}"
+				: 'text-on-surface-variant hover:text-brand-navy'} {iconOnly ? 'min-w-11' : ''}"
 		>
 			{#if Icon}
-				<Icon class="h-3.5 w-3.5" />
+				<Icon class={iconOnly ? 'h-5 w-5' : 'h-3.5 w-3.5'} />
 			{/if}
-			{opt.label}
+			<span class={iconOnly ? 'sr-only' : ''}>{opt.label}</span>
 		</button>
 	{/each}
 </div>

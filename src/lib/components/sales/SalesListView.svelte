@@ -9,6 +9,7 @@
 	import {
 		formatOrderNumber,
 		relativeDaysLabel,
+		saleCustomerName,
 		saleListStatusLabel
 	} from '$lib/components/sales/saleDisplay';
 	import { formatDateOnly, formatPrice } from '$lib/utils';
@@ -30,11 +31,6 @@
 	const headerCell =
 		'px-3 py-1 text-left text-[11px] leading-tight font-bold tracking-[0.06em] uppercase text-on-surface-variant';
 	const cell = 'px-3 align-middle';
-
-	function customerName(sale: SaleListItem): string {
-		if (!sale.customer) return '-';
-		return `${sale.customer.firstName} ${sale.customer.lastName}`;
-	}
 
 	function initials(fullName: string): string {
 		return (
@@ -102,7 +98,7 @@
 				<!-- Cliente -->
 				<td class="{cell} {faded}">
 					<p class="text-[14px] leading-tight font-semibold text-on-surface">
-						{customerName(sale)}
+						{saleCustomerName(sale)}
 					</p>
 					{#if sale.customer?.idNumber}
 						<p class="mt-0.5 font-mono text-[12px] text-on-surface-variant">
