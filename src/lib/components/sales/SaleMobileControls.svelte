@@ -38,7 +38,7 @@
 		'h-11 rounded-[var(--ds-radius-md)] border bg-white text-sm font-medium text-on-surface transition-colors focus:border-brand-blue focus:outline-none';
 </script>
 
-<div aria-hidden="true" bind:this={sentinel} class="h-px w-full"></div>
+<div aria-hidden="true" bind:this={sentinel} class="-mt-3 h-0 w-full"></div>
 
 <div
 	class="sticky top-0 z-6 -mx-3 bg-surface px-3 py-1.5 transition-shadow duration-200 {stuck

@@ -49,7 +49,7 @@
 {#snippet kpiCard(kpi: KpiId, compact: boolean)}
 	{@const isReceivable = kpi === 'receivable'}
 	{@const cardBase = compact
-		? 'relative flex h-[84px] flex-col justify-center gap-0.5 rounded-[var(--ds-radius-lg)] border-0 p-3.5 text-left shadow-[var(--ds-shadow-sm)] transition-transform duration-200 ease-out active:scale-[0.98]'
+		? 'relative flex h-[84px] w-full flex-col justify-center gap-0.5 rounded-[var(--ds-radius-lg)] border-0 p-3.5 text-left shadow-[var(--ds-shadow-sm)] transition-transform duration-200 ease-out active:scale-[0.98]'
 		: 'relative flex flex-col gap-0.5 rounded-[var(--ds-radius-lg)] border-0 p-3.5 text-left shadow-[var(--ds-shadow-sm)] transition-transform duration-200 ease-out hover:-translate-y-px'}
 	<TriggerTooltip text={kpiTooltip(kpi)}>
 		{#snippet trigger({ props })}
