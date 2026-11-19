@@ -11,6 +11,10 @@
 		size = 'lg' as Size,
 		widthClass,
 		direction = 'right' as Direction,
+		/** Solo `direction="bottom"`: cierra arrastrando el asa hacia abajo (> 90 px). */
+		dragClose = false,
+		/** Opt-in: tocar el velo cierra (hojas móviles). Los drawers con formulario lo dejan en false. */
+		closeOnVeil = false,
 		bodyClass = 'px-6 py-4',
 		/** Intercept Escape inside the drawer: return true when an inner view
 		 *  (editor / combobox) consumed the key so the drawer stays open. */
@@ -27,6 +31,10 @@
 		/** Overrides the size width (e.g. `w-full lg:w-[min(94vw,1280px)]`). */
 		widthClass?: string;
 		direction?: Direction;
+		/** Solo bottom: cierra arrastrando el asa hacia abajo (> 90 px). */
+		dragClose?: boolean;
+		/** Opt-in: tocar el velo cierra (default false: drawers con formulario). */
+		closeOnVeil?: boolean;
 		/** Classes for the scrollable body (default `px-6 py-4`). */
 		bodyClass?: string;
 		/** Return true when Escape was consumed by an inner view. */
@@ -48,6 +56,43 @@
 		if (closeGuard && !closeGuard()) return;
 		open = false;
 		onclose?.();
+	}
+
+	/** Drag-to-close del asa (bottom): > 90 px cierra; menos, vuelve con animación. */
+	function handleGrabDown(event: PointerEvent): void {
+		if (!dragClose || direction !== 'bottom' || !panel) return;
+		const el = panel;
+		const startY = event.clientY;
+		let dy = 0;
+		el.style.transition = 'none';
+		try {
+			el.setPointerCapture(event.pointerId);
+		} catch {
+			// Navegador sin pointer capture: los listeners de window cubren el gesto igual.
+		}
+
+		const finish = () => {
+			window.removeEventListener('pointermove', onMove);
+			window.removeEventListener('pointerup', onUp);
+			window.removeEventListener('pointercancel', onCancel);
+			el.style.transition = '';
+			el.style.transform = '';
+			if (dy > 90) handleClose();
+		};
+		const onMove = (moveEvent: PointerEvent) => {
+			dy = Math.max(0, moveEvent.clientY - startY);
+			el.style.transform = `translateY(${dy}px)`;
+		};
+		const onUp = () => finish();
+		// El navegador puede cancelar el gesto (scroll del sistema, llamada, etc.):
+		// soltar el panel tal cual, sin cerrar.
+		const onCancel = () => {
+			dy = 0;
+			finish();
+		};
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
+		window.addEventListener('pointercancel', onCancel);
 	}
 
 	$effect(() => {
@@ -72,19 +117,29 @@
 	class:opacity-0={!open}
 	class:pointer-events-none={!open}
 	role="presentation"
+	onclick={closeOnVeil ? handleClose : undefined}
 ></div>
 
 {#if direction === 'bottom'}
 	<div
 		bind:this={panel}
-		class="fixed inset-x-0 bottom-0 z-55 flex max-h-[90vh] w-full flex-col rounded-t-2xl bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
+		class="fixed inset-x-0 bottom-0 z-55 flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-surface-container-lowest pb-[env(safe-area-inset-bottom,0px)] shadow-2xl transition-transform duration-300 ease-in-out outline-none"
 		class:translate-y-full={!open}
 		class:translate-y-0={open}
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
 	>
-		<div class="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-outline/30"></div>
+		<!-- El asa es un extra: siempre hay botón de cierre (veil/✕/Esc). -->
+		<div
+			class="mx-auto w-full shrink-0 {dragClose
+				? 'cursor-grab touch-none px-6 pt-2.5 pb-1'
+				: 'pt-2.5 pb-1'}"
+			onpointerdown={dragClose ? handleGrabDown : undefined}
+			aria-hidden="true"
+		>
+			<div class="mx-auto h-1.5 w-10 rounded-full bg-outline/30"></div>
+		</div>
 		{#if header}
 			{@render header({ onclose: handleClose })}
 		{/if}

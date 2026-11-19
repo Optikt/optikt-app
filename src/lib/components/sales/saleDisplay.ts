@@ -1,5 +1,6 @@
 /** Helpers de presentación del listado de ventas (lista + cuadros). */
 import { SALE_STATUS_LABELS, SaleStatus } from '$lib/shared/enums';
+import type { SaleListItem, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 
 /**
  * Etiqueta de antigüedad de una fecha, estilo mockup: "hoy" / "ayer" / "hace N d".
@@ -21,6 +22,12 @@ export function relativeDaysLabel(isoDate: string, now: Date = new Date()): stri
 /** `#265` — número de orden formateado para mostrar. */
 export function formatOrderNumber(orderNumber: number): string {
 	return `#${orderNumber}`;
+}
+
+/** Nombre del cliente de la fila (`firstName lastName`, o '-'). Única fuente para fila, tarjeta y hoja. */
+export function saleCustomerName(sale: SaleListItem | SaleWithRelations): string {
+	if (!sale.customer) return '-';
+	return `${sale.customer.firstName} ${sale.customer.lastName}`;
 }
 
 /**

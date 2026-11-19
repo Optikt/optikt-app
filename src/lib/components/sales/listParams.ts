@@ -27,6 +27,32 @@ export const SALE_DATE_PRESETS: readonly SaleDatePreset[] = [
 	'custom'
 ];
 
+/** Etiquetas de los presets de fecha — única fuente (page, FilterBar, hoja móvil). */
+export const SALE_DATE_PRESET_LABELS: Record<SaleDatePreset, string> = {
+	all: 'Todas las fechas',
+	today: 'Hoy',
+	'7d': 'Últimos 7 días',
+	month: 'Este mes',
+	custom: 'Personalizado'
+};
+
+/** Opciones de orden — única fuente (FilterBar escritorio + hoja móvil). */
+export const SALE_LIST_SORT_OPTIONS: { value: SaleListSort; label: string }[] = [
+	{ value: 'recent', label: 'Más recientes' },
+	{ value: 'balance', label: 'Mayor saldo' },
+	{ value: 'total', label: 'Mayor total' },
+	{ value: 'old', label: 'Más antiguas' }
+];
+
+/** Toggles del listado (etiquetas únicas: el chip y el switch muestran lo mismo). */
+export type SaleListToggleKey = 'cashea' | 'shippingPending' | 'freeItem' | 'balance';
+export const SALE_LIST_TOGGLES: { key: SaleListToggleKey; label: string }[] = [
+	{ key: 'cashea', label: 'Cashea' },
+	{ key: 'shippingPending', label: 'Envío pendiente' },
+	{ key: 'freeItem', label: 'Ítem libre' },
+	{ key: 'balance', label: 'Con saldo pendiente' }
+];
+
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const DEFAULT_SALE_LIST_VIEW: SaleListView = 'list';

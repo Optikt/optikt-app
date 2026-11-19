@@ -1,59 +1,14 @@
 <script lang="ts">
-	import { Search, Package, Microscope, X } from '@lucide/svelte';
-	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
-	import { universalSearch } from '$lib/remote/search.remote';
-	import type { SearchResults } from '$lib/remote/search.remote';
-	import { getLensTypeLabel } from '$lib/shared/enums';
-	import { getProductTypeLabel } from '$lib/shared/enums/productTypes';
-	import { formatPrice, logger } from '$lib/utils';
-	import { resolve } from '$app/paths';
+	import { Search, X } from '@lucide/svelte';
+	import SearchResultsList from '$lib/components/layout/SearchResultsList.svelte';
+	import { createUniversalSearch } from '$lib/components/layout/universalSearch.svelte';
 
-	const PRODUCT_TYPE_ICON_CLASSES: Record<string, string> = {
-		FRAME: 'bg-blue-100 text-blue-600',
-		SUNGLASSES: 'bg-green-100 text-green-600',
-		CONTACT_LENS: 'bg-purple-100 text-purple-600',
-		ACCESSORY: 'bg-yellow-100 text-yellow-600'
-	};
-
-	let searchQuery = $state('');
-	let results = $state<SearchResults | null>(null);
-	let isOpen = $state(false);
-	let loading = $state(false);
-	let inputEl: HTMLInputElement | undefined = $state();
-
-	let debounceTimer: ReturnType<typeof setTimeout>;
-
-	// TODO: Improve the search experience and results (this maybe need a change in
-	// the backend to return more relevant results and not just a dumb search by name)
-	function handleInput() {
-		clearTimeout(debounceTimer);
-		const q = searchQuery.trim();
-
-		if (!q || q.length < 2) {
-			results = null;
-			isOpen = false;
-			return;
-		}
-
-		isOpen = true;
-		debounceTimer = setTimeout(async () => {
-			loading = true;
-			try {
-				results = await universalSearch({ query: q });
-			} catch (e) {
-				logger.error('Error en búsqueda global', e);
-				results = null;
-			} finally {
-				loading = false;
-			}
-		}, 250);
-	}
-
-	function close() {
-		isOpen = false;
-		searchQuery = '';
-		results = null;
-	}
+	/**
+	 * Búsqueda global de escritorio (dropdown bajo el input).
+	 * La lógica vive en `universalSearch.svelte.ts` y los resultados en
+	 * `SearchResultsList` (compartidos con la búsqueda global móvil).
+	 */
+	const search = createUniversalSearch();
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') close();
@@ -62,11 +17,9 @@
 	function handleBlur() {
 		// Delay to allow click on results
 		setTimeout(() => {
-			isOpen = false;
+			search.closeResults();
 		}, 200);
 	}
-
-	const totalResults = $derived((results?.products.length ?? 0) + (results?.lenses.length ?? 0));
 </script>
 
 <div class="relative w-full max-w-md">
@@ -74,20 +27,20 @@
 	<div class="relative">
 		<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
 		<input
-			bind:this={inputEl}
-			bind:value={searchQuery}
-			oninput={handleInput}
+			type="search"
+			value={search.query}
+			oninput={(e) => search.handleInput(e.currentTarget.value)}
 			onkeydown={handleKeydown}
 			onblur={handleBlur}
 			onfocus={() => {
-				if (searchQuery.trim().length >= 2) isOpen = true;
+				if (search.query.trim().length >= 2) search.handleInput(search.query);
 			}}
 			placeholder="Buscar productos, lentes... (+3.50 -2.00)"
 			class="w-full rounded-lg border border-slate-200 bg-white py-2 pr-9 pl-10 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
 		/>
-		{#if searchQuery}
+		{#if search.query}
 			<button
-				onclick={close}
+				onclick={() => search.clear()}
 				class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
 			>
 				<X class="h-3.5 w-3.5" />
@@ -96,96 +49,15 @@
 	</div>
 
 	<!-- Dropdown results -->
-	{#if isOpen}
+	{#if search.isOpen}
 		<div
 			class="absolute top-full right-0 left-0 z-50 mt-1.5 max-h-[420px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
 		>
-			{#if loading}
-				<div class="flex items-center justify-center py-6">
-					<div
-						class="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
-					></div>
-					<span class="ml-2 text-sm text-slate-500">Buscando...</span>
-				</div>
-			{:else if results && totalResults > 0}
-				<!-- Products section -->
-				{#if results.products.length > 0}
-					<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-						<div
-							class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
-						>
-							<Package class="h-3 w-3" />
-							Productos ({results.products.length})
-						</div>
-					</div>
-					{#each results.products as product (product.id)}
-						{@const ProductIcon = getProductTypeIcon(product.type)}
-						{@const iconClasses =
-							PRODUCT_TYPE_ICON_CLASSES[product.type] ?? 'bg-slate-100 text-slate-500'}
-						<a
-							href={resolve(`/products/${product.id}`)}
-							class="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50"
-							onclick={close}
-						>
-							<div class="flex h-8 w-8 items-center justify-center rounded-lg {iconClasses}">
-								<ProductIcon class="h-4 w-4" />
-							</div>
-							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium text-slate-800">{product.name}</p>
-								<p class="truncate text-xs text-slate-500">
-									{getProductTypeLabel(product.type)}
-									{#if product.brand}· {product.brand}{/if}
-									{#if product.supplier}· {product.supplier}{/if}
-								</p>
-							</div>
-							<span class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-								{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '-'}
-							</span>
-						</a>
-					{/each}
-				{/if}
-
-				<!-- Lab lenses section -->
-				{#if results.lenses.length > 0}
-					<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-						<div
-							class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
-						>
-							<Microscope class="h-3 w-3" />
-							Laboratorio ({results.lenses.length})
-						</div>
-					</div>
-					{#each results.lenses as lens (lens.id)}
-						<a
-							href={resolve(`/lenses/${lens.id}`)}
-							class="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50"
-							onclick={close}
-						>
-							<div
-								class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"
-							>
-								<Microscope class="h-4 w-4" />
-							</div>
-							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium text-slate-800">
-									{lens.name}
-								</p>
-								<p class="truncate text-xs text-slate-500">
-									{getLensTypeLabel(lens.type)}
-									{#if lens.materialName}· {lens.materialName}{/if}
-								</p>
-							</div>
-							<span class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-								{formatPrice(lens.basePrice)}
-							</span>
-						</a>
-					{/each}
-				{/if}
-			{:else if results && totalResults === 0}
-				<div class="py-6 text-center">
-					<p class="text-sm text-slate-500">Sin resultados para "{results.query}"</p>
-				</div>
-			{/if}
+			<SearchResultsList
+				results={search.results}
+				loading={search.loading}
+				onNavigate={() => search.clear()}
+			/>
 		</div>
 	{/if}
 </div>

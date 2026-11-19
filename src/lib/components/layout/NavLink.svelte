@@ -36,7 +36,7 @@
 	href={resolve(href)}
 	onclick={onSelect}
 	class={[
-		'relative mx-2 my-0.5 flex items-center rounded-lg py-2.5 no-underline transition-colors duration-150',
+		'relative mx-2 my-0.5 flex min-h-11 items-center rounded-lg py-2.5 no-underline transition-colors duration-150',
 		collapsed ? 'justify-center px-2' : 'justify-between gap-3 px-4',
 		isActive
 			? 'bg-brand-blue/10 font-medium text-brand-blue'

@@ -6,17 +6,44 @@
 	interface Props {
 		sales: SaleListItem[];
 		canManage: boolean;
+		/** 'comfortable' (Cuadros) | 'compact' (móvil Lista). */
+		density?: 'comfortable' | 'compact';
 		currentUserId?: string;
 		currentUserRole?: UserRole;
 		onOpen: (sale: SaleListItem) => void;
 		onCancel: (sale: SaleListItem) => void;
+		/** Móvil: ⋯ abre la hoja de acciones en vez del popover. */
+		onMenu?: (sale: SaleListItem) => void;
 	}
 
-	let { sales, canManage, currentUserId, currentUserRole, onOpen, onCancel }: Props = $props();
+	let {
+		sales,
+		canManage,
+		density = 'comfortable',
+		currentUserId,
+		currentUserRole,
+		onOpen,
+		onCancel,
+		onMenu
+	}: Props = $props();
 </script>
 
-<div class="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3">
+<div
+	class={density === 'compact'
+		? 'flex flex-col gap-2'
+		: 'grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3'}
+>
 	{#each sales as sale, index (sale.id)}
-		<SaleCard {sale} {index} {canManage} {currentUserId} {currentUserRole} {onOpen} {onCancel} />
+		<SaleCard
+			{sale}
+			{index}
+			{density}
+			{canManage}
+			{currentUserId}
+			{currentUserRole}
+			{onOpen}
+			{onCancel}
+			{onMenu}
+		/>
 	{/each}
 </div>
