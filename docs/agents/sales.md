@@ -122,6 +122,7 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 - **Vista Lista/Cuadros = una sola preferencia para ventas y presupuestos:** `LIST_VIEW_PREFERENCE_KEY = 'sales.view'` en `listParams.ts` (lo leen ambos loaders) y `persistListView()` en `listViewPreference.ts` (+ spec; toast con id fijo y reintento silencioso). No crear otra llave por listado.
 - Historial: `AuditEventsDrawer.svelte` es el shell presentacional (filtros, eventos, «Ver más» opcional); `SaleAuditHistoryDrawer` solo carga/clasifica/pagina y lo usa, igual que `QuoteAuditHistoryDrawer`. `AuditEvent` ganó `note` (línea neutra bajo el autor) y `buildAuditEvent` (factory exportada); `auditDiffRows` usa las etiquetas de `quote` para eventos de presupuesto. `buildSaleAuditDiff` acepta `dateLabel` (quotes: «Fecha»).
 - `toSaleTotalsLine` y `resolveLensSnapshotCosts` viven en `$lib/shared/` (fuente única con quotes); ya no hay duplicado en `remote/sales/helpers.ts`.
+- `removeEditableItem` (drawer de edición): quitar un ítem SIN id borraba también todos los ítems de nivel superior (`parentSaleItemId` undefined === `item.id` undefined); ahora solo quita el placeholder. Specs: `editSale/{editSaleModalHelpers,submitEditSale}.spec.ts`.
 - `CustomerLookupInput` en modo `create` sincroniza `newCustomer` también al escribir la cédula (antes solo nombre/apellido): el comando recibía `newCustomer` sin `idNumber` si la cédula se llenaba al final.
 
 **D12 / D13 (decisiones del mockup de quotes aplicadas también a ventas)**

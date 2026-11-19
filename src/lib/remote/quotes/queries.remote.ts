@@ -12,16 +12,8 @@ import {
 	sumQuotesForSelection,
 	getQuoteStats as getQuoteStatsQuery
 } from '$lib/server/db/queries/quotes/list';
-import {
-	findQuoteByIdWithRelations,
-	getQuoteItemsWithDetails
-} from '$lib/server/db/queries/quotes/reads';
 import { getQuoteConversionPreview as getQuoteConversionPreviewQuery } from '$lib/server/db/queries/quotes/conversion';
-import type {
-	QuoteWithRelations,
-	QuoteItemWithDetails,
-	QuoteStats
-} from '$lib/server/db/queries/quotes/types';
+import type { QuoteWithRelations, QuoteStats } from '$lib/server/db/queries/quotes/types';
 import type { QuoteConversionPreview } from '$lib/shared/quotes/conversionPreview';
 import type { QuoteStatus } from '$lib/shared/contracts/quotes';
 
@@ -47,11 +39,6 @@ export interface QuoteFacets {
 	counts: Record<QuoteStatus, number>;
 }
 
-export interface QuoteDetail {
-	quote: QuoteWithRelations;
-	items: QuoteItemWithDetails[];
-}
-
 export type { QuoteStats } from '$lib/server/db/queries/quotes/types';
 
 // ============================================================================
@@ -64,7 +51,6 @@ export const getQuoteStats = query(EmptySchema, async (): Promise<QuoteStats> =>
 	return getQuoteStatsQuery(toUTCString(monthStart()));
 });
 
-/** Preview del próximo número (MAX+1, no reservante — puede cambiar al guardar). */
 /** Preview de conversión (hero "Si se convierte hoy" + modal "Revisión"). */
 export const getQuoteConversionPreview = query(
 	QuoteIdSchema,
@@ -132,18 +118,4 @@ export const getQuoteFacets = query(ListQuotesSchema, async (data): Promise<Quot
 		isCashea: data.isCashea ?? undefined
 	});
 	return { counts };
-});
-
-/**
- * Get full quote detail (quote + items)
- */
-export const getQuoteDetail = query(QuoteIdSchema, async (data): Promise<QuoteDetail | null> => {
-	requireAuth();
-
-	const quoteWithRelations = await findQuoteByIdWithRelations(data.id);
-	if (!quoteWithRelations) return null;
-
-	const items = await getQuoteItemsWithDetails(data.id);
-
-	return { quote: quoteWithRelations, items };
 });

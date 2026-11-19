@@ -71,6 +71,7 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 
 ## Testing
 
+- ⚠️ **Cobertura Sonar:** `vite.config.ts > coverage.include` es una lista blanca; todo `.ts` nuevo fuera de `server/remote/shared/schemas` debe agregarse (quotes: `components/quotes/**/*.ts`) o Sonar lo cuenta en 0 % aunque tenga spec. Int de lecturas: `queries/quotes/reads.int.spec.ts` (relaciones, filtros, preview de conversión, remotes de lectura con `callRemote`).
 - Unit (nuevos tras la review del PR): `components/quotes/list/quoteRowActions.spec.ts`, `components/sales/listViewPreference.spec.ts`, `QuoteAuditHistoryDrawer.svelte.spec.ts` (detalle de ítems como ventas). Int: `updateExistingQuote.int.spec.ts` cubre el `itemsDiff` anexado y "sin cambios ⇒ sin evento".
 - Unit: `schemas/quotes.spec.ts`, `shared/quotes/{quoteValidity,conversionPreview}.spec.ts`, `components/quotes/detail/{quoteAudit,quoteItemsAdapter,QuoteAuditHistoryDrawer}.spec.ts`, `components/quotes/duplicate/quoteToWizardDraft.spec.ts`, `components/quotes/editQuote/quoteEditAdapter.spec.ts`, `components/quotes/list/{quoteListParams,quoteListDisplay}.spec.ts`, `shared/{saleTotals,saleItemCosts}.spec.ts`, `components/sales/detail/saleBreakdown.spec.ts`. Int: `server/quotes/{createNewQuote,updateExistingQuote,convertQuoteToSale}.int.spec.ts` (incluye rollback por duplicado, cliente inline, doble conversión concurrente, no-DRAFT, stock insuficiente, altura y `quoteDate` editado), `queries/quotes/list.int.spec.ts` (KPI de cohorte, multi-estado, `markQuoteConverted` directo), `remote/quotes/commands.int.spec.ts`. E2E `e2e/quote-to-sale.test.ts` (con cliente y con cliente inline desde el modal).
 - ⚠️ Los int specs requieren Docker/Testcontainers; en este entorno no hay Docker → se ejecutaron los unit (`pnpm test:unit`, verde) pero NO los int. La migración sí se aplicó a la DB de desarrollo para la verificación visual.
@@ -91,6 +92,7 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 - `assignQuoteCustomer` eliminado.
 - Duplicar fallaba con `duplicate key value violates unique constraint "quote_items_pkey"` (ids del origen reusados) → ids nuevos.
 - Historial del presupuesto con texto resumido → mismo detalle que ventas (`itemsDiff`).
+- Código muerto eliminado: `createQuoteItems` (writes) y el remote `getQuoteDetail` (sin usos).
 - `scripts/agents-domains.json` mapeaba `queries/quotes.ts` (ya partido) → `queries/quotes/**`.
 
 ## Planes completados

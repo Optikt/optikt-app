@@ -50,7 +50,9 @@ export function measuresChanged(
 // ── Alta/baja/restauración de ítems ───────────────────────────────────────
 /** Placeholders (sin id de servidor) desaparecen; los persistidos quedan restaurables. */
 export function removeEditableItem(items: EditableItem[], item: EditableItem): EditableItem[] {
-	if (!item.id) return items.filter((i) => i !== item && i.parentSaleItemId !== item.id);
+	// Sin id no puede tener hijos: comparar `parentSaleItemId !== undefined` borraba
+	// también todos los ítems de nivel superior (su parentSaleItemId es undefined).
+	if (!item.id) return items.filter((i) => i !== item);
 	const targetId = item.id;
 	item._removed = true;
 	if (item.itemType === SaleItemType.LENS_PAIR) {

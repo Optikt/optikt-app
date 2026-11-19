@@ -184,3 +184,30 @@ describe('buildQuoteConversionPreview', () => {
 		expect(preview.summary.missingCustomer).toBe(true);
 	});
 });
+
+describe('precio vigente del lente', () => {
+	it('sin precio de venta: costo par + montaje + envío; sin costo par → sin comparación', () => {
+		const lens = (pairPurchasePrice: number | null) => ({
+			currentSalePrice: null,
+			pairPurchasePrice,
+			mountingPrice: 5,
+			shippingPrice: null,
+			stock: 3,
+			inventoryMode: LensInventoryMode.STOCK
+		});
+		const preview = buildQuoteConversionPreview(
+			[
+				row({ item: item({ itemType: SaleItemType.LENS_PAIR, unitPrice: 40 }), lens: lens(40) }),
+				row({
+					item: item({ id: 'q-2', itemType: SaleItemType.LENS_PAIR, unitPrice: 40 }),
+					lens: lens(null)
+				})
+			],
+			{ hasCustomer: true }
+		);
+		expect(preview.items[0].price.current).toBe(45);
+		expect(preview.items[0].price.changed).toBe(true);
+		expect(preview.items[1].price.current).toBeNull();
+		expect(preview.items[1].price.changed).toBe(false);
+	});
+});

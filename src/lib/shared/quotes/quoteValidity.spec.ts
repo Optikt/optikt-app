@@ -103,3 +103,24 @@ describe('businessDateISO', () => {
 		expect(businessDateISO('2026-11-14T20:10:00.000Z')).toBe('2026-11-14');
 	});
 });
+
+describe('textos · todos los casos', () => {
+	it('lista: soon hoy/mañana/N días, na → null', () => {
+		expect(quoteValidityListText({ kind: 'soon', daysLeft: 0 })).toBe('Vence hoy');
+		expect(quoteValidityListText({ kind: 'soon', daysLeft: 1 })).toBe('Vence mañana');
+		expect(quoteValidityListText({ kind: 'soon', daysLeft: 3 })).toBe('Vence en 3 d');
+		expect(quoteValidityListText({ kind: 'na' })).toBeNull();
+	});
+
+	it('detalle: none/soon/ok/expired/na', () => {
+		expect(quoteValidityDetailText({ kind: 'none' })).toBe('Sin vencimiento');
+		expect(quoteValidityDetailText({ kind: 'soon', daysLeft: 0 })).toBe('vence hoy');
+		expect(quoteValidityDetailText({ kind: 'soon', daysLeft: 1 })).toBe('vence mañana');
+		expect(quoteValidityDetailText({ kind: 'soon', daysLeft: 2 })).toBe('vence en 2 días');
+		expect(quoteValidityDetailText({ kind: 'ok', daysLeft: 11 })).toBe('vence en 11 días');
+		expect(
+			quoteValidityDetailText({ kind: 'expired', daysLeft: -1, validUntilDate: '2026-11-14' })
+		).toBe('vencido el 14/11');
+		expect(quoteValidityDetailText({ kind: 'na' })).toBeNull();
+	});
+});

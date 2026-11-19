@@ -52,6 +52,11 @@ export default defineConfig({
 				'src/lib/components/sales/itemsTable/costTotals.ts',
 				'src/lib/components/sales/itemsTable/itemDisplay.ts',
 				'src/lib/components/sales/listParams.ts',
+				'src/lib/components/sales/listViewPreference.ts',
+				'src/lib/components/sales/editSale/editSaleModalHelpers.ts',
+				'src/lib/components/sales/editSale/submitEditSale.ts',
+				// Helpers puros de presupuestos (Sonar cuenta como 0 % lo que no sale en lcov).
+				'src/lib/components/quotes/**/*.ts',
 				'src/lib/components/sales/saleDisplay.ts',
 				'src/lib/components/sales/saleRowActions.ts',
 				'src/lib/components/sales/payments/paymentFormValues.ts',

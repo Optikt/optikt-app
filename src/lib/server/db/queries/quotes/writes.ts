@@ -2,14 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
 import { nowISO } from '$lib/dates';
-import {
-	quoteItems,
-	quotes,
-	type NewQuote,
-	type NewQuoteItem,
-	type Quote,
-	type QuoteItem
-} from '$lib/server/db/schema';
+import { quoteItems, quotes, type NewQuote, type Quote } from '$lib/server/db/schema';
 
 /** Create a new quote. El número lo asigna la sequence de la DB. */
 export async function createQuote(data: NewQuote, executor: DbOrTx = db): Promise<Quote> {
@@ -38,25 +31,6 @@ export async function updateQuote(
 		.where(eq(quotes.id, id))
 		.returning();
 	return quote ?? null;
-}
-
-/** Create multiple quote items. */
-export async function createQuoteItems(
-	items: NewQuoteItem[],
-	executor: DbOrTx = db
-): Promise<QuoteItem[]> {
-	const now = nowISO();
-	return await executor
-		.insert(quoteItems)
-		.values(
-			items.map((item) => ({
-				...item,
-				id: crypto.randomUUID(),
-				createdAt: now,
-				updatedAt: now
-			}))
-		)
-		.returning();
 }
 
 /** Delete all items for a quote (used when updating items). */
