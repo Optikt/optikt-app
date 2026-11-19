@@ -77,9 +77,10 @@
 <p class="sr-only" aria-live="polite">{ctx.quotesData.total} presupuestos</p>
 
 <div
-	class="overflow-hidden rounded-[var(--ds-radius-lg)] {ctx.view === 'list'
-		? 'bg-white shadow-[var(--ds-shadow-sm)]'
-		: ''} {ctx.loading && ctx.quotesData.quotes.length > 0 ? 'pointer-events-none opacity-60' : ''}"
+	class="overflow-hidden rounded-[var(--ds-radius-lg)] bg-white shadow-[var(--ds-shadow-sm)] {ctx.loading &&
+	ctx.quotesData.quotes.length > 0
+		? 'pointer-events-none opacity-60'
+		: ''}"
 	aria-busy={ctx.loading}
 >
 	{#if ctx.loading && ctx.quotesData.quotes.length === 0}
@@ -94,12 +95,10 @@
 			</div>
 		{/each}
 	{:else if ctx.quotesData.quotes.length === 0}
-		<div class="rounded-[var(--ds-radius-lg)] bg-white shadow-[var(--ds-shadow-sm)]">
-			<QuoteListEmpty
-				hasFilters={ctx.chips.length > 0 || ctx.search.trim().length > 0}
-				onClearFilters={ctx.handlers.onClearFilters}
-			/>
-		</div>
+		<QuoteListEmpty
+			hasFilters={ctx.chips.length > 0 || ctx.search.trim().length > 0}
+			onClearFilters={ctx.handlers.onClearFilters}
+		/>
 	{:else}
 		{#if ctx.view === 'list'}
 			<QuotesListView
@@ -112,35 +111,32 @@
 				onCancel={ctx.handlers.onCancelRequest}
 			/>
 		{:else}
-			<QuotesGridView
-				quotes={ctx.quotesData.quotes}
-				canManage={ctx.canAct}
-				onOpen={ctx.handlers.onOpen}
-				onEdit={ctx.handlers.onEdit}
-				onDuplicate={ctx.handlers.onDuplicate}
-				onConvert={ctx.handlers.onConvert}
-				onCancel={ctx.handlers.onCancelRequest}
-			/>
+			<!-- Mismo contenedor blanco que ventas: la cuadrícula va dentro con padding. -->
+			<div class="p-3">
+				<QuotesGridView
+					quotes={ctx.quotesData.quotes}
+					canManage={ctx.canAct}
+					onOpen={ctx.handlers.onOpen}
+					onEdit={ctx.handlers.onEdit}
+					onDuplicate={ctx.handlers.onDuplicate}
+					onConvert={ctx.handlers.onConvert}
+					onCancel={ctx.handlers.onCancelRequest}
+				/>
+			</div>
 		{/if}
 
-		<div
-			class={ctx.view === 'grid'
-				? 'mt-3 rounded-[var(--ds-radius-lg)] bg-white shadow-[var(--ds-shadow-sm)]'
-				: ''}
-		>
-			<SaleListFooter
-				page={ctx.quotesData.page}
-				perPage={ctx.quotesData.perPage}
-				total={ctx.quotesData.total}
-				totalPages={ctx.quotesData.totalPages}
-				selection={ctx.quotesData.selection}
-				showPerPage={ctx.view === 'list'}
-				onPageChange={(next) => ctx.handlers.onPageChange(next)}
-				onPerPageChange={ctx.handlers.onPerPageChange}
-				unitNounOne="presupuesto"
-				unitNounMany="presupuestos"
-				selectionTooltip="Suma de los {'{total}'} presupuestos que cumplen los filtros"
-			/>
-		</div>
+		<SaleListFooter
+			page={ctx.quotesData.page}
+			perPage={ctx.quotesData.perPage}
+			total={ctx.quotesData.total}
+			totalPages={ctx.quotesData.totalPages}
+			selection={ctx.quotesData.selection}
+			showPerPage={ctx.view === 'list'}
+			onPageChange={(next) => ctx.handlers.onPageChange(next)}
+			onPerPageChange={ctx.handlers.onPerPageChange}
+			unitNounOne="presupuesto"
+			unitNounMany="presupuestos"
+			selectionTooltip="Suma de los {'{total}'} presupuestos que cumplen los filtros"
+		/>
 	{/if}
 </div>

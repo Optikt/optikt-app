@@ -98,7 +98,7 @@
 		<a
 			href={resolve(`/quotes/${quote.id}`)}
 			onclick={(event) => event.stopPropagation()}
-			class="font-mono text-[14px] font-bold text-brand-navy transition-colors hover:text-brand-blue focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:outline-none"
+			class="font-mono text-[14px] font-bold whitespace-nowrap text-brand-navy transition-colors hover:text-brand-blue focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:outline-none"
 		>
 			{formatQuoteNumber(quote.quoteNumber)}
 		</a>
