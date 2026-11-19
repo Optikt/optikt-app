@@ -1,9 +1,15 @@
 import { toSaleTotalsLine, computeSaleTotals } from '$lib/shared/saleTotals';
-import { findQuoteById } from '$lib/server/db/queries/quotes/reads';
+import { findQuoteById, getQuoteItemsWithDetails } from '$lib/server/db/queries/quotes/reads';
 import { deleteQuoteItems, updateQuote } from '$lib/server/db/queries/quotes/writes';
 import { db } from '$lib/server/db';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { auditService } from '$lib/server/audit';
+import { calculateDiff, hasChanges } from '$lib/server/audit/utils';
+import {
+	buildSaleAuditDiff,
+	countSaleAuditChanges,
+	type SaleAuditItemLike
+} from '$lib/server/sales/saleAuditDiff';
 import { insertQuoteItems } from '$lib/server/quotes/quoteItemInsert';
 import { composeBusinessTimestamp, nowISO } from '$lib/dates';
 import type { UpdateQuoteInput } from '$lib/schemas/quotes';
@@ -15,6 +21,9 @@ import type { ActionContext } from '$lib/server/actionContext';
  *
  * D4: acepta `isCashea` (toggle del drawer). D3: `validUntil: null` = sin
  * vencimiento (la validez se calcula al leer; nunca se escribe EXPIRED).
+ *
+ * Auditoría: mismo formato que ventas — diff estructurado (`itemsDiff`:
+ * artículos, datos, totales) anexado al evento de edición.
  */
 export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: ActionContext) {
 	const existing = await findQuoteById(data.id);
@@ -24,6 +33,9 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 	if (existing.status !== QuoteStatus.DRAFT) {
 		return { success: false as const, error: 'Solo se pueden editar presupuestos en borrador' };
 	}
+
+	// Lectura de validación (fuera de la tx): ítems previos para el diff de auditoría.
+	const beforeItems = await getQuoteItemsWithDetails(data.id);
 
 	// Calculate totals from new items
 	const discount = data.discount ?? existing.discount;
@@ -75,10 +87,41 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 		return updated;
 	});
 
-	// Audit log
-	await auditService.logUpdate('quote', data.id, existing, quote, ctx, {
-		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+	// Audit (best-effort, tras la tx): cambios de cabecera + diff de ítems.
+	const headerChanges = calculateDiff(existing, quote, ['createdAt', 'updatedAt', 'deletedAt']);
+	const toDiffItem = (item: SaleAuditItemLike & { parentQuoteItemId?: string | null }) => ({
+		...item,
+		parentSaleItemId: item.parentQuoteItemId ?? null
 	});
+	const itemsDiff = buildSaleAuditDiff(beforeItems.map(toDiffItem), data.items.map(toDiffItem), {
+		dateLabel: 'Fecha',
+		beforeHeader: {
+			saleDate: existing.quoteDate,
+			notes: existing.notes,
+			isCashea: existing.isCashea,
+			discount: existing.discount,
+			discountType: existing.discountType
+		},
+		afterHeader: {
+			saleDate: quote.quoteDate,
+			notes: quote.notes,
+			isCashea: quote.isCashea,
+			discount: quote.discount,
+			discountType: quote.discountType
+		},
+		beforeTotals: { subtotal: existing.subtotal, total: existing.total },
+		afterTotals: { subtotal: quote.subtotal, total: quote.total }
+	});
+	const diffCount = countSaleAuditChanges(itemsDiff);
+	if (hasChanges(headerChanges) || diffCount > 0) {
+		await auditService.logCustom(
+			'quote',
+			data.id,
+			'update',
+			{ ...headerChanges, ...(diffCount > 0 ? { itemsDiff: { old: null, new: itemsDiff } } : {}) },
+			ctx
+		);
+	}
 
 	return { success: true as const, quote };
 }

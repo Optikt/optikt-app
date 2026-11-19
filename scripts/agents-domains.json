@@ -168,7 +168,7 @@
 				"src/routes/(app)/quotes/**",
 				"src/lib/remote/quotes/**",
 				"src/lib/server/quotes/**",
-				"src/lib/server/db/queries/quotes.ts",
+				"src/lib/server/db/queries/quotes/**",
 				"src/lib/schemas/quotes*",
 				"src/lib/server/db/schema/quotes.ts"
 			]
@@ -214,7 +214,7 @@
 				"src/lib/server/actionContext.ts",
 				"src/lib/server/db/queries/users.ts",
 				"src/lib/server/db/queries/sessions.ts",
-				"src/lib/server/db/queries/userPreferences.ts",
+				"src/lib/server/db/queries/userPreferences*",
 				"src/lib/schemas/users*",
 				"src/lib/server/db/schema/users.ts",
 				"src/lib/server/db/schema/sessions.ts",

@@ -19,6 +19,8 @@
 		sort: string;
 		/** Toggles del popover; ausente = sin popover (listado de presupuestos). */
 		toggles?: Record<ToggleKey, boolean>;
+		/** Generalización quotes: switches del popover (por defecto los de ventas). */
+		toggleOptions?: { key: ToggleKey; label: string }[];
 		activeToggleCount?: number;
 		onSearch: (value: string) => void;
 		onSellerChange: (sellerId: string) => void;
@@ -41,6 +43,7 @@
 		to,
 		sort,
 		toggles,
+		toggleOptions = SALE_LIST_TOGGLES,
 		activeToggleCount = 0,
 		onSearch,
 		onSellerChange,
@@ -191,7 +194,7 @@
 				sideOffset={6}
 				class="w-64 gap-0 rounded-[var(--ds-radius-lg)] bg-white p-1.5 shadow-[var(--ds-shadow-lg)]"
 			>
-				{#each SALE_LIST_TOGGLES as toggle (toggle.key)}
+				{#each toggleOptions as toggle (toggle.key)}
 					{@const on = togglesState[toggle.key] ?? false}
 					<button
 						type="button"

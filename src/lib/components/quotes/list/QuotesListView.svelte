@@ -125,10 +125,10 @@
 				<!-- Fecha -->
 				<td class={cell}>
 					<p class="text-[13px] whitespace-nowrap text-on-surface tabular-nums">
-						{formatDateOnly(quote.createdAt, { day: '2-digit', month: '2-digit', year: '2-digit' })}
+						{formatDateOnly(quote.quoteDate, { day: '2-digit', month: '2-digit', year: '2-digit' })}
 					</p>
 					<p class="mt-0.5 text-[11px] whitespace-nowrap text-outline">
-						{relativeDaysLabel(quote.createdAt)}
+						{relativeDaysLabel(quote.quoteDate)}
 					</p>
 				</td>
 
@@ -187,7 +187,15 @@
 				<!-- Acciones -->
 				<td class="{cell} text-right">
 					<div class="flex justify-end">
-						<QuoteRowMenu {quote} {canManage} {onEdit} {onDuplicate} {onConvert} {onCancel} />
+						<QuoteRowMenu
+							{quote}
+							{canManage}
+							{onOpen}
+							{onEdit}
+							{onDuplicate}
+							{onConvert}
+							{onCancel}
+						/>
 					</div>
 				</td>
 			</tr>

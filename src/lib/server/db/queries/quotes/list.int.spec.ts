@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDb } from '$lib/testing/integration/db';
-import { createCustomer, createQuote, createUser } from '$lib/testing/integration/factories';
+import {
+	createCustomer,
+	createQuote,
+	createSale,
+	createUser
+} from '$lib/testing/integration/factories';
 import {
 	countQuotes,
 	countQuotesByStatus,
@@ -82,7 +87,7 @@ describe('consultas del listado de presupuestos', () => {
 			await createQuote({ isCashea: true, validUntil: null, quoteDate: '2026-11-03' });
 
 			const sorted = await getAllQuotes({ orderBy: 'validUntil', orderSort: 'asc' });
-			expect(sorted[0].validUntil).toBe('2026-11-25');
+			expect(sorted[0].validUntil?.slice(0, 10)).toBe('2026-11-25');
 			expect(sorted.at(-1)?.validUntil).toBeNull();
 
 			const cashea = await getAllQuotes({ isCashea: true });
@@ -112,7 +117,9 @@ describe('consultas del listado de presupuestos', () => {
 		it('marca DRAFT con saleId y cliente en la misma escritura', async () => {
 			const quote = await createQuote({ status: QuoteStatus.DRAFT, customerId: null });
 			const customer = await createCustomer();
-			const saleId = crypto.randomUUID();
+			// conversion_sale_id tiene FK a sales(id).
+			const sale = await createSale();
+			const saleId = sale.id;
 			const result = await markQuoteConverted(quote.id, {
 				conversionSaleId: saleId,
 				customerId: customer.id

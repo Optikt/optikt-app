@@ -11,7 +11,15 @@ import {
 	DEFAULT_SALE_LIST_PER_PAGE,
 	type SaleDatePreset
 } from '$lib/components/sales/listParams';
-import { ALL_QUOTE_STATUSES, type QuoteStatus } from '$lib/shared/contracts/quotes';
+import { ALL_QUOTE_STATUSES, QuoteStatus } from '$lib/shared/contracts/quotes';
+
+/**
+ * Pestañas del listado: EXPIRED no es un estado persistido (la validez se
+ * calcula al leer, D3), así que no tiene pestaña.
+ */
+export const LIST_QUOTE_STATUSES: readonly QuoteStatus[] = ALL_QUOTE_STATUSES.filter(
+	(s) => s !== QuoteStatus.EXPIRED
+);
 
 /** `?status=DRAFT,CONVERTIDO` → estados válidos (inválidos se ignoran). */
 export function parseQuoteStatuses(value: string | null): QuoteStatus[] {
@@ -34,6 +42,14 @@ export const DEFAULT_QUOTE_LIST_SORT: QuoteListSort = 'recent';
 
 export const QUOTE_LIST_PAGE_SIZES = SALE_LIST_PAGE_SIZES;
 export const DEFAULT_QUOTE_LIST_PER_PAGE = DEFAULT_SALE_LIST_PER_PAGE;
+
+/** `?per=` → tamaño de página válido (10/25/50) o el default. */
+export function parseQuoteListPerPage(value: string | null): number {
+	const parsed = Number.parseInt(value ?? '', 10);
+	return (QUOTE_LIST_PAGE_SIZES as readonly number[]).includes(parsed)
+		? parsed
+		: DEFAULT_QUOTE_LIST_PER_PAGE;
+}
 
 /** `?sort=` → orden efectivo (inválido o ausente → default). */
 export function parseQuoteListSort(value: string | null): QuoteListSort {

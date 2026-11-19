@@ -89,7 +89,7 @@ test.describe('presupuesto → venta', () => {
 		await createQuote(page, true);
 
 		await page.getByRole('button', { name: 'Convertir a venta' }).click();
-		await expect(page.getByRole('dialog')).toBeVisible();
+		await expect(page.getByRole('dialog', { name: 'Convertir a venta' })).toBeVisible();
 		await page.getByRole('button', { name: 'Crear venta' }).click();
 
 		await expect(page.getByText(/Venta #\d+ creada desde P-\d+/)).toBeVisible();
@@ -101,7 +101,7 @@ test.describe('presupuesto → venta', () => {
 		await createQuote(page, false);
 
 		await page.getByRole('button', { name: 'Convertir a venta' }).click();
-		const dialog = page.getByRole('dialog');
+		const dialog = page.getByRole('dialog', { name: 'Convertir a venta' });
 		await expect(dialog.getByText('Paso obligatorio')).toBeVisible();
 		await dialog.getByRole('button', { name: 'Nuevo cliente' }).click();
 		await dialog.getByLabel('Nombre', { exact: true }).fill('Ana');

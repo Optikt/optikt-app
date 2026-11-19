@@ -8,7 +8,6 @@ import {
 	createCustomer,
 	createMaterial,
 	createProduct,
-	createQuote,
 	createSupplier,
 	createUser
 } from '$lib/testing/integration/factories';
@@ -186,15 +185,27 @@ describe('createNewQuoteCore', () => {
 	it('stores isCashea and sourceQuoteId (duplicar)', async () => {
 		const seller = await createUser();
 		const product = await seedProduct();
-		// source_quote_id tiene FK a quotes(id): el origen debe existir.
-		const sourceQuote = await createQuote({ sellerId: seller.id });
+		// source_quote_id tiene FK a quotes(id): el origen debe existir. Se crea
+		// con el core (sequence) para no chocar con el número de la factory.
+		const source = await createNewQuoteCore(
+			{
+				quoteDate: '2026-09-14',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				isCashea: false,
+				items: [item(product.id)]
+			},
+			ctx(seller.id)
+		);
+		if (!source.success) throw new Error('source quote was not created');
 		const input: CreateQuoteInput = {
 			quoteDate: '2026-09-15',
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotTaxRate: 16,
 			isCashea: true,
-			sourceQuoteId: sourceQuote.id,
+			sourceQuoteId: source.quote.id,
 			items: [item(product.id)]
 		};
 

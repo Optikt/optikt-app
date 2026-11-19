@@ -51,6 +51,8 @@ export interface AuditEvent {
 	changeCount: number;
 	/** BCV USD amount for `sale_payment` events; null otherwise. */
 	paymentAmount: number | null;
+	/** Neutral one-line context under the author (quotes: «Duplicado de P-0231»). */
+	note: string | null;
 }
 
 // =============================================================================
@@ -107,6 +109,7 @@ function baseEvent(
 		totalDelta: null,
 		changeCount: 0,
 		paymentAmount: null,
+		note: null,
 		...rest
 	};
 }
@@ -130,6 +133,9 @@ export function matchesAuditFilter(event: AuditEvent, filter: AuditFilter): bool
 	}
 	return event.kind === 'status' || event.kind === 'cancel';
 }
+
+/** Same factory, exported for other document timelines (quotes) that reuse the UI. */
+export { baseEvent as buildAuditEvent };
 
 export function classifySaleAuditEntry(entry: ClassifiableAuditEntry): AuditEvent | null {
 	const { entityType, action, changes } = entry;
@@ -260,6 +266,8 @@ const MONEY_FIELDS = new Set([
  * `itemsDiff`) — excluded from the legacy rows only when a diff is present.
  */
 const DIFF_COVERED_FIELDS = new Set([
+	/** Quotes: shown as «Fecha» in DATOS. */
+	'quoteDate',
 	'notes',
 	'isCashea',
 	'discount',
@@ -281,6 +289,11 @@ const RATE_TYPE_LABELS: Record<string, string> = {
 	USD_EFECTIVO: 'USD en efectivo',
 	OTHER: 'Otro'
 };
+
+/** Field-label namespace: quote events use the quote labels, everything else the sale ones. */
+function auditLabelEntity(entityType: string): 'sale' | 'quote' {
+	return entityType === 'quote' ? 'quote' : 'sale';
+}
 
 /** Rows for the expandable diff: `Campo: old → new`, formatted for display. */
 export function auditDiffRows(event: AuditEvent): AuditDiffRow[] {
@@ -319,7 +332,7 @@ export function auditDiffRows(event: AuditEvent): AuditDiffRow[] {
 		};
 		rows.push({
 			field,
-			label: getFieldLabel(isPayment ? 'sale_payment' : 'sale', field),
+			label: getFieldLabel(isPayment ? 'sale_payment' : auditLabelEntity(event.entityType), field),
 			from: format(change.old),
 			to: format(change.new)
 		});

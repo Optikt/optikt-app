@@ -10,6 +10,7 @@ import {
 import { getUserPreference } from '$lib/server/db/queries/userPreferences';
 import { parseSaleStatuses } from '$lib/components/sales/statusFilter';
 import {
+	LIST_VIEW_PREFERENCE_KEY,
 	parseIsoDateOnly,
 	parseSaleListPerPage,
 	parseSaleListSort,
@@ -55,7 +56,9 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 		}),
 		getSalesStats(toUTCString(monthStart())),
 		listSaleSellers(),
-		locals.user ? getUserPreference(locals.user.id, 'sales.view') : Promise.resolve(null)
+		locals.user
+			? getUserPreference(locals.user.id, LIST_VIEW_PREFERENCE_KEY)
+			: Promise.resolve(null)
 	]);
 
 	return {

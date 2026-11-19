@@ -30,6 +30,7 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 **Cashea (D4)**
 
 - `quotes.is_cashea` se marca al crear (`CreateQuoteSchema.isCashea`), editar (`UpdateQuoteSchema.isCashea`) y duplicar. Al convertir se copia a la venta: `isCashea: data.isCashea ?? quote.isCashea` (override editable en el modal de conversión). El checkbox del modal viene marcado desde el presupuesto.
+- Auditoría de edición: `updateExistingQuoteCore` registra **el mismo formato que ventas** — cambios de cabecera + diff estructurado `itemsDiff` (`buildSaleAuditDiff` de `server/sales/saleAuditDiff.ts`, con `dateLabel: 'Fecha'`; los ítems se emparejan por id, que el drawer conserva). Sin cambios reales no se registra evento. Eventos viejos (sin `itemsDiff`) muestran un resumen corto + filas campo a campo.
 - Auditoría de conversión: `logCreate('sale')`, `logCreate('prescription')` si aplica, `logCreate('customer')` si se creó inline, y `logUpdate('quote', before/after)` con estado, `conversionSaleId` y `customerId`. El historial muestra "Convertido en venta #NNNN" y "Cashea activado".
 
 **Inventario y prescripción**
@@ -45,7 +46,9 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 
 **Duplicar (D7)**
 
-- Permitido desde cualquier estado (borrador, convertido, cancelado). Ruta `/quotes/new?from=<id>`; el loader delgado entrega `{quote, items}` al wizard. `quoteToWizardDraft()` (puro, con spec) copia ítems (fórmula por ojo **con altura**, tratamientos hijos), descuento, isCashea y notas; resetea cliente, fecha (hoy), validUntil (vacío) y número (preview nuevo). Guarda `sourceQuoteId` (FK self, ON DELETE SET NULL, índice). El historial y el detalle muestran "Duplicado de P-0231" (el loader resuelve el número del origen).
+- Permitido desde cualquier estado (borrador, convertido, cancelado). Ruta `/quotes/new?from=<id>`; el loader delgado entrega `{quote, items}` al wizard. `quoteToWizardDraft()` (puro, con spec) copia ítems (mismo cristal/producto/libre, tratamientos hijos), descuento, isCashea y notas; resetea cliente, fecha (hoy), validUntil (vacío) y número (preview nuevo).
+- ⚠️ **Ids nuevos por ítem:** cada ítem duplicado recibe `crypto.randomUUID()` y los tratamientos se remapean al id nuevo de su lente. Reusar los ids del origen violaba `quote_items_pkey` (`insertQuoteItems` usa `item.id`). Dos presupuestos son independientes aunque tengan el mismo ítem (la quote no mueve stock).
+- ⚠️ **La fórmula NO se copia:** solo se conserva qué ojos aplican (`enabled`); esfera/cilindro/eje/adición/altura quedan vacíos y el paso 2 los exige otra vez (`hasLensPrescriptionErrors`). Evita presupuestos con una graduación arrastrada por error. Guarda `sourceQuoteId` (FK self, ON DELETE SET NULL, índice). El historial y el detalle muestran "Duplicado de P-0231" (el loader resuelve el número del origen).
 
 ## Endpoints (remote)
 
@@ -59,12 +62,16 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 
 - Remote = shell (auth + delegación a `*Core` con `ActionContext`), mismo patrón DT9 que `sales`.
 - Helpers puros de quotes en `src/lib/server/quotes/quoteHelpers.ts` (buildQuoteItemValues, firstDefined, derivePrescriptionFromQuoteItems). `toSaleTotalsLine` y `resolveLensSnapshotCosts` viven en `$lib/shared/` (fuente única compartida con ventas; consolidaron los duplicados de `remote/{quotes,sales}/helpers`). **Ningún archivo de `server/` importa de `remote/`**.
-- **Reuso de componentes de ventas (plan quotes-redesign):** hero navy con CSS compartido en `$lib/components/layout/heroNavy.css` (container queries `<700/≥700/≥1500` contra `.page`, nunca viewport; tope 1760px); `SaleDetailHeroCustomer` con `emptyState` opcional; `SaleItemsTable` en solo lectura vía `groups`/`headerBadge` opcionales y el adapter `quoteItemsAdapter.ts`; historial propio `QuoteAuditTimeline`/`QuoteAuditHistoryDrawer`. `SaleListHeader`, `SaleFilterBar`, `SaleStatusTabs`, `SaleFilterChips`, `SaleListFooter` se generalizaron con props opcionales (ventas sin cambios visuales). `QuoteDetailMobileBar` replica `SaleDetailMobileBar` (barra inferior + hoja "Más").
+- **Reuso de componentes de ventas (plan quotes-redesign):** hero navy con CSS compartido en `$lib/components/layout/heroNavy.css` (container queries `<700/≥700/≥1500` contra `.page`, nunca viewport; tope 1760px); `SaleDetailHeroCustomer` con `emptyState` opcional; `SaleItemsTable` en solo lectura vía `groups`/`headerBadge` opcionales y el adapter `quoteItemsAdapter.ts`; historial con la **misma UI que ventas**: `classifyQuoteAuditEntry` produce el `AuditEvent` de `$lib/utils/saleDetail` (con `note` para "Duplicado de P-0231"/"Cashea activado"), `QuoteAuditTimeline` renderiza `SaleAuditEvent` (rail denso con «N cambios →») y `QuoteAuditHistoryDrawer` envuelve `sales/detail/AuditEventsDrawer` (shell compartido con `SaleAuditHistoryDrawer`: filtros Todos/Ediciones/Estados, detalle artículos/datos/totales). `SaleListHeader`, `SaleFilterBar`, `SaleStatusTabs`, `SaleFilterChips`, `SaleListFooter` se generalizaron con props opcionales (ventas sin cambios visuales). `QuoteDetailMobileBar` replica `SaleDetailMobileBar` (barra inferior + hoja "Más").
+- **Listado móvil = ventas (<700px de contenedor):** contexto `quoteListContext.ts` + plantillas `QuoteListMobile`/`QuoteListDesktop` + `QuoteMobileOverlays` (fuera del `@container`), igual que `/sales`. Reusa `SaleMobileControls` (buscador + Filtros sticky), `SaleMobileFilterSheet` (hoja de filtros con `sortOptions`/`toggleOptions`/unidad por props), `SaleListFooter narrow` (selección plegable + ‹ Anterior · Página X de Y · Siguiente ›), `Fab` ("Nuevo presupuesto") y `Carousel` (KPIs). Tarjeta `QuoteCard` con `density` compact/comfortable y ⋯ que abre `QuoteRowActionsSheet`; el gating del ⋯ vive en `quoteRowActions.ts` (lo comparten popover y hoja).
+- **Vista Lista/Cuadros compartida con ventas:** misma llave `LIST_VIEW_PREFERENCE_KEY = 'sales.view'` (`sales/listParams.ts`) y mismo guardado `persistListView` (`sales/listViewPreference.ts`). Cambiar la vista en un listado la cambia en el otro; no existe llave propia de presupuestos.
+- Filtro **Cashea** en el listado (`?cashea=1`, switch en el popover/hoja y chip). Las tarjetas/filas muestran la fecha del presupuesto (`quoteDate`, día de negocio), no `createdAt`.
 - **Editar (D1):** `EditSaleModal` parametrizado con `quote`/`quoteItems` + `quoteEditAdapter.ts`; sin motivo, sin reversión de stock, Cashea + Válido hasta en la meta bar, guarda con `updateExistingQuote`, toast "Presupuesto actualizado", solo DRAFT. El wizard usa `SaleStep1Info`/`SaleStep2Items`/`SaleStep3Summary` (el wrapper `QuoteStep3Summary` se borró).
 - **Conversión (D2):** un único modal de revisión, no wizard. Cliente inline se resuelve con `CustomerLookupInput`, se envía como `newCustomer` (no se crea al tipear). `Crear venta` con `aria-disabled` + `TriggerTooltip` "Falta completar: Cliente" + línea inline en táctil; doble clic protegido. Éxito: toast `Venta #NNNN creada desde P-XXXX` y navegación directa a `/sales/<id>` (comportamiento previo de la app). El overlay usa `bits-ui` `Dialog` (cierre con Escape, foco y portal), no un `div` artesanal; `onclose` del padre controla el estado.
 
 ## Testing
 
+- Unit (nuevos tras la review del PR): `components/quotes/list/quoteRowActions.spec.ts`, `components/sales/listViewPreference.spec.ts`, `QuoteAuditHistoryDrawer.svelte.spec.ts` (detalle de ítems como ventas). Int: `updateExistingQuote.int.spec.ts` cubre el `itemsDiff` anexado y "sin cambios ⇒ sin evento".
 - Unit: `schemas/quotes.spec.ts`, `shared/quotes/{quoteValidity,conversionPreview}.spec.ts`, `components/quotes/detail/{quoteAudit,quoteItemsAdapter,QuoteAuditHistoryDrawer}.spec.ts`, `components/quotes/duplicate/quoteToWizardDraft.spec.ts`, `components/quotes/editQuote/quoteEditAdapter.spec.ts`, `components/quotes/list/{quoteListParams,quoteListDisplay}.spec.ts`, `shared/{saleTotals,saleItemCosts}.spec.ts`, `components/sales/detail/saleBreakdown.spec.ts`. Int: `server/quotes/{createNewQuote,updateExistingQuote,convertQuoteToSale}.int.spec.ts` (incluye rollback por duplicado, cliente inline, doble conversión concurrente, no-DRAFT, stock insuficiente, altura y `quoteDate` editado), `queries/quotes/list.int.spec.ts` (KPI de cohorte, multi-estado, `markQuoteConverted` directo), `remote/quotes/commands.int.spec.ts`. E2E `e2e/quote-to-sale.test.ts` (con cliente y con cliente inline desde el modal).
 - ⚠️ Los int specs requieren Docker/Testcontainers; en este entorno no hay Docker → se ejecutaron los unit (`pnpm test:unit`, verde) pero NO los int. La migración sí se aplicó a la DB de desarrollo para la verificación visual.
 
@@ -82,6 +89,9 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 - Barrel `components/quotes/index.ts` borrado (importadores migrados a imports directos).
 - `title`/`disabled` nativos en la lista → `TriggerTooltip` + `aria-disabled`.
 - `assignQuoteCustomer` eliminado.
+- Duplicar fallaba con `duplicate key value violates unique constraint "quote_items_pkey"` (ids del origen reusados) → ids nuevos.
+- Historial del presupuesto con texto resumido → mismo detalle que ventas (`itemsDiff`).
+- `scripts/agents-domains.json` mapeaba `queries/quotes.ts` (ya partido) → `queries/quotes/**`.
 
 ## Planes completados
 

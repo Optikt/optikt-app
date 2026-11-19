@@ -134,7 +134,7 @@
 					Total {formatDelta(event.totalDelta ?? 0)}
 				</span>
 			{/snippet}
-			<TriggerTooltip trigger={deltaTip} text="Diferencia del total de la venta tras la edición" />
+			<TriggerTooltip trigger={deltaTip} text="Diferencia del total tras la edición" />
 		{/if}
 		{#if statusPills}
 			<span class="inline-flex items-center gap-1 text-[11px] font-semibold">
@@ -157,6 +157,9 @@
 			timeStyle: 'short'
 		})}
 	</p>
+	{#if event.note}
+		<p class="mt-0.5 text-xs text-on-surface-variant">{event.note}</p>
+	{/if}
 	{#if event.paymentAmount !== null}
 		<p class="mt-0.5 text-[13px] font-bold text-on-surface tabular-nums">
 			{formatPrice(event.paymentAmount)}

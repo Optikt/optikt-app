@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-	classifyQuoteAuditEntry,
-	matchesQuoteAuditFilter,
-	quoteEditSummary,
-	type QuoteAuditEntry
-} from './quoteAudit';
+import { classifyQuoteAuditEntry, quoteEditSummary, type QuoteAuditEntry } from './quoteAudit';
+import { matchesAuditFilter } from '$lib/utils/saleDetail';
 
 const CTX = {
 	sourceQuoteNumber: 231,
@@ -21,15 +17,30 @@ function entry(partial: Partial<QuoteAuditEntry>): QuoteAuditEntry {
 		changedAt: '2026-11-17T14:24:00Z',
 		changedByName: 'Ana Pérez',
 		...partial
-	};
+	} as QuoteAuditEntry;
 }
 
+const diff = {
+	v: 1,
+	items: [
+		{ t: 'add', name: 'Montura X', qty: 1, unitPrice: 20, total: 20 },
+		{
+			t: 'mod',
+			name: 'Cristales',
+			fields: [{ key: 'unitPrice', label: 'Precio', from: 'USD 50,00', to: 'USD 60,00' }]
+		}
+	],
+	header: [{ key: 'isCashea', label: 'Cashea', from: 'No', to: 'Sí' }],
+	totals: [{ label: 'Total', from: 100, to: 130 }]
+};
+
 describe('classifyQuoteAuditEntry', () => {
-	it('creado con origen → "Duplicado de P-0231"', () => {
+	it('creado con origen → nota "Duplicado de P-0231"', () => {
 		const e = classifyQuoteAuditEntry(entry({ action: 'create' }), CTX);
-		expect(e?.title).toBe('Presupuesto creado');
-		expect(e?.detail).toBe('Duplicado de P-0231');
-		expect(e?.tone).toBe('navy');
+		expect(e?.label).toBe('Presupuesto creado');
+		expect(e?.note).toBe('Duplicado de P-0231');
+		expect(e?.kind).toBe('create');
+		expect(e?.entityType).toBe('quote');
 	});
 
 	it('creado sin cliente → "Sin cliente"', () => {
@@ -38,46 +49,105 @@ describe('classifyQuoteAuditEntry', () => {
 			sourceQuoteNumber: null,
 			createdWithoutCustomer: true
 		});
-		expect(e?.detail).toBe('Sin cliente');
+		expect(e?.note).toBe('Sin cliente');
 	});
 
 	it('convertido → "Convertido en venta #0298" + "Cashea activado"', () => {
 		const e = classifyQuoteAuditEntry(
-			entry({ changes: { status: { old: 'DRAFT', new: 'CONVERTED' } } }),
+			entry({ changes: { status: { old: 'DRAFT', new: 'CONVERTED' } } as never }),
 			CTX
 		);
-		expect(e?.title).toBe('Convertido en venta #0298');
-		expect(e?.detail).toBe('Cashea activado');
-		expect(e?.tone).toBe('success');
+		expect(e?.label).toBe('Convertido en venta #0298');
+		expect(e?.note).toBe('Cashea activado');
+		expect(e?.kind).toBe('status');
 	});
 
-	it('convertido sin Cashea → sin detalle', () => {
+	it('convertido sin Cashea ni número → sin nota', () => {
 		const e = classifyQuoteAuditEntry(
-			entry({ changes: { status: { old: 'DRAFT', new: 'CONVERTED' } } }),
-			{ ...CTX, quoteIsCashea: false }
+			entry({ changes: { status: { old: 'DRAFT', new: 'CONVERTED' } } as never }),
+			{ ...CTX, quoteIsCashea: false, convertedOrderNumber: null }
 		);
-		expect(e?.detail).toBeNull();
+		expect(e?.label).toBe('Convertido en venta');
+		expect(e?.note).toBeNull();
 	});
 
-	it('cancelado → motivo', () => {
-		const e = classifyQuoteAuditEntry(
+	it('cancelado → motivo (reason o cancellationReason)', () => {
+		const withReason = classifyQuoteAuditEntry(
 			entry({
-				changes: { status: { old: 'DRAFT', new: 'CANCELLED' } },
+				changes: { status: { old: 'DRAFT', new: 'CANCELLED' } } as never,
 				reason: 'El cliente desistió'
 			}),
 			CTX
 		);
-		expect(e?.title).toBe('Presupuesto cancelado');
-		expect(e?.detail).toBe('El cliente desistió');
-	});
+		expect(withReason?.label).toBe('Presupuesto cancelado');
+		expect(withReason?.kind).toBe('cancel');
+		expect(withReason?.reason).toBe('El cliente desistió');
 
-	it('editado → resumen del diff', () => {
-		const e = classifyQuoteAuditEntry(
-			entry({ changes: { isCashea: { old: false, new: true }, notes: { old: null, new: 'x' } } }),
+		const fromField = classifyQuoteAuditEntry(
+			entry({
+				changes: {
+					status: { old: 'DRAFT', new: 'CANCELLED' },
+					cancellationReason: { old: null, new: 'Precio alto' }
+				} as never
+			}),
 			CTX
 		);
-		expect(e?.title).toBe('Presupuesto editado');
-		expect(e?.detail).toBe('Cashea activado · Nota');
+		expect(fromField?.reason).toBe('Precio alto');
+	});
+
+	it('editado con itemsDiff → detalle estructurado como ventas', () => {
+		const e = classifyQuoteAuditEntry(
+			entry({
+				changes: {
+					total: { old: 100, new: 130 },
+					itemsDiff: { old: null, new: diff }
+				} as never
+			}),
+			CTX
+		);
+		expect(e?.label).toBe('Presupuesto editado');
+		expect(e?.kind).toBe('update');
+		expect(e?.itemsDiff?.items).toHaveLength(2);
+		expect(e?.changeCount).toBe(4);
+		expect(e?.totalDelta).toBe(30);
+		expect(e?.legacyUpdate).toBe(false);
+		expect(e?.note).toBeNull();
+	});
+
+	it('editado viejo (sin itemsDiff) → resumen corto y filas campo a campo', () => {
+		const e = classifyQuoteAuditEntry(
+			entry({
+				changes: { isCashea: { old: false, new: true }, notes: { old: null, new: 'x' } } as never
+			}),
+			CTX
+		);
+		expect(e?.itemsDiff).toBeNull();
+		expect(e?.note).toBe('Cashea activado · Nota');
+		expect(e?.changes).not.toBeNull();
+	});
+
+	it('cambio de cliente → "Cliente actualizado"', () => {
+		const e = classifyQuoteAuditEntry(
+			entry({ changes: { customerId: { old: null, new: 'c-1' } } as never }),
+			CTX
+		);
+		expect(e?.label).toBe('Cliente actualizado');
+	});
+
+	it('acciones desconocidas → null', () => {
+		expect(classifyQuoteAuditEntry(entry({ action: 'delete' }), CTX)).toBeNull();
+	});
+
+	it('filtros del drawer: edición en Ediciones, cancelado en Estados', () => {
+		const edit = classifyQuoteAuditEntry(entry({ changes: { notes: { new: 'x' } } as never }), CTX);
+		const cancel = classifyQuoteAuditEntry(
+			entry({ changes: { status: { new: 'CANCELLED' } } as never }),
+			CTX
+		);
+		if (!edit || !cancel) throw new Error('no event');
+		expect(matchesAuditFilter(edit, 'edits')).toBe(true);
+		expect(matchesAuditFilter(edit, 'states')).toBe(false);
+		expect(matchesAuditFilter(cancel, 'states')).toBe(true);
 	});
 });
 
@@ -87,17 +157,15 @@ describe('quoteEditSummary', () => {
 		expect(quoteEditSummary({})).toBeNull();
 	});
 
-	it('Cashea quitado', () => {
+	it('Cashea quitado, cliente, descuento, validez, ítems', () => {
 		expect(quoteEditSummary({ isCashea: { old: true, new: false } })).toBe('Cashea quitado');
-	});
-});
-
-describe('matchesQuoteAuditFilter', () => {
-	const e = classifyQuoteAuditEntry(entry({ changes: { notes: { new: 'x' } } }), CTX);
-	expect(e).toBeTruthy();
-	it('ediciones filtra solo pen', () => {
-		if (!e) throw new Error('no event');
-		expect(matchesQuoteAuditFilter(e, 'edits')).toBe(true);
-		expect(matchesQuoteAuditFilter(e, 'states')).toBe(false);
+		expect(
+			quoteEditSummary({
+				customerId: { new: 'c' },
+				discount: { new: 1 },
+				validUntil: { new: 'x' },
+				total: { new: 2 }
+			})
+		).toBe('Cliente · Descuento · Validez · Ítems');
 	});
 });

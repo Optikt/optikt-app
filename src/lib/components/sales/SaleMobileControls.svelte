@@ -13,9 +13,22 @@
 		filtersOpen: boolean;
 		onSearch: (value: string) => void;
 		onOpenFilters: () => void;
+		/** Generalización quotes: textos e id del buscador. */
+		placeholder?: string;
+		ariaLabel?: string;
+		inputId?: string;
 	}
 
-	let { search, activeCount, filtersOpen, onSearch, onOpenFilters }: Props = $props();
+	let {
+		search,
+		activeCount,
+		filtersOpen,
+		onSearch,
+		onOpenFilters,
+		placeholder = 'Buscar cliente, vendedor o #…',
+		ariaLabel = 'Buscar ventas',
+		inputId = 'sales-search-mobile'
+	}: Props = $props();
 
 	let sentinel: HTMLDivElement | undefined = $state();
 	let stuck = $state(false);
@@ -51,12 +64,12 @@
 				class="pointer-events-none absolute top-1/2 left-3 h-[18px] w-[18px] -translate-y-1/2 text-outline"
 			/>
 			<input
-				id="sales-search-mobile"
+				id={inputId}
 				type="search"
 				value={search}
 				oninput={(e) => onSearch(e.currentTarget.value)}
-				placeholder="Buscar cliente, vendedor o #…"
-				aria-label="Buscar ventas"
+				{placeholder}
+				aria-label={ariaLabel}
 				inputmode="search"
 				enterkeyhint="search"
 				class="{control} w-full border-outline-variant pr-3 pl-10"

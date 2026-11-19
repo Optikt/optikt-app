@@ -83,7 +83,7 @@ describe('quoteToWizardDraft', () => {
 		expect(draft.notes).toBe('Cliente pide montura liviana');
 	});
 
-	it('mapea producto, lente con fórmula (incluida altura) e ítem libre', () => {
+	it('mapea producto, lente sin fórmula (se reescribe) e ítem libre', () => {
 		const draft = quoteToWizardDraft({
 			quote,
 			items: [
@@ -134,14 +134,34 @@ describe('quoteToWizardDraft', () => {
 		expect(product?.unitPrice).toBe(280);
 
 		const lens = draft.items.find((r) => r.kind === 'lens');
-		expect(lens?.lensPair?.od.prescription.sphere).toBe(-1.25);
-		expect(lens?.lensPair?.od.altura).toBe(22);
-		expect(lens?.lensPair?.oi.altura).toBe(21);
+		// Fórmula en blanco: obligatoria otra vez en el paso 2.
+		expect(lens?.lensPair?.od.prescription).toEqual({
+			sphere: null,
+			cylinder: null,
+			axis: null,
+			addition: null
+		});
+		expect(lens?.lensPair?.od.altura).toBeNull();
+		expect(lens?.lensPair?.oi.altura).toBeNull();
 		expect(lens?.lensPair?.od.enabled).toBe(true);
+		expect(lens?.lensPair?.oi.enabled).toBe(true);
 		expect(lens?.lensPair?.catalogItemId).toBe('lc-1');
 
 		const free = draft.items.find((r) => r.kind === 'free');
 		expect(free?.freeItem?.description).toBe('Estuche rígido personalizado');
+
+		const ids = draft.items.map((r) => r.id);
+		expect(ids).not.toContain('p-row');
+		expect(ids).not.toContain('lens-row');
+		expect(ids).not.toContain('free-row');
+		expect(new Set(ids).size).toBe(3);
+	});
+
+	it('dos duplicados del mismo origen no comparten ids', () => {
+		const source = { quote, items: [item({ id: 'p-row' })] };
+		const a = quoteToWizardDraft(source);
+		const b = quoteToWizardDraft(source);
+		expect(a.items[0].id).not.toBe(b.items[0].id);
 	});
 
 	it('cuelga los tratamientos hijos bajo su lente padre', () => {
@@ -169,8 +189,12 @@ describe('quoteToWizardDraft', () => {
 		});
 
 		expect(draft.items).toHaveLength(2);
+		const lens = draft.items.find((r) => r.kind === 'lens');
 		const treatment = draft.items.find((r) => r.kind === 'treatment');
-		expect(treatment?.parentLensItemId).toBe('lens-1');
+		// Ids nuevos (no choca con quote_items_pkey) y el hijo apunta al lente nuevo.
+		expect(lens?.id).not.toBe('lens-1');
+		expect(treatment?.id).not.toBe('t-1');
+		expect(treatment?.parentLensItemId).toBe(lens?.id);
 		expect(treatment?.treatmentName).toBe('Blue cut');
 		// El tratamiento va inmediatamente después de su lente
 		expect(draft.items.indexOf(treatment!)).toBe(1);

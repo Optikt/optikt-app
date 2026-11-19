@@ -28,10 +28,8 @@
 	import QuoteAuditHistoryDrawer from '$lib/components/quotes/detail/QuoteAuditHistoryDrawer.svelte';
 	import QuoteConvertModal from '$lib/components/quotes/convert/QuoteConvertModal.svelte';
 	import EditSaleModal from '$lib/components/sales/EditSaleModal.svelte';
-	import {
-		classifyQuoteAuditEntry,
-		type QuoteAuditEvent
-	} from '$lib/components/quotes/detail/quoteAudit';
+	import { classifyQuoteAuditEntry } from '$lib/components/quotes/detail/quoteAudit';
+	import type { AuditEvent } from '$lib/utils/saleDetail';
 	import { cacheLensItem } from '$lib/components/sales/catalogCache.svelte';
 	import { computeSaleBreakdown } from '$lib/components/sales/detail/saleBreakdown';
 	import { formatQuoteNumber } from '$lib/components/quotes/list/quoteListDisplay';
@@ -51,6 +49,7 @@
 	let convertForceCustomer = $state(false);
 	let showEditDrawer = $state(false);
 	let showAuditDrawer = $state(false);
+	let expandedAuditEventId = $state<string | null>(null);
 	let actionLoading = $state(false);
 
 	let formattedQuoteNumber = $derived(formatQuoteNumber(quote.quoteNumber));
@@ -85,7 +84,7 @@
 	const subtotalNet = $derived(breakdown.subtotalNet);
 
 	// ── Historial ─────────────────────────────────────────────────────────
-	const auditEvents = $derived.by<QuoteAuditEvent[]>(() => {
+	const auditEvents = $derived.by<AuditEvent[]>(() => {
 		const ctx = {
 			sourceQuoteNumber: data.sourceQuoteNumber,
 			convertedOrderNumber: quote.convertedOrderNumber,
@@ -106,11 +105,11 @@
 					ctx
 				)
 			)
-			.filter((e): e is QuoteAuditEvent => e !== null);
+			.filter((e): e is AuditEvent => e !== null);
 	});
 
 	/** Evento de cancelación (aviso del estado cancelado). */
-	const cancelledEvent = $derived(auditEvents.find((e) => e.icon === 'cancel') ?? null);
+	const cancelledEvent = $derived(auditEvents.find((e) => e.kind === 'cancel') ?? null);
 
 	// Catálogo de cristales → cache compartida (meta de ítems, igual que ventas).
 	$effect(() => {
@@ -226,8 +225,8 @@
 				{#if cancelledEvent}
 					<span>
 						{formatDate(cancelledEvent.changedAt, { dateStyle: 'medium', timeStyle: 'short' })}
-						{#if cancelledEvent.detail}
-							· {cancelledEvent.detail}
+						{#if cancelledEvent.reason}
+							· {cancelledEvent.reason}
 						{/if}
 					</span>
 				{/if}
@@ -263,7 +262,7 @@
 				createdByName={quote.seller?.fullName}
 				createdAt={quote.createdAt}
 				onViewAll={(eventId) => {
-					void eventId;
+					expandedAuditEventId = eventId ?? null;
 					showAuditDrawer = true;
 				}}
 			/>
@@ -309,7 +308,13 @@
 <QuoteAuditHistoryDrawer
 	open={showAuditDrawer}
 	events={auditEvents}
-	onclose={() => (showAuditDrawer = false)}
+	createdBy={quote.seller?.fullName}
+	createdAt={quote.createdAt}
+	expandedEventId={expandedAuditEventId}
+	onclose={() => {
+		showAuditDrawer = false;
+		expandedAuditEventId = null;
+	}}
 />
 
 <ConfirmModal

@@ -328,7 +328,7 @@
 			<Copy class="h-4 w-4 shrink-0" />
 			<p class="flex-1 text-[14px]">
 				<b>Duplicando {formatQuoteNumber(fromQuote.quote.quoteNumber)}</b>
-				· {duplicateItemCount} artículos, fórmula y descuento copiados. Elige el cliente.
+				· {duplicateItemCount} artículos y descuento copiados. Elige el cliente y escribe la fórmula.
 			</p>
 			<button
 				type="button"

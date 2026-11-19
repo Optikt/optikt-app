@@ -1,34 +1,40 @@
 <script lang="ts">
+	import { setContext, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { untrack } from 'svelte';
+	import { getAppMainScroll } from '$lib/utils/scroll';
+	import { getErrorMessage } from '$lib/utils/errors';
+	import { logger } from '$lib/utils/logger';
 	import {
-		getErrorMessage,
-		logger,
+		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
 		saveReferrerParams,
 		setQueryParam
-	} from '$lib/utils';
+	} from '$lib/utils/urlState';
 	import { listQuotes, getQuoteStats, getQuoteFacets } from '$lib/remote/quotes/queries.remote';
 	import { cancelQuote } from '$lib/remote/quotes/lifecycle.remote';
-	import SaleListHeader from '$lib/components/sales/SaleListHeader.svelte';
-	import SaleFilterBar from '$lib/components/sales/SaleFilterBar.svelte';
-	import SaleStatusTabs from '$lib/components/sales/SaleStatusTabs.svelte';
-	import SaleFilterChips from '$lib/components/sales/SaleFilterChips.svelte';
-	import SaleListFooter from '$lib/components/sales/SaleListFooter.svelte';
-	import QuoteKpiCards from '$lib/components/quotes/list/QuoteKpiCards.svelte';
-	import QuotesListView from '$lib/components/quotes/list/QuotesListView.svelte';
-	import QuotesGridView from '$lib/components/quotes/list/QuotesGridView.svelte';
-	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import QuoteListDesktop from '$lib/components/quotes/list/QuoteListDesktop.svelte';
+	import QuoteListMobile from '$lib/components/quotes/list/QuoteListMobile.svelte';
+	import QuoteMobileOverlays from '$lib/components/quotes/list/QuoteMobileOverlays.svelte';
+	import SaleListSkeleton from '$lib/components/sales/SaleListSkeleton.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
-	import { FileText } from '@lucide/svelte';
+	import Fab from '$lib/components/ui/Fab.svelte';
+	import { persistListView } from '$lib/components/sales/listViewPreference';
+	import {
+		DEFAULT_SALE_LIST_VIEW,
+		SALE_DATE_PRESET_LABELS,
+		parseSaleListView,
+		type SaleListView
+	} from '$lib/components/sales/listParams';
+	import type { SaleFilterChip } from '$lib/components/sales/saleListContext';
 	import {
 		DEFAULT_QUOTE_LIST_PER_PAGE,
 		DEFAULT_QUOTE_LIST_SORT,
 		parseIsoDateOnly,
+		parseQuoteListPerPage,
 		parseQuoteListSort,
 		parseQuoteStatuses,
 		serializeQuoteStatuses,
@@ -37,10 +43,15 @@
 		type QuoteListSort,
 		type SaleDatePreset
 	} from '$lib/components/quotes/list/quoteListParams';
+	import {
+		QUOTE_LIST_KEY,
+		type QuoteListContext,
+		type QuoteListKpi,
+		type QuoteMobileUi
+	} from '$lib/components/quotes/list/quoteListContext';
 	import { formatQuoteNumber } from '$lib/components/quotes/list/quoteListDisplay';
 	import { canOperate } from '$lib/shared/enums';
 	import {
-		ALL_QUOTE_STATUSES,
 		QUOTE_STATUS_LABELS,
 		QuoteStatus,
 		type QuoteStatus as QuoteStatusType
@@ -50,51 +61,40 @@
 
 	// ── Datos iniciales (SSR) ────────────────────────────────────────────────
 	let { data } = $props();
-	const {
-		quotes: initialQuotes,
-		total: initialTotal,
-		selection: initialSelection,
-		page: initialPageNumber,
-		totalPages: initialTotalPages,
-		stats: initialStats,
-		sellers: initialSellers
-	} = untrack(() => data);
+	const initial = untrack(() => data);
 	const initialQuery = untrack(() => page.url.searchParams);
-
-	const initialPage = parsePageParam(initialQuery.get('page'));
-	const initialSearch = initialQuery.get('q') ?? '';
-	const initialStatuses = parseQuoteStatuses(initialQuery.get('status'));
-	const initialSeller = initialQuery.get('seller') ?? '';
 	const initialFrom = parseIsoDateOnly(initialQuery.get('from'));
 	const initialTo = parseIsoDateOnly(initialQuery.get('to'));
-	const initialSort = parseQuoteListSort(initialQuery.get('sort'));
-	const initialPer = Number.parseInt(initialQuery.get('per') ?? '', 10);
 
 	// ── Estado ───────────────────────────────────────────────────────────────
 	let quotesData = $state<PaginatedQuotes>({
-		quotes: initialQuotes,
-		total: initialTotal,
-		page: initialPageNumber,
-		perPage: [10, 25, 50].includes(initialPer) ? initialPer : DEFAULT_QUOTE_LIST_PER_PAGE,
-		totalPages: initialTotalPages,
-		selection: initialSelection
+		quotes: initial.quotes,
+		total: initial.total,
+		page: initial.page,
+		perPage: initial.perPage,
+		totalPages: initial.totalPages,
+		selection: initial.selection
 	});
-	/** Conteos por estado (pestañas), viene del loader y se refresca con cada fetch. */
-	let facets = $state<Record<string, number>>(untrack(() => data.facets) as Record<string, number>);
-	let stats = $state<QuoteStats>(initialStats);
-	let sellers = $state(initialSellers);
+	/** Conteos por estado (pestañas), del loader y refrescados con cada fetch. */
+	let facets = $state<Record<string, number>>(initial.facets as Record<string, number>);
+	let stats = $state<QuoteStats>(initial.stats);
+	const sellers = initial.sellers;
 	let loading = $state(false);
 
-	// Filtros (URL = fuente de verdad)
-	let search = $state(initialSearch);
-	let statuses = $state<QuoteStatusType[]>(initialStatuses);
-	let sellerId = $state(initialSeller);
+	// Filtros (URL = fuente de verdad). Vista: misma preferencia que ventas.
+	let view = $state<SaleListView>(
+		parseSaleListView(initialQuery.get('view')) ?? initial.preferredView ?? DEFAULT_SALE_LIST_VIEW
+	);
+	let search = $state(initialQuery.get('q') ?? '');
+	let statuses = $state<QuoteStatusType[]>(parseQuoteStatuses(initialQuery.get('status')));
+	let sellerId = $state(initialQuery.get('seller') ?? '');
 	let preset = $state<SaleDatePreset>(saleListDatePreset(initialFrom, initialTo, new Date()));
 	let from = $state(initialFrom);
 	let to = $state(initialTo);
-	let sort = $state(initialSort);
-	let per = $state([10, 25, 50].includes(initialPer) ? initialPer : DEFAULT_QUOTE_LIST_PER_PAGE);
-	let currentPage = $state(initialPage);
+	let sort = $state<QuoteListSort>(parseQuoteListSort(initialQuery.get('sort')));
+	let per = $state(parseQuoteListPerPage(initialQuery.get('per')));
+	let cashea = $state(parseBooleanParam(initialQuery.get('cashea')));
+	let currentPage = $state(parsePageParam(initialQuery.get('page')));
 
 	const canAct = $derived(canOperate(data.user.role));
 
@@ -103,42 +103,35 @@
 		replaceUrlSearch(page.url, (params) => {
 			setQueryParam(params, 'q', search.trim());
 			setQueryParam(params, 'status', serializeQuoteStatuses(statuses));
+			setQueryParam(params, 'cashea', cashea ? '1' : null);
 			setQueryParam(params, 'seller', sellerId);
 			setQueryParam(params, 'from', from);
 			setQueryParam(params, 'to', to);
 			setQueryParam(params, 'sort', sort === DEFAULT_QUOTE_LIST_SORT ? null : sort);
 			setQueryParam(params, 'per', per === DEFAULT_QUOTE_LIST_PER_PAGE ? null : per);
+			setQueryParam(params, 'view', view === DEFAULT_SALE_LIST_VIEW ? null : view);
 			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
 		});
 	}
 
 	// ── Fetch ────────────────────────────────────────────────────────────────
-	async function fetchQuotes(nextPage: number): Promise<void> {
+	async function fetchQuotes(nextPage: number, opts?: { scrollTop?: boolean }): Promise<void> {
 		currentPage = nextPage;
 		syncUrl(nextPage);
 		loading = true;
+		const filters = {
+			search: search.trim() || undefined,
+			statuses: statuses.length > 0 ? statuses : undefined,
+			isCashea: cashea || undefined,
+			sellerId: sellerId || undefined,
+			dateFrom: from ?? undefined,
+			dateTo: to ?? undefined
+		};
 		try {
 			const [list, newStats, newFacets] = await Promise.all([
-				listQuotes({
-					page: nextPage,
-					perPage: per,
-					search: search.trim() || undefined,
-					statuses: statuses.length > 0 ? statuses : undefined,
-					sellerId: sellerId || undefined,
-					dateFrom: from ?? undefined,
-					dateTo: to ?? undefined,
-					sort
-				}),
+				listQuotes({ ...filters, page: nextPage, perPage: per, sort }),
 				getQuoteStats({}),
-				getQuoteFacets({
-					page: 1,
-					perPage: 1,
-					search: search.trim() || undefined,
-					statuses: statuses.length > 0 ? statuses : undefined,
-					sellerId: sellerId || undefined,
-					dateFrom: from ?? undefined,
-					dateTo: to ?? undefined
-				})
+				getQuoteFacets({ ...filters, page: 1, perPage: 1 })
 			]);
 			quotesData = list;
 			stats = newStats;
@@ -148,6 +141,8 @@
 			toast.error(getErrorMessage(e, 'Error cargando presupuestos'));
 		} finally {
 			loading = false;
+			// Móvil: al cambiar de página, volver al inicio de la lista (como ventas).
+			if (opts?.scrollTop) getAppMainScroll()?.scrollTo({ top: 0 });
 		}
 	}
 
@@ -184,19 +179,15 @@
 		void fetchQuotes(1);
 	}
 
-	function handleSortChange(next: QuoteListSort): void {
-		sort = next;
-		void fetchQuotes(1);
-	}
-
-	function handlePerPageChange(next: number): void {
-		per = next;
+	function handleToggleCashea(): void {
+		cashea = !cashea;
 		void fetchQuotes(1);
 	}
 
 	function clearFilters(): void {
 		search = '';
 		statuses = [];
+		cashea = false;
 		sellerId = '';
 		preset = 'all';
 		from = null;
@@ -204,23 +195,19 @@
 		void fetchQuotes(1);
 	}
 
-	// ── Chips ────────────────────────────────────────────────────────────────
-	const PRESET_LABELS: Record<string, string> = {
-		today: 'Hoy',
-		'7d': 'Últimos 7 días',
-		month: 'Este mes',
+	// ── Chips (una sola fuente de verdad de "filtros activos") ───────────────
+	const PRESET_LABELS: Record<SaleDatePreset, string> = {
+		...SALE_DATE_PRESET_LABELS,
 		custom: 'Rango de fechas'
 	};
 
 	const chips = $derived.by(() => {
-		const list: { id: string; label: string; onRemove: () => void }[] = [];
-		for (const status of statuses) {
-			list.push({
-				id: `status:${status}`,
-				label: QUOTE_STATUS_LABELS[status],
-				onRemove: () => handleStatusesChange(statuses.filter((s) => s !== status))
-			});
-		}
+		const list: SaleFilterChip[] = statuses.map((status) => ({
+			id: `status:${status}`,
+			label: QUOTE_STATUS_LABELS[status],
+			onRemove: () => handleStatusesChange(statuses.filter((s) => s !== status))
+		}));
+		if (cashea) list.push({ id: 'cashea', label: 'Cashea', onRemove: handleToggleCashea });
 		if (sellerId) {
 			list.push({
 				id: 'seller',
@@ -239,7 +226,7 @@
 	});
 
 	// ── KPIs ─────────────────────────────────────────────────────────────────
-	function handleKpiSelect(kpi: 'open' | 'month' | 'converted'): void {
+	function handleKpiSelect(kpi: QuoteListKpi): void {
 		if (kpi === 'open') {
 			statuses = [QuoteStatus.DRAFT];
 			sort = 'total';
@@ -253,22 +240,17 @@
 		void fetchQuotes(1);
 	}
 
+	// ── Vista (preferencia por perfil, compartida con ventas) ────────────────
+	function handleViewChange(next: SaleListView): void {
+		if (next === view) return;
+		view = next;
+		syncUrl(currentPage);
+		void persistListView(next);
+	}
+
 	// ── Navegación / acciones ────────────────────────────────────────────────
-	function handleView(quote: QuoteWithRelations): void {
-		void goto(resolve(`/quotes/${quote.id}`));
-	}
-
-	function handleEdit(quote: QuoteWithRelations): void {
-		void goto(resolve(`/quotes/${quote.id}?action=edit`));
-	}
-
-	function handleDuplicate(quote: QuoteWithRelations): void {
-		void goto(resolve(`/quotes/new?from=${quote.id}`));
-	}
-
-	function handleConvert(quote: QuoteWithRelations): void {
-		void goto(resolve(`/quotes/${quote.id}?action=convert`));
-	}
+	const goQuote = (quote: QuoteWithRelations, suffix = '') =>
+		void goto(resolve(`/quotes/${quote.id}${suffix}`));
 
 	// ── Cancelación (modal en el listado) ────────────────────────────────────
 	let cancelTarget = $state<QuoteWithRelations | null>(null);
@@ -301,13 +283,130 @@
 		}
 	}
 
-	// ── Convertir desde el listado: navega al detalle con ?action=convert ────
-
-	beforeNavigate(({ to }) => {
-		const path = to?.url.pathname ?? '';
+	beforeNavigate(({ to: next }) => {
+		const path = next?.url.pathname ?? '';
 		if (path !== '/quotes' && path.startsWith('/quotes')) {
 			saveReferrerParams('/quotes');
 		}
+	});
+
+	// UI móvil (hojas): estado dueño de la página; los hijos lo tocan vía handlers.
+	let mobileUi = $state<QuoteMobileUi>({
+		filtersOpen: false,
+		actionsOpen: false,
+		actionsQuote: null
+	});
+
+	// ── Contexto compartido (escritorio y móvil consumen el mismo estado) ────
+	const ctx: QuoteListContext = {
+		get quotesData() {
+			return quotesData;
+		},
+		get facets() {
+			return facets;
+		},
+		get stats() {
+			return stats;
+		},
+		sellers,
+		get loading() {
+			return loading;
+		},
+		get view() {
+			return view;
+		},
+		get search() {
+			return search;
+		},
+		get statuses() {
+			return statuses;
+		},
+		get sellerId() {
+			return sellerId;
+		},
+		get preset() {
+			return preset;
+		},
+		get from() {
+			return from;
+		},
+		get to() {
+			return to;
+		},
+		get sort() {
+			return sort;
+		},
+		get cashea() {
+			return cashea;
+		},
+		get canAct() {
+			return canAct;
+		},
+		get chips() {
+			return chips;
+		},
+		get mobileUi() {
+			return mobileUi;
+		},
+		handlers: {
+			onSearch: handleSearch,
+			onStatusesChange: handleStatusesChange,
+			onSellerChange: handleSellerChange,
+			onPresetChange: handlePresetChange,
+			onRangeChange: handleRangeChange,
+			onToggleCashea: handleToggleCashea,
+			onSortChange: (next) => {
+				sort = next;
+				void fetchQuotes(1);
+			},
+			onPerPageChange: (next) => {
+				per = next;
+				void fetchQuotes(1);
+			},
+			onKpiSelect: handleKpiSelect,
+			onViewChange: handleViewChange,
+			onClearFilters: clearFilters,
+			onCreate: () => void goto(resolve('/quotes/new')),
+			onOpen: (quote) => goQuote(quote),
+			onEdit: (quote) => goQuote(quote, '?action=edit'),
+			onDuplicate: (quote) => void goto(resolve(`/quotes/new?from=${quote.id}`)),
+			onConvert: (quote) => goQuote(quote, '?action=convert'),
+			onCancelRequest: handleCancelRequest,
+			onPageChange: (next, opts) => void fetchQuotes(next, opts),
+			openMobileFilters: () => {
+				mobileUi.filtersOpen = true;
+			},
+			closeMobileFilters: () => {
+				mobileUi.filtersOpen = false;
+			},
+			openMobileActions: (quote) => {
+				mobileUi.actionsQuote = quote;
+				mobileUi.actionsOpen = true;
+			},
+			closeMobileActions: () => {
+				mobileUi.actionsOpen = false;
+				mobileUi.actionsQuote = null;
+			}
+		}
+	};
+	setContext(QUOTE_LIST_KEY, ctx);
+
+	// ── Detección de móvil (contenedor <700 px, mismo patrón que ventas) ─────
+	// El observer mide el WRAPPER sin padding variable (evita el loop de
+	// ResizeObserver). `null` = sin medir: esqueleto neutro, sin flash.
+	let pageEl = $state<HTMLElement | undefined>(undefined);
+	let isNarrow = $state<boolean | null>(null);
+
+	$effect(() => {
+		const target = pageEl;
+		if (!target) return;
+		const observer = new ResizeObserver((entries) => {
+			const width = entries[0]?.contentRect.width;
+			if (width === undefined) return;
+			isNarrow = width < 700;
+		});
+		observer.observe(target);
+		return () => observer.disconnect();
 	});
 </script>
 
@@ -316,138 +415,26 @@
 </svelte:head>
 
 <div
-	class="animate-rise @container mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-5 pt-3.5 pb-7 min-[1440px]:max-w-[1440px] min-[1920px]:max-w-[1600px] min-[2400px]:max-w-[1920px]"
+	bind:this={pageEl}
+	class="animate-rise @container mx-auto w-full max-w-[1280px] min-[1440px]:max-w-[1440px] min-[1920px]:max-w-[1600px] min-[2400px]:max-w-[1920px]"
 >
-	<SaleListHeader
-		totalCount={stats.total}
-		view="list"
-		canCreate={canAct}
-		onViewChange={() => undefined}
-		title="Presupuestos"
-		countNounOne="presupuesto registrado"
-		countNounMany="presupuestos registrados"
-		createLabel="Nuevo presupuesto"
-		onCreate={() => goto(resolve('/quotes/new'))}
-		showViewToggle={false}
-	/>
-
-	<QuoteKpiCards {stats} onSelect={handleKpiSelect} />
-
-	<section
-		class="flex flex-col gap-2.5 rounded-[var(--ds-radius-lg)] bg-white p-2.5 shadow-[var(--ds-shadow-sm)] lg:p-3"
-	>
-		<SaleFilterBar
-			{search}
-			{sellerId}
-			{sellers}
-			{preset}
-			{from}
-			{to}
-			{sort}
-			onSearch={handleSearch}
-			onSellerChange={handleSellerChange}
-			onPresetChange={handlePresetChange}
-			onRangeChange={handleRangeChange}
-			onSortChange={(next) => handleSortChange(next as QuoteListSort)}
-			searchPlaceholder="Buscar por cliente, vendedor o # de presupuesto…"
-			sortOptions={[
-				{ value: 'recent', label: 'Más recientes' },
-				{ value: 'total', label: 'Mayor total' },
-				{ value: 'expiring', label: 'Vencen primero' }
-			]}
-			ariaLabel="Buscar presupuestos"
-		/>
-
-		<SaleStatusTabs
-			statuses={ALL_QUOTE_STATUSES.filter((s) => s !== QuoteStatus.EXPIRED)}
-			labels={QUOTE_STATUS_LABELS}
-			counts={facets}
-			value={statuses}
-			onchange={(next) => handleStatusesChange(next as QuoteStatusType[])}
-			ariaLabel="Filtrar por estado"
-			allLabel="Todos"
-		/>
-
-		<SaleFilterChips {chips} onClear={clearFilters} />
-	</section>
-
-	<p class="sr-only" aria-live="polite">{quotesData.total} presupuestos</p>
-
-	<div
-		class="overflow-hidden rounded-[var(--ds-radius-lg)] bg-white shadow-[var(--ds-shadow-sm)] {loading &&
-		quotesData.quotes.length > 0
-			? 'pointer-events-none opacity-60'
-			: ''}"
-		aria-busy={loading}
-	>
-		{#if loading && quotesData.quotes.length === 0}
-			<div class="h-[38px] border-b border-outline-variant/70 bg-surface-container-low"></div>
-			{#each Array(7) as _, i (i)}
-				<div class="flex h-[58px] items-center gap-4 border-b border-outline-variant/40 px-3">
-					<div class="h-3 w-16 animate-pulse rounded bg-surface-container-high"></div>
-					<div class="h-3 w-40 animate-pulse rounded bg-surface-container-high"></div>
-					<div class="h-3 w-20 animate-pulse rounded bg-surface-container-high"></div>
-					<div class="h-3 w-16 animate-pulse rounded bg-surface-container-high"></div>
-					<div class="h-3 w-32 animate-pulse rounded bg-surface-container-high"></div>
-				</div>
-			{/each}
-		{:else if quotesData.quotes.length === 0}
-			{#snippet quoteIcon()}
-				<FileText class="h-10 w-10" />
-			{/snippet}
-			<div class="flex flex-col items-center px-4 py-10">
-				<EmptyState icon={quoteIcon} message="No se encontraron presupuestos" />
-				{#if chips.length > 0 || search.trim().length > 0}
-					<button
-						type="button"
-						onclick={clearFilters}
-						class="mt-3 inline-flex h-9 items-center rounded-[var(--ds-radius-md)] bg-brand-navy px-4 text-[13px] font-semibold text-white transition-colors hover:bg-brand-navy-dark"
-					>
-						Limpiar filtros
-					</button>
-				{/if}
-			</div>
+	<div class="flex flex-col gap-3 {isNarrow ? 'px-3 pt-3 pb-24' : 'px-5 pt-3.5 pb-7'}">
+		{#if isNarrow === null}
+			<SaleListSkeleton />
+		{:else if isNarrow}
+			<QuoteListMobile />
 		{:else}
-			<!-- Mobile: tarjetas (la tabla no cabe) -->
-			<div class="p-3 lg:hidden">
-				<QuotesGridView
-					quotes={quotesData.quotes}
-					canManage={canAct}
-					onOpen={handleView}
-					onEdit={handleEdit}
-					onDuplicate={handleDuplicate}
-					onConvert={handleConvert}
-					onCancel={handleCancelRequest}
-				/>
-			</div>
-			<div class="hidden lg:block">
-				<QuotesListView
-					quotes={quotesData.quotes}
-					canManage={canAct}
-					onOpen={handleView}
-					onEdit={handleEdit}
-					onDuplicate={handleDuplicate}
-					onConvert={handleConvert}
-					onCancel={handleCancelRequest}
-				/>
-			</div>
-
-			<SaleListFooter
-				page={quotesData.page}
-				perPage={quotesData.perPage}
-				total={quotesData.total}
-				totalPages={quotesData.totalPages}
-				selection={quotesData.selection}
-				showPerPage={true}
-				onPageChange={(next) => void fetchQuotes(next)}
-				onPerPageChange={handlePerPageChange}
-				unitNounOne="presupuesto"
-				unitNounMany="presupuestos"
-				selectionTooltip="Suma de los {quotesData.total} presupuestos que cumplen los filtros"
-			/>
+			<QuoteListDesktop />
 		{/if}
 	</div>
 </div>
+
+<!-- Hojas móviles y FAB: FUERA del contenedor (@container + fixed son incompatibles). -->
+{#if isNarrow}
+	<QuoteMobileOverlays />
+{/if}
+
+<Fab label="Nuevo presupuesto" href="/quotes/new" hidden={isNarrow !== true || !canAct} />
 
 {#if cancelTarget}
 	<ConfirmModal

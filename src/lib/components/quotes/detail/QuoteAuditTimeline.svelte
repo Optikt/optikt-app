@@ -1,14 +1,15 @@
 <script lang="ts">
-	import { ArrowRightLeft, CircleX, History, Pen, Plus } from '@lucide/svelte';
+	import { History } from '@lucide/svelte';
 	import AppBadge from '$lib/components/ui/badges/AppBadge.svelte';
-	import type { QuoteAuditEvent } from './quoteAudit';
+	import SaleAuditEvent from '$lib/components/sales/detail/SaleAuditEvent.svelte';
+	import type { AuditEvent } from '$lib/utils/saleDetail';
 	import { formatDate } from '$lib/utils';
 
 	interface Props {
-		events: QuoteAuditEvent[];
+		events: AuditEvent[];
 		createdByName?: string | null;
 		createdAt: string;
-		/** Abre el drawer; con un id abre ese evento. */
+		/** Abre el drawer; con un id abre ese evento expandido. */
 		onViewAll: (eventId?: string) => void;
 	}
 
@@ -37,42 +38,9 @@
 
 	<div class="pb-1">
 		{#if recentEvents.length > 0}
-			<ol class="space-y-3 px-4 pt-1 pb-3 text-[13px]">
-				{#each recentEvents as event (event.id)}
-					<li class="flex gap-2.5">
-						<span
-							class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-white {event.tone ===
-							'navy'
-								? 'bg-brand-navy'
-								: event.tone === 'blue'
-									? 'bg-brand-blue'
-									: event.tone === 'success'
-										? 'bg-success'
-										: 'bg-error'}"
-						>
-							{#if event.icon === 'plus'}
-								<Plus class="h-3 w-3" />
-							{:else if event.icon === 'pen'}
-								<Pen class="h-3 w-3" />
-							{:else if event.icon === 'convert'}
-								<ArrowRightLeft class="h-3 w-3" />
-							{:else}
-								<CircleX class="h-3 w-3" />
-							{/if}
-						</span>
-						<div class="min-w-0">
-							<b class="font-semibold">{event.title}</b>
-							<p class="text-on-surface-variant">
-								{event.changedByName ?? '—'} ·
-								{formatDate(event.changedAt, { dateStyle: 'medium', timeStyle: 'short' })}
-							</p>
-							{#if event.detail}
-								<p class="text-[12px] text-on-surface-variant">{event.detail}</p>
-							{/if}
-						</div>
-					</li>
-				{/each}
-			</ol>
+			{#each recentEvents as event (event.id)}
+				<SaleAuditEvent {event} dense onExpand={(id) => onViewAll(id)} />
+			{/each}
 		{:else}
 			<div class="px-4 pt-1 pb-3">
 				<p class="text-[10px] font-bold tracking-[0.14em] text-outline uppercase">Creado por</p>

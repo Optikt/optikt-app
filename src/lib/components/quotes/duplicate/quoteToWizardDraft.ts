@@ -1,8 +1,13 @@
 /**
  * Adapter de DUPLICAR: detalle del presupuesto → estado inicial del wizard de
- * ventas (D7). Se copian ítems (con fórmula por ítem y tratamientos hijos),
+ * ventas (D7). Se copian ítems (lente, producto, libre y tratamientos hijos),
  * descuento, Cashea y notas. Se resetean: cliente, fecha (hoy), validez
  * (vacía) y número (el wizard muestra el preview nuevo).
+ *
+ * Cada ítem recibe un id NUEVO: el presupuesto duplicado es independiente y
+ * reusar los ids del origen viola `quote_items_pkey`. La FÓRMULA no se copia
+ * (solo qué ojos aplican): el usuario la reescribe en el paso 2 para no
+ * arrastrar una graduación equivocada.
  */
 
 import type { QuoteItemWithDetails, QuoteWithRelations } from '$lib/server/db/queries/quotes/types';
@@ -26,31 +31,29 @@ export interface QuoteWizardDraft {
 	isCashea: boolean;
 }
 
+/** Ojo vacío: conserva si el ojo aplicaba, nunca los valores de la fórmula. */
 function eyeFromSnapshot(item: QuoteItemWithDetails, eye: 'od' | 'os'): LensEyeEntry {
-	const prefix = eye;
-	const sphere = item[`${prefix}Sphere` as 'odSphere' | 'osSphere'];
-	const cylinder = item[`${prefix}Cylinder` as 'odCylinder' | 'osCylinder'];
-	const axis = item[`${prefix}Axis` as 'odAxis' | 'osAxis'];
-	const addition = item[`${prefix}Addition` as 'odAddition' | 'osAddition'];
-	const altura = item[`${prefix}Altura` as 'odAltura' | 'osAltura'];
+	const sphere = item[`${eye}Sphere` as 'odSphere' | 'osSphere'];
+	const cylinder = item[`${eye}Cylinder` as 'odCylinder' | 'osCylinder'];
+	const axis = item[`${eye}Axis` as 'odAxis' | 'osAxis'];
+	const addition = item[`${eye}Addition` as 'odAddition' | 'osAddition'];
 	const hasValues = sphere != null || cylinder != null || axis != null || addition != null;
 
 	return {
 		enabled: hasValues,
-		prescription: {
-			sphere: sphere ?? null,
-			cylinder: cylinder ?? null,
-			axis: axis ?? null,
-			addition: addition ?? null
-		},
+		prescription: { sphere: null, cylinder: null, axis: null, addition: null },
 		dp: null,
 		np: null,
-		altura: altura ?? null
+		altura: null
 	};
 }
 
-/** Lente del presupuesto → fila de wizard (con fórmula por ojo, incluida altura). */
-function lensRow(item: QuoteItemWithDetails, lensCatalogItemId: string): LensSaleItemRow | null {
+/** Lente del presupuesto → fila de wizard (mismo cristal, fórmula en blanco). */
+function lensRow(
+	item: QuoteItemWithDetails,
+	lensCatalogItemId: string,
+	id: string
+): LensSaleItemRow | null {
 	const od = eyeFromSnapshot(item, 'od');
 	const oi = eyeFromSnapshot(item, 'os');
 	if (!od.enabled && !oi.enabled) return null;
@@ -64,7 +67,7 @@ function lensRow(item: QuoteItemWithDetails, lensCatalogItemId: string): LensSal
 	};
 
 	return {
-		id: item.id,
+		id,
 		kind: 'lens',
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null,
@@ -85,9 +88,9 @@ function lensRow(item: QuoteItemWithDetails, lensCatalogItemId: string): LensSal
 	};
 }
 
-function productRow(item: QuoteItemWithDetails, productId: string): ProductSaleItemRow {
+function productRow(item: QuoteItemWithDetails, productId: string, id: string): ProductSaleItemRow {
 	return {
-		id: item.id,
+		id,
 		kind: 'product',
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null,
@@ -100,10 +103,10 @@ function productRow(item: QuoteItemWithDetails, productId: string): ProductSaleI
 	};
 }
 
-function freeRow(item: QuoteItemWithDetails): FreeSaleItemRow | null {
+function freeRow(item: QuoteItemWithDetails, id: string): FreeSaleItemRow | null {
 	if (!item.freeDetails) return null;
 	return {
-		id: item.id,
+		id,
 		kind: 'free',
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null,
@@ -123,9 +126,13 @@ function freeRow(item: QuoteItemWithDetails): FreeSaleItemRow | null {
 	};
 }
 
-function treatmentRow(item: QuoteItemWithDetails, parentLensItemId: string): TreatmentSaleItemRow {
+function treatmentRow(
+	item: QuoteItemWithDetails,
+	parentLensItemId: string,
+	id: string
+): TreatmentSaleItemRow {
 	return {
-		id: item.id,
+		id,
 		kind: 'treatment',
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null,
@@ -146,41 +153,45 @@ function treatmentRow(item: QuoteItemWithDetails, parentLensItemId: string): Tre
 
 /**
  * `quoteToWizardDraft(detail)` → estado inicial del wizard de Nueva venta.
- * Los ítems conservan sus ids (relación padre-hijo de tratamientos intacta).
+ * Ids regenerados; la relación padre-hijo de tratamientos se remapea.
  */
 export function quoteToWizardDraft(detail: {
 	quote: QuoteWithRelations;
 	items: QuoteItemWithDetails[];
 }): QuoteWizardDraft {
 	const rows: SaleItemRow[] = [];
+	// id del origen → id nuevo (los tratamientos apuntan al lente por id)
+	const newIds = new Map(detail.items.map((i) => [i.id, crypto.randomUUID()]));
+	const idOf = (item: QuoteItemWithDetails) => newIds.get(item.id)!;
 
 	for (const item of detail.items) {
 		if (item.itemType === SaleItemType.TREATMENT) continue; // hijos: se cuelan en su lente
 		if (item.itemType === SaleItemType.LENS_PAIR && item.lensCatalogItemId) {
-			const lens = lensRow(item, item.lensCatalogItemId);
+			const lens = lensRow(item, item.lensCatalogItemId, idOf(item));
 			if (lens) {
 				rows.push(lens);
 				continue;
 			}
 		}
 		if (item.itemType === SaleItemType.FREE_ITEM) {
-			const free = freeRow(item);
+			const free = freeRow(item, idOf(item));
 			if (free) {
 				rows.push(free);
 				continue;
 			}
 		}
 		if (item.productId) {
-			rows.push(productRow(item, item.productId));
+			rows.push(productRow(item, item.productId, idOf(item)));
 		}
 	}
 
 	// Tratamientos hijos → filas de nivel superior (kind 'treatment') tras su lente padre
 	for (const item of detail.items) {
 		if (item.itemType !== SaleItemType.TREATMENT || !item.parentQuoteItemId) continue;
-		const parentIndex = rows.findIndex((r) => r.id === item.parentQuoteItemId);
-		if (parentIndex >= 0) {
-			rows.splice(parentIndex + 1, 0, treatmentRow(item, item.parentQuoteItemId));
+		const parentId = newIds.get(item.parentQuoteItemId);
+		const parentIndex = rows.findIndex((r) => r.id === parentId);
+		if (parentId && parentIndex >= 0) {
+			rows.splice(parentIndex + 1, 0, treatmentRow(item, parentId, idOf(item)));
 		}
 	}
 

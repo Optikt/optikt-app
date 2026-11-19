@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+	LIST_QUOTE_STATUSES,
+	parseQuoteListPerPage,
 	DEFAULT_QUOTE_LIST_SORT,
 	parseQuoteListSort,
 	parseQuoteStatuses,
@@ -55,5 +57,22 @@ describe('parseQuoteStatuses / serializeQuoteStatuses', () => {
 	it('ida y vuelta respeta el orden de las pestañas', () => {
 		const statuses = [QuoteStatus.DRAFT, QuoteStatus.CONVERTED, QuoteStatus.CANCELLED];
 		expect(parseQuoteStatuses(serializeQuoteStatuses(statuses))).toEqual(statuses);
+	});
+});
+
+describe('parseQuoteListPerPage', () => {
+	it('acepta 10/25/50 y cae al default con valores inválidos', () => {
+		expect(parseQuoteListPerPage('25')).toBe(25);
+		expect(parseQuoteListPerPage('50')).toBe(50);
+		expect(parseQuoteListPerPage('7')).toBe(10);
+		expect(parseQuoteListPerPage(null)).toBe(10);
+		expect(parseQuoteListPerPage('abc')).toBe(10);
+	});
+});
+
+describe('LIST_QUOTE_STATUSES', () => {
+	it('no incluye EXPIRED (la validez se calcula al leer)', () => {
+		expect(LIST_QUOTE_STATUSES).not.toContain(QuoteStatus.EXPIRED);
+		expect(LIST_QUOTE_STATUSES).toContain(QuoteStatus.DRAFT);
 	});
 });

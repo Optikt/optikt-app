@@ -1,31 +1,25 @@
 /**
  * Clasificación de eventos de auditoría del presupuesto (timeline del detalle).
- * Los eventos de `change_history` con entityType 'quote' se convierten en
- * eventos legibles: creado (+ duplicado de), editado (resumen del diff),
- * convertido (+ venta) y cancelado (+ motivo).
+ *
+ * Produce el MISMO `AuditEvent` que ventas para reusar su UI
+ * (`SaleAuditEvent`: artículos / datos / totales con antes → después). Eventos:
+ * creado (+ duplicado de / sin cliente), editado (diff `itemsDiff` que anexa
+ * `updateExistingQuoteCore`), convertido (+ venta) y cancelado (+ motivo).
  */
 
-export interface QuoteAuditEntry {
-	id: string;
-	action: string;
-	changes: Record<string, { old?: unknown; new?: unknown } | undefined> | null;
-	changedAt: string;
-	changedByName: string | null;
-	reason?: string | null;
-}
+import { countSaleAuditChanges } from '$lib/schemas/sales';
+import type { ChangeRecord as HistoryChangeRecord } from '$lib/components/history/display-utils';
+import {
+	buildAuditEvent,
+	extractSaleAuditDiff,
+	saleAuditTotalDelta,
+	type AuditEvent,
+	type ClassifiableAuditEntry
+} from '$lib/utils/saleDetail';
 
-export type QuoteAuditTone = 'navy' | 'blue' | 'success' | 'error';
-export type QuoteAuditIcon = 'plus' | 'pen' | 'convert' | 'cancel';
-
-export interface QuoteAuditEvent {
-	id: string;
-	title: string;
-	detail: string | null;
-	changedAt: string;
-	changedByName: string | null;
-	tone: QuoteAuditTone;
-	icon: QuoteAuditIcon;
-}
+export type QuoteAuditEntry = Omit<ClassifiableAuditEntry, 'entityType'> & {
+	entityType?: string;
+};
 
 export interface QuoteAuditContext {
 	/** Número del presupuesto origen si es duplicado ("Duplicado de P-0231"). */
@@ -38,108 +32,90 @@ export interface QuoteAuditContext {
 	createdWithoutCustomer: boolean;
 }
 
-function readField(
-	changes: QuoteAuditEntry['changes'],
-	key: string
-): { old?: unknown; new?: unknown } | undefined {
-	return changes?.[key];
+type FieldMap = Record<string, { old?: unknown; new?: unknown } | undefined>;
+
+function pad4(n: number): string {
+	return String(n).padStart(4, '0');
 }
 
-/** Resumen del diff de edición: campos tocados + Cashea explícito. */
-export function quoteEditSummary(changes: QuoteAuditEntry['changes']): string | null {
+/**
+ * Resumen corto de una edición SIN diff estructurado (eventos anteriores al
+ * `itemsDiff`): campos tocados + Cashea explícito.
+ */
+export function quoteEditSummary(changes: FieldMap | null): string | null {
 	if (!changes) return null;
 	const parts: string[] = [];
 
-	const cashea = readField(changes, 'isCashea');
+	const cashea = changes.isCashea;
 	if (cashea && cashea.new === true && cashea.old !== true) parts.push('Cashea activado');
 	else if (cashea && cashea.new !== true && cashea.old === true) parts.push('Cashea quitado');
 
-	if (readField(changes, 'customerId')) parts.push('Cliente');
-	if (readField(changes, 'discount') || readField(changes, 'discountType')) {
-		parts.push('Descuento');
-	}
-	if (readField(changes, 'validUntil')) parts.push('Validez');
-	if (readField(changes, 'notes')) parts.push('Nota');
-	if (
-		readField(changes, 'items') ||
-		readField(changes, 'subtotal') ||
-		readField(changes, 'total')
-	) {
-		parts.push('Ítems');
-	}
+	if (changes.customerId) parts.push('Cliente');
+	if (changes.discount || changes.discountType) parts.push('Descuento');
+	if (changes.validUntil) parts.push('Validez');
+	if (changes.notes) parts.push('Nota');
+	if (changes.items || changes.subtotal || changes.total) parts.push('Ítems');
 
 	return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 export function classifyQuoteAuditEntry(
-	entry: QuoteAuditEntry,
+	raw: QuoteAuditEntry,
 	ctx: QuoteAuditContext
-): QuoteAuditEvent | null {
+): AuditEvent | null {
+	const entry: ClassifiableAuditEntry = { ...raw, entityType: 'quote' };
+	const fields = (entry.changes ?? {}) as FieldMap;
+	const record = entry.changes as unknown as HistoryChangeRecord | null;
+	const hasChanges = Object.keys(fields).length > 0;
+
 	if (entry.action === 'create') {
-		return {
-			id: entry.id,
-			title: 'Presupuesto creado',
-			detail: ctx.sourceQuoteNumber
-				? `Duplicado de P-${String(ctx.sourceQuoteNumber).padStart(4, '0')}`
+		return buildAuditEvent(entry, {
+			label: 'Presupuesto creado',
+			kind: 'create',
+			note: ctx.sourceQuoteNumber
+				? `Duplicado de P-${pad4(ctx.sourceQuoteNumber)}`
 				: ctx.createdWithoutCustomer
 					? 'Sin cliente'
-					: null,
-			changedAt: entry.changedAt,
-			changedByName: entry.changedByName,
-			tone: 'navy',
-			icon: 'plus'
-		};
+					: null
+		});
 	}
 
 	if (entry.action !== 'update') return null;
 
-	const status = readField(entry.changes, 'status');
+	const status = fields.status;
 
 	if (status?.new === 'CONVERTED') {
-		return {
-			id: entry.id,
-			title: ctx.convertedOrderNumber
-				? `Convertido en venta #${String(ctx.convertedOrderNumber).padStart(4, '0')}`
+		return buildAuditEvent(entry, {
+			label: ctx.convertedOrderNumber
+				? `Convertido en venta #${pad4(ctx.convertedOrderNumber)}`
 				: 'Convertido en venta',
-			detail: ctx.quoteIsCashea ? 'Cashea activado' : null,
-			changedAt: entry.changedAt,
-			changedByName: entry.changedByName,
-			tone: 'success',
-			icon: 'convert'
-		};
+			kind: 'status',
+			note: ctx.quoteIsCashea ? 'Cashea activado' : null
+		});
 	}
 
 	if (status?.new === 'CANCELLED') {
-		return {
-			id: entry.id,
-			title: 'Presupuesto cancelado',
-			detail:
-				(entry.reason ?? (readField(entry.changes, 'cancellationReason')?.new as string)) || null,
-			changedAt: entry.changedAt,
-			changedByName: entry.changedByName,
-			tone: 'error',
-			icon: 'cancel'
-		};
+		const reason =
+			entry.reason ??
+			(typeof fields.cancellationReason?.new === 'string' ? fields.cancellationReason.new : null);
+		return buildAuditEvent(entry, {
+			label: 'Presupuesto cancelado',
+			kind: 'cancel',
+			reason: reason || null
+		});
 	}
 
-	// Edición normal (sin cambio de estado)
-	const summary = quoteEditSummary(entry.changes);
-	return {
-		id: entry.id,
-		title: 'Presupuesto editado',
-		detail: summary,
-		changedAt: entry.changedAt,
-		changedByName: entry.changedByName,
-		tone: 'blue',
-		icon: 'pen'
-	};
-}
-
-/** Filtro del drawer: Todos / Ediciones / Estados. */
-export type QuoteAuditFilter = 'all' | 'edits' | 'states';
-
-export function matchesQuoteAuditFilter(event: QuoteAuditEvent, filter: QuoteAuditFilter): boolean {
-	if (filter === 'all') return true;
-	if (filter === 'edits') return event.icon === 'pen';
-	return event.icon === 'convert' || event.icon === 'cancel';
+	// Edición normal (sin cambio de estado): diff estructurado como ventas.
+	const itemsDiff = extractSaleAuditDiff(entry.changes);
+	return buildAuditEvent(entry, {
+		label: fields.customerId ? 'Cliente actualizado' : 'Presupuesto editado',
+		kind: 'update',
+		changes: hasChanges ? record : null,
+		reason: entry.reason || null,
+		itemsDiff,
+		totalDelta: saleAuditTotalDelta(itemsDiff),
+		changeCount: itemsDiff ? countSaleAuditChanges(itemsDiff) : 0,
+		// Eventos viejos sin diff: resumen corto + filas campo a campo al expandir.
+		note: itemsDiff ? null : quoteEditSummary(fields)
+	});
 }
