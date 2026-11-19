@@ -1,7 +1,7 @@
 import { saleItemFreeDetails, saleItems } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
-import { resolveLensSnapshotCosts } from '$lib/remote/quotes/helpers';
+import { resolveLensSnapshotCosts } from '$lib/shared/saleItemCosts';
 import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 import { saleItemCommonValues, type SaleItemValueSource } from '$lib/shared/saleItemValues';
 

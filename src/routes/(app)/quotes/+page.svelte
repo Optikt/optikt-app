@@ -1,136 +1,412 @@
 <script lang="ts">
-	import {
-		Plus,
-		Search,
-		RotateCcw,
-		ClipboardList,
-		FileClock,
-		BadgeCheck,
-		CircleX
-	} from '@lucide/svelte';
+	import { setContext, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { PageHeader } from '$lib/components/ui';
+	import { getAppMainScroll } from '$lib/utils/scroll';
+	import { getErrorMessage } from '$lib/utils/errors';
+	import { logger } from '$lib/utils/logger';
 	import {
-		getErrorMessage,
-		logger,
+		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
 		saveReferrerParams,
 		setQueryParam
-	} from '$lib/utils';
-	import { listQuotes, getQuoteStats } from '$lib/remote/quotes/queries.remote';
-	import { QuotesTable } from '$lib/components/quotes';
+	} from '$lib/utils/urlState';
+	import { listQuotes, getQuoteStats, getQuoteFacets } from '$lib/remote/quotes/queries.remote';
+	import { cancelQuote } from '$lib/remote/quotes/lifecycle.remote';
+	import QuoteListDesktop from '$lib/components/quotes/list/QuoteListDesktop.svelte';
+	import QuoteListMobile from '$lib/components/quotes/list/QuoteListMobile.svelte';
+	import QuoteMobileOverlays from '$lib/components/quotes/list/QuoteMobileOverlays.svelte';
+	import SaleListSkeleton from '$lib/components/sales/SaleListSkeleton.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import Fab from '$lib/components/ui/Fab.svelte';
+	import { persistListView } from '$lib/components/sales/listViewPreference';
+	import {
+		DEFAULT_SALE_LIST_VIEW,
+		SALE_DATE_PRESET_LABELS,
+		parseSaleListView,
+		type SaleListView
+	} from '$lib/components/sales/listParams';
+	import type { SaleFilterChip } from '$lib/components/sales/saleListContext';
+	import {
+		DEFAULT_QUOTE_LIST_PER_PAGE,
+		DEFAULT_QUOTE_LIST_SORT,
+		parseIsoDateOnly,
+		parseQuoteListPerPage,
+		parseQuoteListSort,
+		parseQuoteStatuses,
+		serializeQuoteStatuses,
+		saleListDatePreset,
+		saleListPresetRange,
+		type QuoteListSort,
+		type SaleDatePreset
+	} from '$lib/components/quotes/list/quoteListParams';
+	import {
+		QUOTE_LIST_KEY,
+		type QuoteListContext,
+		type QuoteListKpi,
+		type QuoteMobileUi
+	} from '$lib/components/quotes/list/quoteListContext';
+	import { formatQuoteNumber } from '$lib/components/quotes/list/quoteListDisplay';
 	import { canOperate } from '$lib/shared/enums';
 	import {
-		ALL_QUOTE_STATUSES,
 		QUOTE_STATUS_LABELS,
-		type QuoteStatus
+		QuoteStatus,
+		type QuoteStatus as QuoteStatusType
 	} from '$lib/shared/contracts/quotes';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
+	import type { QuoteWithRelations, QuoteStats } from '$lib/server/db/queries/quotes/types';
 	import type { PaginatedQuotes } from '$lib/remote/quotes/queries.remote';
-	import type { QuoteStats } from '$lib/server/db/queries/quotes';
-	import { untrack } from 'svelte';
 
-	// Server data
+	// ── Datos iniciales (SSR) ────────────────────────────────────────────────
 	let { data } = $props();
-	let { initialQuotes, totalCount, stats: initialStats } = untrack(() => data);
+	const initial = untrack(() => data);
 	const initialQuery = untrack(() => page.url.searchParams);
-	const initialPage = parsePageParam(initialQuery.get('page'));
-	const initialSearch = initialQuery.get('q') ?? '';
-	const initialStatus = initialQuery.get('status');
+	const initialFrom = parseIsoDateOnly(initialQuery.get('from'));
+	const initialTo = parseIsoDateOnly(initialQuery.get('to'));
 
-	function parseQuoteStatus(value: string | null): QuoteStatus | '' {
-		if (!value) return '';
-		return ALL_QUOTE_STATUSES.includes(value as QuoteStatus) ? (value as QuoteStatus) : '';
-	}
-
-	// Data state
+	// ── Estado ───────────────────────────────────────────────────────────────
 	let quotesData = $state<PaginatedQuotes>({
-		quotes: initialQuotes,
-		total: totalCount,
-		page: initialPage,
-		perPage: 10,
-		totalPages: Math.ceil(totalCount / 10)
+		quotes: initial.quotes,
+		total: initial.total,
+		page: initial.page,
+		perPage: initial.perPage,
+		totalPages: initial.totalPages,
+		selection: initial.selection
 	});
-	let stats = $state<QuoteStats>(initialStats);
+	/** Conteos por estado (pestañas), del loader y refrescados con cada fetch. */
+	let facets = $state<Record<string, number>>(initial.facets as Record<string, number>);
+	let stats = $state<QuoteStats>(initial.stats);
+	const sellers = initial.sellers;
 	let loading = $state(false);
-	let canAct = $derived(canOperate(data.user.role));
 
-	// Filter state
-	let search = $state(initialSearch);
-	let statusFilter = $state<QuoteStatus | ''>(parseQuoteStatus(initialStatus));
+	// Filtros (URL = fuente de verdad). Vista: misma preferencia que ventas.
+	let view = $state<SaleListView>(
+		parseSaleListView(initialQuery.get('view')) ?? initial.preferredView ?? DEFAULT_SALE_LIST_VIEW
+	);
+	let search = $state(initialQuery.get('q') ?? '');
+	let statuses = $state<QuoteStatusType[]>(parseQuoteStatuses(initialQuery.get('status')));
+	let sellerId = $state(initialQuery.get('seller') ?? '');
+	let preset = $state<SaleDatePreset>(saleListDatePreset(initialFrom, initialTo, new Date()));
+	let from = $state(initialFrom);
+	let to = $state(initialTo);
+	let sort = $state<QuoteListSort>(parseQuoteListSort(initialQuery.get('sort')));
+	let per = $state(parseQuoteListPerPage(initialQuery.get('per')));
+	let cashea = $state(parseBooleanParam(initialQuery.get('cashea')));
+	let currentPage = $state(parsePageParam(initialQuery.get('page')));
 
+	const canAct = $derived(canOperate(data.user.role));
+
+	// ── URL ──────────────────────────────────────────────────────────────────
 	function syncUrl(nextPage: number): void {
 		replaceUrlSearch(page.url, (params) => {
 			setQueryParam(params, 'q', search.trim());
-			setQueryParam(params, 'status', statusFilter || null);
+			setQueryParam(params, 'status', serializeQuoteStatuses(statuses));
+			setQueryParam(params, 'cashea', cashea ? '1' : null);
+			setQueryParam(params, 'seller', sellerId);
+			setQueryParam(params, 'from', from);
+			setQueryParam(params, 'to', to);
+			setQueryParam(params, 'sort', sort === DEFAULT_QUOTE_LIST_SORT ? null : sort);
+			setQueryParam(params, 'per', per === DEFAULT_QUOTE_LIST_PER_PAGE ? null : per);
+			setQueryParam(params, 'view', view === DEFAULT_SALE_LIST_VIEW ? null : view);
 			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
 		});
 	}
 
-	// Fetch quotes
-	async function fetchQuotes(page = 1) {
-		syncUrl(page);
+	// ── Fetch ────────────────────────────────────────────────────────────────
+	async function fetchQuotes(nextPage: number, opts?: { scrollTop?: boolean }): Promise<void> {
+		currentPage = nextPage;
+		syncUrl(nextPage);
 		loading = true;
+		const filters = {
+			search: search.trim() || undefined,
+			statuses: statuses.length > 0 ? statuses : undefined,
+			isCashea: cashea || undefined,
+			sellerId: sellerId || undefined,
+			dateFrom: from ?? undefined,
+			dateTo: to ?? undefined
+		};
 		try {
-			quotesData = await listQuotes({
-				page,
-				perPage: 10,
-				search: search || undefined,
-				status: statusFilter || undefined
-			});
+			const [list, newStats, newFacets] = await Promise.all([
+				listQuotes({ ...filters, page: nextPage, perPage: per, sort }),
+				getQuoteStats({}),
+				getQuoteFacets({ ...filters, page: 1, perPage: 1 })
+			]);
+			quotesData = list;
+			stats = newStats;
+			facets = newFacets.counts as unknown as Record<string, number>;
 		} catch (e) {
+			logger.error('Error cargando presupuestos', e);
 			toast.error(getErrorMessage(e, 'Error cargando presupuestos'));
 		} finally {
 			loading = false;
+			// Móvil: al cambiar de página, volver al inicio de la lista (como ventas).
+			if (opts?.scrollTop) getAppMainScroll()?.scrollTo({ top: 0 });
 		}
 	}
 
-	async function refreshStats() {
-		try {
-			stats = await getQuoteStats({});
-		} catch (e) {
-			logger.error('Error cargando estadísticas de presupuestos', e);
-		}
-	}
-
-	// Debounced search
-	let searchTimeout: ReturnType<typeof setTimeout>;
-	function handleSearch() {
+	// ── Handlers de filtro ───────────────────────────────────────────────────
+	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
+	function handleSearch(value: string): void {
+		search = value;
 		clearTimeout(searchTimeout);
-		searchTimeout = setTimeout(() => fetchQuotes(1), 300);
+		searchTimeout = setTimeout(() => void fetchQuotes(1), 300);
 	}
 
-	// Filter change
-	function handleFilterChange() {
-		fetchQuotes(1);
+	function handleStatusesChange(next: QuoteStatusType[]): void {
+		statuses = next;
+		void fetchQuotes(1);
 	}
 
-	function clearFilters() {
+	function handleSellerChange(next: string): void {
+		sellerId = next;
+		void fetchQuotes(1);
+	}
+
+	function handlePresetChange(next: SaleDatePreset): void {
+		preset = next;
+		const range = saleListPresetRange(next, new Date());
+		from = range.from;
+		to = range.to;
+		void fetchQuotes(1);
+	}
+
+	function handleRangeChange(nextFrom: string | null, nextTo: string | null): void {
+		from = nextFrom;
+		to = nextTo;
+		preset = saleListDatePreset(nextFrom, nextTo, new Date());
+		void fetchQuotes(1);
+	}
+
+	function handleToggleCashea(): void {
+		cashea = !cashea;
+		void fetchQuotes(1);
+	}
+
+	function clearFilters(): void {
 		search = '';
-		statusFilter = '';
-		fetchQuotes(1);
+		statuses = [];
+		cashea = false;
+		sellerId = '';
+		preset = 'all';
+		from = null;
+		to = null;
+		void fetchQuotes(1);
 	}
 
-	let hasActiveFilters = $derived(search.trim().length > 0 || statusFilter !== '');
+	// ── Chips (una sola fuente de verdad de "filtros activos") ───────────────
+	const PRESET_LABELS: Record<SaleDatePreset, string> = {
+		...SALE_DATE_PRESET_LABELS,
+		custom: 'Rango de fechas'
+	};
 
-	// Navigate to quote detail page
-	function handleView(quote: QuoteWithRelations) {
-		goto(resolve(`/quotes/${quote.id}`));
+	const chips = $derived.by(() => {
+		const list: SaleFilterChip[] = statuses.map((status) => ({
+			id: `status:${status}`,
+			label: QUOTE_STATUS_LABELS[status],
+			onRemove: () => handleStatusesChange(statuses.filter((s) => s !== status))
+		}));
+		if (cashea) list.push({ id: 'cashea', label: 'Cashea', onRemove: handleToggleCashea });
+		if (sellerId) {
+			list.push({
+				id: 'seller',
+				label: `Vendedor: ${sellers.find((s) => s.id === sellerId)?.fullName ?? ''}`,
+				onRemove: () => handleSellerChange('')
+			});
+		}
+		if (preset !== 'all') {
+			list.push({
+				id: 'range',
+				label: PRESET_LABELS[preset] ?? 'Rango de fechas',
+				onRemove: () => handlePresetChange('all')
+			});
+		}
+		return list;
+	});
+
+	// ── KPIs ─────────────────────────────────────────────────────────────────
+	function handleKpiSelect(kpi: QuoteListKpi): void {
+		if (kpi === 'open') {
+			statuses = [QuoteStatus.DRAFT];
+			sort = 'total';
+		} else {
+			const range = saleListPresetRange('month', new Date());
+			preset = 'month';
+			from = range.from;
+			to = range.to;
+			if (kpi === 'converted') statuses = [QuoteStatus.CONVERTED];
+		}
+		void fetchQuotes(1);
 	}
 
-	function getViewHref(quote: QuoteWithRelations): `/quotes/${string}` {
-		return `/quotes/${quote.id}`;
+	// ── Vista (preferencia por perfil, compartida con ventas) ────────────────
+	function handleViewChange(next: SaleListView): void {
+		if (next === view) return;
+		view = next;
+		syncUrl(currentPage);
+		void persistListView(next);
 	}
 
-	beforeNavigate(({ to }) => {
-		const path = to?.url.pathname ?? '';
+	// ── Navegación / acciones ────────────────────────────────────────────────
+	const goQuote = (quote: QuoteWithRelations, suffix = '') =>
+		void goto(resolve(`/quotes/${quote.id}${suffix}`));
+
+	// ── Cancelación (modal en el listado) ────────────────────────────────────
+	let cancelTarget = $state<QuoteWithRelations | null>(null);
+	let cancelOpen = $state(false);
+	let cancelling = $state(false);
+
+	function handleCancelRequest(quote: QuoteWithRelations): void {
+		cancelTarget = quote;
+		cancelOpen = true;
+	}
+
+	async function handleCancelConfirm(): Promise<void> {
+		if (!cancelTarget) return;
+		cancelling = true;
+		try {
+			const result = await cancelQuote({ id: cancelTarget.id });
+			if (result.success) {
+				toast.success('Presupuesto cancelado');
+				cancelOpen = false;
+				cancelTarget = null;
+				await fetchQuotes(currentPage);
+			} else {
+				toast.error(result.error ?? 'Error cancelando presupuesto');
+			}
+		} catch (e) {
+			logger.error('Error cancelando presupuesto', e);
+			toast.error(getErrorMessage(e, 'Error cancelando presupuesto'));
+		} finally {
+			cancelling = false;
+		}
+	}
+
+	beforeNavigate(({ to: next }) => {
+		const path = next?.url.pathname ?? '';
 		if (path !== '/quotes' && path.startsWith('/quotes')) {
 			saveReferrerParams('/quotes');
 		}
+	});
+
+	// UI móvil (hojas): estado dueño de la página; los hijos lo tocan vía handlers.
+	let mobileUi = $state<QuoteMobileUi>({
+		filtersOpen: false,
+		actionsOpen: false,
+		actionsQuote: null
+	});
+
+	// ── Contexto compartido (escritorio y móvil consumen el mismo estado) ────
+	const ctx: QuoteListContext = {
+		get quotesData() {
+			return quotesData;
+		},
+		get facets() {
+			return facets;
+		},
+		get stats() {
+			return stats;
+		},
+		sellers,
+		get loading() {
+			return loading;
+		},
+		get view() {
+			return view;
+		},
+		get search() {
+			return search;
+		},
+		get statuses() {
+			return statuses;
+		},
+		get sellerId() {
+			return sellerId;
+		},
+		get preset() {
+			return preset;
+		},
+		get from() {
+			return from;
+		},
+		get to() {
+			return to;
+		},
+		get sort() {
+			return sort;
+		},
+		get cashea() {
+			return cashea;
+		},
+		get canAct() {
+			return canAct;
+		},
+		get chips() {
+			return chips;
+		},
+		get mobileUi() {
+			return mobileUi;
+		},
+		handlers: {
+			onSearch: handleSearch,
+			onStatusesChange: handleStatusesChange,
+			onSellerChange: handleSellerChange,
+			onPresetChange: handlePresetChange,
+			onRangeChange: handleRangeChange,
+			onToggleCashea: handleToggleCashea,
+			onSortChange: (next) => {
+				sort = next;
+				void fetchQuotes(1);
+			},
+			onPerPageChange: (next) => {
+				per = next;
+				void fetchQuotes(1);
+			},
+			onKpiSelect: handleKpiSelect,
+			onViewChange: handleViewChange,
+			onClearFilters: clearFilters,
+			onCreate: () => void goto(resolve('/quotes/new')),
+			onOpen: (quote) => goQuote(quote),
+			onEdit: (quote) => goQuote(quote, '?action=edit'),
+			onDuplicate: (quote) => void goto(resolve(`/quotes/new?from=${quote.id}`)),
+			onConvert: (quote) => goQuote(quote, '?action=convert'),
+			onCancelRequest: handleCancelRequest,
+			onPageChange: (next, opts) => void fetchQuotes(next, opts),
+			openMobileFilters: () => {
+				mobileUi.filtersOpen = true;
+			},
+			closeMobileFilters: () => {
+				mobileUi.filtersOpen = false;
+			},
+			openMobileActions: (quote) => {
+				mobileUi.actionsQuote = quote;
+				mobileUi.actionsOpen = true;
+			},
+			closeMobileActions: () => {
+				mobileUi.actionsOpen = false;
+				mobileUi.actionsQuote = null;
+			}
+		}
+	};
+	setContext(QUOTE_LIST_KEY, ctx);
+
+	// ── Detección de móvil (contenedor <700 px, mismo patrón que ventas) ─────
+	// El observer mide el WRAPPER sin padding variable (evita el loop de
+	// ResizeObserver). `null` = sin medir: esqueleto neutro, sin flash.
+	let pageEl = $state<HTMLElement | undefined>(undefined);
+	let isNarrow = $state<boolean | null>(null);
+
+	$effect(() => {
+		const target = pageEl;
+		if (!target) return;
+		const observer = new ResizeObserver((entries) => {
+			const width = entries[0]?.contentRect.width;
+			if (width === undefined) return;
+			isNarrow = width < 700;
+		});
+		observer.observe(target);
+		return () => observer.disconnect();
 	});
 </script>
 
@@ -138,136 +414,40 @@
 	<title>Presupuestos - Optikt</title>
 </svelte:head>
 
-<div class="p-8">
-	<PageHeader title="Presupuestos">
-		{#snippet actions()}
-			{#if canAct}
-				<button
-					onclick={() => goto(resolve('/quotes/new'))}
-					class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
-				>
-					<Plus size={18} />
-					NUEVO PRESUPUESTO
-				</button>
-			{/if}
-		{/snippet}
-	</PageHeader>
-
-	<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-		<div class="glass-card p-5">
-			<div class="mb-3 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-highest text-brand-navy"
-				>
-					<ClipboardList size={20} />
-				</div>
-				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-					Presupuestos Mensuales
-				</p>
-				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthly}</p>
-			</div>
-		</div>
-
-		<div class="glass-card p-5">
-			<div class="mb-3 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-container text-on-warning-container"
-				>
-					<FileClock size={20} />
-				</div>
-				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
-					Borradores
-				</p>
-				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.draft}</p>
-			</div>
-		</div>
-
-		<div class="glass-card p-5">
-			<div class="mb-3 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-info-container text-on-info-container"
-				>
-					<BadgeCheck size={20} />
-				</div>
-				<p class="text-xs font-semibold tracking-wider text-on-info-container uppercase">
-					Convertidos
-				</p>
-				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.converted}</p>
-			</div>
-		</div>
-
-		<div class="glass-card p-5">
-			<div class="mb-3 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container text-on-error-container"
-				>
-					<CircleX size={20} />
-				</div>
-				<p class="text-xs font-semibold tracking-wider text-on-error-container uppercase">
-					Cancelados
-				</p>
-				<p class="font-heading text-3xl font-bold text-error">{stats.cancelled}</p>
-			</div>
-		</div>
+<div
+	bind:this={pageEl}
+	class="animate-rise @container mx-auto w-full max-w-[1280px] min-[1440px]:max-w-[1440px] min-[1920px]:max-w-[1600px] min-[2400px]:max-w-[1920px]"
+>
+	<div class="flex flex-col gap-3 {isNarrow ? 'px-3 pt-3 pb-24' : 'px-5 pt-3.5 pb-7'}">
+		{#if isNarrow === null}
+			<SaleListSkeleton />
+		{:else if isNarrow}
+			<QuoteListMobile />
+		{:else}
+			<QuoteListDesktop />
+		{/if}
 	</div>
-
-	<div
-		class="glass-card mb-6 flex flex-col gap-4 bg-surface-container-low p-4 md:flex-row md:items-center"
-	>
-		<div class="relative flex-1">
-			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
-			<input
-				id="quotes-search"
-				name="quotes-search"
-				type="search"
-				bind:value={search}
-				oninput={handleSearch}
-				placeholder="Buscar por cliente, vendedor o # de presupuesto..."
-				class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-10 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
-			/>
-		</div>
-
-		<div class="flex w-full gap-3 md:w-auto">
-			<select
-				id="quotes-status-filter"
-				name="quotes-status-filter"
-				bind:value={statusFilter}
-				onchange={handleFilterChange}
-				class="min-w-[220px] flex-1 rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 md:flex-none"
-			>
-				<option value="">Todos los estados</option>
-				{#each ALL_QUOTE_STATUSES as s (s)}
-					<option value={s}>{QUOTE_STATUS_LABELS[s]}</option>
-				{/each}
-			</select>
-
-			<button
-				onclick={clearFilters}
-				disabled={!hasActiveFilters}
-				class="inline-flex h-[3rem] w-[3rem] items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
-					? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
-					: 'bg-surface-container-high text-outline'}"
-				title="Limpiar filtros"
-			>
-				<RotateCcw size={18} />
-			</button>
-		</div>
-	</div>
-
-	<QuotesTable
-		quotes={quotesData.quotes}
-		page={quotesData.page}
-		perPage={quotesData.perPage}
-		total={quotesData.total}
-		totalPages={quotesData.totalPages}
-		{loading}
-		canManage={canAct}
-		onView={handleView}
-		{getViewHref}
-		onRefresh={() => {
-			fetchQuotes(quotesData.page);
-			refreshStats();
-		}}
-		onPageChange={(page) => fetchQuotes(page)}
-	/>
 </div>
+
+<!-- Hojas móviles y FAB: FUERA del contenedor (@container + fixed son incompatibles). -->
+{#if isNarrow}
+	<QuoteMobileOverlays />
+{/if}
+
+<Fab label="Nuevo presupuesto" href="/quotes/new" hidden={isNarrow !== true || !canAct} />
+
+{#if cancelTarget}
+	<ConfirmModal
+		bind:open={cancelOpen}
+		title="Cancelar presupuesto"
+		message={`¿Está seguro que desea cancelar el presupuesto ${formatQuoteNumber(cancelTarget.quoteNumber)}? Esta acción no se puede deshacer.`}
+		confirmLabel="Cancelar presupuesto"
+		confirmColor="red"
+		loading={cancelling}
+		onConfirm={handleCancelConfirm}
+		onCancel={() => {
+			cancelOpen = false;
+			cancelTarget = null;
+		}}
+	/>
+{/if}

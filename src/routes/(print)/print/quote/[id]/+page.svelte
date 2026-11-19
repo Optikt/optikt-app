@@ -3,7 +3,7 @@
 	import ImagotipoHorizontal from '$lib/components/branding/ImagotipoHorizontal.svelte';
 	import { computeAdjustedTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
-	import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+	import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes/types';
 	import { untrack } from 'svelte';
 	import { computeDiscount, formatDate, formatPrice } from '$lib/utils';
 	import { computeTaxBreakdown, type TaxableItem } from '$lib/shared/tax';

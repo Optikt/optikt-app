@@ -70,3 +70,31 @@ export function computeSaleTotals(
 
 	return { rawSubtotal, subtotal, taxAmount, discount, total };
 }
+
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
+
+/**
+ * Línea de totales desde un ítem polimórfico de documento (venta o presupuesto).
+ * Fuente única (antes duplicada en remote/quotes/helpers y remote/sales/helpers).
+ * `isTaxable` default: solo PRODUCT es gravable — misma semántica de subtotal.
+ */
+export function toSaleTotalsLine(
+	item: {
+		unitPrice: number;
+		quantity: number;
+		discount: number;
+		discountType: string;
+		snapshotIsTaxable?: boolean | null;
+		itemType: string;
+	},
+	taxRate: number
+): SaleTotalsLine {
+	return {
+		unitPrice: item.unitPrice,
+		quantity: item.quantity,
+		discount: item.discount,
+		discountType: item.discountType,
+		isTaxable: item.snapshotIsTaxable ?? (item.itemType === SaleItemType.PRODUCT ? true : false),
+		taxRate
+	};
+}

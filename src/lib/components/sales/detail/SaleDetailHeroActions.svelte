@@ -326,64 +326,13 @@
 {/if}
 
 <style>
-	/* En móvil (<700 contenedor) las acciones viven en la barra inferior fija:
-	   se ocultan aquí para no duplicarlas (spec §6: sin acciones del hero en página). */
+	/* Los .hero-btn viven ahora en el CSS compartido del hero navy
+	   ($lib/components/layout/heroNavy.css) — reutilizados por el detalle de
+	   presupuesto. Aquí solo quedan los ajustes de las áreas. */
 	@container (max-width: 699px) {
 		.hero-acts,
 		.hero-hcta {
 			display: none;
-		}
-	}
-
-	/* Ghost actions over navy: stretch to fill the row (compact when the sidebar opens). */
-	:global(.hero-btn) {
-		height: 40px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		padding: 0 12px;
-		border: 1px solid rgba(255, 255, 255, 0.35);
-		border-radius: 8px;
-		background: transparent;
-		color: #fff;
-		font-size: 14px;
-		font-weight: 600;
-		white-space: nowrap;
-		transition:
-			background 0.15s var(--ds-ease-out),
-			transform 0.15s var(--ds-ease-out);
-	}
-
-	:global(.hero-btn:hover) {
-		background: rgba(255, 255, 255, 0.12);
-	}
-
-	:global(.hero-btn:active) {
-		transform: scale(0.97);
-	}
-
-	/* Primary variant: filled brand-blue (the utility class loses to .hero-btn's
-	   unlayered `background: transparent`, so the variant lives here too). */
-	:global(.hero-btn-primary) {
-		background: var(--color-brand-blue);
-		border-color: var(--color-brand-blue);
-		color: var(--color-brand-navy);
-	}
-
-	:global(.hero-btn-primary:hover) {
-		background: var(--color-brand-blue-light);
-		border-color: var(--color-brand-blue-light);
-	}
-
-	:global(.hero-btn:focus-visible) {
-		outline: 2px solid var(--color-brand-blue);
-		outline-offset: 2px;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		:global(.hero-btn) {
-			transition: none;
 		}
 	}
 </style>

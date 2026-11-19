@@ -125,7 +125,11 @@
 		}
 
 		clearTimeout(searchTimeout);
-		if (digits.length >= 1 && mode !== 'create') {
+		if (mode === 'create') {
+			// El documento se suele llenar DESPUÉS del nombre: sin esto el
+			// `newCustomer` que recibe el comando se queda sin idNumber.
+			syncNewCustomer();
+		} else if (digits.length >= 1) {
 			searching = true;
 			searchTimeout = setTimeout(() => void handleSearch(val), 600);
 		}

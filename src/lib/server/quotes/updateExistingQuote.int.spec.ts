@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { createNewQuoteCore } from './createNewQuote';
 import { updateExistingQuoteCore } from './updateExistingQuote';
 import { db } from '$lib/server/db';
-import { quoteItemFreeDetails, quoteItems } from '$lib/server/db/schema';
+import { changeHistory, quoteItemFreeDetails, quoteItems } from '$lib/server/db/schema';
 import { resetDb } from '$lib/testing/integration/db';
 import {
 	createMaterial,
@@ -15,6 +15,7 @@ import {
 import { DiscountType, UserRole } from '$lib/shared/enums';
 import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
+import { businessDateISO } from '$lib/shared/quotes/quoteValidity';
 import type { ActionContext } from '$lib/server/actionContext';
 import type { CreateQuoteInput, QuoteItemInput, UpdateQuoteInput } from '$lib/schemas/quotes';
 
@@ -52,6 +53,7 @@ describe('updateExistingQuoteCore', () => {
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotTaxRate: 16,
+			isCashea: false,
 			items: [item(product.id)]
 		};
 		const created = await createNewQuoteCore(createInput, ctx(seller.id));
@@ -103,6 +105,7 @@ describe('updateExistingQuoteCore', () => {
 				discount: 0,
 				discountType: DiscountType.FIXED,
 				snapshotTaxRate: 16,
+				isCashea: false,
 				items: [item(product.id)]
 			},
 			ctx(seller.id)
@@ -136,5 +139,154 @@ describe('updateExistingQuoteCore', () => {
 			.where(eq(quoteItemFreeDetails.quoteItemId, storedItems[0].id));
 		expect(storedItems).toHaveLength(1);
 		expect(details).toHaveLength(1);
+	});
+
+	it('updates isCashea and clears validUntil (D3/D4)', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		const created = await createNewQuoteCore(
+			{
+				quoteDate: '2026-09-15',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				isCashea: false,
+				validUntil: '2026-09-30',
+				items: [item(product.id)]
+			},
+			ctx(seller.id)
+		);
+		if (!created.success) throw new Error('quote was not created');
+		expect(created.quote.validUntil).toBeTruthy();
+
+		const update: UpdateQuoteInput = {
+			id: created.quote.id,
+			isCashea: true,
+			validUntil: null,
+			items: [item(product.id)]
+		};
+
+		const result = await updateExistingQuoteCore(update, ctx(seller.id));
+
+		expect(result.success).toBe(true);
+		if (!result.success) throw new Error('quote was not updated');
+		expect(result.quote.isCashea).toBe(true);
+		expect(result.quote.validUntil).toBeNull();
+	});
+	it('persiste quoteDate editado (día de negocio, no createdAt)', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		const created = await createNewQuoteCore(
+			{
+				quoteDate: '2026-09-15',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				isCashea: false,
+				items: [item(product.id)]
+			},
+			ctx(seller.id)
+		);
+		if (!created.success) throw new Error('quote was not created');
+
+		const result = await updateExistingQuoteCore(
+			{ id: created.quote.id, quoteDate: '2026-10-20', items: [item(product.id, 25)] },
+			ctx(seller.id)
+		);
+
+		expect(result.success).toBe(true);
+		if (!result.success) throw new Error('quote was not updated');
+		expect(businessDateISO(result.quote.quoteDate)).toBe('2026-10-20');
+	});
+
+	it('anexa el diff estructurado (itemsDiff) al evento de edición, como ventas', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		const created = await createNewQuoteCore(
+			{
+				quoteDate: '2026-09-15',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				isCashea: false,
+				items: [item(product.id)]
+			},
+			ctx(seller.id)
+		);
+		if (!created.success) throw new Error('quote was not created');
+		const [stored] = await db
+			.select()
+			.from(quoteItems)
+			.where(eq(quoteItems.quoteId, created.quote.id));
+
+		// Mismo ítem (id conservado) con otro precio + Cashea activado.
+		const result = await updateExistingQuoteCore(
+			{
+				id: created.quote.id,
+				isCashea: true,
+				items: [{ ...item(product.id, 35), id: stored.id }]
+			},
+			ctx(seller.id)
+		);
+		expect(result.success).toBe(true);
+
+		const events = await db
+			.select()
+			.from(changeHistory)
+			.where(
+				and(
+					eq(changeHistory.entityType, 'quote'),
+					eq(changeHistory.entityId, created.quote.id),
+					eq(changeHistory.action, 'update')
+				)
+			);
+		expect(events).toHaveLength(1);
+		const changes = events[0].changes as Record<string, { new?: unknown }>;
+		const diff = changes.itemsDiff?.new as {
+			items: { t: string }[];
+			header: { key: string; label: string }[];
+			totals: { label: string }[];
+		};
+		expect(diff.items.map((c) => c.t)).toEqual(['mod']);
+		expect(diff.header.find((h) => h.key === 'isCashea')).toBeTruthy();
+		expect(diff.totals.map((t) => t.label)).toContain('Total');
+	});
+
+	it('sin cambios reales no registra evento de edición', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		const created = await createNewQuoteCore(
+			{
+				quoteDate: '2026-09-15',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				isCashea: false,
+				items: [item(product.id)]
+			},
+			ctx(seller.id)
+		);
+		if (!created.success) throw new Error('quote was not created');
+		const [stored] = await db
+			.select()
+			.from(quoteItems)
+			.where(eq(quoteItems.quoteId, created.quote.id));
+
+		await updateExistingQuoteCore(
+			{ id: created.quote.id, items: [{ ...item(product.id), id: stored.id }] },
+			ctx(seller.id)
+		);
+
+		const events = await db
+			.select()
+			.from(changeHistory)
+			.where(
+				and(
+					eq(changeHistory.entityType, 'quote'),
+					eq(changeHistory.entityId, created.quote.id),
+					eq(changeHistory.action, 'update')
+				)
+			);
+		expect(events).toHaveLength(0);
 	});
 });

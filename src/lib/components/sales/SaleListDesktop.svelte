@@ -10,6 +10,7 @@
 	import SaleListFooter from './SaleListFooter.svelte';
 	import SaleListEmpty from './SaleListEmpty.svelte';
 	import { SALE_LIST_KEY, type SaleListContext } from './saleListContext';
+	import type { SaleListSort } from './listParams';
 
 	/**
 	 * Plantilla de escritorio del listado de ventas (≥700px de contenedor).
@@ -50,7 +51,7 @@
 		onPresetChange={ctx.handlers.onPresetChange}
 		onRangeChange={ctx.handlers.onRangeChange}
 		onToggle={ctx.handlers.onToggle}
-		onSortChange={ctx.handlers.onSortChange}
+		onSortChange={(next) => ctx.handlers.onSortChange(next as SaleListSort)}
 	/>
 
 	<SaleStatusTabs

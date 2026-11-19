@@ -8,12 +8,28 @@
 	import { calculateAge } from '$lib/dates';
 	import { customerInitials } from './saleDetail';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
-		customer: SaleWithRelations['customer'];
+		customer: SaleWithRelations['customer'] | QuoteCustomerLike;
+		/** Estado vacío alternativo (presupuestos sin cliente): reemplaza el "—". */
+		emptyState?: Snippet;
 	}
 
-	let { customer }: Props = $props();
+	interface QuoteCustomerLike {
+		id?: string;
+		firstName: string;
+		lastName: string;
+		idNumber?: string | null;
+		birthDate?: string | null;
+		primaryPhone?: string | null;
+		gender?: string | null;
+		address?: string | null;
+	}
+
+	let { customer, emptyState }: Props = $props();
+
+	const customerId = $derived(customer && 'id' in customer && customer.id ? customer.id : null);
 
 	const customerName = $derived(
 		customer ? `${customer.firstName} ${customer.lastName}` : 'Cliente no asignado'
@@ -48,7 +64,8 @@
 			{#snippet nameLink({ props }: { props: Record<string, unknown> })}
 				<a
 					{...props}
-					href={resolve(`/customers/${customer.id}`)}
+					href={customerId ? resolve(`/customers/${customerId}`) : undefined}
+					role={customerId ? undefined : 'presentation'}
 					class="font-heading inline-flex items-center gap-1.5 border-b border-dotted border-white/40 text-lg font-bold transition-colors hover:border-white"
 				>
 					{customerName}
@@ -115,6 +132,8 @@
 			{/if}
 		</div>
 	</div>
+{:else if emptyState}
+	{@render emptyState()}
 {:else}
 	<div
 		class="mb-2.5 flex items-center gap-3 rounded-xl border border-white/15 bg-white/[.07] px-3.5 py-2.5"

@@ -16,7 +16,7 @@
 		setQueryParam
 	} from '$lib/utils';
 	import { listSales, getSalesStats } from '$lib/remote/sales/queries.remote';
-	import { saveUserPreference } from '$lib/remote/users/preferences.remote';
+	import { persistListView } from '$lib/components/sales/listViewPreference';
 	import CancelSaleModal from '$lib/components/sales/CancelSaleModal.svelte';
 	import SaleListDesktop from '$lib/components/sales/SaleListDesktop.svelte';
 	import SaleListMobile from '$lib/components/sales/SaleListMobile.svelte';
@@ -319,26 +319,7 @@
 		if (next === view) return;
 		view = next;
 		syncUrl(currentPage);
-		void persistView(next);
-	}
-
-	/** ID fijo: el toast se actualiza en vez de apilarse (si ya cerró, se crea uno). */
-	const VIEW_TOAST_ID = 'sales.view.toast';
-
-	async function persistView(next: SaleListView): Promise<boolean> {
-		try {
-			await saveUserPreference({ key: 'sales.view', value: next });
-			const label = next === 'list' ? 'Lista' : 'Cuadros';
-			toast.success(`Vista «${label}» guardada en tu perfil`, { id: VIEW_TOAST_ID });
-			return true;
-		} catch (e) {
-			// La vista cambió igual; reintento silencioso (sin toast, sin error alarmante).
-			logger.error('No se pudo guardar la preferencia de vista', e);
-			setTimeout(() => {
-				void saveUserPreference({ key: 'sales.view', value: next }).catch(() => undefined);
-			}, 1500);
-			return false;
-		}
+		void persistListView(next);
 	}
 
 	// ── Navegación ───────────────────────────────────────────────────────────

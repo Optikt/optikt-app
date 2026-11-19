@@ -1,6 +1,6 @@
 import { quoteItems, quoteItemFreeDetails } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
-import { buildQuoteItemValues } from '$lib/remote/quotes/helpers';
+import { buildQuoteItemValues } from '$lib/server/quotes/quoteHelpers';
 import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 import type { QuoteItemInput } from '$lib/schemas/quotes';
 

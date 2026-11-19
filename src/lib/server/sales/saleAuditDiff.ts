@@ -44,6 +44,8 @@ export interface SaleAuditDiffContext {
 	afterHeader?: SaleAuditHeaderLike | null;
 	beforeTotals?: SaleAuditTotalsLike | null;
 	afterTotals?: SaleAuditTotalsLike | null;
+	/** Label of the date row in DATOS (quotes reuse the diff: «Fecha»). */
+	dateLabel?: string;
 }
 
 /** Re-exported for server callers (canonical home: `$lib/schemas/sales`). */
@@ -320,7 +322,8 @@ function fmtGlobalDiscount(
 
 function diffHeaders(
 	before: SaleAuditHeaderLike | null | undefined,
-	after: SaleAuditHeaderLike | null | undefined
+	after: SaleAuditHeaderLike | null | undefined,
+	dateLabel = 'Fecha de venta'
 ): SaleAuditDiff['header'] {
 	if (!before || !after) return [];
 	const header: SaleAuditDiff['header'] = [];
@@ -328,7 +331,7 @@ function diffHeaders(
 	const beforeDate = fmtSaleDate(before.saleDate);
 	const afterDate = fmtSaleDate(after.saleDate);
 	if (beforeDate !== afterDate) {
-		header.push({ key: 'saleDate', label: 'Fecha de venta', from: beforeDate, to: afterDate });
+		header.push({ key: 'saleDate', label: dateLabel, from: beforeDate, to: afterDate });
 	}
 	if (normText(before.notes) !== normText(after.notes)) {
 		header.push({
@@ -461,7 +464,7 @@ export function buildSaleAuditDiff(
 		}
 	}
 
-	const header = diffHeaders(context.beforeHeader, context.afterHeader);
+	const header = diffHeaders(context.beforeHeader, context.afterHeader, context.dateLabel);
 	const totals = diffTotals(context.beforeTotals, context.afterTotals);
 
 	return capDiff({ v: 1, items, header, totals });

@@ -1,30 +1,83 @@
 import type { PageServerLoad } from './$types';
-import { getAllQuotes, countQuotes, getQuoteStats } from '$lib/server/db/queries/quotes';
+import { z } from 'zod';
+import { requirePageRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
+import {
+	getAllQuotes,
+	countQuotes,
+	countQuotesByStatus,
+	sumQuotesForSelection,
+	getQuoteStats,
+	listQuoteSellers
+} from '$lib/server/db/queries/quotes/list';
+import { getUserPreference } from '$lib/server/db/queries/userPreferences';
 import { monthStart, toUTCString } from '$lib/dates';
-import { ALL_QUOTE_STATUSES, type QuoteStatus } from '$lib/shared/contracts/quotes';
+import { parseBooleanParam, parsePageParam } from '$lib/utils/urlState';
+import { LIST_VIEW_PREFERENCE_KEY, parseSaleListView } from '$lib/components/sales/listParams';
+import {
+	parseIsoDateOnly,
+	parseQuoteListPerPage,
+	parseQuoteListSort,
+	parseQuoteStatuses,
+	quoteListSortToOrder
+} from '$lib/components/quotes/list/quoteListParams';
 
-export const load: PageServerLoad = async ({ url }) => {
+/** Página del listado de presupuestos — misma estructura que /sales (KPIs, facetas, selección). */
+export const load: PageServerLoad = async ({ url, locals }) => {
+	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 	const searchParams = url.searchParams;
-	const rawPage = Number.parseInt(searchParams.get('page') ?? '1', 10);
-	const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
-	const perPage = 10;
-	const search = searchParams.get('q')?.trim() || undefined;
-	const rawStatus = searchParams.get('status');
-	const status =
-		rawStatus && ALL_QUOTE_STATUSES.includes(rawStatus as QuoteStatus)
-			? (rawStatus as QuoteStatus)
-			: undefined;
-	const offset = (page - 1) * perPage;
+	const page = parsePageParam(searchParams.get('page'));
+	const perPage = parseQuoteListPerPage(searchParams.get('per'));
 
-	const [initialQuotes, totalCount, stats] = await Promise.all([
-		getAllQuotes({ limit: perPage, offset, search, status }),
-		countQuotes({ search, status }),
-		getQuoteStats(toUTCString(monthStart()))
+	const search = searchParams.get('q')?.trim() || undefined;
+	const statuses = parseQuoteStatuses(searchParams.get('status'));
+	// Params no validados por Zod en el load: un seller inválido no debe romper la query.
+	const sellerRaw = searchParams.get('seller');
+	const sellerId = sellerRaw && z.uuid().safeParse(sellerRaw).success ? sellerRaw : undefined;
+	const dateFrom = parseIsoDateOnly(searchParams.get('from')) ?? undefined;
+	const dateTo = parseIsoDateOnly(searchParams.get('to')) ?? undefined;
+	const { orderBy, orderSort } = quoteListSortToOrder(parseQuoteListSort(searchParams.get('sort')));
+
+	const filters = {
+		statuses: statuses.length > 0 ? statuses : undefined,
+		sellerId,
+		dateFrom,
+		dateTo,
+		search,
+		isCashea: parseBooleanParam(searchParams.get('cashea')) || undefined
+	};
+
+	const [quotes, total, facets, selection, stats, sellers, rawView] = await Promise.all([
+		getAllQuotes({
+			...filters,
+			orderBy,
+			orderSort,
+			limit: perPage,
+			offset: (page - 1) * perPage
+		}),
+		countQuotes(filters),
+		countQuotesByStatus(filters),
+		sumQuotesForSelection(filters),
+		getQuoteStats(toUTCString(monthStart())),
+		listQuoteSellers(),
+		// Misma preferencia que ventas: la vista Lista/Cuadros es una sola por perfil.
+		locals.user
+			? getUserPreference(locals.user.id, LIST_VIEW_PREFERENCE_KEY)
+			: Promise.resolve(null)
 	]);
 
 	return {
-		initialQuotes,
-		totalCount,
-		stats
+		quotes,
+		total,
+		facets,
+		selection,
+		stats,
+		sellers,
+		page,
+		perPage,
+		totalPages: Math.max(1, Math.ceil(total / perPage)),
+		/** Preferencia guardada (`?view=` de la URL tiene prioridad en la página). */
+		preferredView: parseSaleListView(typeof rawView === 'string' ? rawView : null)
 	};
 };

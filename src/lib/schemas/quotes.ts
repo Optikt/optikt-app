@@ -30,11 +30,15 @@ const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]]
 
 export const ListQuotesSchema = ListPaginationSchema.extend({
 	status: z.enum(ALL_QUOTE_STATUSES).optional(),
+	statuses: z.array(z.enum(ALL_QUOTE_STATUSES)).max(5).optional(),
 	customerId: z.uuid().optional(),
 	sellerId: z.uuid().optional(),
 	dateFrom: z.iso.date().optional(),
 	dateTo: z.iso.date().optional(),
-	search: z.string().trim().optional()
+	search: z.string().trim().optional(),
+	isCashea: z.boolean().optional(),
+	/** Orden del listado (nuevos | mayor total | vencen primero). */
+	sort: z.enum(['recent', 'total', 'expiring']).optional()
 });
 
 // ============================================================================
@@ -116,6 +120,10 @@ export const CreateQuoteSchema = z.object({
 	discount: CoercedNumber.min(0).default(0),
 	discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 	snapshotTaxRate: CoercedNumber.min(0).default(DEFAULT_TAX_RATE),
+	/** Cashea en el presupuesto: se copia a la venta al convertir (D4). */
+	isCashea: z.boolean().default(false),
+	/** Presupuesto origen si es un duplicado (D7). */
+	sourceQuoteId: z.uuid().optional(),
 	validUntil: z.iso.date().optional(),
 	notes: z.string().optional(),
 	items: z.array(QuoteItemSchema).min(1, 'El presupuesto debe tener al menos un ítem')
@@ -128,9 +136,13 @@ export const CreateQuoteSchema = z.object({
 export const UpdateQuoteSchema = z.object({
 	id: z.uuid('ID de presupuesto inválido'),
 	customerId: z.uuid().optional().nullable(),
+	/** Fecha del presupuesto (YYYY-MM-DD): día del form + hora del submit, Caracas. */
+	quoteDate: z.iso.date().optional(),
 	discount: CoercedNumber.min(0).optional(),
 	discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
 	snapshotTaxRate: CoercedNumber.min(0).optional(),
+	/** Cashea en el presupuesto (toggle del drawer de edición). */
+	isCashea: z.boolean().optional(),
 	validUntil: z.iso.date().optional().nullable(),
 	notes: z.string().optional().nullable(),
 	items: z.array(QuoteItemSchema).min(1, 'El presupuesto debe tener al menos un ítem')
@@ -140,24 +152,27 @@ export const UpdateQuoteSchema = z.object({
 // STATUS TRANSITIONS
 // ============================================================================
 
-export const AssignQuoteCustomerSchema = z
-	.object({
-		id: z.uuid('ID de presupuesto inválido'),
-		customerId: z.uuid().optional(),
-		newCustomer: InlineCustomerSchema.optional()
-	})
-	.refine((data) => data.customerId || data.newCustomer, {
-		message: 'Debe indicar un cliente existente o los datos de uno nuevo'
-	});
-
 export const CancelQuoteSchema = z.object({
 	id: z.uuid('ID de presupuesto inválido'),
 	reason: z.string().optional()
 });
 
-export const ConvertQuoteSchema = z.object({
-	id: z.uuid('ID de presupuesto inválido')
-});
+/**
+ * Conversión DRAFT → venta (D5): cliente existente, cliente nuevo inline
+ * (se crea dentro de la tx) o el que ya tiene el presupuesto. Con ambos
+ * cliente explícitos se rechaza para evitar ambigüedad.
+ */
+export const ConvertQuoteSchema = z
+	.object({
+		id: z.uuid('ID de presupuesto inválido'),
+		customerId: z.uuid().optional(),
+		newCustomer: InlineCustomerSchema.optional(),
+		/** undefined → usa `quote.isCashea` (lo marcado en el presupuesto). */
+		isCashea: z.boolean().optional()
+	})
+	.refine((d) => !(d.customerId && d.newCustomer), {
+		message: 'Indica un cliente existente o uno nuevo, no ambos'
+	});
 
 export type ConvertQuoteInput = z.infer<typeof ConvertQuoteSchema>;
 

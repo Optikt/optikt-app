@@ -8,15 +8,14 @@ import { ListQuotesSchema, QuoteIdSchema } from '$lib/schemas/quotes';
 import {
 	getAllQuotes,
 	countQuotes,
-	getQuoteStats as getQuoteStatsQuery,
-	findQuoteByIdWithRelations,
-	getQuoteItemsWithDetails
-} from '$lib/server/db/queries/quotes';
-import type {
-	QuoteWithRelations,
-	QuoteItemWithDetails,
-	QuoteStats
-} from '$lib/server/db/queries/quotes';
+	countQuotesByStatus,
+	sumQuotesForSelection,
+	getQuoteStats as getQuoteStatsQuery
+} from '$lib/server/db/queries/quotes/list';
+import { getQuoteConversionPreview as getQuoteConversionPreviewQuery } from '$lib/server/db/queries/quotes/conversion';
+import type { QuoteWithRelations, QuoteStats } from '$lib/server/db/queries/quotes/types';
+import type { QuoteConversionPreview } from '$lib/shared/quotes/conversionPreview';
+import type { QuoteStatus } from '$lib/shared/contracts/quotes';
 
 import { monthStart, toUTCString } from '$lib/dates';
 
@@ -32,14 +31,15 @@ export interface PaginatedQuotes {
 	page: number;
 	perPage: number;
 	totalPages: number;
+	/** Suma de la selección completa (pie del listado). */
+	selection: { count: number; totalUsd: number };
 }
 
-export interface QuoteDetail {
-	quote: QuoteWithRelations;
-	items: QuoteItemWithDetails[];
+export interface QuoteFacets {
+	counts: Record<QuoteStatus, number>;
 }
 
-export type { QuoteStats } from '$lib/server/db/queries/quotes';
+export type { QuoteStats } from '$lib/server/db/queries/quotes/types';
 
 // ============================================================================
 // QUERIES
@@ -51,6 +51,16 @@ export const getQuoteStats = query(EmptySchema, async (): Promise<QuoteStats> =>
 	return getQuoteStatsQuery(toUTCString(monthStart()));
 });
 
+/** Preview de conversión (hero "Si se convierte hoy" + modal "Revisión"). */
+export const getQuoteConversionPreview = query(
+	QuoteIdSchema,
+	async (data): Promise<QuoteConversionPreview | null> => {
+		requireAuth();
+
+		return getQuoteConversionPreviewQuery(data.id);
+	}
+);
+
 /**
  * List quotes with pagination and filters
  */
@@ -61,37 +71,51 @@ export const listQuotes = query(ListQuotesSchema, async (data): Promise<Paginate
 
 	const filterOptions = {
 		status: data.status ?? undefined,
+		statuses: data.statuses ?? undefined,
 		customerId: data.customerId ?? undefined,
 		sellerId: data.sellerId ?? undefined,
 		dateFrom: data.dateFrom ?? undefined,
 		dateTo: data.dateTo ?? undefined,
-		search: data.search ?? undefined
+		search: data.search ?? undefined,
+		isCashea: data.isCashea ?? undefined
 	};
 
-	const [quotesPage, total] = await Promise.all([
+	const orderBy =
+		data.sort === 'total'
+			? { orderBy: 'total' as const, orderSort: 'desc' as const }
+			: data.sort === 'expiring'
+				? { orderBy: 'validUntil' as const, orderSort: 'asc' as const }
+				: { orderBy: 'quoteDate' as const, orderSort: 'desc' as const };
+
+	const [quotesPage, total, selection] = await Promise.all([
 		getAllQuotes({
 			...filterOptions,
+			...orderBy,
 			limit: perPage,
 			offset: (page - 1) * perPage
 		}),
-		countQuotes(filterOptions)
+		countQuotes(filterOptions),
+		sumQuotesForSelection(filterOptions)
 	]);
 
 	const totalPages = Math.ceil(total / perPage);
 
-	return { quotes: quotesPage, total, page, perPage, totalPages };
+	return { quotes: quotesPage, total, page, perPage, totalPages, selection };
 });
 
 /**
- * Get full quote detail (quote + items)
+ * Conteos por estado (pestañas del listado), respetando los demás filtros.
  */
-export const getQuoteDetail = query(QuoteIdSchema, async (data): Promise<QuoteDetail | null> => {
+export const getQuoteFacets = query(ListQuotesSchema, async (data): Promise<QuoteFacets> => {
 	requireAuth();
 
-	const quoteWithRelations = await findQuoteByIdWithRelations(data.id);
-	if (!quoteWithRelations) return null;
-
-	const items = await getQuoteItemsWithDetails(data.id);
-
-	return { quote: quoteWithRelations, items };
+	const counts = await countQuotesByStatus({
+		customerId: data.customerId ?? undefined,
+		sellerId: data.sellerId ?? undefined,
+		dateFrom: data.dateFrom ?? undefined,
+		dateTo: data.dateTo ?? undefined,
+		search: data.search ?? undefined,
+		isCashea: data.isCashea ?? undefined
+	});
+	return { counts };
 });

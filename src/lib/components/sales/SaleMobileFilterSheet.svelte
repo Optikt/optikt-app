@@ -7,14 +7,14 @@
 		SALE_LIST_SORT_OPTIONS,
 		SALE_LIST_TOGGLES,
 		type SaleDatePreset,
-		type SaleListSort,
 		type SaleListToggleKey
 	} from './listParams';
 
 	/**
 	 * Hoja inferior de filtros (móvil): vendedor, fecha, «mostrar solo» y orden.
 	 * Los cambios se aplican al instante (URL incluida, handlers del listado);
-	 * «Ver N ventas» solo cierra — el conteo es el `total` que ya devuelve `listSales`.
+	 * «Ver N ventas» solo cierra — el conteo es el `total` que ya devuelve el listado.
+	 * Compartida con presupuestos (opciones de orden/switches y unidad por props).
 	 * El estado de apertura vive en la página: cierre notificado vía `onclose`.
 	 */
 	interface Props {
@@ -24,8 +24,17 @@
 		preset: SaleDatePreset;
 		from: string | null;
 		to: string | null;
-		sort: SaleListSort;
+		sort: string;
 		toggles: Record<SaleListToggleKey, boolean>;
+		/** Generalización quotes: switches de «Mostrar solo» (vacío = sin sección). */
+		toggleOptions?: { key: SaleListToggleKey; label: string }[];
+		/** Generalización quotes: opciones de «Ordenar por». */
+		sortOptions?: { value: string; label: string }[];
+		/** Unidad del botón «Ver N …» (singular/plural). */
+		resultNounOne?: string;
+		resultNounMany?: string;
+		/** Prefijo de ids (dos listados no comparten ids en el DOM). */
+		idPrefix?: string;
 		/** Nº total de filtros activos (para «Limpiar (n)»). */
 		activeCount: number;
 		/** Cargando la página actual: «Ver … ventas» mientras tanto. */
@@ -36,7 +45,7 @@
 		onPresetChange: (preset: SaleDatePreset) => void;
 		onRangeChange: (from: string | null, to: string | null) => void;
 		onToggle: (key: SaleListToggleKey) => void;
-		onSortChange: (sort: SaleListSort) => void;
+		onSortChange: (sort: string) => void;
 		onClear: () => void;
 		onclose: () => void;
 	}
@@ -50,6 +59,11 @@
 		to,
 		sort,
 		toggles,
+		toggleOptions = SALE_LIST_TOGGLES,
+		sortOptions = SALE_LIST_SORT_OPTIONS,
+		resultNounOne = 'venta',
+		resultNounMany = 'ventas',
+		idPrefix = 'sales',
 		activeCount,
 		loading,
 		resultCount,
@@ -96,9 +110,9 @@
 		<p class="mt-1 text-[11px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
 			Vendedor
 		</p>
-		<label class="sr-only" for="sales-mobile-seller">Vendedor</label>
+		<label class="sr-only" for="{idPrefix}-mobile-seller">Vendedor</label>
 		<select
-			id="sales-mobile-seller"
+			id="{idPrefix}-mobile-seller"
 			value={sellerId}
 			onchange={handleSellerChange}
 			class="h-11 w-full rounded-[var(--ds-radius-md)] border border-outline-variant bg-white px-2.5 text-sm font-medium text-on-surface focus:border-brand-blue focus:outline-none"
@@ -145,10 +159,12 @@
 		{/if}
 
 		<!-- Mostrar solo -->
-		<p class="mt-2 text-[11px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
-			Mostrar solo
-		</p>
-		{#each SALE_LIST_TOGGLES as toggle (toggle.key)}
+		{#if toggleOptions.length > 0}
+			<p class="mt-2 text-[11px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
+				Mostrar solo
+			</p>
+		{/if}
+		{#each toggleOptions as toggle (toggle.key)}
 			<button
 				type="button"
 				role="switch"
@@ -180,7 +196,7 @@
 			Ordenar por
 		</p>
 		<div class="flex flex-wrap gap-2">
-			{#each SALE_LIST_SORT_OPTIONS as sortOption (sortOption.value)}
+			{#each sortOptions as sortOption (sortOption.value)}
 				<button
 					type="button"
 					aria-pressed={sort === sortOption.value}
@@ -210,7 +226,7 @@
 				class="flex h-11 flex-[2] items-center justify-center rounded-[var(--ds-radius-md)] bg-brand-navy text-sm font-bold text-white transition-colors hover:bg-brand-navy-dark"
 			>
 				Ver {loading ? '…' : resultCount}
-				{resultCount === 1 && !loading ? 'venta' : 'ventas'}
+				{resultCount === 1 && !loading ? resultNounOne : resultNounMany}
 			</button>
 		</div>
 	{/snippet}

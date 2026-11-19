@@ -51,6 +51,7 @@ describe('createNewQuoteCore', () => {
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotTaxRate: 16,
+			isCashea: false,
 			items: [item(product.id)]
 		};
 
@@ -72,6 +73,7 @@ describe('createNewQuoteCore', () => {
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotTaxRate: 16,
+			isCashea: false,
 			items: [item(product.id)]
 		};
 
@@ -98,6 +100,7 @@ describe('createNewQuoteCore', () => {
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotTaxRate: 16,
+			isCashea: false,
 			items: [item(product.id)]
 		};
 
@@ -122,6 +125,7 @@ describe('createNewQuoteCore', () => {
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotTaxRate: 16,
+			isCashea: false,
 			items: [
 				{
 					itemType: SaleItemType.TREATMENT,
@@ -158,6 +162,7 @@ describe('createNewQuoteCore', () => {
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			snapshotTaxRate: 16,
+			isCashea: false,
 			items: [freeItem]
 		};
 
@@ -175,5 +180,65 @@ describe('createNewQuoteCore', () => {
 			.where(eq(quoteItemFreeDetails.quoteItemId, storedItem.id));
 		expect(storedItem.itemType).toBe(SaleItemType.FREE_ITEM);
 		expect(details).toHaveLength(1);
+	});
+
+	it('stores isCashea and sourceQuoteId (duplicar)', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		// source_quote_id tiene FK a quotes(id): el origen debe existir. Se crea
+		// con el core (sequence) para no chocar con el número de la factory.
+		const source = await createNewQuoteCore(
+			{
+				quoteDate: '2026-09-14',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				isCashea: false,
+				items: [item(product.id)]
+			},
+			ctx(seller.id)
+		);
+		if (!source.success) throw new Error('source quote was not created');
+		const input: CreateQuoteInput = {
+			quoteDate: '2026-09-15',
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			snapshotTaxRate: 16,
+			isCashea: true,
+			sourceQuoteId: source.quote.id,
+			items: [item(product.id)]
+		};
+
+		const result = await createNewQuoteCore(input, ctx(seller.id));
+
+		expect(result.success).toBe(true);
+		if (!result.success) throw new Error('quote was not created');
+		expect(result.quote.isCashea).toBe(true);
+		expect(result.quote.sourceQuoteId).toBe(input.sourceQuoteId);
+	});
+
+	it('assigns unique growing quote numbers from the sequence under concurrency (D11)', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		const base = {
+			quoteDate: '2026-09-15',
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			snapshotTaxRate: 16,
+			isCashea: false
+		};
+
+		const results = await Promise.all(
+			[0, 1, 2, 3].map(() =>
+				createNewQuoteCore({ ...base, items: [item(product.id)] }, ctx(seller.id))
+			)
+		);
+
+		const numbers = results
+			.filter((r) => r.success)
+			.map((r) => (r.success ? r.quote.quoteNumber : 0));
+		expect(new Set(numbers).size).toBe(numbers.length);
+		// Crece: todos distintos y el máximo supera al mínimo en ≥ 3
+		expect(Math.max(...numbers) - Math.min(...numbers)).toBeGreaterThanOrEqual(3);
 	});
 });

@@ -10,13 +10,17 @@
 		perPage: number;
 		total: number;
 		totalPages: number;
-		selection: SalesSelectionSummary;
+		selection: SalesSelectionSummary | { totalUsd: number };
 		/** El selector "por página" solo aparece en la vista Lista (spec §6.4). */
 		showPerPage: boolean;
 		/** Móvil: resumen de selección plegable + paginación ‹ › sin números. */
 		narrow?: boolean;
 		onPageChange: (page: number) => void;
 		onPerPageChange: (perPage: number) => void;
+		/** Generalización quotes: unidad del contador y texto del tooltip. */
+		unitNounOne?: string;
+		unitNounMany?: string;
+		selectionTooltip?: string;
 	}
 
 	let {
@@ -28,8 +32,14 @@
 		showPerPage,
 		narrow = false,
 		onPageChange,
-		onPerPageChange
+		onPerPageChange,
+		unitNounOne = 'venta',
+		unitNounMany = 'ventas',
+		selectionTooltip = 'Suma de las {total} ventas que cumplen los filtros (sin canceladas)'
 	}: Props = $props();
+
+	const selectionBalance = $derived('balanceUsd' in selection ? selection.balanceUsd : undefined);
+	const selectionTooltipText = $derived(selectionTooltip.replace('{total}', String(total)));
 
 	const from = $derived((page - 1) * perPage + 1);
 	const to = $derived(Math.min(page * perPage, total));
@@ -50,7 +60,7 @@
 
 	// ── Móvil: resumen plegable ─────────────────────────────────────────────
 	let selectionOpen = $state(false);
-	const cobrado = $derived(selection.totalUsd - selection.balanceUsd);
+	const cobrado = $derived(selection.totalUsd - (selectionBalance ?? 0));
 </script>
 
 {#if narrow}
@@ -64,8 +74,8 @@
 		>
 			<span class="flex-1">
 				Selección · {total}
-				{total === 1 ? 'venta' : 'ventas'} · saldo
-				{formatPrice(selection.balanceUsd)}
+				{total === 1 ? unitNounOne : unitNounMany}{#if selectionBalance !== undefined}
+					· saldo {formatPrice(selectionBalance)}{/if}
 			</span>
 			{#if selectionOpen}
 				<ChevronUp class="h-4 w-4 shrink-0 text-on-surface-variant" />
@@ -83,22 +93,24 @@
 						{formatPrice(selection.totalUsd)}
 					</p>
 				</div>
-				<div class="rounded-[var(--ds-radius-md)] bg-surface-container-low p-2.5">
-					<p class="text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
-						Cobrado
-					</p>
-					<p class="font-heading mt-0.5 text-[14px] font-bold text-brand-navy tabular-nums">
-						{formatPrice(cobrado)}
-					</p>
-				</div>
-				<div class="rounded-[var(--ds-radius-md)] bg-surface-container-low p-2.5">
-					<p class="text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
-						Saldo
-					</p>
-					<p class="font-heading mt-0.5 text-[14px] font-bold text-warning tabular-nums">
-						{formatPrice(selection.balanceUsd)}
-					</p>
-				</div>
+				{#if selectionBalance !== undefined}
+					<div class="rounded-[var(--ds-radius-md)] bg-surface-container-low p-2.5">
+						<p class="text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
+							Cobrado
+						</p>
+						<p class="font-heading mt-0.5 text-[14px] font-bold text-brand-navy tabular-nums">
+							{formatPrice(cobrado)}
+						</p>
+					</div>
+					<div class="rounded-[var(--ds-radius-md)] bg-surface-container-low p-2.5">
+						<p class="text-[10px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
+							Saldo
+						</p>
+						<p class="font-heading mt-0.5 text-[14px] font-bold text-warning tabular-nums">
+							{formatPrice(selectionBalance)}
+						</p>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -107,7 +119,7 @@
 	<nav class="flex items-center gap-2" aria-label="Paginación">
 		<button
 			type="button"
-			class="flex h-[46px] flex-1 items-center justify-center gap-1 rounded-[var(--ds-radius-md)] border border-outline-variant bg-white text-[13px] font-bold transition-colors hover:bg-surface-container-low disabled:opacity-40"
+			class="flex h-[46px] flex-1 items-center justify-center gap-1 rounded-[var(--ds-radius-md)] border border-outline-variant bg-white text-[13px] font-bold transition-colors duration-150 disabled:cursor-default disabled:opacity-35"
 			disabled={page <= 1}
 			onclick={() => onPageChange(page - 1)}
 		>
@@ -118,7 +130,7 @@
 		</span>
 		<button
 			type="button"
-			class="flex h-[46px] flex-1 items-center justify-center gap-1 rounded-[var(--ds-radius-md)] border border-outline-variant bg-white text-[13px] font-bold transition-colors hover:bg-surface-container-low disabled:opacity-40"
+			class="flex h-[46px] flex-1 items-center justify-center gap-1 rounded-[var(--ds-radius-md)] border border-outline-variant bg-white text-[13px] font-bold transition-colors duration-150 disabled:cursor-default disabled:opacity-35"
 			disabled={page >= totalPages}
 			onclick={() => onPageChange(page + 1)}
 		>
@@ -135,19 +147,21 @@
 				<b class="font-semibold text-on-surface tabular-nums">{from}–{to}</b>
 				de
 				<b class="font-semibold text-on-surface tabular-nums">{total}</b>
-				ventas
+				{total === 1 ? unitNounOne : unitNounMany}
 			</p>
 
-			<TriggerTooltip text="Suma de las {total} ventas que cumplen los filtros (sin canceladas)">
+			<TriggerTooltip text={selectionTooltipText}>
 				{#snippet trigger({ props })}
 					<span {...props} class="cursor-default">
 						Selección: total <b class="font-semibold text-on-surface tabular-nums">
 							{formatPrice(selection.totalUsd)}
 						</b>
-						· saldo
-						<b class="font-semibold text-on-surface tabular-nums">
-							{formatPrice(selection.balanceUsd)}
-						</b>
+						{#if selectionBalance !== undefined}
+							· saldo
+							<b class="font-semibold text-on-surface tabular-nums">
+								{formatPrice(selectionBalance)}
+							</b>
+						{/if}
 					</span>
 				{/snippet}
 			</TriggerTooltip>

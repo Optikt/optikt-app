@@ -56,6 +56,11 @@ export const SALE_LIST_TOGGLES: { key: SaleListToggleKey; label: string }[] = [
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const DEFAULT_SALE_LIST_VIEW: SaleListView = 'list';
+/**
+ * Llave de `user_preferences` de la vista Lista/Cuadros. UNA sola para ventas
+ * y presupuestos: cambiar la vista en un listado la cambia en el otro.
+ */
+export const LIST_VIEW_PREFERENCE_KEY = 'sales.view';
 export const DEFAULT_SALE_LIST_SORT: SaleListSort = 'recent';
 export const DEFAULT_SALE_LIST_PER_PAGE = 10;
 

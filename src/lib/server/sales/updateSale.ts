@@ -1,4 +1,4 @@
-import { toSaleTotalsLine } from '$lib/remote/sales/helpers';
+import { toSaleTotalsLine } from '$lib/shared/saleTotals';
 import { findSaleById, getSalePrescription } from '$lib/server/db/queries/sales/reads';
 import type { Prescription, SaleItem } from '$lib/server/db/schema';
 import { findCustomerById } from '$lib/server/db/queries/customers';

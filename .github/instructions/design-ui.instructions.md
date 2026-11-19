@@ -60,6 +60,12 @@ Numbers, IDs, codes, timestamps → monospace. Use `tabular-nums` for alignment.
 
 `@lucide/svelte` — icons clarify, not decorate. If removing one loses no meaning, remove it.
 
+## Convenciones repo-wide (plan quotes-redesign)
+
+- **Botón de cierre (X) sobre fondo navy:** `bg-white/15 text-white ring-1 ring-white/30 hover:bg-white/25` — nunca el gris tenue (`text-[#c9d3ea]`) sobre navy. Aplica a headers de drawer/modal/hoja de ventas y presupuestos.
+- **Umbrales de layout (3 pantallas obligatorias):** móvil 390×844, oficina 1280×630 (Windows 1280×720 @150%) y ancho 2560×1300. Los umbrales son **container queries contra el contenedor de página** (`@container` en `.page`): `<700` móvil, `≥700` escritorio, `≥1500` escritorio ancho. Nunca media queries de viewport para el layout de la página. Anchos máximos: listado `max-w-[1280px] min-[1440px]:max-w-[1440px] min-[1920px]:max-w-[1600px] min-[2400px]:max-w-[1920px]`; detalle `max-width: 1760px`.
+- **Hero navy compartido:** el grid por áreas, franjas, `.hero-btn` y sus container queries viven en `$lib/components/layout/heroNavy.css` (importado por `SaleDetailHero` y `QuoteDetailHero`). Todas las reglas cuelgan de la clase raíz `.navy-hero` (la llevan ambos heroes) para que `.hero`, `.mon`, `.hl`, `.acts` no sean globales. Si se ajusta el hero, cambiar ese archivo — no copiar CSS por dominio.
+
 ### Animation
 
 - 150ms micro-interactions, 200-250ms larger transitions

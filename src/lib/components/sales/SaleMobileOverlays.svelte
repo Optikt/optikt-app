@@ -3,6 +3,7 @@
 	import SaleRowActionsSheet from './SaleRowActionsSheet.svelte';
 	import SaleMobileFilterSheet from './SaleMobileFilterSheet.svelte';
 	import { SALE_LIST_KEY, type SaleListContext } from './saleListContext';
+	import type { SaleListSort } from './listParams';
 
 	/**
 	 * Hojas móviles del listado (filtros + acciones del ⋯).
@@ -36,7 +37,7 @@
 	onPresetChange={ctx.handlers.onPresetChange}
 	onRangeChange={ctx.handlers.onRangeChange}
 	onToggle={ctx.handlers.onToggle}
-	onSortChange={ctx.handlers.onSortChange}
+	onSortChange={(next) => ctx.handlers.onSortChange(next as SaleListSort)}
 	onClear={ctx.handlers.onClearFilters}
 />
 

@@ -1,6 +1,4 @@
-import { getNextQuoteNumber } from '$lib/server/db/queries/quotes';
-import { db } from '$lib/server/db';
-import { quotes } from '$lib/server/db/schema';
+import { createQuote } from '$lib/server/db/queries/quotes/writes';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { auditService } from '$lib/server/audit';
@@ -9,12 +7,20 @@ import { computeDocumentTotals } from '$lib/server/documentTotals';
 import { createInlineCustomer, resolveCustomerReference } from '$lib/server/customerReference';
 import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { composeBusinessTimestamp, nowISO } from '$lib/dates';
+import { db } from '$lib/server/db';
 import type { CreateQuoteInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 
 /**
  * Create a new quote with items in a single transaction.
  * No stock changes - quotes are informational until converted.
+ *
+ * D11: el `quote_number` lo asigna la sequence de Postgres al insertar
+ * (`createQuote` hace `.returning()`); el preview del wizard es solo
+ * informativo y puede diferir con creaciones concurrentes.
+ *
+ * D4/D7: `isCashea` se marca al crear y `sourceQuoteId` registra el origen
+ * del duplicado.
  */
 export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionContext) {
 	// Validate customer if provided
@@ -42,7 +48,6 @@ export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionCont
 	// All writes in a single transaction
 	const quote = await db.transaction(async (tx) => {
 		const now = nowISO();
-		const quoteNumber = await getNextQuoteNumber(tx);
 
 		// Create new customer inside transaction if needed
 		let customerId: string | null = existingCustomerId;
@@ -50,11 +55,9 @@ export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionCont
 			customerId = (await createInlineCustomer(data.newCustomer, tx)).id;
 		}
 
-		const [newQuote] = await tx
-			.insert(quotes)
-			.values({
-				id: crypto.randomUUID(),
-				quoteNumber,
+		// La DB asigna el número vía sequence (default nextval) — ver D11.
+		const newQuote = await createQuote(
+			{
 				customerId: customerId,
 				sellerId: ctx.userId!,
 				quoteDate: composeBusinessTimestamp(data.quoteDate),
@@ -63,13 +66,16 @@ export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionCont
 				discount: data.discount,
 				discountType: data.discountType,
 				snapshotTaxRate: data.snapshotTaxRate,
+				isCashea: data.isCashea ?? false,
+				sourceQuoteId: data.sourceQuoteId ?? null,
 				total,
 				validUntil: data.validUntil ?? null,
 				notes: data.notes ?? null,
 				createdAt: now,
 				updatedAt: now
-			})
-			.returning();
+			},
+			tx
+		);
 
 		// Create quote items (no stock changes!)
 		await insertQuoteItems(tx, newQuote.id, data.items, now);

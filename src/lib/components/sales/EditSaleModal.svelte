@@ -1,20 +1,22 @@
 <script lang="ts">
-	import { SlideOver, ConfirmModal } from '$lib/components/ui';
+	import SlideOver from '$lib/components/ui/SlideOver.svelte';
+	import EditSaleDiscardConfirm from './editSale/EditSaleDiscardConfirm.svelte';
 	import { toast } from 'svelte-sonner';
-	import { updateSale } from '$lib/remote/sales/update.remote';
-	import { getErrorMessage, logger } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
+	import type {
+		QuoteItemWithDetails,
+		QuoteWithRelations
+	} from '$lib/server/db/queries/quotes/types';
 	import type { SupplierTreatment, Prescription } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
 	import { fly } from 'svelte/transition';
-
 	import EditSaleItemView from './editSale/EditSaleItemView.svelte';
 	import { fromISO } from '$lib/dates';
+	import { businessDateISO } from '$lib/shared/quotes/quoteValidity';
 	import { getCachedLensItem } from './catalogCache.svelte';
-	import { SALE_CAPABILITIES } from '$lib/components/documentEditor/types';
 	import EditSaleMetaBar from './editSale/EditSaleMetaBar.svelte';
 	import EditSaleItemsList from './editSale/EditSaleItemsList.svelte';
 	import { editorKindFor, type EditorKind } from './editSale/editSaleViews';
@@ -23,82 +25,81 @@
 	import { createPlaceholder, type AddItemKind } from './editSale/addItemKinds';
 	import {
 		applyLensEdit,
-		buildUpdateSalePayload,
 		existingItemToInput,
 		hasChangesForSale,
 		previewSubtotalForItems,
-		seedCatalogCacheForItems,
 		type EditableItem,
 		type EditLensTreatment
 	} from './editSaleDraft';
 	import { collectLensRangeWarnings } from './editSale/editSaleLensAdapter';
-	import { validateEditSale } from './editSaleValidation';
-
+	import {
+		quoteHasChanges,
+		quoteItemToEditable
+	} from '$lib/components/quotes/editQuote/quoteEditAdapter';
+	import { formatQuoteNumber } from '$lib/components/quotes/list/quoteListDisplay';
+	import { submitEditSale } from './editSale/submitEditSale';
+	import {
+		EMPTY_MEASURES,
+		measuresChanged,
+		measuresFromSeed,
+		removeEditableChild,
+		removeEditableItem,
+		restoreEditableItem,
+		seedCatalogCacheLogged,
+		validateEditModal,
+		type Measures
+	} from './editSale/editSaleModalHelpers';
 	interface Props {
 		open: boolean;
-		sale: SaleWithRelations;
-		items: SaleItemWithDetails[];
+		sale?: SaleWithRelations;
+		items?: SaleItemWithDetails[];
 		treatments: SupplierTreatment[];
 		/** Sale prescription row (DP / nasal measures source for lens pairs). */
 		prescription?: Prescription | null;
+		/** Adapter quote (D1): mutually exclusive with `sale`. */
+		quote?: QuoteWithRelations;
+		quoteItems?: QuoteItemWithDetails[];
 		onSuccess?: () => void;
 	}
 
 	let {
 		open = $bindable(),
 		sale,
-		items,
+		items = [],
 		treatments = [],
 		prescription = null,
+		quote,
+		quoteItems = [],
 		onSuccess
 	}: Props = $props();
+
+	/** Modo del drawer: 'sale' (default, cero regresión) | 'quote'. */
+	const mode = $derived(quote ? 'quote' : 'sale');
 
 	let saving = $state(false);
 	let submitError = $state('');
 	let confirmDiscard = $state(false);
 
-	// Clear the reason error as soon as the user types again.
+	// Measures de montaje (solo ventas) — helpers puros.
+	const seedMeasures = $derived(
+		prescription
+			? { dp: prescription.dp, npRight: prescription.npRight, npLeft: prescription.npLeft }
+			: null
+	);
+	let measures = $state<Measures>(untrack(() => measuresFromSeed(seedMeasures)));
+	const measuresChangedNow = $derived(
+		mode === 'quote' ? false : measuresChanged(measures, seedMeasures)
+	);
 
-	// ── Prescription measures (per-eye DP/DNP) — patched to the server save ─
-	function measuresFromSeed(): Measures {
-		return {
-			odDp: prescription?.dp ?? null,
-			osDp: prescription?.dp ?? null,
-			odDnp: prescription?.npRight ?? null,
-			osDnp: prescription?.npLeft ?? null
-		};
-	}
-
-	type Measures = {
-		odDp: number | null;
-		osDp: number | null;
-		odDnp: number | null;
-		osDnp: number | null;
-	};
-
-	let measures = $state<Measures>(measuresFromSeed());
-
-	const measuresChanged = $derived.by(() => {
-		const seed = {
-			dp: prescription?.dp ?? null,
-			npRight: prescription?.npRight ?? null,
-			npLeft: prescription?.npLeft ?? null
-		};
-		return (
-			measures.odDp !== seed.dp || measures.odDnp !== seed.npRight || measures.osDnp !== seed.npLeft
-		);
-	});
-
-	// ── Meta bar ────────────────────────────────────────────────────────────
 	let saleDate = $state('');
 	let notes = $state('');
 	let isCashea = $state(false);
+	/** Solo quotes: validez editable ('' = sin vencimiento). */
+	let validUntil = $state('');
 
-	// ── Order-level discount ────────────────────────────────────────────────
 	let discount = $state(0);
 	let discountType = $state<string>(DiscountType.FIXED);
 
-	// ── Reason (mandatory) ──────────────────────────────────────────────────
 	let reason = $state('');
 	let reasonError = $state('');
 
@@ -106,7 +107,6 @@
 		if (reason) reasonError = '';
 	});
 
-	// ── Editable items + item detail view ───────────────────────────────────
 	let editableItems = $state<EditableItem[]>([]);
 	let editingId = $state<string | null>(null);
 	let editorKind = $state<EditorKind | null>(null);
@@ -130,11 +130,25 @@
 			: fly(node, { x: 28, duration: 280, easing: cubicOut });
 	}
 
-	// ── Derived ─────────────────────────────────────────────────────────────
+	let originalQuoteItems = $state<QuoteItemWithDetails[]>([]);
+	let quoteChanges = $derived.by(() => {
+		if (mode !== 'quote' || !quote) return { changed: false, itemsChanged: false };
+		return quoteHasChanges(quote, originalQuoteItems, {
+			dateIso: saleDate,
+			validUntilIso: validUntil,
+			notes,
+			isCashea,
+			discount,
+			discountType,
+			items: editableItems
+		});
+	});
+
 	let hasChanges = $derived.by(() => {
+		if (mode === 'quote') return quoteChanges.changed;
 		return (
 			hasChangesForSale(
-				sale,
+				sale!,
 				saleDate,
 				notes,
 				discount,
@@ -142,7 +156,7 @@
 				isCashea,
 				editableItems,
 				items
-			) || measuresChanged
+			) || measuresChangedNow
 		);
 	});
 	let activeItems = $derived(editableItems.filter((item) => !item._removed));
@@ -154,27 +168,42 @@
 	let previewTotal = $derived(previewTotals.total);
 	let lensRangeWarnings = $derived(collectLensRangeWarnings(activeItems, getCachedLensItem));
 
-	// ── Seed state (mount + each open) ──────────────────────────────────────
 	function seedFromProps() {
-		saleDate = fromISO(sale.saleDate).toISOString().slice(0, 10);
-		notes = sale.notes ?? '';
-		isCashea = sale.isCashea ?? false;
-		discount = sale.discount;
-		discountType = sale.discountType;
-		reason = '';
-		reasonError = '';
 		submitError = '';
 		confirmDiscard = false;
-		editableItems = items.map(existingItemToInput);
-		measures = measuresFromSeed();
 		editingId = null;
 		editorKind = null;
 		creating = false;
 		view = 'list';
 		staggerRows = false;
-		void seedCatalogCacheForItems(items).catch((error) => {
-			logger.error('No se pudo cargar el catálogo de cristales de la venta', error);
-		});
+
+		if (mode === 'quote' && quote) {
+			// quoteDate (no createdAt): fecha editable del presupuesto, en día de negocio.
+			saleDate = businessDateISO(quote.quoteDate);
+			validUntil = quote.validUntil ? quote.validUntil.slice(0, 10) : '';
+			notes = quote.notes ?? '';
+			isCashea = quote.isCashea ?? false;
+			discount = quote.discount;
+			discountType = quote.discountType;
+			reason = '';
+			reasonError = '';
+			editableItems = quoteItems.map(quoteItemToEditable);
+			originalQuoteItems = quoteItems;
+			measures = { ...EMPTY_MEASURES };
+			seedCatalogCacheLogged(quoteItems, 'quote');
+			return;
+		}
+
+		saleDate = sale ? fromISO(sale.saleDate).toISOString().slice(0, 10) : '';
+		notes = sale?.notes ?? '';
+		isCashea = sale?.isCashea ?? false;
+		discount = sale?.discount ?? 0;
+		discountType = sale?.discountType ?? DiscountType.FIXED;
+		reason = '';
+		reasonError = '';
+		editableItems = items.map(existingItemToInput);
+		measures = measuresFromSeed(seedMeasures);
+		seedCatalogCacheLogged(items, 'sale');
 	}
 
 	$effect(() => {
@@ -182,7 +211,6 @@
 		untrack(() => seedFromProps());
 	});
 
-	// ── Scroll lock when open ───────────────────────────────────────────────
 	$effect(() => {
 		if (open) {
 			document.body.style.overflow = 'hidden';
@@ -191,8 +219,6 @@
 			document.body.style.overflow = '';
 		};
 	});
-
-	// ── Inline editor ───────────────────────────────────────────────────────
 
 	function closeEditor() {
 		if (creating && editingId) {
@@ -285,26 +311,9 @@
 		toast.success(wasNew ? 'Ítem libre agregado' : 'Ítem libre actualizado');
 	}
 
-	// ── Remove / restore item ─────────────────────────────────────────────────
-	/** Placeholders (no server id) vanish outright; persisted items stay restorable. */
 	function removeItem(item: EditableItem) {
-		const targetId = item.id;
-		if (!targetId) {
-			editableItems = editableItems.filter(
-				(existing) => existing !== item && existing.parentSaleItemId !== item.id
-			);
-			return;
-		}
-		item._removed = true;
-		if (item.itemType === SaleItemType.LENS_PAIR) {
-			for (const child of editableItems) {
-				if (child.parentSaleItemId === targetId) {
-					child._removed = true;
-				}
-			}
-		}
-		editableItems = [...editableItems];
-		if (editingId === targetId) {
+		editableItems = removeEditableItem(editableItems, item);
+		if (item.id && editingId === item.id) {
 			creating = false;
 			editingId = null;
 			editorKind = null;
@@ -313,34 +322,21 @@
 	}
 
 	function restoreItem(item: EditableItem) {
-		const targetId = item.id;
-		item._removed = false;
-		for (const child of editableItems) {
-			if (child.parentSaleItemId === targetId) {
-				child._removed = false;
-			}
-		}
-		editableItems = [...editableItems];
+		editableItems = restoreEditableItem(editableItems, item);
 	}
 
 	function removeChild(child: EditableItem) {
-		child._removed = true;
-		editableItems = [...editableItems];
+		editableItems = removeEditableChild(editableItems, child);
 	}
 
-	// ── Submit ───────────────────────────────────────────────────────────────
 	function validate(): boolean {
-		if (editingId) {
-			toast.error('Termina de editar el artículo abierto con «Hecho ✓».');
-			return false;
-		}
-		const result = validateEditSale(reason, activeItems, {
-			requireReason: SALE_CAPABILITIES.requiredReason
+		const result = validateEditModal({
+			editingId,
+			mode,
+			activeItems,
+			reason
 		});
 		reasonError = result.reasonError;
-		if (!result.valid && !reasonError) {
-			toast.error('La venta debe tener al menos un artículo');
-		}
 		return result.valid;
 	}
 
@@ -348,49 +344,60 @@
 		submitError = '';
 		if (!validate()) return;
 		saving = true;
-
-		const payload = buildUpdateSalePayload(sale, {
-			saleDate,
-			notes,
-			isCashea,
-			discount,
-			discountType,
-			reason,
-			removedCount,
-			activeItems,
-			originalItems: items,
-			prescription: {
-				dp: prescription?.dp ?? null,
-				npRight: prescription?.npRight ?? null,
-				npLeft: prescription?.npLeft ?? null
-			},
-			prescriptionPatch: {
-				dp: measures.odDp,
-				npRight: measures.odDnp,
-				npLeft: measures.osDnp
-			}
-		});
-
 		try {
-			const result = await updateSale(payload);
-			if (result.success) {
-				toast.success('Venta actualizada');
+			const error = await submitEditSale(
+				mode === 'quote' && quote
+					? {
+							mode: 'quote',
+							quote,
+							draft: {
+								dateIso: saleDate,
+								validUntilIso: validUntil,
+								notes,
+								isCashea,
+								discount,
+								discountType,
+								items: editableItems
+							}
+						}
+					: {
+							mode: 'sale',
+							sale: sale!,
+							originalItems: items,
+							draft: {
+								saleDate,
+								notes,
+								isCashea,
+								discount,
+								discountType,
+								reason,
+								removedCount,
+								activeItems,
+								originalItems: items,
+								prescription: {
+									dp: prescription?.dp ?? null,
+									npRight: prescription?.npRight ?? null,
+									npLeft: prescription?.npLeft ?? null
+								},
+								prescriptionPatch: {
+									dp: measures.odDp,
+									npRight: measures.odDnp,
+									npLeft: measures.osDnp
+								}
+							}
+						}
+			);
+			submitError = error ?? '';
+			if (error === null) {
 				confirmDiscard = false;
 				open = false;
 				onSuccess?.();
-			} else {
-				submitError = result.error ?? 'Error actualizando venta';
-				toast.error(submitError);
 			}
-		} catch (e) {
-			submitError = getErrorMessage(e, 'Error actualizando venta');
-			toast.error(submitError);
 		} finally {
 			saving = false;
 		}
 	}
 
-	// ── Close guarding ───────────────────────────────────────────────────────
 	function guardClose(): boolean {
 		if (saving) return false;
 		if (!hasChanges) return true;
@@ -419,15 +426,31 @@
 	bodyClass="p-0 bg-surface-drawer"
 >
 	{#snippet header({ onclose })}
-		<EditSaleModalHeader
-			orderNumber={sale.orderNumber}
-			customer={sale.customer}
-			bind:isCashea
-			{saving}
-			onClose={onclose}
-		/>
-		{#if view === 'list'}
-			<EditSaleMetaBar bind:saleDate bind:notes />
+		{#if mode === 'quote' && quote}
+			<EditSaleModalHeader
+				orderNumber={0}
+				numberLabel={formatQuoteNumber(quote.quoteNumber)}
+				title="Modificar presupuesto"
+				entityNoun="presupuesto"
+				customer={quote.customer}
+				bind:isCashea
+				{saving}
+				onClose={onclose}
+			/>
+			{#if view === 'list'}
+				<EditSaleMetaBar bind:saleDate bind:notes bind:validUntil showValidUntil={true} />
+			{/if}
+		{:else if sale}
+			<EditSaleModalHeader
+				orderNumber={sale.orderNumber}
+				customer={sale.customer}
+				bind:isCashea
+				{saving}
+				onClose={onclose}
+			/>
+			{#if view === 'list'}
+				<EditSaleMetaBar bind:saleDate bind:notes />
+			{/if}
 		{/if}
 	{/snippet}
 
@@ -479,6 +502,8 @@
 			{hasChanges}
 			hasItems={activeItems.length > 0}
 			editing={view === 'editor'}
+			requireReason={mode === 'sale'}
+			saveTooltipOverride={mode === 'quote' ? 'Guardar los cambios del presupuesto' : undefined}
 			onClose={() => {
 				if (guardClose()) open = false;
 			}}
@@ -487,13 +512,9 @@
 	{/snippet}
 </SlideOver>
 
-<ConfirmModal
+<EditSaleDiscardConfirm
 	bind:open={confirmDiscard}
-	title="Descartar cambios"
-	message="Tienes cambios sin guardar en esta venta. Si cierras ahora se perderán."
-	confirmLabel="Descartar y cerrar"
-	cancelLabel="Seguir editando"
-	confirmColor="red"
+	{mode}
 	onConfirm={discardAndClose}
 	onCancel={() => (confirmDiscard = false)}
 />

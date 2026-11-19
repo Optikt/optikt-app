@@ -4,7 +4,7 @@ import {
 	CreateQuoteSchema,
 	UpdateQuoteSchema,
 	ListQuotesSchema,
-	AssignQuoteCustomerSchema
+	ConvertQuoteSchema
 } from '$lib/schemas/quotes';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { DiscountType } from '$lib/shared/enums';
@@ -305,36 +305,46 @@ describe('UpdateQuoteSchema', () => {
 	});
 });
 
-// ── AssignQuoteCustomerSchema ────────────────────────────────────────────
+// ── ConvertQuoteSchema ───────────────────────────────────────────────────
 
-describe('AssignQuoteCustomerSchema', () => {
+describe('ConvertQuoteSchema', () => {
 	it('accepts with existing customerId', () => {
-		const result = AssignQuoteCustomerSchema.safeParse({
+		const result = ConvertQuoteSchema.safeParse({
 			id: crypto.randomUUID(),
 			customerId: crypto.randomUUID()
 		});
 		expect(result.success).toBe(true);
 	});
 
-	it('accepts with newCustomer data', () => {
-		const result = AssignQuoteCustomerSchema.safeParse({
+	it('accepts with newCustomer inline data', () => {
+		const result = ConvertQuoteSchema.safeParse({
 			id: crypto.randomUUID(),
 			newCustomer: { firstName: 'Ana', lastName: 'Pérez', idNumber: 'V-12345678' }
 		});
 		expect(result.success).toBe(true);
 	});
 
-	it('rejects when neither customerId nor newCustomer provided', () => {
-		const result = AssignQuoteCustomerSchema.safeParse({
-			id: crypto.randomUUID()
+	it('accepts with only the id (usa el cliente del presupuesto)', () => {
+		const result = ConvertQuoteSchema.safeParse({ id: crypto.randomUUID() });
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts isCashea override', () => {
+		const result = ConvertQuoteSchema.safeParse({ id: crypto.randomUUID(), isCashea: true });
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects customerId + newCustomer juntos', () => {
+		const result = ConvertQuoteSchema.safeParse({
+			id: crypto.randomUUID(),
+			customerId: crypto.randomUUID(),
+			newCustomer: { firstName: 'Ana', lastName: 'Pérez', idNumber: 'V-12345678' }
 		});
 		expect(result.success).toBe(false);
 	});
 
 	it('rejects without id', () => {
-		const result = AssignQuoteCustomerSchema.safeParse({
-			customerId: crypto.randomUUID()
-		});
+		const result = ConvertQuoteSchema.safeParse({ customerId: crypto.randomUUID() });
 		expect(result.success).toBe(false);
 	});
 });
