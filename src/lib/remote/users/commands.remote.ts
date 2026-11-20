@@ -5,32 +5,22 @@
 import { error } from '@sveltejs/kit';
 import { command } from '$app/server';
 import { hash } from '@node-rs/argon2';
-import {
-	getCurrentSession,
-	getCurrentUser,
-	requireAdmin,
-	requireUserAdmin
-} from '$lib/server/guards';
+import { getCurrentUser, requireAdmin, requireUserAdmin } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { isManagerDeletingProtectedRole, isLastAdmin } from '$lib/shared/user-deletion-rules';
 import { db } from '$lib/server/db';
-import { users, type User } from '$lib/server/db/schema';
+import { users } from '$lib/server/db/schema';
 import {
 	findUserByEmail,
 	findUserByUsername,
 	findUserById,
 	findDeletedUserByEmail,
 	findDeletedUserByUsername,
-	updateUser as dbUpdateUser,
-	toUserListItem,
 	restoreUser as dbRestoreUser,
 	countActiveAdmins
 } from '$lib/server/db/queries/users';
-import {
-	deactivateAllUserSessions,
-	deactivateSessionsAfterPasswordChange
-} from '$lib/server/db/queries/sessions';
-import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
+import { deactivateAllUserSessions } from '$lib/server/db/queries/sessions';
+import { applyUserUpdate } from '$lib/server/users/applyUserUpdate';
 import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
 
@@ -295,37 +285,7 @@ export const updateUser = command(UpdateUserSchema, async (input): Promise<UserL
 		}
 	}
 
-	// DT26: only persist what changed; omitted keys (undefined) are not touched.
-	const changes: Partial<User> = buildChangedFields(existingUser, {
-		...rest,
-		email: email?.toLowerCase(),
-		username: username?.toLowerCase()
-	});
-
-	if (password) {
-		changes.hashedPassword = await hash(password, {
-			memoryCost: 19456,
-			timeCost: 2,
-			outputLen: 32,
-			parallelism: 1
-		});
-	}
-
-	if (!hasChangedFields(changes)) {
-		return toUserListItem(existingUser);
-	}
-
-	// Password reset: cut the target user's sessions in the same tx. An admin
-	// resetting their own password keeps the current session (like the profile flow).
-	const keepSessionId = getCurrentUser()?.id === id ? getCurrentSession()?.id : undefined;
-	const updated = await db.transaction(async (tx) => {
-		const row = await dbUpdateUser(id, changes, tx);
-		if (password) {
-			await deactivateSessionsAfterPasswordChange(id, keepSessionId, tx);
-		}
-		return row;
-	});
-	return toUserListItem(updated);
+	return applyUserUpdate(existingUser, { ...rest, email, username, password });
 });
 
 /**
