@@ -24,6 +24,7 @@ import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/s
 import { nowISO } from '$lib/dates';
 
 import { computePairPurchasePrice } from '$lib/shared/pairPurchasePrice';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 export const updateLensCatalogItemForm = form(
 	UpdateLensCatalogItemSchema,
 	async (data): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> => {
@@ -134,7 +135,7 @@ export const updateLensCatalogItemForm = form(
 				const effectivePriceType = priceType ?? existing.priceType;
 				const pairPurchasePrice = computePairPurchasePrice(effectiveBasePrice, effectivePriceType);
 
-				const updateValues: Partial<NewLensCatalogItem> = {
+				const requested: Partial<NewLensCatalogItem> = {
 					...(source !== undefined && { source }),
 					...(name !== undefined && { name }),
 					...(type !== undefined && { type }),
@@ -156,17 +157,21 @@ export const updateLensCatalogItemForm = form(
 					...(inventoryMode !== undefined && { inventoryMode }),
 					...(notes !== undefined && { notes }),
 					...stockOverride,
-					pairPurchasePrice,
-					updatedAt: now
+					pairPurchasePrice
 				};
 
-				const [updated] = await tx
-					.update(lensCatalogItems)
-					.set(updateValues)
-					.where(eq(lensCatalogItems.id, id))
-					.returning();
-
-				if (!updated) invalid('Error actualizando item');
+				// DT26: write only what changed; an unchanged save does not touch the row
+				const changes = buildChangedFields(existing, requested);
+				let updated: LensCatalogItem = existing;
+				if (hasChangedFields(changes)) {
+					const [row] = await tx
+						.update(lensCatalogItems)
+						.set({ ...changes, updatedAt: now })
+						.where(eq(lensCatalogItems.id, id))
+						.returning();
+					if (!row) invalid('Error actualizando item');
+					updated = row;
+				}
 
 				// Handle optical ranges - only delete/reinsert if semantically changed
 				let insertedRanges: LensOpticalRange[];

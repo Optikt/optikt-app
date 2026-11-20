@@ -106,4 +106,39 @@ describe('DT26 · updates parciales (lentes)', () => {
 		expect(updated.inventoryMode).toBe(LensInventoryMode.STOCK);
 		expect(updated.stock).toBe(7);
 	});
+
+	it('lens catalog: guardar sin cambios no escribe la fila (updatedAt intacto)', async () => {
+		const user = await createUser({ role: UserRole.ADMIN });
+		const supplier = await createSupplier();
+		const material = await createLensMaterial({
+			name: 'CR-39',
+			code: 'CR39',
+			refractiveIndex: 1.5
+		});
+		const item = await createLensCatalogItem(
+			{
+				name: 'Monofocal',
+				type: LensType.MONOFOCAL,
+				supplierId: supplier.id,
+				materialId: material.id,
+				priceType: LensPriceType.PAIR,
+				basePrice: 30
+			},
+			[]
+		);
+
+		// First save may normalize derived fields (pairPurchasePrice)
+		const first = await callRemoteForm<Payload, LensCatalogItem>(
+			updateLensCatalogItemForm,
+			{ id: item.id, name: 'Monofocal' },
+			{ user }
+		);
+		const second = await callRemoteForm<Payload, LensCatalogItem>(
+			updateLensCatalogItemForm,
+			{ id: item.id, name: 'Monofocal' },
+			{ user }
+		);
+
+		expect(second.updatedAt).toBe(first.updatedAt);
+	});
 });

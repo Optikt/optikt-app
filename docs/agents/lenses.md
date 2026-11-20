@@ -47,7 +47,7 @@ Owner rules: el stock de lentes-STOCK lo gestiona `inventory` (ajustes con lotes
 - `resolvePendingLensMaterial` upsert por nombre con código auto (1.ª versión: 10 chars upper sin chequear duplicados — deuda).
 - `resolvePendingTechnology` prioriza tecnología **global** (supplier NULL) y luego la del supplier; si no existe, crea (`:21-97`); el form distingue con `isGlobalTechnology` (`catalog.remote.ts:102-120`).
 
-- **Update parcial (DT26)**: `UpdateLensMaterialSchema`/`UpdateLensTechnologySchema`/`UpdateLensCatalogItemSchema` usan `partialUpdate` (sin defaults de create: un update parcial ya no resetea `hasAr`/`hasBluecut`/`isTaxable`/`priceType`/`mountingPrice`/`shippingPrice`/`inventoryMode`/arrays/rangos). Materiales y tecnologías persisten solo el diff (`buildChangedFields`). Catálogo: la regla de stock solo actúa si viene `inventoryMode` (ON_DEMAND → `null`; STOCK con stock `null` → 0; si no, el stock no se toca — se mueve por inventario). Spec: `remote/lenses/lensesPartialUpdates.int.spec.ts`.
+- **Update parcial (DT26)**: `UpdateLensMaterialSchema`/`UpdateLensTechnologySchema`/`UpdateLensCatalogItemSchema` usan `partialUpdate` (sin defaults de create: un update parcial ya no resetea `hasAr`/`hasBluecut`/`isTaxable`/`priceType`/`mountingPrice`/`shippingPrice`/`inventoryMode`/arrays/rangos). Materiales, tecnologías y catálogo persisten solo el diff (`buildChangedFields`; en catálogo el diff incluye `pairPurchasePrice` recalculado, y un guardado sin cambios no hace `UPDATE` ni mueve `updatedAt`). Catálogo: la regla de stock solo actúa si viene `inventoryMode` (ON_DEMAND → `null`; STOCK con stock `null` → 0; si no, el stock no se toca — se mueve por inventario). Spec: `remote/lenses/lensesPartialUpdates.int.spec.ts`.
 
 ## Patrones locales
 

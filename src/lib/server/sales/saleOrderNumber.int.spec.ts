@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createSaleCore } from './createSale';
 import { updateSaleCore } from './updateSale';
+import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { sales } from '$lib/server/db/schema';
 import { getSaleOrderNumberPreview } from '$lib/server/db/queries/sales/reads';
@@ -173,5 +174,19 @@ describe('numeración de ventas por sequence (sales_order_number_seq)', () => {
 			ctx(admin.id)
 		);
 		expect(updated.success).toBe(true);
+		// Same number = no reassignment: the row is not written
+		const [row] = await db.select().from(sales).where(eq(sales.id, result.sale.id));
+		expect(row.updatedAt).toBe(result.sale.updatedAt);
+	});
+
+	it('un número manual cuya venta falla (sin stock) no adelanta la sequence', async () => {
+		const { admin, input } = await seed(1);
+		expect(await create(input(), ctx(admin.id))).toBe(1); // consume la única unidad
+
+		const failed = await createSaleCore(input(9999), ctx(admin.id)).catch((e: unknown) => e);
+		expect((failed as { success?: boolean }).success).not.toBe(true);
+
+		expect(await db.select().from(sales)).toHaveLength(1);
+		expect(await getSaleOrderNumberPreview()).toBe(2);
 	});
 });

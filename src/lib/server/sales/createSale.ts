@@ -1,4 +1,8 @@
-import { createSale as insertSale } from '$lib/server/db/queries/sales/writes';
+import {
+	bumpSaleOrderSequence,
+	createSale as insertSale,
+	lockSaleOrderSequence
+} from '$lib/server/db/queries/sales/writes';
 import { createPrescription, unsetCurrentPrescriptions } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import type { Customer, Prescription } from '$lib/server/db/schema';
@@ -61,6 +65,9 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 
 	// All writes in a single transaction
 	const { sale, newCustomer, prescription } = await db.transaction(async (tx) => {
+		// Manual number: sequence lock first (same order as updateSaleCore: sequence
+		// → inventory rows), bump only after the last write (see end of the tx).
+		if (data.orderNumber !== undefined) await lockSaleOrderSequence(tx);
 		const now = nowISO();
 		let customerId: string;
 		let createdCustomer: Customer | null = null;
@@ -107,7 +114,8 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 				isCashea: data.isCashea ?? false,
 				notes: data.notes ?? null
 			},
-			tx
+			tx,
+			{ deferSequenceBump: true }
 		);
 
 		// Create sale items + handle stock via FIFO lot consumption
@@ -128,6 +136,10 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 				now
 			});
 		}
+
+		// Bump after every write: a failure above (e.g. stock) rolls back without
+		// having moved the non-transactional sequence.
+		if (data.orderNumber !== undefined) await bumpSaleOrderSequence(data.orderNumber, tx);
 
 		return { sale: newSale, newCustomer: createdCustomer, prescription: createdPrescription };
 	});

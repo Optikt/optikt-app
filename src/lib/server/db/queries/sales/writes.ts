@@ -42,9 +42,29 @@ export function isDuplicateOrderNumberError(err: unknown): boolean {
  * - **Manual** (`orderNumber` presente, backfill/salto del ADMIN): se respeta tal
  *   cual; si ya existe lanza "El número de orden #N ya existe". Si el manual es
  *   ≥ al próximo automático, la sequence sube (`bumpSaleOrderSequence`) para
- *   que la siguiente automática sea N+1; un backfill menor no la mueve.
+ *   que la siguiente automática sea N+1; un backfill menor no la mueve. Con
+ *   `deferSequenceBump` el bump lo hace el caller al final de su tx (alta de venta).
  */
-export async function createSale(data: NewSale, executor: DbOrTx = db): Promise<Sale> {
+export interface CreateSaleOptions {
+	/**
+	 * Manual number: do NOT bump the sequence here; the caller calls
+	 * `bumpSaleOrderSequence` after its last write in the same tx. `setval` is not
+	 * transactional, so bumping before items/stock lets a failed sale leave the
+	 * sequence advanced for good (e.g. a mistyped #9999 → next auto #10000).
+	 */
+	deferSequenceBump?: boolean;
+}
+
+export async function createSale(
+	data: NewSale,
+	executor: DbOrTx = db,
+	options: CreateSaleOptions = {}
+): Promise<Sale> {
+	// Manual number outside a tx: the advisory xact lock would be released right
+	// after its own statement, so run insert + bump in a tx of our own.
+	if (data.orderNumber != null && executor === db) {
+		return db.transaction((tx) => createSale(data, tx, options));
+	}
 	const now = nowISO();
 	// createdAt: the caller may pass the business timestamp (alta: día del form + hora del submit)
 	const values = {
@@ -65,7 +85,7 @@ export async function createSale(data: NewSale, executor: DbOrTx = db): Promise<
 				const [row] = await sp.insert(sales).values(values).returning();
 				return row;
 			});
-			await bumpSaleOrderSequence(orderNumber, executor);
+			if (!options.deferSequenceBump) await bumpSaleOrderSequence(orderNumber, executor);
 			return sale;
 		} catch (err) {
 			if (isUniqueViolation(err, ORDER_NUMBER_UNIQUE_INDEX)) {

@@ -214,6 +214,7 @@
 				"src/lib/server/auth*",
 				"src/lib/server/guards.ts",
 				"src/lib/server/actionContext.ts",
+				"src/lib/server/users/**",
 				"src/lib/server/db/queries/users.ts",
 				"src/lib/server/db/queries/sessions.ts",
 				"src/lib/server/db/queries/userPreferences*",

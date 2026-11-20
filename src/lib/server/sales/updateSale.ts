@@ -73,16 +73,22 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		};
 	}
 
-	if (data.orderNumber) {
+	// Resending the sale's own number is not a reassignment (no lock, no write, no audit)
+	const newOrderNumber =
+		data.orderNumber !== undefined && data.orderNumber !== existing.orderNumber
+			? data.orderNumber
+			: undefined;
+
+	if (newOrderNumber !== undefined) {
 		const [existingOrder] = await db
 			.select({ id: sales.id })
 			.from(sales)
-			.where(eq(sales.orderNumber, data.orderNumber));
+			.where(eq(sales.orderNumber, newOrderNumber));
 		// Reassigning a sale its own number is a no-op, not a duplicate
 		if (existingOrder && existingOrder.id !== data.id) {
 			return {
 				success: false as const,
-				error: `El número de orden #${data.orderNumber} ya existe`
+				error: `El número de orden #${newOrderNumber} ya existe`
 			};
 		}
 	}
@@ -165,7 +171,7 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		.transaction(async (tx) => {
 			// Same lock order as createSaleCore (sequence lock → inventory rows): a
 			// number reassignment must take it before touching lots, or deadlock.
-			if (data.orderNumber !== undefined) await lockSaleOrderSequence(tx);
+			if (newOrderNumber !== undefined) await lockSaleOrderSequence(tx);
 			let patchedPrescription: Prescription | null = null;
 			if (data.prescription) {
 				const prescId = (await getSalePrescription(data.id, tx))?.id;
@@ -282,7 +288,7 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 				if (data.discount !== undefined) updateData.discount = data.discount;
 				if (data.discountType !== undefined) updateData.discountType = data.discountType;
 				if (data.isCashea !== undefined) updateData.isCashea = data.isCashea;
-				if (data.orderNumber !== undefined) updateData.orderNumber = data.orderNumber;
+				if (newOrderNumber !== undefined) updateData.orderNumber = newOrderNumber;
 
 				const [updated] = await tx
 					.update(sales)
@@ -290,7 +296,7 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 					.where(eq(sales.id, data.id))
 					.returning();
 				// Reassigned number ahead of the sequence → the next automatic sale is N+1
-				if (data.orderNumber !== undefined) await bumpSaleOrderSequence(data.orderNumber, tx);
+				if (newOrderNumber !== undefined) await bumpSaleOrderSequence(newOrderNumber, tx);
 
 				return { sale: updated, prescription: patchedPrescription };
 			}
@@ -305,7 +311,7 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 			if (data.discountType !== undefined) headerUpdate.discountType = data.discountType;
 			if (data.snapshotTaxRate !== undefined) headerUpdate.snapshotTaxRate = data.snapshotTaxRate;
 			if (data.isCashea !== undefined) headerUpdate.isCashea = data.isCashea;
-			if (data.orderNumber !== undefined) headerUpdate.orderNumber = data.orderNumber;
+			if (newOrderNumber !== undefined) headerUpdate.orderNumber = newOrderNumber;
 
 			if (data.discount !== undefined || data.discountType !== undefined) {
 				headerUpdate.subtotal = newSubtotal;
@@ -324,13 +330,13 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 				.set(headerUpdate)
 				.where(eq(sales.id, data.id))
 				.returning();
-			if (data.orderNumber !== undefined) await bumpSaleOrderSequence(data.orderNumber, tx);
+			if (newOrderNumber !== undefined) await bumpSaleOrderSequence(newOrderNumber, tx);
 
 			return { sale: updated, prescription: patchedPrescription };
 		})
 		.catch((err: unknown) => {
-			if (data.orderNumber !== undefined && isDuplicateOrderNumberError(err)) {
-				throw new Error(`El número de orden #${data.orderNumber} ya existe`, { cause: err });
+			if (newOrderNumber !== undefined && isDuplicateOrderNumberError(err)) {
+				throw new Error(`El número de orden #${newOrderNumber} ya existe`, { cause: err });
 			}
 			throw err;
 		});
