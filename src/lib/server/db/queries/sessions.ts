@@ -147,3 +147,17 @@ export async function getUserActiveSessions(userId: string): Promise<Session[]> 
 		.from(userSessions)
 		.where(and(eq(userSessions.userId, userId), eq(userSessions.isActive, true)));
 }
+
+/**
+ * Corta sesiones tras un cambio de contraseña. Si `keepSessionId` viene (el
+ * usuario se cambió su propia clave), conserva esa sesión y corta el resto;
+ * si no (admin reseteando a otro), corta todas.
+ */
+export async function deactivateSessionsAfterPasswordChange(
+	userId: string,
+	keepSessionId: string | undefined,
+	executor: DbOrTx = db
+): Promise<void> {
+	if (keepSessionId) await deactivateOtherUserSessions(userId, keepSessionId, executor);
+	else await deactivateAllUserSessions(userId, executor);
+}

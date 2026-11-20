@@ -44,6 +44,18 @@ describe('buildChangedFields', () => {
 		expect(buildChangedFields({}, { notes: null })).toEqual({});
 	});
 
+	it('"" sin emptyToNull sobre un null guardado no es cambio (re-guardar el form)', () => {
+		const changes = buildChangedFields(original, { notes: '' });
+		expect(changes).toEqual({});
+		expect(hasChangedFields(changes)).toBe(false);
+	});
+
+	it('no confunde "" ni booleanos con números', () => {
+		expect(buildChangedFields({ discount: '' }, { discount: 0 })).toEqual({ discount: 0 });
+		expect(buildChangedFields({ discount: '  ' }, { discount: 0 })).toEqual({ discount: 0 });
+		expect(buildChangedFields({ flag: true }, { flag: 1 })).toEqual({ flag: 1 });
+	});
+
 	it('compara números contra numéricos guardados como string', () => {
 		expect(buildChangedFields({ price: '10.50' }, { price: 10.5 })).toEqual({});
 		expect(buildChangedFields({ price: '10.50' }, { price: 11 })).toEqual({ price: 11 });

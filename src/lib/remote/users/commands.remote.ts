@@ -5,7 +5,12 @@
 import { error } from '@sveltejs/kit';
 import { command } from '$app/server';
 import { hash } from '@node-rs/argon2';
-import { getCurrentUser, requireAdmin, requireUserAdmin } from '$lib/server/guards';
+import {
+	getCurrentSession,
+	getCurrentUser,
+	requireAdmin,
+	requireUserAdmin
+} from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { isManagerDeletingProtectedRole, isLastAdmin } from '$lib/shared/user-deletion-rules';
 import { db } from '$lib/server/db';
@@ -21,7 +26,10 @@ import {
 	restoreUser as dbRestoreUser,
 	countActiveAdmins
 } from '$lib/server/db/queries/users';
-import { deactivateAllUserSessions } from '$lib/server/db/queries/sessions';
+import {
+	deactivateAllUserSessions,
+	deactivateSessionsAfterPasswordChange
+} from '$lib/server/db/queries/sessions';
 import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
@@ -307,11 +315,13 @@ export const updateUser = command(UpdateUserSchema, async (input): Promise<UserL
 		return toUserListItem(existingUser);
 	}
 
-	// Admin password reset: cut every session of the target user in the same tx
+	// Password reset: cut the target user's sessions in the same tx. An admin
+	// resetting their own password keeps the current session (like the profile flow).
+	const keepSessionId = getCurrentUser()?.id === id ? getCurrentSession()?.id : undefined;
 	const updated = await db.transaction(async (tx) => {
 		const row = await dbUpdateUser(id, changes, tx);
 		if (password) {
-			await deactivateAllUserSessions(id, tx);
+			await deactivateSessionsAfterPasswordChange(id, keepSessionId, tx);
 		}
 		return row;
 	});

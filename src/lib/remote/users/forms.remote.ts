@@ -5,7 +5,7 @@
 import { error, invalid } from '@sveltejs/kit';
 import { form } from '$app/server';
 import { hash } from '@node-rs/argon2';
-import { requireUserAdmin } from '$lib/server/guards';
+import { getCurrentSession, getCurrentUser, requireUserAdmin } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { db } from '$lib/server/db';
 import { users, type User } from '$lib/server/db/schema';
@@ -18,7 +18,7 @@ import {
 	updateUser as dbUpdateUser,
 	toUserListItem
 } from '$lib/server/db/queries/users';
-import { deactivateAllUserSessions } from '$lib/server/db/queries/sessions';
+import { deactivateSessionsAfterPasswordChange } from '$lib/server/db/queries/sessions';
 import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 
 // Import schemas
@@ -177,11 +177,13 @@ export const updateUserForm = form(UpdateUserSchema, async (data, issue): Promis
 		return toUserListItem(existingUser);
 	}
 
-	// Admin password reset: cut every session of the target user in the same tx
+	// Password reset: cut the target user's sessions in the same tx. An admin
+	// resetting their own password keeps the current session (like the profile flow).
+	const keepSessionId = getCurrentUser()?.id === id ? getCurrentSession()?.id : undefined;
 	const updated = await db.transaction(async (tx) => {
 		const row = await dbUpdateUser(id, changes, tx);
 		if (password) {
-			await deactivateAllUserSessions(id, tx);
+			await deactivateSessionsAfterPasswordChange(id, keepSessionId, tx);
 		}
 		return row;
 	});

@@ -8,6 +8,8 @@
  *
  * Only keys whose (normalized) value differs from `original` are returned, so
  * a partial payload never nulls omitted fields and an unchanged save writes nothing.
+ * For the comparison `''` equals `null`: re-saving a form that posts `''` for a
+ * null column is not a change (and never turns `null` into `''`).
  */
 export interface BuildChangedFieldsOptions<K extends PropertyKey> {
 	/** Keys where an empty string means "clear the field" (stored as `null`). */
@@ -43,16 +45,23 @@ export function hasChangedFields(changes: object): boolean {
 	return Object.keys(changes).length > 0;
 }
 
+/** `null`, `undefined` and `''` are all "empty": a form posting `''` for a null column is no change. */
+function emptyAsNull(value: unknown): unknown {
+	return value === undefined || value === '' ? null : value;
+}
+
 function isSameValue(stored: unknown, next: unknown): boolean {
-	const a = stored ?? null;
-	const b = next ?? null;
+	const a = emptyAsNull(stored);
+	const b = emptyAsNull(next);
 	if (a === b) return true;
 	if (a === null || b === null) return false;
-	// numeric columns may come back as strings
+	// numeric columns may come back as strings — only number vs numeric string,
+	// never booleans (`true` ≠ `1`) or blank strings (`'  '` ≠ `0`)
 	if (typeof a === 'number' || typeof b === 'number') {
-		const na = Number(a);
-		const nb = Number(b);
-		return !Number.isNaN(na) && !Number.isNaN(nb) && na === nb;
+		const other = typeof a === 'number' ? b : a;
+		if (typeof a === 'number' && typeof b === 'number') return a === b;
+		if (typeof other !== 'string' || other.trim() === '') return false;
+		return Number(a) === Number(b);
 	}
 	if (typeof a === 'object' || typeof b === 'object') {
 		return stableStringify(a) === stableStringify(b);

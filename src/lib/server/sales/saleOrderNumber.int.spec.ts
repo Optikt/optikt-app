@@ -125,6 +125,14 @@ describe('numeración de ventas por sequence (sales_order_number_seq)', () => {
 		expect(await create(input(), ctx(admin.id))).toBe(3);
 	});
 
+	it('una racha de más de 5 números ocupados resincroniza la sequence en vez de fallar', async () => {
+		const { admin, input } = await seed();
+		for (let n = 1; n <= 8; n++) await createSale({ orderNumber: n });
+
+		expect(await create(input(), ctx(admin.id))).toBe(9);
+		expect(await create(input(), ctx(admin.id))).toBe(10);
+	});
+
 	it('el preview no reserva números', async () => {
 		const { admin, input } = await seed();
 		expect(await getSaleOrderNumberPreview()).toBe(1);

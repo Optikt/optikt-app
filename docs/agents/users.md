@@ -27,7 +27,7 @@ Login (Argon2), sesiones con token hash + vivacidad, gestión de usuarios ADMIN-
 - Cambio de contraseña propia exige verificar `currentPassword` antes del rehash (`profile.remote.ts:38-59`).
 - **Cambiar una contraseña invalida sesiones** (misma `db.transaction` que el update del hash):
   - Propia (`changePasswordForm`): `deactivateOtherUserSessions(userId, currentSessionId, tx)` → se cortan los demás dispositivos, la sesión actual sigue viva (sin sesión en `locals` → se cortan todas).
-  - Admin a otro usuario (`updateUserForm`, `updateUser`): `deactivateAllUserSessions(id, tx)` cuando viene `password` no vacío.
+  - Desde Usuarios (`updateUserForm`, `updateUser`) cuando viene `password` no vacío: `deactivateSessionsAfterPasswordChange(id, keepSessionId, tx)`. A otro usuario → corta todas; un admin que se cambia su propia clave ahí conserva la sesión actual (igual que el perfil).
   - Reactivación (`reactivateUser`): restore + trash + `deactivateAllUserSessions` en una tx (la clave cambia, las sesiones viejas no sobreviven).
   - Las altas de usuario no tocan sesiones (no existen).
 

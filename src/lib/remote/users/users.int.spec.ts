@@ -70,6 +70,25 @@ describe('users remotes — cambio de clave por admin invalida sesiones', () => 
 		expect(await getUserActiveSessions(target.id)).toHaveLength(0);
 	});
 
+	it('admin que se cambia su propia clave desde Usuarios conserva la sesión actual', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const current = await createSession({
+			userId: admin.id,
+			tokenHash: 'hash-admin-current',
+			expiresAt: inThirtyDays()
+		});
+		await seedSessions(admin.id, 2);
+
+		await callRemoteForm(
+			updateUserForm,
+			{ id: admin.id, role: UserRole.ADMIN, password: 'clave-nueva-456' },
+			{ user: admin, session: current }
+		);
+
+		const active = await getUserActiveSessions(admin.id);
+		expect(active.map((s) => s.id)).toEqual([current.id]);
+	});
+
 	it('reactivateUser corta las sesiones que quedaron de antes del borrado', async () => {
 		const admin = await createUser({ role: UserRole.ADMIN });
 		const deleted = await createUser({ role: UserRole.SELLER, deletedAt: nowISO() });

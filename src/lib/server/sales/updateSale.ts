@@ -2,7 +2,8 @@ import { toSaleTotalsLine } from '$lib/shared/saleTotals';
 import { findSaleById, getSalePrescription } from '$lib/server/db/queries/sales/reads';
 import {
 	bumpSaleOrderSequence,
-	isDuplicateOrderNumberError
+	isDuplicateOrderNumberError,
+	lockSaleOrderSequence
 } from '$lib/server/db/queries/sales/writes';
 import type { Prescription, SaleItem } from '$lib/server/db/schema';
 import { findCustomerById } from '$lib/server/db/queries/customers';
@@ -162,6 +163,9 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	// A race on the reassigned number surfaces as the same friendly duplicate error
 	const txResult = await db
 		.transaction(async (tx) => {
+			// Same lock order as createSaleCore (sequence lock → inventory rows): a
+			// number reassignment must take it before touching lots, or deadlock.
+			if (data.orderNumber !== undefined) await lockSaleOrderSequence(tx);
 			let patchedPrescription: Prescription | null = null;
 			if (data.prescription) {
 				const prescId = (await getSalePrescription(data.id, tx))?.id;

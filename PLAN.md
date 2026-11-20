@@ -186,7 +186,7 @@
   - Stock de lente-STOCK → 0 en un update sin `stock`.
   - `updateUser` devolvía el `User` con `hashedPassword` al cliente (ahora devuelve `toUserListItem`).
 - Specs: `buildChangedFields.spec.ts`, `partialUpdate.spec.ts`, más int specs por dominio (`customers.int.spec.ts`, `catalogPartialUpdates.int.spec.ts`, `lenses/lensesPartialUpdates.int.spec.ts`, `users/users.int.spec.ts`).
-- Fuera de alcance (no listados en DT26): `UpdatePrescriptionSchema` sigue con `.partial()`; `technologyId`/`supplierId` de lentes no se pueden vaciar por formulario porque su transform convierte `''` en `undefined`. Esto es de antes y no lo introduce este cambio.
+- Fuera de alcance (no listados en DT26): `UpdatePrescriptionSchema` sigue con `.partial()`; `technologyId`/`supplierId` de lentes no se pueden vaciar por formulario porque su transform convierte `''` en `undefined`. Esto es de antes y no lo introduce este cambio. `updateLensCatalogItemForm` (`remote/lenses/catalog-update.remote.ts`) todavía escribe siempre `pairPurchasePrice` + `updatedAt` sin guard de no-op: pasar a `buildChangedFields` en un follow-up.
 
 ---
 

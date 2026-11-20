@@ -56,6 +56,9 @@ export async function createSale(data: NewSale, executor: DbOrTx = db): Promise<
 
 	if (data.orderNumber != null) {
 		const orderNumber = data.orderNumber;
+		// Lock before the insert: a concurrent reassignment to the same N holds the
+		// lock and waits on our unique entry otherwise (deadlock).
+		await lockSaleOrderSequence(executor);
 		try {
 			// Savepoint: a duplicate does not leave the caller's tx aborted.
 			const sale = await executor.transaction(async (sp) => {
@@ -82,12 +85,35 @@ export async function createSale(data: NewSale, executor: DbOrTx = db): Promise<
 				return sale;
 			});
 		} catch (err) {
-			if (attempt < MAX_AUTO_NUMBER_ATTEMPTS && isUniqueViolation(err, ORDER_NUMBER_UNIQUE_INDEX)) {
-				continue;
+			if (!isUniqueViolation(err, ORDER_NUMBER_UNIQUE_INDEX)) throw err;
+			if (attempt >= MAX_AUTO_NUMBER_ATTEMPTS) {
+				throw new Error('No se pudo asignar un número de orden automático. Intenta de nuevo.', {
+					cause: err
+				});
 			}
-			throw err;
+			// The sequence fell behind numbers already taken (manual/reassigned run):
+			// jump it past MAX(order_number) so the retry does not walk the run one by one.
+			await resyncSaleOrderSequence(executor);
 		}
 	}
+}
+
+/**
+ * Serializa todo lo que mueve la sequence de ventas (advisory lock de tx, se
+ * libera al commit/rollback de la tx externa; reentrante en la misma sesión).
+ * Los flujos que también bloquean inventario (`updateSaleCore`) deben tomarlo
+ * ANTES de tocar lotes/stock, en el mismo orden que el alta, para no hacer deadlock.
+ */
+export async function lockSaleOrderSequence(executor: DbOrTx = db): Promise<void> {
+	await executor.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${SALES_ORDER_NUMBER_SEQ}))`);
+}
+
+/** Sube la sequence a MAX(order_number) si quedó por debajo (nunca la baja). */
+async function resyncSaleOrderSequence(executor: DbOrTx): Promise<void> {
+	const [row] = await executor
+		.select({ max: sql<number | null>`max(${sales.orderNumber})` })
+		.from(sales);
+	if (row?.max != null) await bumpSaleOrderSequence(Number(row.max), executor);
 }
 
 /**
@@ -106,7 +132,7 @@ export async function bumpSaleOrderSequence(
 	executor: DbOrTx = db
 ): Promise<void> {
 	await executor.transaction(async (t) => {
-		await t.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${SALES_ORDER_NUMBER_SEQ}))`);
+		await lockSaleOrderSequence(t);
 		await t.execute(sql`
 			SELECT setval(${SALES_ORDER_NUMBER_SEQ}::regclass, ${orderNumber}::bigint, true)
 			FROM ${sql.identifier(SALES_ORDER_NUMBER_SEQ)}
