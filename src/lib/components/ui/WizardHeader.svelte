@@ -25,6 +25,8 @@
 		orderNumberEditable?: boolean;
 		/** Refetch the latest suggested order number (MAX + 1) and reset the input. */
 		onResetOrderNumber?: () => void | Promise<void>;
+		/** Fires when the user types in the order number field (marks it as manual). */
+		onOrderNumberInput?: () => void;
 		orderDate?: string;
 		breadcrumbs?: Snippet;
 	}
@@ -39,6 +41,7 @@
 		orderNumber = $bindable(),
 		orderNumberEditable = false,
 		onResetOrderNumber,
+		onOrderNumberInput,
 		orderDate = $bindable(),
 		breadcrumbs
 	}: Props = $props();
@@ -126,6 +129,7 @@
 											class="w-16 bg-transparent font-mono font-semibold text-brand-blue outline-none"
 											aria-label="Número de orden (vacío = automático)"
 											bind:value={orderNumber}
+											oninput={() => onOrderNumberInput?.()}
 											onkeydown={(event) => {
 												if (event.key === 'Enter' || event.key === 'Escape') {
 													commitOrderNumberEdit();

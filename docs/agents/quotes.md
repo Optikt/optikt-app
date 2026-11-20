@@ -84,6 +84,7 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 ## Deuda resuelta en este PR
 
 - `getNextQuoteNumber` MAX+1 → sequence de Postgres + preview no reservante.
+- Conversión quote→venta: el número de la venta lo asigna la sequence de ventas `sales_order_number_seq` (ya no `getNextOrderNumber` MAX+1); ver `docs/agents/sales.md` → Numeración.
 - Inversión de capas `server/quotes/* → $lib/remote/quotes/helpers` eliminada; `remote/quotes/helpers.ts` borrado.
 - Drizzle inline en `convertQuoteToSale.ts` / `createNewQuote.ts` / `updateExistingQuote.ts` → query functions con executor.
 - `odAltura/osAltura` mapeados en la prescripción derivada. El spec `docs/specs/quotes-altura.md` **no existe** (verificado); la cobertura está en `convertQuoteToSale.int.spec.ts`.

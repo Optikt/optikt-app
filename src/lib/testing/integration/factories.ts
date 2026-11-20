@@ -119,14 +119,13 @@ export async function createCustomer(overrides: Partial<typeof customers.$inferI
 	return row;
 }
 
+/** Sale row. `orderNumber` comes from the DB sequence unless overridden. */
 export async function createSale(overrides: Partial<typeof sales.$inferInsert> = {}) {
-	orderCounter += 1;
 	const sellerId = overrides.sellerId ?? (await createUser()).id;
 	const customerId = overrides.customerId ?? (await createCustomer()).id;
 	const [row] = await db
 		.insert(sales)
 		.values({
-			orderNumber: orderCounter,
 			customerId,
 			sellerId,
 			subtotal: 100,

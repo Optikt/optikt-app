@@ -109,9 +109,21 @@
 	let isCashea = $state(false);
 	let submitting = $state(false);
 
-	// Suggested order number (MAX + 1). ADMIN may override to backfill historical sales.
+	// Suggested order number: non-reserving preview of the DB sequence. ADMIN may
+	// override it to skip ahead or backfill paper sales. A value the admin typed is
+	// sent as a manual number (even if it equals the suggestion: a paper sale #201
+	// must stay #201); untouched, the DB sequence assigns it on save.
 	// untrack: snapshot the server-provided suggestion once at mount.
-	let orderNumberInput = $state(untrack(() => (nextOrderNumber ? String(nextOrderNumber) : '')));
+	let suggestedOrderNumber = $state(
+		untrack(() => (nextOrderNumber ? String(nextOrderNumber) : ''))
+	);
+	let orderNumberInput = $state(untrack(() => suggestedOrderNumber));
+	let orderNumberEdited = $state(false);
+	const manualOrderNumber = $derived.by(() => {
+		const typed = orderNumberInput.trim();
+		if (!canEditOrderNumber || !orderNumberEdited || !typed) return undefined;
+		return Number(typed);
+	});
 	let orderDateIso = $state(dateToISODateString(initialDate));
 
 	// Sync: user edits date in WizardHeader → update saleDate
@@ -268,7 +280,9 @@
 	async function handleResetOrderNumber() {
 		try {
 			const next = await getNextOrderNumberCommand({});
-			orderNumberInput = String(next);
+			suggestedOrderNumber = String(next);
+			orderNumberInput = suggestedOrderNumber;
+			orderNumberEdited = false;
 			toast.success(`Número actualizado: #${String(next).padStart(4, '0')}`);
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'No se pudo obtener el último número'));
@@ -295,8 +309,7 @@
 				newCustomer:
 					newCustomer && newCustomer.firstName && newCustomer.lastName ? newCustomer : undefined,
 				saleDate: toUTCString(saleDate),
-				orderNumber:
-					canEditOrderNumber && orderNumberInput.trim() ? Number(orderNumberInput) : undefined,
+				orderNumber: manualOrderNumber,
 				discount,
 				discountType,
 				snapshotTaxRate,
@@ -330,6 +343,7 @@
 		bind:orderNumber={orderNumberInput}
 		orderNumberEditable={canEditOrderNumber}
 		onResetOrderNumber={handleResetOrderNumber}
+		onOrderNumberInput={() => (orderNumberEdited = true)}
 		bind:orderDate={orderDateIso}
 		{breadcrumbs}
 	/>

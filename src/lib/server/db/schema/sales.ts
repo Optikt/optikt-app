@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
 	pgTable,
 	pgEnum,
@@ -47,8 +48,14 @@ export const sales = pgTable(
 	'sales',
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
-		/** Sequential order number assigned inside the transaction */
-		orderNumber: integer('order_number').notNull(),
+		/**
+		 * Sequential order number — assigned by the DB sequence `sales_order_number_seq`
+		 * (migration 0054). An ADMIN may set it manually (backfill / skip ahead); see
+		 * `createSale` in queries/sales/writes.ts.
+		 */
+		orderNumber: integer('order_number')
+			.notNull()
+			.default(sql`nextval('sales_order_number_seq')`),
 		customerId: uuid('customer_id').notNull(),
 		sellerId: uuid('seller_id').notNull(),
 		/** PENDING → IN_PROGRESS → READY → COMPLETED → CANCELLED (fully paid no longer auto-completes) */

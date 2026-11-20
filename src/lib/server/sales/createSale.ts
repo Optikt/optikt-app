@@ -1,8 +1,7 @@
-import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
+import { createSale as insertSale } from '$lib/server/db/queries/sales/writes';
 import { createPrescription, unsetCurrentPrescriptions } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
-import { sales, type Customer, type Prescription } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import type { Customer, Prescription } from '$lib/server/db/schema';
 import { SaleStatus, UserRole } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { auditService } from '$lib/server/audit';
@@ -85,25 +84,13 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 			);
 		}
 
-		// Create the sale header
-		// Custom order number (admin backfill) or next sequential (MAX + 1),
-		// so a backfilled #215 makes the default continue from #216.
-		const orderNumber = data.orderNumber ?? (await getNextOrderNumber(tx));
-		if (data.orderNumber) {
-			const [existing] = await tx
-				.select({ id: sales.id })
-				.from(sales)
-				.where(eq(sales.orderNumber, orderNumber));
-			if (existing) {
-				throw new Error(`El número de orden #${orderNumber} ya existe`);
-			}
-		}
-
-		const [newSale] = await tx
-			.insert(sales)
-			.values({
-				id: crypto.randomUUID(),
-				orderNumber,
+		// Create the sale header. Order number: DB sequence by default; an ADMIN
+		// manual number (backfill / skip ahead) is kept as-is and, when it is ahead
+		// of the sequence, bumps it so the next automatic sale is N+1. Duplicates
+		// throw "El número de orden #N ya existe" (see queries/sales/writes.ts).
+		const newSale = await insertSale(
+			{
+				...(data.orderNumber !== undefined && { orderNumber: data.orderNumber }),
 				customerId,
 				sellerId: ctx.userId!,
 				/** saleDate alias → createdAt (single date truth): form day + submit time, Caracas */
@@ -118,10 +105,10 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 				total,
 				paidAmountBcvUsd: 0,
 				isCashea: data.isCashea ?? false,
-				notes: data.notes ?? null,
-				updatedAt: now
-			})
-			.returning();
+				notes: data.notes ?? null
+			},
+			tx
+		);
 
 		// Create sale items + handle stock via FIFO lot consumption
 		for (const item of data.items) {
