@@ -74,29 +74,17 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 - ⚠️ **Cobertura Sonar:** `vite.config.ts > coverage.include` es una lista blanca; todo `.ts` nuevo fuera de `server/remote/shared/schemas` debe agregarse (quotes: `components/quotes/**/*.ts`) o Sonar lo cuenta en 0 % aunque tenga spec. Int de lecturas: `queries/quotes/reads.int.spec.ts` (relaciones, filtros, preview de conversión, remotes de lectura con `callRemote`).
 - Unit (nuevos tras la review del PR): `components/quotes/list/quoteRowActions.spec.ts`, `components/sales/listViewPreference.spec.ts`, `QuoteAuditHistoryDrawer.svelte.spec.ts` (detalle de ítems como ventas). Int: `updateExistingQuote.int.spec.ts` cubre el `itemsDiff` anexado y "sin cambios ⇒ sin evento".
 - Unit: `schemas/quotes.spec.ts`, `shared/quotes/{quoteValidity,conversionPreview}.spec.ts`, `components/quotes/detail/{quoteAudit,quoteItemsAdapter,QuoteAuditHistoryDrawer}.spec.ts`, `components/quotes/duplicate/quoteToWizardDraft.spec.ts`, `components/quotes/editQuote/quoteEditAdapter.spec.ts`, `components/quotes/list/{quoteListParams,quoteListDisplay}.spec.ts`, `shared/{saleTotals,saleItemCosts}.spec.ts`, `components/sales/detail/saleBreakdown.spec.ts`. Int: `server/quotes/{createNewQuote,updateExistingQuote,convertQuoteToSale}.int.spec.ts` (incluye rollback por duplicado, cliente inline, doble conversión concurrente, no-DRAFT, stock insuficiente, altura y `quoteDate` editado), `queries/quotes/list.int.spec.ts` (KPI de cohorte, multi-estado, `markQuoteConverted` directo), `remote/quotes/commands.int.spec.ts`. E2E `e2e/quote-to-sale.test.ts` (con cliente y con cliente inline desde el modal).
-- ⚠️ Los int specs requieren Docker/Testcontainers; en este entorno no hay Docker → se ejecutaron los unit (`pnpm test:unit`, verde) pero NO los int. La migración sí se aplicó a la DB de desarrollo para la verificación visual.
+- Los int specs requieren Docker/Testcontainers (`project=integration`); en CI corren en el job Integration Tests.
 
 ## Known gaps / tech debt
 
 - 🟠 **Fórmulas multi-persona (sin resolver, documentado en `sales.md` también):** un presupuesto o venta puede llevar lentes de varias personas (madre e hija, pareja). Hoy la conversión deriva **una** prescripción con `firstDefined` sobre todos los LENS_PAIR y la marca `isCurrent` para el cliente titular — con varias personas guarda una fórmula equivocada y puede pisar la fórmula vigente del titular. A futuro: registrar a quién pertenece cada fórmula (persona por ítem LENS_PAIR, otro cliente o "beneficiario") y no sobreescribir la del titular. No hay card de fórmula única por documento; la fórmula se ve por ítem (fila del lente).
 - 🟡 Las quotes no registran medidas de montaje (DP/NP) en sus ítems; la conversión no copia medidas a la venta (mismo hueco de larga data). El preseed del editor de lente usa `null` para esas medidas.
-
-## Deuda resuelta en este PR
-
-- `getNextQuoteNumber` MAX+1 → sequence de Postgres + preview no reservante.
-- Conversión quote→venta: el número de la venta lo asigna la sequence de ventas `sales_order_number_seq` (ya no `getNextOrderNumber` MAX+1); ver `docs/agents/sales.md` → Numeración.
-- Inversión de capas `server/quotes/* → $lib/remote/quotes/helpers` eliminada; `remote/quotes/helpers.ts` borrado.
-- Drizzle inline en `convertQuoteToSale.ts` / `createNewQuote.ts` / `updateExistingQuote.ts` → query functions con executor.
-- `odAltura/osAltura` mapeados en la prescripción derivada. El spec `docs/specs/quotes-altura.md` **no existe** (verificado); la cobertura está en `convertQuoteToSale.int.spec.ts`.
-- Barrel `components/quotes/index.ts` borrado (importadores migrados a imports directos).
-- `title`/`disabled` nativos en la lista → `TriggerTooltip` + `aria-disabled`.
-- `assignQuoteCustomer` eliminado.
-- Duplicar fallaba con `duplicate key value violates unique constraint "quote_items_pkey"` (ids del origen reusados) → ids nuevos.
-- Historial del presupuesto con texto resumido → mismo detalle que ventas (`itemsDiff`).
-- Código muerto eliminado: `createQuoteItems` (writes) y el remote `getQuoteDetail` (sin usos).
-- `scripts/agents-domains.json` mapeaba `queries/quotes.ts` (ya partido) → `queries/quotes/**`.
+- ~~🟠 `getNextQuoteNumber` = MAX+1, no a prueba de concurrencia~~ **Resuelto (2026-11-19, #229):** sequence de Postgres + preview no reservante.
+- ~~🟡 Inversión de capas `server/quotes/* → $lib/remote/quotes/helpers` + `resolveLensSnapshotCosts` duplicado~~ **Resuelto (2026-11-19, #229):** `remote/quotes/helpers.ts` borrado; cores usan query fns con executor.
+- ~~🟡 Conversión quote→venta numeraba con `getNextOrderNumber` (MAX+1)~~ **Resuelto (2026-11-19, #231):** el número lo asigna la sequence de ventas `sales_order_number_seq`; ver `docs/agents/sales.md` → Numeración.
 
 ## Planes completados
 
 - **2026-11 · quotes-altura** — Altura por ojo en presupuestos (DT15)
-- **2026-11 · quotes-redesign** — Rediseño completo de Presupuestos: lista, detalle (hero/móvil/historial), drawer de edición y modal de conversión reutilizando componentes de ventas; backend con Cashea, sequence, guard de concurrencia, cliente inline en una tx y preview de conversión; duplicar desde cualquier estado con sourceQuoteId; docs y deuda multi-persona documentada. Verificación tras la review: prettier + eslint + pnpm check (0 diagnostics) + 129 archivos / 1381 tests unitarios + size-gate OK; screenshots 390/1280/2560 en el PR. Nota: `agents:coverage` 99.9% es mapeo de dominios, NO cobertura de tests. CI re-ejecución pendiente en el entorno. PR #229. (#229)
+- **2026-11 · quotes-redesign** — Presupuestos rediseñados con componentes de ventas (lista, detalle, edición, conversión con preview); numeración por sequence y duplicar desde cualquier estado (#229)
