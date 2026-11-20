@@ -379,6 +379,13 @@
       "when": 1795012460370,
       "tag": "0053_quotes-cashea-source-sequence",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795136651815,
+      "tag": "0054_sales-order-number-sequence",
+      "breakpoints": true
     }
   ]
 }

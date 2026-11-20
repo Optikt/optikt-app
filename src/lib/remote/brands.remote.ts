@@ -5,6 +5,7 @@
 import { query, form, command } from '$app/server';
 import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 import {
 	ListBrandsSchema,
 	CreateBrandSchema,
@@ -137,8 +138,13 @@ export const updateBrandForm = form(UpdateBrandSchema, async (data, issue): Prom
 		}
 	}
 
-	// Update brand
-	const updated = await updateBrand(id, { name, ...rest });
+	// DT26: only persist what changed (omitted keys are not touched)
+	const changes = buildChangedFields(existing, { name, ...rest });
+	if (!hasChangedFields(changes)) {
+		return existing;
+	}
+
+	const updated = await updateBrand(id, changes);
 	if (!updated) {
 		invalid('Error actualizando marca');
 	}

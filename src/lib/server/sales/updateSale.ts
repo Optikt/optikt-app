@@ -1,5 +1,10 @@
 import { toSaleTotalsLine } from '$lib/shared/saleTotals';
 import { findSaleById, getSalePrescription } from '$lib/server/db/queries/sales/reads';
+import {
+	bumpSaleOrderSequence,
+	isDuplicateOrderNumberError,
+	lockSaleOrderSequence
+} from '$lib/server/db/queries/sales/writes';
 import type { Prescription, SaleItem } from '$lib/server/db/schema';
 import { findCustomerById } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
@@ -68,15 +73,22 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		};
 	}
 
-	if (data.orderNumber) {
+	// Resending the sale's own number is not a reassignment (no lock, no write, no audit)
+	const newOrderNumber =
+		data.orderNumber !== undefined && data.orderNumber !== existing.orderNumber
+			? data.orderNumber
+			: undefined;
+
+	if (newOrderNumber !== undefined) {
 		const [existingOrder] = await db
 			.select({ id: sales.id })
 			.from(sales)
-			.where(eq(sales.orderNumber, data.orderNumber));
-		if (existingOrder) {
+			.where(eq(sales.orderNumber, newOrderNumber));
+		// Reassigning a sale its own number is a no-op, not a duplicate
+		if (existingOrder && existingOrder.id !== data.id) {
 			return {
 				success: false as const,
-				error: `El número de orden #${data.orderNumber} ya existe`
+				error: `El número de orden #${newOrderNumber} ya existe`
 			};
 		}
 	}
@@ -154,166 +166,180 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 
 	// All writes in a single transaction
 	const beforeItems: SaleItem[] = [];
-	const txResult = await db.transaction(async (tx) => {
-		let patchedPrescription: Prescription | null = null;
-		if (data.prescription) {
-			const prescId = (await getSalePrescription(data.id, tx))?.id;
-			if (prescId) {
-				const patch: Record<string, unknown> = { updatedAt: nowISO() };
-				for (const key of ['dp', 'npRight', 'npLeft'] as const) {
-					const value = data.prescription[key];
-					if (value !== undefined) patch[key] = value;
-				}
-				const [after] = await tx
-					.update(prescriptions)
-					.set(patch)
-					.where(eq(prescriptions.id, prescId))
-					.returning();
-				patchedPrescription = after ?? null;
-			}
-		}
-
-		if (hasItemChanges) {
-			// ── 1. Return only what the sale still holds (net outstanding per
-			// lot — never re-returns movements a prior edit already reverted) ──
-			await revertSaleInventory(tx, data.id, ctx.userId!, {
-				origin: 'edit',
-				reason: data.reason
-			});
-
-			// ── 2. Restore cached stock counters ────────────────────────────
-			const oldItems = await tx
-				.select()
-				.from(saleItems)
-				.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
-
-			// Snapshot for the post-tx audit diff (read before the soft-delete below).
-			beforeItems.push(...oldItems);
-
-			for (const item of oldItems) {
-				if (item.productId) {
-					const [product] = await tx
-						.select({ id: products.id, stock: products.stock })
-						.from(products)
-						.where(eq(products.id, item.productId));
-
-					if (product && product.stock !== null) {
-						await tx
-							.update(products)
-							.set({ stock: product.stock + item.quantity, updatedAt: nowISO() })
-							.where(eq(products.id, item.productId));
+	// A race on the reassigned number surfaces as the same friendly duplicate error
+	const txResult = await db
+		.transaction(async (tx) => {
+			// Same lock order as createSaleCore (sequence lock → inventory rows): a
+			// number reassignment must take it before touching lots, or deadlock.
+			if (newOrderNumber !== undefined) await lockSaleOrderSequence(tx);
+			let patchedPrescription: Prescription | null = null;
+			if (data.prescription) {
+				const prescId = (await getSalePrescription(data.id, tx))?.id;
+				if (prescId) {
+					const patch: Record<string, unknown> = { updatedAt: nowISO() };
+					for (const key of ['dp', 'npRight', 'npLeft'] as const) {
+						const value = data.prescription[key];
+						if (value !== undefined) patch[key] = value;
 					}
-				}
-
-				if (item.lensCatalogItemId) {
-					const [lens] = await tx
-						.select({
-							id: lensCatalogItems.id,
-							stock: lensCatalogItems.stock,
-							inventoryMode: lensCatalogItems.inventoryMode
-						})
-						.from(lensCatalogItems)
-						.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
-
-					if (lens && lens.inventoryMode === 'STOCK' && lens.stock !== null) {
-						await tx
-							.update(lensCatalogItems)
-							.set({ stock: lens.stock + item.quantity, updatedAt: nowISO() })
-							.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
-					}
+					const [after] = await tx
+						.update(prescriptions)
+						.set(patch)
+						.where(eq(prescriptions.id, prescId))
+						.returning();
+					patchedPrescription = after ?? null;
 				}
 			}
 
-			// ── 3. Soft-delete all existing sale items (cascade handles free_details + child treatments) ──
-			await tx
-				.update(saleItems)
-				.set({ deletedAt: nowISO(), updatedAt: nowISO() })
-				.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
-
-			// ── 4. Insert new items + consume inventory ──────────────────────
-			const idMap = new Map<string, string>();
-			const newIds = new Map<number, string>();
-			data.items!.forEach((item, index) => {
-				const newId = crypto.randomUUID();
-				newIds.set(index, newId);
-				if (item.id) idMap.set(item.id, newId);
-			});
-			for (const [index, item] of data.items!.entries()) {
-				const saleItemId = newIds.get(index)!;
-				const resolvedParentId = item.parentSaleItemId
-					? (idMap.get(item.parentSaleItemId) ?? null)
-					: null;
-
-				await insertSaleItem(tx, {
-					id: saleItemId,
-					saleId: data.id,
-					item,
-					parentSaleItemId: resolvedParentId,
-					prescriptionId: item.prescriptionId ?? null,
-					userId: ctx.userId!,
-					now: nowISO()
+			if (hasItemChanges) {
+				// ── 1. Return only what the sale still holds (net outstanding per
+				// lot — never re-returns movements a prior edit already reverted) ──
+				await revertSaleInventory(tx, data.id, ctx.userId!, {
+					origin: 'edit',
+					reason: data.reason
 				});
+
+				// ── 2. Restore cached stock counters ────────────────────────────
+				const oldItems = await tx
+					.select()
+					.from(saleItems)
+					.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
+
+				// Snapshot for the post-tx audit diff (read before the soft-delete below).
+				beforeItems.push(...oldItems);
+
+				for (const item of oldItems) {
+					if (item.productId) {
+						const [product] = await tx
+							.select({ id: products.id, stock: products.stock })
+							.from(products)
+							.where(eq(products.id, item.productId));
+
+						if (product && product.stock !== null) {
+							await tx
+								.update(products)
+								.set({ stock: product.stock + item.quantity, updatedAt: nowISO() })
+								.where(eq(products.id, item.productId));
+						}
+					}
+
+					if (item.lensCatalogItemId) {
+						const [lens] = await tx
+							.select({
+								id: lensCatalogItems.id,
+								stock: lensCatalogItems.stock,
+								inventoryMode: lensCatalogItems.inventoryMode
+							})
+							.from(lensCatalogItems)
+							.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
+
+						if (lens && lens.inventoryMode === 'STOCK' && lens.stock !== null) {
+							await tx
+								.update(lensCatalogItems)
+								.set({ stock: lens.stock + item.quantity, updatedAt: nowISO() })
+								.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
+						}
+					}
+				}
+
+				// ── 3. Soft-delete all existing sale items (cascade handles free_details + child treatments) ──
+				await tx
+					.update(saleItems)
+					.set({ deletedAt: nowISO(), updatedAt: nowISO() })
+					.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
+
+				// ── 4. Insert new items + consume inventory ──────────────────────
+				const idMap = new Map<string, string>();
+				const newIds = new Map<number, string>();
+				data.items!.forEach((item, index) => {
+					const newId = crypto.randomUUID();
+					newIds.set(index, newId);
+					if (item.id) idMap.set(item.id, newId);
+				});
+				for (const [index, item] of data.items!.entries()) {
+					const saleItemId = newIds.get(index)!;
+					const resolvedParentId = item.parentSaleItemId
+						? (idMap.get(item.parentSaleItemId) ?? null)
+						: null;
+
+					await insertSaleItem(tx, {
+						id: saleItemId,
+						saleId: data.id,
+						item,
+						parentSaleItemId: resolvedParentId,
+						prescriptionId: item.prescriptionId ?? null,
+						userId: ctx.userId!,
+						now: nowISO()
+					});
+				}
+
+				// ── 5. Recalculate tax snapshot if provided ─────────────────────
+				const taxRate = data.snapshotTaxRate ?? existing.snapshotTaxRate;
+				const updateData: Record<string, unknown> = {
+					subtotal: newSubtotal,
+					total: newTotal,
+					snapshotTaxRate: taxRate,
+					updatedAt: nowISO()
+				};
+
+				if (data.customerId) updateData.customerId = data.customerId;
+				/** saleDate alias → createdAt (modal already composes day + preserved time) */
+				if (data.saleDate) updateData.createdAt = data.saleDate;
+				if (data.notes !== undefined) updateData.notes = data.notes;
+				if (data.discount !== undefined) updateData.discount = data.discount;
+				if (data.discountType !== undefined) updateData.discountType = data.discountType;
+				if (data.isCashea !== undefined) updateData.isCashea = data.isCashea;
+				if (newOrderNumber !== undefined) updateData.orderNumber = newOrderNumber;
+
+				const [updated] = await tx
+					.update(sales)
+					.set(updateData)
+					.where(eq(sales.id, data.id))
+					.returning();
+				// Reassigned number ahead of the sequence → the next automatic sale is N+1
+				if (newOrderNumber !== undefined) await bumpSaleOrderSequence(newOrderNumber, tx);
+
+				return { sale: updated, prescription: patchedPrescription };
 			}
 
-			// ── 5. Recalculate tax snapshot if provided ─────────────────────
-			const taxRate = data.snapshotTaxRate ?? existing.snapshotTaxRate;
-			const updateData: Record<string, unknown> = {
-				subtotal: newSubtotal,
-				total: newTotal,
-				snapshotTaxRate: taxRate,
-				updatedAt: nowISO()
-			};
-
-			if (data.customerId) updateData.customerId = data.customerId;
+			// ── Header-only update (no item changes) ───────────────────────────
+			const headerUpdate: Record<string, unknown> = {};
+			if (data.customerId) headerUpdate.customerId = data.customerId;
 			/** saleDate alias → createdAt (modal already composes day + preserved time) */
-			if (data.saleDate) updateData.createdAt = data.saleDate;
-			if (data.notes !== undefined) updateData.notes = data.notes;
-			if (data.discount !== undefined) updateData.discount = data.discount;
-			if (data.discountType !== undefined) updateData.discountType = data.discountType;
-			if (data.isCashea !== undefined) updateData.isCashea = data.isCashea;
-			if (data.orderNumber !== undefined) updateData.orderNumber = data.orderNumber;
+			if (data.saleDate) headerUpdate.createdAt = data.saleDate;
+			if (data.notes !== undefined) headerUpdate.notes = data.notes;
+			if (data.discount !== undefined) headerUpdate.discount = data.discount;
+			if (data.discountType !== undefined) headerUpdate.discountType = data.discountType;
+			if (data.snapshotTaxRate !== undefined) headerUpdate.snapshotTaxRate = data.snapshotTaxRate;
+			if (data.isCashea !== undefined) headerUpdate.isCashea = data.isCashea;
+			if (newOrderNumber !== undefined) headerUpdate.orderNumber = newOrderNumber;
+
+			if (data.discount !== undefined || data.discountType !== undefined) {
+				headerUpdate.subtotal = newSubtotal;
+				headerUpdate.total = newTotal;
+			}
+
+			// A no-op save (reason only) must not touch the sale row at all:
+			// `updatedAt` only bumps when a real field changes.
+			if (Object.keys(headerUpdate).length === 0) {
+				return { sale: existing, prescription: patchedPrescription };
+			}
+			headerUpdate.updatedAt = nowISO();
 
 			const [updated] = await tx
 				.update(sales)
-				.set(updateData)
+				.set(headerUpdate)
 				.where(eq(sales.id, data.id))
 				.returning();
+			if (newOrderNumber !== undefined) await bumpSaleOrderSequence(newOrderNumber, tx);
 
 			return { sale: updated, prescription: patchedPrescription };
-		}
-
-		// ── Header-only update (no item changes) ───────────────────────────
-		const headerUpdate: Record<string, unknown> = {};
-		if (data.customerId) headerUpdate.customerId = data.customerId;
-		/** saleDate alias → createdAt (modal already composes day + preserved time) */
-		if (data.saleDate) headerUpdate.createdAt = data.saleDate;
-		if (data.notes !== undefined) headerUpdate.notes = data.notes;
-		if (data.discount !== undefined) headerUpdate.discount = data.discount;
-		if (data.discountType !== undefined) headerUpdate.discountType = data.discountType;
-		if (data.snapshotTaxRate !== undefined) headerUpdate.snapshotTaxRate = data.snapshotTaxRate;
-		if (data.isCashea !== undefined) headerUpdate.isCashea = data.isCashea;
-		if (data.orderNumber !== undefined) headerUpdate.orderNumber = data.orderNumber;
-
-		if (data.discount !== undefined || data.discountType !== undefined) {
-			headerUpdate.subtotal = newSubtotal;
-			headerUpdate.total = newTotal;
-		}
-
-		// A no-op save (reason only) must not touch the sale row at all:
-		// `updatedAt` only bumps when a real field changes.
-		if (Object.keys(headerUpdate).length === 0) {
-			return { sale: existing, prescription: patchedPrescription };
-		}
-		headerUpdate.updatedAt = nowISO();
-
-		const [updated] = await tx
-			.update(sales)
-			.set(headerUpdate)
-			.where(eq(sales.id, data.id))
-			.returning();
-
-		return { sale: updated, prescription: patchedPrescription };
-	});
+		})
+		.catch((err: unknown) => {
+			if (newOrderNumber !== undefined && isDuplicateOrderNumberError(err)) {
+				throw new Error(`El número de orden #${newOrderNumber} ya existe`, { cause: err });
+			}
+			throw err;
+		});
 
 	const updatedSale = txResult.sale;
 

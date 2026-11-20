@@ -3,6 +3,7 @@
  * Zod schemas for lens materials and catalog items
  */
 import { z } from 'zod';
+import { partialUpdate } from './common/partialUpdate';
 import { LensType, LensCatalogSource, LensPriceType, LensInventoryMode } from '$lib/shared/enums';
 import { NameSchema, EntityIdSchema, PendingEntitySchema } from './common/identity';
 import { CoercedBoolean, CoercedInteger, CoercedNumber } from './common/numbers';
@@ -25,7 +26,7 @@ export const CreateLensMaterialSchema = z.object({
 	description: z.string().optional()
 });
 
-export const UpdateLensMaterialSchema = CreateLensMaterialSchema.partial().extend({
+export const UpdateLensMaterialSchema = partialUpdate(CreateLensMaterialSchema).extend({
 	id: z.uuid()
 });
 
@@ -42,7 +43,7 @@ export const CreateLensTechnologySchema = z.object({
 	minFittingHeight: CoercedNumber.min(0, 'Altura mínima debe ser ≥ 0').optional()
 });
 
-export const UpdateLensTechnologySchema = CreateLensTechnologySchema.partial().extend({
+export const UpdateLensTechnologySchema = partialUpdate(CreateLensTechnologySchema).extend({
 	id: z.uuid()
 });
 
@@ -192,7 +193,7 @@ export const CreateLensCatalogItemSchema = BaseLensCatalogItemSchema.refine(
 	{ message: 'Se requiere al menos un rango óptico para cristales terminados', path: ['ranges'] }
 );
 
-export const UpdateLensCatalogItemSchema = BaseLensCatalogItemSchema.partial().extend({
+export const UpdateLensCatalogItemSchema = partialUpdate(BaseLensCatalogItemSchema).extend({
 	id: z.uuid()
 });
 

@@ -14,9 +14,9 @@ import {
 	findUserByUsername,
 	findUserById,
 	findDeletedUserByEmail,
-	findDeletedUserByUsername,
-	updateUser as dbUpdateUser
+	findDeletedUserByUsername
 } from '$lib/server/db/queries/users';
+import { applyUserUpdate } from '$lib/server/users/applyUserUpdate';
 
 // Import schemas
 import { CreateUserSchema, UpdateUserSchema } from '$lib/schemas/users';
@@ -154,26 +154,5 @@ export const updateUserForm = form(UpdateUserSchema, async (data, issue): Promis
 		}
 	}
 
-	// Prepare update data
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const updateData: Record<string, any> = { ...rest };
-
-	if (email) {
-		updateData.email = email.toLowerCase();
-	}
-
-	if (username) {
-		updateData.username = username.toLowerCase();
-	}
-
-	if (password) {
-		updateData.hashedPassword = await hash(password, {
-			memoryCost: 19456,
-			timeCost: 2,
-			outputLen: 32,
-			parallelism: 1
-		});
-	}
-
-	return await dbUpdateUser(id, updateData);
+	return applyUserUpdate(existingUser, { ...rest, email, username, password });
 });

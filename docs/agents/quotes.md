@@ -82,6 +82,7 @@ Owner rules: al convertir, el ítem se inserta con FIFO de `sales` (`insertSaleI
 - 🟡 Las quotes no registran medidas de montaje (DP/NP) en sus ítems; la conversión no copia medidas a la venta (mismo hueco de larga data). El preseed del editor de lente usa `null` para esas medidas.
 - ~~🟠 `getNextQuoteNumber` = MAX+1, no a prueba de concurrencia~~ **Resuelto (2026-11-19, #229):** sequence de Postgres + preview no reservante.
 - ~~🟡 Inversión de capas `server/quotes/* → $lib/remote/quotes/helpers` + `resolveLensSnapshotCosts` duplicado~~ **Resuelto (2026-11-19, #229):** `remote/quotes/helpers.ts` borrado; cores usan query fns con executor.
+- ~~🟡 Conversión quote→venta numeraba con `getNextOrderNumber` (MAX+1)~~ **Resuelto (2026-11-19, #231):** el número lo asigna la sequence de ventas `sales_order_number_seq`; ver `docs/agents/sales.md` → Numeración.
 
 ## Planes completados
 

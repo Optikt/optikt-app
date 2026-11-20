@@ -40,6 +40,11 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 - `src/lib/shared/` = frontera client/server: lógica idéntica a ambos lados vive ahí; lo que es solo-cliente va a `utils/`, solo-servidor a `src/lib/server/`.
 - Conteo Físico (archivos en shared, reglas del dominio `inventory`): `countLineSaveQueue.ts` = cola de guardado «último valor gana» (un envío por línea, líneas distintas en paralelo, el caller aporta el `Set` in-flight como `$state`); `countSessionPhase.ts` = fases/CTA/stepper + `buildDiffRows`; `inventoryCount.ts` = math del ciclo. Specs co-ubicados.
 
+- **Updates parciales (DT26)** — dos helpers, usar juntos en todo `update*` remote:
+  - `schemas/common/partialUpdate.ts` → `partialUpdate(CreateSchema)`: como `.partial()` pero **quita los `.default()`** (Zod 4 los conserva dentro de `.partial()` y un update parcial reseteaba campos con default). Spec: `partialUpdate.spec.ts` (cubre los `Update*Schema` de customers/users/brands/suppliers/materials/products/lentes).
+  - `shared/buildChangedFields.ts` → `buildChangedFields(original, input, { emptyToNull })` + `hasChangedFields`: `undefined` = no tocar, `''` en `emptyToNull` = `null`, solo devuelve claves cuyo valor cambió (números vs numéricos string, arrays/objetos en profundidad). Spec co-ubicado.
+  - Límite conocido: los campos numéricos `n:` de SvelteKit llegan `undefined` cuando están vacíos → no se pueden "vaciar" por formulario (igual que antes).
+
 ## Known gaps / tech debt
 
 - 🟡 Barrels legacy además de los listados: `schemas/index.ts`, `remote/index.ts`, `utils/index.ts`, `audit/index.ts` — consumibles, no extendibles; eliminar en futuras limpiezas.

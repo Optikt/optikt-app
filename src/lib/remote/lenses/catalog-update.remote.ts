@@ -24,6 +24,7 @@ import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/s
 import { nowISO } from '$lib/dates';
 
 import { computePairPurchasePrice } from '$lib/shared/pairPurchasePrice';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 export const updateLensCatalogItemForm = form(
 	UpdateLensCatalogItemSchema,
 	async (data): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> => {
@@ -47,7 +48,6 @@ export const updateLensCatalogItemForm = form(
 			shippingPrice,
 			isTaxable,
 			inventoryMode,
-			stock,
 			notes,
 			pendingSupplierName,
 			pendingMaterialName,
@@ -120,16 +120,22 @@ export const updateLensCatalogItemForm = form(
 					);
 				}
 
-				// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
+				// inventoryMode drives stock (DT26: only when the mode is sent):
+				// ON_DEMAND → null; switching to STOCK from a null stock → 0; otherwise the
+				// stock is untouched here (it moves through inventory movements).
 				const stockOverride =
-					inventoryMode === 'ON_DEMAND' ? { stock: null } : stock !== undefined ? {} : { stock: 0 };
+					inventoryMode === 'ON_DEMAND'
+						? { stock: null }
+						: inventoryMode === 'STOCK' && existing.stock == null
+							? { stock: 0 }
+							: {};
 
 				// Recompute pairPurchasePrice from the effective basePrice and priceType
 				const effectiveBasePrice = basePrice ?? existing.basePrice;
 				const effectivePriceType = priceType ?? existing.priceType;
 				const pairPurchasePrice = computePairPurchasePrice(effectiveBasePrice, effectivePriceType);
 
-				const updateValues: Partial<NewLensCatalogItem> = {
+				const requested: Partial<NewLensCatalogItem> = {
 					...(source !== undefined && { source }),
 					...(name !== undefined && { name }),
 					...(type !== undefined && { type }),
@@ -151,17 +157,21 @@ export const updateLensCatalogItemForm = form(
 					...(inventoryMode !== undefined && { inventoryMode }),
 					...(notes !== undefined && { notes }),
 					...stockOverride,
-					pairPurchasePrice,
-					updatedAt: now
+					pairPurchasePrice
 				};
 
-				const [updated] = await tx
-					.update(lensCatalogItems)
-					.set(updateValues)
-					.where(eq(lensCatalogItems.id, id))
-					.returning();
-
-				if (!updated) invalid('Error actualizando item');
+				// DT26: write only what changed; an unchanged save does not touch the row
+				const changes = buildChangedFields(existing, requested);
+				let updated: LensCatalogItem = existing;
+				if (hasChangedFields(changes)) {
+					const [row] = await tx
+						.update(lensCatalogItems)
+						.set({ ...changes, updatedAt: now })
+						.where(eq(lensCatalogItems.id, id))
+						.returning();
+					if (!row) invalid('Error actualizando item');
+					updated = row;
+				}
 
 				// Handle optical ranges - only delete/reinsert if semantically changed
 				let insertedRanges: LensOpticalRange[];

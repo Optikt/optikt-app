@@ -6,12 +6,14 @@ export type SessionUser = Pick<User, 'id' | 'role'> & Partial<User>;
 
 export interface CallRemoteOptions {
 	user?: SessionUser | null;
+	/** Current auth session (`locals.session`); defaults to null. */
+	session?: App.Locals['session'];
 	method?: string;
 	url?: string;
 }
 
 function createTestStore(options: CallRemoteOptions = {}) {
-	const { user = null, method = 'POST', url = 'http://localhost/test' } = options;
+	const { user = null, session = null, method = 'POST', url = 'http://localhost/test' } = options;
 	const request = new Request(url, { method, headers: { 'user-agent': 'vitest' } });
 	const parsedUrl = new URL(url);
 
@@ -25,7 +27,7 @@ function createTestStore(options: CallRemoteOptions = {}) {
 		},
 		fetch: globalThis.fetch,
 		getClientAddress: () => '127.0.0.1',
-		locals: { user, session: null },
+		locals: { user, session },
 		params: {},
 		platform: undefined,
 		request,

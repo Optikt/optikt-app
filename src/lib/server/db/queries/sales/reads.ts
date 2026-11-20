@@ -12,7 +12,7 @@ import type {
 	SalesStats
 } from './types';
 import { buildSaleConditions, saleSearchFields } from './shared';
-import { eq, isNull, and, desc, asc, max, count, sql, type SQL } from 'drizzle-orm';
+import { eq, isNull, and, desc, asc, count, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { relevanceScoreOrderSql } from '$lib/server/db/search';
@@ -76,9 +76,18 @@ export async function getSalePrescription(
 	return row?.prescription ?? null;
 }
 
-export async function getNextOrderNumber(executor: DbOrTx = db): Promise<number> {
-	const [row] = await executor.select({ maxNum: max(sales.orderNumber) }).from(sales);
-	return (row?.maxNum ?? 0) + 1;
+/**
+ * Preview NO reservante del próximo número automático de venta: lee el estado de
+ * la sequence `sales_order_number_seq` sin consumir `nextval`. Solo informativo
+ * (wizard / modal de conversión); el número real lo asigna la DB al insertar y
+ * puede diferir si otra venta se guarda antes.
+ */
+export async function getSaleOrderNumberPreview(executor: DbOrTx = db): Promise<number> {
+	const rows = await executor.execute<{ next: string | number }>(sql`
+		SELECT CASE WHEN is_called THEN last_value + 1 ELSE last_value END AS next
+		FROM sales_order_number_seq
+	`);
+	return Number(rows[0]?.next ?? 1);
 }
 
 /**

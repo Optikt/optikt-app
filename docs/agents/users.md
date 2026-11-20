@@ -25,6 +25,11 @@ Login (Argon2), sesiones con token hash + vivacidad, gestión de usuarios ADMIN-
 - Usuario desactivado o sesión expirada → `deactivateSession` inmediata + cookie borrada (`hooks.server.ts:26-40`, `auth.ts:50-60`).
 - Contraseñas: Argon2 con params explícitos `{memoryCost:19456, timeCost:2, outputLen:32, parallelism:1}` en login y registro (`remote/auth.remote.ts:31-36`, `remote/users/commands.remote.ts:166-171`) — no cambiar en un solo sitio.
 - Cambio de contraseña propia exige verificar `currentPassword` antes del rehash (`profile.remote.ts:38-59`).
+- **Cambiar una contraseña invalida sesiones** (misma `db.transaction` que el update del hash):
+  - Propia (`changePasswordForm`): `deactivateOtherUserSessions(userId, currentSessionId, tx)` → se cortan los demás dispositivos, la sesión actual sigue viva (sin sesión en `locals` → se cortan todas).
+  - Desde Usuarios (`updateUserForm`, `updateUser`, ambos delegan en `server/users/applyUserUpdate.ts`: diff DT26 + hash + tx) cuando viene `password` no vacío: `deactivateSessionsAfterPasswordChange(id, keepSessionId, tx)`. A otro usuario → corta todas; un admin que se cambia su propia clave ahí conserva la sesión actual (igual que el perfil).
+  - Reactivación (`reactivateUser`): restore + trash + `deactivateAllUserSessions` en una tx (la clave cambia, las sesiones viejas no sobreviven).
+  - Las altas de usuario no tocan sesiones (no existen).
 
 **Soft-delete vs desactivación** (dos estados distintos, `queries/users.ts:111-142`)
 
@@ -43,6 +48,8 @@ Login (Argon2), sesiones con token hash + vivacidad, gestión de usuarios ADMIN-
 
 - `(auth)/+layout.server.ts` redirige a `/dashboard` si ya logueado; `(app)/+layout.server.ts` protege todo el app → `/login` si no hay user.
 
+- **Update parcial (DT26)**: `UpdateUserSchema = partialUpdate(Create) + id/password` (el `role` ya no vuelve a VIEWER si no se envía). `updateUserForm`/`updateUser` persisten solo el diff (`buildChangedFields`) y devuelven `toUserListItem(user)` — **nunca** el `User` completo (antes viajaba `hashedPassword` al cliente).
+
 ## Patrones locales
 
 - Remotes divididos `users/commands.remote.ts` + `users/forms.remote.ts` (split DT1 fase 4).
@@ -51,11 +58,11 @@ Login (Argon2), sesiones con token hash + vivacidad, gestión de usuarios ADMIN-
 
 ## Testing
 
-- `server/auth.spec.ts` (token/hash/cookie), `shared/user-deletion-rules.spec.ts` (matriz de roles). Hueco: sin int tests de login/creación de usuario.
+- `server/auth.spec.ts` (token/hash/cookie), `shared/user-deletion-rules.spec.ts` (matriz de roles), `remote/profile.int.spec.ts` + `remote/users/users.int.spec.ts` (invalidación de sesiones al cambiar clave; el harness acepta `session` para `locals.session`). Hueco: sin int tests de login/creación de usuario.
 
 ## Known gaps / tech debt
 
-- 🟠 Cambiar la contraseña propia **no invalida las otras sesiones** (`deactivateAllUserSessions` en `sessions.ts:108`, wrapper `invalidateAllUserSessions` en `server/auth.ts:79-81` — su único caller es él mismo, nadie la invoca ni en `profile.remote.ts:38-68` ni en el reset admin `users/commands.remote.ts:290-299`) — vector de seguridad real.
+- ~~🟠 Cambiar la contraseña propia **no invalida las otras sesiones**~~ — **Resuelto** (PR fix/sessions-dt26-sale-sequence): ver invariante en Sesiones. Wrapper muerto `invalidateAllUserSessions` eliminado de `server/auth.ts`.
 - 🟡 `listUsers` es `command()` y no `query(...)` (`commands.remote.ts:41`) — rompe la convención de lectura sin efectos.
 - 🟡 Unique index global de email vs soft-delete: reactivar con email ya reasignado fallará por el índice (`restoreUser` es la vía).
 - 🟡 Argon2 params duplicados en ~5 lugares — centralizar constantes.

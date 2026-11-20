@@ -3,6 +3,7 @@ import { UserRole } from '$lib/shared/enums';
 import { db } from '$lib/server/db';
 import { users, type User, type NewUser } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
+import type { UserListItem } from '$lib/types/users';
 import { nowISO } from '$lib/dates';
 
 /**
@@ -95,9 +96,10 @@ export async function createUser(data: NewUser): Promise<User> {
  */
 export async function updateUser(
 	id: string,
-	data: Partial<Omit<User, 'id' | 'createdAt'>>
+	data: Partial<Omit<User, 'id' | 'createdAt'>>,
+	executor: DbOrTx = db
 ): Promise<User> {
-	const [user] = await db
+	const [user] = await executor
 		.update(users)
 		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(users.id, id))
@@ -157,9 +159,10 @@ export async function countActiveAdmins(): Promise<number> {
  */
 export async function restoreUser(
 	id: string,
-	data: Partial<Omit<User, 'id' | 'createdAt' | 'deletedAt'>>
+	data: Partial<Omit<User, 'id' | 'createdAt' | 'deletedAt'>>,
+	executor: DbOrTx = db
 ): Promise<User> {
-	const [user] = await db
+	const [user] = await executor
 		.update(users)
 		.set({
 			...data,
@@ -169,4 +172,18 @@ export async function restoreUser(
 		.where(eq(users.id, id))
 		.returning();
 	return user;
+}
+
+/** Safe projection for remotes: never ship `hashedPassword` (or other internals) to the client. */
+export function toUserListItem(user: User): UserListItem {
+	return {
+		id: user.id,
+		email: user.email,
+		username: user.username,
+		fullName: user.fullName,
+		role: user.role,
+		deactivatedAt: user.deactivatedAt,
+		isSuperuser: user.isSuperuser,
+		createdAt: user.createdAt
+	};
 }

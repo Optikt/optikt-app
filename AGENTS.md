@@ -136,6 +136,14 @@ await db.transaction(async (tx) => {
 - Audit logs are best-effort — log **after** the transaction succeeds, never inside it.
 - Never duplicate query logic inline — always use the query function with `tx`.
 
+## Update Pattern (partial updates, DT26)
+
+Every `update*` remote persists **only what changed**. Never force `campo || null` over the whole payload.
+
+- Schema: `Update*Schema = partialUpdate(Create*Schema).extend({ id })` (`$lib/schemas/common/partialUpdate`). Plain `.partial()` keeps Zod 4 `.default()`s, and a partial update would reset those fields.
+- Remote: `const changes = buildChangedFields(existing, input, { emptyToNull: [...] })` (`$lib/shared/buildChangedFields`). An omitted key (`undefined`) means "do not touch". `''` on an `emptyToNull` key means "cleared on purpose" (`null`). If `!hasChangedFields(changes)`, return `existing` without `UPDATE` or audit.
+- Then `update*(id, changes, tx?)` through the query function, with audit after it.
+
 ## Instructions
 
 Project conventions, Svelte patterns, and design principles are in `.github/instructions/`. Los tres archivos de convenciones (`project-conventions`, `svelte-patterns`, `design-ui`) se cargan automáticamente vía `instructions` en `opencode.json`; `svelte-doctor.instructions.md` se lee bajo demanda. Toast reference is available as a prompt in `.github/prompts/toast-usage.prompt.md`.
