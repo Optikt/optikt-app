@@ -48,6 +48,8 @@ Login (Argon2), sesiones con token hash + vivacidad, gestión de usuarios ADMIN-
 
 - `(auth)/+layout.server.ts` redirige a `/dashboard` si ya logueado; `(app)/+layout.server.ts` protege todo el app → `/login` si no hay user.
 
+- **Update parcial (DT26)**: `UpdateUserSchema = partialUpdate(Create) + id/password` (el `role` ya no vuelve a VIEWER si no se envía). `updateUserForm`/`updateUser` persisten solo el diff (`buildChangedFields`) y devuelven `toUserListItem(user)` — **nunca** el `User` completo (antes viajaba `hashedPassword` al cliente).
+
 ## Patrones locales
 
 - Remotes divididos `users/commands.remote.ts` + `users/forms.remote.ts` (split DT1 fase 4).

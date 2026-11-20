@@ -21,6 +21,8 @@ Tabla unificada de materiales por categoría (FRAME —cubre también SUNGLASSES
 - Reactivación = 2 pasos: restaura material **y** limpia su entrada de trash (`:247-268`).
 - `quickCreateMaterial` (inline del wizard) es idempotente: devuelve el existente y genera código único de forma iterativa (`materials.remote.ts:210-242`, `queries/materials.ts:37-52`), vía `buildMaterialCode` (`$lib/utils/materialCodes`).
 
+- **Update parcial (DT26)**: `UpdateMaterialSchema = partialUpdate(Create) + id`; `updateMaterialForm` persiste solo el diff (`buildChangedFields`, `emptyToNull: ['description']`). Descripción omitida se conserva (antes `?? null` la borraba), `''` la vacía; sin cambios → no escribe. Spec: `remote/catalogPartialUpdates.int.spec.ts`.
+
 ## Patrones locales
 
 - Paginación/orden de campo compartidos con `products` (`queries/materials.ts`).

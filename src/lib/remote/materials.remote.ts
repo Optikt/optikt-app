@@ -5,6 +5,7 @@
 import { query, form, command } from '$app/server';
 import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 import {
 	ListMaterialsSchema,
 	MaterialIdSchema,
@@ -162,13 +163,18 @@ export const updateMaterialForm = form(
 			}
 		}
 
-		// Update material
-		const updated = await updateMaterial(id, {
-			name,
-			code,
-			productType,
-			description: description ?? null
-		});
+		// DT26: only persist what changed; an omitted description is kept,
+		// an empty one means "cleared" → null.
+		const changes = buildChangedFields(
+			existing,
+			{ name, code, productType, description },
+			{ emptyToNull: ['description'] }
+		);
+		if (!hasChangedFields(changes)) {
+			return existing;
+		}
+
+		const updated = await updateMaterial(id, changes);
 		if (!updated) {
 			invalid('Error actualizando material');
 		}

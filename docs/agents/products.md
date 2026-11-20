@@ -48,10 +48,12 @@ Owner rules: los materiales del producto son del dominio `materials` (referencia
 - `searchCatalog` combina productos + ítems de cristales en paralelo; limit default 20, max 50 (`catalog.remote.ts:19`); `q` vacío sin supplierId → arrays vacíos.
 - `getCatalogItemsByIds` siembra la caché del wizard en edición de venta (`:41`).
 
+- **Update parcial (DT26)**: `UpdateProductSchema = partialUpdate(Create) + id` (sin los `.default()` de create: un update parcial ya no resetea `isTaxable`/`isAutoSku`). `updateProductForm` persiste solo el diff vía `buildChangedFields` + `updateProduct(id, changes, tx)` (sin Drizzle inline para el update); `supplierId`/`materialId` nunca se ponen en null, SKU vacío se ignora; sin cambios → no escribe. Spec: `remote/catalogPartialUpdates.int.spec.ts`.
+
 ## Patrones locales
 
 - Listado paginado con joins parciales (brand/supplier/material) + token search con ORDER BY relevancia (`queries/products.ts:69,88-93,168-173`).
-- `UpdateProductSchema = Create.partial() + id` (`schemas/products.ts:111`).
+- `UpdateProductSchema = partialUpdate(CreateProductSchema) + id` (`schemas/products.ts`, DT26).
 - Formularios por secciones (`components/products/form/*`: General/Pricing/Stock/FrameAttributes/ContactLensFields) + `pendingEntities.ts` para inline-create.
 
 ## Testing

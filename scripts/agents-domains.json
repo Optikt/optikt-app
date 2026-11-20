@@ -99,6 +99,7 @@
 				"src/routes/(app)/products/**",
 				"src/lib/remote/products.remote.ts",
 				"src/lib/remote/catalog.remote.ts",
+				"src/lib/remote/catalogPartialUpdates.int.spec.ts",
 				"src/lib/server/db/queries/products.ts",
 				"src/lib/schemas/products*",
 				"src/lib/schemas/catalog*",

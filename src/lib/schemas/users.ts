@@ -3,6 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
+import { partialUpdate } from './common/partialUpdate';
 import { UserRole } from '$lib/shared/enums';
 import {
 	EmailSchema,
@@ -27,7 +28,7 @@ export const CreateUserSchema = z.object({
 	role: z.enum(UserRole).default(UserRole.VIEWER)
 });
 
-export const UpdateUserSchema = CreateUserSchema.partial().extend({
+export const UpdateUserSchema = partialUpdate(CreateUserSchema).extend({
 	id: z.uuid(),
 	// Password can be empty (keep current) or valid password
 	password: OptionalPasswordSchema.optional()

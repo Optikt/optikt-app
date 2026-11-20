@@ -3,6 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
+import { partialUpdate } from './common/partialUpdate';
 import { SupplierType, ALL_CURRENCY_CODES, ALL_TREATMENT_CATEGORIES } from '$lib/shared/enums';
 import {
 	PhoneSchema,
@@ -43,7 +44,7 @@ export const CreateSupplierSchema = z.object({
 	defaultCurrency: z.enum(ALL_CURRENCY_CODES).optional()
 });
 
-export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({
+export const UpdateSupplierSchema = partialUpdate(CreateSupplierSchema).extend({
 	id: z.uuid()
 });
 

@@ -3,6 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
+import { partialUpdate } from './common/partialUpdate';
 import {
 	NameSchema,
 	EntityIdSchema,
@@ -20,7 +21,7 @@ export const CreateBrandSchema = z.object({
 	website: OptionalUrlSchema
 });
 
-export const UpdateBrandSchema = CreateBrandSchema.partial().extend({
+export const UpdateBrandSchema = partialUpdate(CreateBrandSchema).extend({
 	id: z.uuid()
 });
 

@@ -5,6 +5,7 @@
 import { query, form, command } from '$app/server';
 import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 import {
 	ListSuppliersSchema,
 	CreateSupplierSchema,
@@ -169,11 +170,18 @@ export const updateSupplierForm = form(
 			}
 		}
 
-		const updated = await updateSupplier(id, {
-			name,
-			rif: rif && rif.trim() !== '' ? rif : null,
-			...rest
-		});
+		// DT26: only persist what changed; omitted keys are not touched,
+		// an empty RIF means "cleared" → null.
+		const changes = buildChangedFields(
+			existing,
+			{ ...rest, name, rif: rif?.trim() },
+			{ emptyToNull: ['rif'] }
+		);
+		if (!hasChangedFields(changes)) {
+			return existing;
+		}
+
+		const updated = await updateSupplier(id, changes);
 		if (!updated) {
 			invalid('Error actualizando proveedor');
 		}

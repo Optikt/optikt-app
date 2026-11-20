@@ -9,7 +9,7 @@ import { getCurrentUser, requireAdmin, requireUserAdmin } from '$lib/server/guar
 import { UserRole } from '$lib/shared/enums';
 import { isManagerDeletingProtectedRole, isLastAdmin } from '$lib/shared/user-deletion-rules';
 import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
+import { users, type User } from '$lib/server/db/schema';
 import {
 	findUserByEmail,
 	findUserByUsername,
@@ -17,10 +17,12 @@ import {
 	findDeletedUserByEmail,
 	findDeletedUserByUsername,
 	updateUser as dbUpdateUser,
+	toUserListItem,
 	restoreUser as dbRestoreUser,
 	countActiveAdmins
 } from '$lib/server/db/queries/users';
 import { deactivateAllUserSessions } from '$lib/server/db/queries/sessions';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
 
@@ -285,20 +287,15 @@ export const updateUser = command(UpdateUserSchema, async (input): Promise<UserL
 		}
 	}
 
-	// Prepare update data
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const updateData: Record<string, any> = { ...rest };
-
-	if (email) {
-		updateData.email = email.toLowerCase();
-	}
-
-	if (username) {
-		updateData.username = username.toLowerCase();
-	}
+	// DT26: only persist what changed; omitted keys (undefined) are not touched.
+	const changes: Partial<User> = buildChangedFields(existingUser, {
+		...rest,
+		email: email?.toLowerCase(),
+		username: username?.toLowerCase()
+	});
 
 	if (password) {
-		updateData.hashedPassword = await hash(password, {
+		changes.hashedPassword = await hash(password, {
 			memoryCost: 19456,
 			timeCost: 2,
 			outputLen: 32,
@@ -306,14 +303,19 @@ export const updateUser = command(UpdateUserSchema, async (input): Promise<UserL
 		});
 	}
 
+	if (!hasChangedFields(changes)) {
+		return toUserListItem(existingUser);
+	}
+
 	// Admin password reset: cut every session of the target user in the same tx
-	return await db.transaction(async (tx) => {
-		const updated = await dbUpdateUser(id, updateData, tx);
+	const updated = await db.transaction(async (tx) => {
+		const row = await dbUpdateUser(id, changes, tx);
 		if (password) {
 			await deactivateAllUserSessions(id, tx);
 		}
-		return updated;
+		return row;
 	});
+	return toUserListItem(updated);
 });
 
 /**

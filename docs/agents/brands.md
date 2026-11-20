@@ -29,6 +29,8 @@ Owner rules: el proveedor es del dominio `suppliers` (`*brandSuppliers*` → ese
 - **Resolución de reglas**: si el producto tiene overrides activos → se usan SOLO las del producto; si alguna override está inactiva → `[` vacía; sin override → reglas activas de marca (`productId IS NULL`) — `reads.ts:27-37`.
 - `toggleProductOverride` usa filas-marcador (`accessoryProductId = null`) para recordar "deshabilitado" cuando no hay accesorios (`writes.ts:96-179`); upsert con override borra el marcador y reactiva filas inactivas (`internal.ts:197-225`).
 
+- **Update parcial (DT26)**: `UpdateBrandSchema = partialUpdate(Create) + id`; `updateBrandForm` persiste solo el diff (`buildChangedFields`); sin cambios → devuelve la marca sin `UPDATE` ni audit. Spec: `remote/catalogPartialUpdates.int.spec.ts`.
+
 ## Patrones locales
 
 - Split reader/writer/internal/types en `queries/brandAccessories/`.

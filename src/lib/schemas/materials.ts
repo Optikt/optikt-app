@@ -3,6 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
+import { partialUpdate } from './common/partialUpdate';
 import {
 	MATERIAL_CATEGORIES,
 	ProductType,
@@ -27,7 +28,7 @@ export const CreateMaterialSchema = z.object({
 	description: z.string().optional()
 });
 
-export const UpdateMaterialSchema = CreateMaterialSchema.partial().extend({
+export const UpdateMaterialSchema = partialUpdate(CreateMaterialSchema).extend({
 	id: z.uuid()
 });
 

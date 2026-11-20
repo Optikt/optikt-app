@@ -90,4 +90,21 @@ describe('users remotes — cambio de clave por admin invalida sesiones', () => 
 
 		expect(await getUserActiveSessions(deleted.id)).toHaveLength(0);
 	});
+
+	it('DT26: update parcial no resetea el rol ni toca otros campos', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const target = await createUser({ role: UserRole.MANAGER, fullName: 'Original' });
+
+		const result = await callRemoteForm<Record<string, unknown>, Record<string, unknown>>(
+			updateUserForm,
+			{ id: target.id, fullName: 'Renombrado' },
+			{ user: admin }
+		);
+
+		expect(result.fullName).toBe('Renombrado');
+		expect(result.role).toBe(UserRole.MANAGER);
+		expect(result.email).toBe(target.email);
+		// Never ship the password hash to the client
+		expect(result).not.toHaveProperty('hashedPassword');
+	});
 });

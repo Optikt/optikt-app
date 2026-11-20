@@ -5,6 +5,7 @@
 import { query, form, command } from '$app/server';
 import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 import { db } from '$lib/server/db';
 import { softDelete } from '$lib/server/db/queries/deletedItems';
 
@@ -83,7 +84,11 @@ export const updateLensMaterialForm = form(
 			if (dup) invalid(issue.code('Ya existe un material con este código'));
 		}
 
-		const updated = await updateLensMaterial(id, updates);
+		// DT26: only persist what changed (omitted keys are not touched)
+		const changes = buildChangedFields(existing, updates);
+		if (!hasChangedFields(changes)) return existing;
+
+		const updated = await updateLensMaterial(id, changes);
 		if (!updated) invalid('Error actualizando material');
 		await auditService.logUpdate('lens_material', id, existing, updated, getAuditContext());
 		return updated;

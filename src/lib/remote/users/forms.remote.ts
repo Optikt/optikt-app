@@ -8,16 +8,18 @@ import { hash } from '@node-rs/argon2';
 import { requireUserAdmin } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
+import { users, type User } from '$lib/server/db/schema';
 import {
 	findUserByEmail,
 	findUserByUsername,
 	findUserById,
 	findDeletedUserByEmail,
 	findDeletedUserByUsername,
-	updateUser as dbUpdateUser
+	updateUser as dbUpdateUser,
+	toUserListItem
 } from '$lib/server/db/queries/users';
 import { deactivateAllUserSessions } from '$lib/server/db/queries/sessions';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 
 // Import schemas
 import { CreateUserSchema, UpdateUserSchema } from '$lib/schemas/users';
@@ -155,20 +157,15 @@ export const updateUserForm = form(UpdateUserSchema, async (data, issue): Promis
 		}
 	}
 
-	// Prepare update data
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const updateData: Record<string, any> = { ...rest };
-
-	if (email) {
-		updateData.email = email.toLowerCase();
-	}
-
-	if (username) {
-		updateData.username = username.toLowerCase();
-	}
+	// DT26: only persist what changed; omitted keys (undefined) are not touched.
+	const changes: Partial<User> = buildChangedFields(existingUser, {
+		...rest,
+		email: email?.toLowerCase(),
+		username: username?.toLowerCase()
+	});
 
 	if (password) {
-		updateData.hashedPassword = await hash(password, {
+		changes.hashedPassword = await hash(password, {
 			memoryCost: 19456,
 			timeCost: 2,
 			outputLen: 32,
@@ -176,12 +173,17 @@ export const updateUserForm = form(UpdateUserSchema, async (data, issue): Promis
 		});
 	}
 
+	if (!hasChangedFields(changes)) {
+		return toUserListItem(existingUser);
+	}
+
 	// Admin password reset: cut every session of the target user in the same tx
-	return await db.transaction(async (tx) => {
-		const updated = await dbUpdateUser(id, updateData, tx);
+	const updated = await db.transaction(async (tx) => {
+		const row = await dbUpdateUser(id, changes, tx);
 		if (password) {
 			await deactivateAllUserSessions(id, tx);
 		}
-		return updated;
+		return row;
 	});
+	return toUserListItem(updated);
 });

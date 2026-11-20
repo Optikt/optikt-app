@@ -5,6 +5,7 @@
 import { query, form, command } from '$app/server';
 import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 import { eq, isNull, and } from 'drizzle-orm';
 import { z } from 'zod';
 import {
@@ -275,21 +276,20 @@ export const updateProductForm = form(
 				}
 			}
 
-			// Update product
-			const [updated] = await tx
-				.update(products)
-				.set({
-					...rest,
-					...(sku && { sku }),
-					brandId: resolvedBrandId,
-					// supplierId and materialId are required - only update if provided, never set to null
-					...(supplierId !== undefined && { supplierId }),
-					...(materialId !== undefined && { materialId }),
-					updatedAt: now
-				})
-				.where(eq(products.id, id))
-				.returning();
+			// DT26: only persist what changed. Omitted keys are not touched; supplierId
+			// and materialId are required (never set to null); an empty SKU is ignored.
+			const changes = buildChangedFields(oldProduct, {
+				...rest,
+				sku: sku || undefined,
+				brandId: resolvedBrandId,
+				supplierId,
+				materialId
+			});
+			if (!hasChangedFields(changes)) {
+				return { oldProduct, updatedProduct: oldProduct };
+			}
 
+			const updated = await updateProduct(id, changes, tx);
 			if (!updated) {
 				throw new Error('Error actualizando producto');
 			}

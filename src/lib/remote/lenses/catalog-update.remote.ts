@@ -47,7 +47,6 @@ export const updateLensCatalogItemForm = form(
 			shippingPrice,
 			isTaxable,
 			inventoryMode,
-			stock,
 			notes,
 			pendingSupplierName,
 			pendingMaterialName,
@@ -120,9 +119,15 @@ export const updateLensCatalogItemForm = form(
 					);
 				}
 
-				// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
+				// inventoryMode drives stock (DT26: only when the mode is sent):
+				// ON_DEMAND → null; switching to STOCK from a null stock → 0; otherwise the
+				// stock is untouched here (it moves through inventory movements).
 				const stockOverride =
-					inventoryMode === 'ON_DEMAND' ? { stock: null } : stock !== undefined ? {} : { stock: 0 };
+					inventoryMode === 'ON_DEMAND'
+						? { stock: null }
+						: inventoryMode === 'STOCK' && existing.stock == null
+							? { stock: 0 }
+							: {};
 
 				// Recompute pairPurchasePrice from the effective basePrice and priceType
 				const effectiveBasePrice = basePrice ?? existing.basePrice;

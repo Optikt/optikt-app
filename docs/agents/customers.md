@@ -16,7 +16,8 @@ CRUD de clientes con soft-delete/reactivación, búsqueda con ranking de relevan
 **Unicidad y datos opcionales**
 
 - `idNumber` único entre activos: si existe con esa cédula se ofrece **reactivación** en vez de error (`customers.remote.ts:204-218`); duplicado entre activos → `invalid` (`:93-98`).
-- Normalización `|| null` de `idNumber/birthDate/gender` en create y update (`:100-105,221-230`) — vacío nunca invalida; preservar esa normalización al ampliar campos.
+- Normalización `|| null` de `idNumber/birthDate/gender` en create (`customers.remote.ts`, alta con prescripción) — vacío nunca invalida; preservar esa normalización al ampliar campos.
+- **Update parcial (DT26)**: `updateCustomerForm` persiste solo el diff (`buildChangedFields` con `emptyToNull: ['idNumber','birthDate','gender']`). Clave omitida = no tocar; `''` = vaciar a propósito (`null`). Guardado sin cambios → devuelve el cliente sin `UPDATE` ni audit. `birthDate` se compara por día (`YYYY-MM-DD`).
 
 **Transacciones**
 
@@ -38,7 +39,7 @@ CRUD de clientes con soft-delete/reactivación, búsqueda con ranking de relevan
 
 ## Testing
 
-- `remote/customers.int.spec.ts` (integración).
+- `remote/customers.int.spec.ts` (integración; incluye DT26: update parcial no anula idNumber/birthDate/notas).
 - El plan `customer-gender-age` define los casos esperados en specs de schemas/dates e int specs de createSale/createNewQuote.
 
 ## Known gaps / tech debt
