@@ -99,7 +99,7 @@ describe('users remotes — cambio de clave por admin invalida sesiones', () => 
 			{
 				deletedUserId: deleted.id,
 				email: `re-${deleted.id.slice(0, 8)}@optikt.test`,
-				username: `re-${deleted.id.slice(0, 8)}`,
+				username: `re_${deleted.id.slice(0, 8)}`,
 				fullName: 'Reactivado',
 				password: 'clave-nueva-456',
 				role: UserRole.SELLER
