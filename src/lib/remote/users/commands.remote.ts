@@ -20,6 +20,7 @@ import {
 	restoreUser as dbRestoreUser,
 	countActiveAdmins
 } from '$lib/server/db/queries/users';
+import { deactivateAllUserSessions } from '$lib/server/db/queries/sessions';
 import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
 
@@ -222,15 +223,24 @@ export const reactivateUser = command(
 			parallelism: 1
 		});
 
-		// Restore the user with new data and clear its trash entry
-		const restoredUser = await dbRestoreUser(deletedUserId, {
-			email: email.toLowerCase(),
-			username: username.toLowerCase(),
-			fullName,
-			hashedPassword,
-			role: role ?? UserRole.VIEWER
+		// Restore the user with new data, clear its trash entry and cut any
+		// session left from before the deletion (new password) — one tx
+		const restoredUser = await db.transaction(async (tx) => {
+			const restored = await dbRestoreUser(
+				deletedUserId,
+				{
+					email: email.toLowerCase(),
+					username: username.toLowerCase(),
+					fullName,
+					hashedPassword,
+					role: role ?? UserRole.VIEWER
+				},
+				tx
+			);
+			await restore('user', deletedUserId, tx);
+			await deactivateAllUserSessions(deletedUserId, tx);
+			return restored;
 		});
-		await restore('user', deletedUserId, db);
 
 		return {
 			id: restoredUser.id,
@@ -296,7 +306,14 @@ export const updateUser = command(UpdateUserSchema, async (input): Promise<UserL
 		});
 	}
 
-	return await dbUpdateUser(id, updateData);
+	// Admin password reset: cut every session of the target user in the same tx
+	return await db.transaction(async (tx) => {
+		const updated = await dbUpdateUser(id, updateData, tx);
+		if (password) {
+			await deactivateAllUserSessions(id, tx);
+		}
+		return updated;
+	});
 });
 
 /**

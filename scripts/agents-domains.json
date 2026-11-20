@@ -209,6 +209,7 @@
 				"src/routes/(app)/users/**",
 				"src/lib/remote/users/**",
 				"src/lib/remote/profile.remote.ts",
+				"src/lib/remote/profile.int.spec.ts",
 				"src/lib/server/auth*",
 				"src/lib/server/guards.ts",
 				"src/lib/server/actionContext.ts",

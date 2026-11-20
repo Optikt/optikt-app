@@ -7,7 +7,12 @@ import { invalid } from '@sveltejs/kit';
 import { hash, verify } from '@node-rs/argon2';
 import { UpdateProfileSchema, ChangePasswordSchema } from '$lib/schemas/settings';
 import { updateUser, findUserByEmail, findUserById } from '$lib/server/db/queries';
-import { requireAuth } from '$lib/server/guards';
+import { getCurrentSession, requireAuth } from '$lib/server/guards';
+import { db } from '$lib/server/db';
+import {
+	deactivateAllUserSessions,
+	deactivateOtherUserSessions
+} from '$lib/server/db/queries/sessions';
 import type { User } from '$lib/server/db/schema';
 
 /**
@@ -33,7 +38,9 @@ export const updateProfileForm = form(UpdateProfileSchema, async (data, issue): 
 });
 
 /**
- * Change own password
+ * Change own password.
+ * Invariant: the password update and the session cut happen in one transaction —
+ * every other session of the user is deactivated, the current one stays alive.
  */
 export const changePasswordForm = form(
 	ChangePasswordSchema,
@@ -58,10 +65,16 @@ export const changePasswordForm = form(
 			invalid(issue.currentPassword('La contraseña actual es incorrecta'));
 		}
 
-		// Hash and update new password
+		// Hash outside the transaction (CPU-bound), then update + cut sessions atomically
 		const newHash = await hash(data.newPassword);
-		await updateUser(currentUser.id, {
-			hashedPassword: newHash
+		const currentSession = getCurrentSession();
+		await db.transaction(async (tx) => {
+			await updateUser(currentUser.id, { hashedPassword: newHash }, tx);
+			if (currentSession) {
+				await deactivateOtherUserSessions(currentUser.id, currentSession.id, tx);
+			} else {
+				await deactivateAllUserSessions(currentUser.id, tx);
+			}
 		});
 
 		return { success: true };

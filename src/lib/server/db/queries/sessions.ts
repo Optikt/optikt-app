@@ -1,5 +1,6 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import type { DbOrTx } from '$lib/server/db/types';
 import { userSessions, users, type Session } from '$lib/server/db/schema';
 import { UserRole } from '$lib/shared/enums';
 import { nowISO } from '$lib/dates';
@@ -95,21 +96,46 @@ export async function updateSessionExpiration(sessionId: string, expiresAt: stri
 /**
  * Deactivate a session by ID
  */
-export async function deactivateSession(sessionId: string): Promise<void> {
-	await db
+export async function deactivateSession(sessionId: string, executor: DbOrTx = db): Promise<void> {
+	await executor
 		.update(userSessions)
 		.set({ isActive: false, updatedAt: nowISO() })
 		.where(eq(userSessions.id, sessionId));
 }
 
 /**
- * Deactivate all sessions for a user
+ * Deactivate all sessions for a user (e.g. an admin reset their password).
  */
-export async function deactivateAllUserSessions(userId: string): Promise<void> {
-	await db
+export async function deactivateAllUserSessions(
+	userId: string,
+	executor: DbOrTx = db
+): Promise<void> {
+	await executor
 		.update(userSessions)
 		.set({ isActive: false, updatedAt: nowISO() })
-		.where(eq(userSessions.userId, userId));
+		.where(and(eq(userSessions.userId, userId), eq(userSessions.isActive, true)));
+}
+
+/**
+ * Deactivate every session of a user except `keepSessionId` — used when the
+ * user changes their own password: other devices are logged out, the current
+ * one stays signed in.
+ */
+export async function deactivateOtherUserSessions(
+	userId: string,
+	keepSessionId: string,
+	executor: DbOrTx = db
+): Promise<void> {
+	await executor
+		.update(userSessions)
+		.set({ isActive: false, updatedAt: nowISO() })
+		.where(
+			and(
+				eq(userSessions.userId, userId),
+				ne(userSessions.id, keepSessionId),
+				eq(userSessions.isActive, true)
+			)
+		);
 }
 
 /**

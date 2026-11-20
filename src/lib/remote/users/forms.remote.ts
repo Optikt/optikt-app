@@ -17,6 +17,7 @@ import {
 	findDeletedUserByUsername,
 	updateUser as dbUpdateUser
 } from '$lib/server/db/queries/users';
+import { deactivateAllUserSessions } from '$lib/server/db/queries/sessions';
 
 // Import schemas
 import { CreateUserSchema, UpdateUserSchema } from '$lib/schemas/users';
@@ -175,5 +176,12 @@ export const updateUserForm = form(UpdateUserSchema, async (data, issue): Promis
 		});
 	}
 
-	return await dbUpdateUser(id, updateData);
+	// Admin password reset: cut every session of the target user in the same tx
+	return await db.transaction(async (tx) => {
+		const updated = await dbUpdateUser(id, updateData, tx);
+		if (password) {
+			await deactivateAllUserSessions(id, tx);
+		}
+		return updated;
+	});
 });

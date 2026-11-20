@@ -95,9 +95,10 @@ export async function createUser(data: NewUser): Promise<User> {
  */
 export async function updateUser(
 	id: string,
-	data: Partial<Omit<User, 'id' | 'createdAt'>>
+	data: Partial<Omit<User, 'id' | 'createdAt'>>,
+	executor: DbOrTx = db
 ): Promise<User> {
-	const [user] = await db
+	const [user] = await executor
 		.update(users)
 		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(users.id, id))
@@ -157,9 +158,10 @@ export async function countActiveAdmins(): Promise<number> {
  */
 export async function restoreUser(
 	id: string,
-	data: Partial<Omit<User, 'id' | 'createdAt' | 'deletedAt'>>
+	data: Partial<Omit<User, 'id' | 'createdAt' | 'deletedAt'>>,
+	executor: DbOrTx = db
 ): Promise<User> {
-	const [user] = await db
+	const [user] = await executor
 		.update(users)
 		.set({
 			...data,
