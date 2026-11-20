@@ -164,6 +164,40 @@
 
 ---
 
+### DT27 · CI lento: ~10 min por PR por tests y análisis duplicados 🟢
+
+**Problema:** Tiempos medidos en el CI de la PR #231 (2026-11-20):
+
+- SonarQube Analysis: 9m28s, el más largo; es lo que espera la PR en total.
+- Coverage: 6m16s.
+- Lint & Format: 3m48s.
+- Integration: 3m.
+- E2E: 2m27s.
+- Unit: 2m20s.
+
+Sospechas sin verificar (falta leer `.github/workflows/*.yml`):
+
+- Coverage parece volver a correr unit e integration, que ya corrieron en sus propios jobs.
+- SonarQube Analysis parece correr tests o coverage otra vez.
+- Hay dos análisis de Sonar: SonarQube Analysis y SonarCloud Code Analysis.
+- `prettier --check .` revisa todo el repo y eslint corre sin caché.
+
+**Por qué importa:** Cada iteración sobre una PR cuesta ~10 min de espera.
+
+**Dificultad:** Baja-media (0.5-1 día). **Solución:**
+
+1. Correr unit + integration **una vez** con coverage y subir el reporte (lcov) como artifact.
+2. Que Sonar consuma ese artifact, sin re-ejecutar tests.
+3. Dejar un solo análisis de Sonar.
+4. Lint con `--cache` (prettier + eslint), con la caché en `actions/cache`, o revisar solo los archivos cambiados en la PR.
+5. Medir antes y después.
+
+Objetivo: ~3-4 min, limitado por integration/E2E.
+
+**Estado:** TECH_DEBT documentado 2026-11-20 (PR #231). Sin empezar.
+
+---
+
 ### ✅ DT26 · Updates reescriben el payload completo (sin diff) (COMPLETADO — 2026-11-19)
 
 **Problema:** Los formularios de edición envían **todos** los campos y el remote los persiste siempre, aunque el usuario haya cambiado uno solo. Caso concreto: `updateCustomerForm` (`customers.remote.ts:100-105`) usa `UpdateCustomerSchema = CreateCustomerSchema.partial()` pero fuerza `idNumber: idNumber || null`, `birthDate: birthDate || null`, `gender: gender || null`, así que un update parcial **borra** los campos omitidos (detectado en la review del PR #179: `customers.int.spec.ts` actualiza con solo `{ id, gender }` y de paso anula `idNumber`/`birthDate`). El patrón se repite en los demás `update*Form` (`products`, `suppliers`, `materials`, `users`, `brands`, `lenses`). La query `updateCustomer(id, Partial<Omit<Customer, ...>>)` ya soporta diffs; el problema está en la capa remote/UI, no en las queries.
@@ -665,6 +699,7 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días         |
 | ⚪        | DT24 · Form classes duplicadas | 2-3 días         |
 | ⚪        | DT25 · CSS pdfjs global        | 1-2 días         |
+| 🟢        | DT27 · CI lento (~10 min)      | 0.5-1 día        |
 | ✅        | ~~DT26 · Updates sin diff~~    | Completado       |
 | ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT        |
 | ⚪        | DT19 · Deps fuera de scope     | Fuera de scope   |
