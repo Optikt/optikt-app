@@ -29,7 +29,12 @@ export async function getSaleItemsWithDetails(saleId: string): Promise<SaleItemW
 	const results = await db
 		.select({
 			item: saleItems,
-			product: { id: products.id, name: products.name, sku: products.sku },
+			product: {
+				id: products.id,
+				name: products.name,
+				sku: products.sku,
+				type: products.type
+			},
 			lensCatalogItem: {
 				id: lensCatalogItems.id,
 				name: lensCatalogItems.name,

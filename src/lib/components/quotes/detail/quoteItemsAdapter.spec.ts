@@ -42,7 +42,7 @@ function quoteItem(partial: Partial<QuoteItemWithDetails>): QuoteItemWithDetails
 		deletedAt: null,
 		createdAt: '',
 		updatedAt: '',
-		product: { id: 'p-1', name: 'American Specs MM2090 C3', sku: 'MOCA-1' },
+		product: { id: 'p-1', name: 'American Specs MM2090 C3', sku: 'MOCA-1', type: 'FRAME' },
 		lensCatalogItem: null,
 		supplierTreatment: null,
 		freeDetails: null,

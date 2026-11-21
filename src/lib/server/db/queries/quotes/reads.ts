@@ -68,7 +68,12 @@ export async function getQuoteItemsWithDetails(quoteId: string): Promise<QuoteIt
 	const results = await db
 		.select({
 			item: quoteItems,
-			product: { id: products.id, name: products.name, sku: products.sku },
+			product: {
+				id: products.id,
+				name: products.name,
+				sku: products.sku,
+				type: products.type
+			},
 			lensCatalogItem: {
 				id: lensCatalogItems.id,
 				name: lensCatalogItems.name,

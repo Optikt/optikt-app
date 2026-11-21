@@ -9,8 +9,12 @@ import {
 	boolean,
 	integer,
 	doublePrecision,
-	foreignKey
+	foreignKey,
+	primaryKey,
+	check,
+	type AnyPgColumn
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { users } from './users';
 import { customers } from './customers';
 import { products } from './products';
@@ -68,6 +72,14 @@ export const sales = pgTable(
 		paidAmountBcvUsd: doublePrecision('paid_amount_bcv_usd').notNull().default(0),
 		/** True when the sale was financed through Cashea (buy-now-pay-later). */
 		isCashea: boolean('is_cashea').notNull().default(false),
+		/**
+		 * LENS_PAIR line whose prescription is the customer's current one ("fórmula principal").
+		 * Null = the sale created/overwrote no customer prescription (multi-person sales).
+		 */
+		primaryLensItemId: uuid('primary_lens_item_id').references(
+			(): AnyPgColumn => saleItems.id,
+			{ onDelete: 'set null' }
+		),
 		notes: varchar(),
 		/** Reason for cancellation (required when cancelling) */
 		cancellationReason: varchar('cancellation_reason', { length: 500 }),
@@ -402,3 +414,58 @@ export const saleItemFreeDetails = pgTable(
 
 export type SaleItemFreeDetails = typeof saleItemFreeDetails.$inferSelect;
 export type NewSaleItemFreeDetails = typeof saleItemFreeDetails.$inferInsert;
+
+// ============================================================================
+// SALE ITEM GROUPS (per-person grouping — display/organization metadata only)
+// ============================================================================
+
+/** A person (free-text label) or unnamed "Trabajo N" grouping lines of a sale. Hard-deleted, never trashed. */
+export const saleItemGroups = pgTable(
+	'sale_item_groups',
+	{
+		id: uuid().primaryKey().notNull().defaultRandom(),
+		saleId: uuid('sale_id')
+			.notNull()
+			.references(() => sales.id, { onDelete: 'cascade' }),
+		/** Free text, never linked to customers. Null → shown as "Trabajo N". */
+		label: varchar({ length: 60 }),
+		position: integer().notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
+	},
+	(table) => [
+		index('ix_sale_item_groups_sale_id').using(
+			'btree',
+			table.saleId.asc().nullsLast().op('uuid_ops')
+		)
+	]
+);
+
+/** Unit allocation of a sale line to a group. Lines are never split: Σ quantity ≤ sale_items.quantity. */
+export const saleItemGroupMembers = pgTable(
+	'sale_item_group_members',
+	{
+		groupId: uuid('group_id')
+			.notNull()
+			.references(() => saleItemGroups.id, { onDelete: 'cascade' }),
+		saleItemId: uuid('sale_item_id')
+			.notNull()
+			.references(() => saleItems.id, { onDelete: 'cascade' }),
+		quantity: integer().notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.groupId, table.saleItemId] }),
+		index('ix_sale_item_group_members_sale_item_id').using(
+			'btree',
+			table.saleItemId.asc().nullsLast().op('uuid_ops')
+		),
+		check('sale_item_group_members_quantity_positive', sql`${table.quantity} > 0`)
+	]
+);
+
+export type SaleItemGroupRow = typeof saleItemGroups.$inferSelect;
+export type SaleItemGroupMemberRow = typeof saleItemGroupMembers.$inferSelect;

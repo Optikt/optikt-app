@@ -8,6 +8,8 @@ import { createInlineCustomer, resolveCustomerReference } from '$lib/server/cust
 import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { composeBusinessTimestamp, nowISO } from '$lib/dates';
 import { db } from '$lib/server/db';
+import { replaceQuoteItemGroups } from '$lib/server/db/queries/quotes/itemGroups';
+import { normalizeGroupsForSubmit } from '$lib/shared/saleItemGroups';
 import type { CreateQuoteInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -79,6 +81,10 @@ export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionCont
 
 		// Create quote items (no stock changes!)
 		await insertQuoteItems(tx, newQuote.id, data.items, now);
+
+		// Per-person groups: client item ids are kept as real ids on insert.
+		const groups = normalizeGroupsForSubmit(data.groups ?? []);
+		if (groups.length > 0) await replaceQuoteItemGroups(newQuote.id, groups, tx);
 
 		return newQuote;
 	});

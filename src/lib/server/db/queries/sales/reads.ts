@@ -60,7 +60,7 @@ function saleOrderExpression(orderBy: SaleOrderBy): SQL | AnyColumn {
  */
 /**
  * Linked prescription of a sale's lens items (DP / nasal measures source).
- * Null when the sale has no lens pairs or they were created without one.
+ * Prefers the primary lens; null when no lens is linked to a prescription.
  */
 export async function getSalePrescription(
 	saleId: string,
@@ -70,8 +70,10 @@ export async function getSalePrescription(
 		.select({ prescription: prescriptions })
 		.from(saleItems)
 		.innerJoin(prescriptions, eq(saleItems.prescriptionId, prescriptions.id))
+		.innerJoin(sales, eq(sales.id, saleItems.saleId))
 		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)))
-		.orderBy(saleItems.createdAt)
+		// The primary lens ("fórmula principal") wins; otherwise the first linked lens.
+		.orderBy(desc(sql`(${saleItems.id} = ${sales.primaryLensItemId})`), saleItems.createdAt)
 		.limit(1);
 	return row?.prescription ?? null;
 }

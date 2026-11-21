@@ -33,6 +33,12 @@ import {
 } from '$lib/schemas/prescriptions';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+import {
+	ITEM_GROUP_LABEL_MAX,
+	MAX_ITEM_GROUPS,
+	validateItemGroups,
+	type GroupableItem
+} from '$lib/shared/saleItemGroups';
 
 const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];
 
@@ -218,6 +224,60 @@ export const InlineCustomerSchema = z.object({
 	notes: z.string().optional()
 });
 
+// ============================================================================
+// ITEM GROUPS (per-person grouping — shared by sales and quotes)
+// ============================================================================
+
+export const ItemGroupMemberSchema = z.object({
+	/** Client id of the line (`SaleItemSchema.id`) on create/update; real id on groups-only save. */
+	itemId: z.uuid('Artículo inválido'),
+	quantity: CoercedInteger.min(1, 'Cantidad inválida')
+});
+
+export const ItemGroupSchema = z.object({
+	label: z
+		.string()
+		.trim()
+		.max(ITEM_GROUP_LABEL_MAX, `Máximo ${ITEM_GROUP_LABEL_MAX} caracteres`)
+		.nullable()
+		.optional()
+		.transform((v) => (v ? v : null)),
+	members: z.array(ItemGroupMemberSchema).min(1, 'Cada persona debe tener al menos un artículo')
+});
+
+export const ItemGroupsSchema = z
+	.array(ItemGroupSchema)
+	.max(MAX_ITEM_GROUPS, `Máximo ${MAX_ITEM_GROUPS} personas`);
+
+export type ItemGroupInput = z.infer<typeof ItemGroupSchema>;
+
+type GroupableInput = {
+	id?: string;
+	itemType: string;
+	quantity: number;
+	parentSaleItemId?: string;
+	parentQuoteItemId?: string;
+};
+
+/** Cross-validation for documents that carry items + groups (+ primary lens). */
+export function refineItemGroups(
+	data: {
+		items?: GroupableInput[];
+		groups?: { label: string | null; members: { itemId: string; quantity: number }[] }[];
+		primaryLensItemId?: string | null;
+	},
+	ctx: z.RefinementCtx
+): void {
+	if (!data.items) return;
+	if (!data.groups && !data.primaryLensItemId) return;
+	const items: GroupableItem[] = data.items
+		.filter((item): item is GroupableInput & { id: string } => !!item.id)
+		.map((item) => ({ id: item.id, itemType: item.itemType, quantity: item.quantity }));
+	for (const message of validateItemGroups(data.groups ?? [], items, data.primaryLensItemId)) {
+		ctx.addIssue({ code: 'custom', message, path: ['groups'] });
+	}
+}
+
 export const CreateSaleSchema = z
 	.object({
 		/** Existing customer ID (when customer found by cédula) */
@@ -233,12 +293,20 @@ export const CreateSaleSchema = z
 		isCashea: z.boolean().optional(),
 		prescription: PrescriptionFieldsSchema.optional(),
 		snapshotTaxRate: CoercedNumber.min(0).default(DEFAULT_TAX_RATE),
-		items: z.array(SaleItemSchema).min(1, 'La venta debe tener al menos un producto')
+		items: z.array(SaleItemSchema).min(1, 'La venta debe tener al menos un producto'),
+		/** Per-person grouping (client item ids). Absent = no groups. */
+		groups: ItemGroupsSchema.optional(),
+		/**
+		 * Client id of the LENS_PAIR whose Rx becomes the customer's current one.
+		 * `prescription` is only persisted when this is set (null/absent → nothing is created/overwritten).
+		 */
+		primaryLensItemId: z.uuid().nullable().optional()
 	})
 	.refine((data) => data.customerId || data.newCustomer, {
 		message: 'Debe seleccionar o crear un cliente',
 		path: ['customerId']
-	});
+	})
+	.superRefine(refineItemGroups);
 
 // ============================================================================
 // PAYMENT SCHEMA
@@ -416,31 +484,50 @@ export const EnrichFreeItemSchema = z
 // UPDATE SALE SCHEMA
 // ============================================================================
 
-export const UpdateSaleSchema = z.object({
-	id: z.uuid('ID de venta inválido'),
-	reason: z.string().min(1, 'El motivo de la modificación es obligatorio'),
-	/** Always-editable header fields */
-	customerId: z.uuid().optional(),
-	saleDate: z.union([z.iso.datetime({ offset: true }), z.iso.date()]).optional(),
-	notes: z.string().optional(),
-	isCashea: z.boolean().optional(),
-	/** Optional: reassign the order number (admin only, no UI yet). */
-	orderNumber: z.number().int().min(1, 'Número de orden inválido').optional(),
-	discount: CoercedNumber.min(0).optional(),
-	discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
-	snapshotTaxRate: CoercedNumber.min(0).optional(),
-	/** Full replacement of sale items (if provided) */
-	items: z.array(SaleItemSchema).optional(),
-	/** Prescription measures (DP / nasal) patch for the sale's lens prescription.
-	 *  Accepts explicit nulls so the editor can clear a measure; sending the
-	 *  field absent means «don't touch». */
-	prescription: z
-		.object({
-			dp: DpPatchSchema,
-			npRight: NpPatchSchema,
-			npLeft: NpPatchSchema
-		})
-		.optional()
+export const UpdateSaleSchema = z
+	.object({
+		id: z.uuid('ID de venta inválido'),
+		reason: z.string().min(1, 'El motivo de la modificación es obligatorio'),
+		/** Always-editable header fields */
+		customerId: z.uuid().optional(),
+		saleDate: z.union([z.iso.datetime({ offset: true }), z.iso.date()]).optional(),
+		notes: z.string().optional(),
+		isCashea: z.boolean().optional(),
+		/** Optional: reassign the order number (admin only, no UI yet). */
+		orderNumber: z.number().int().min(1, 'Número de orden inválido').optional(),
+		discount: CoercedNumber.min(0).optional(),
+		discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
+		snapshotTaxRate: CoercedNumber.min(0).optional(),
+		/** Full replacement of sale items (if provided) */
+		items: z.array(SaleItemSchema).optional(),
+		/** Prescription measures (DP / nasal) patch for the sale's lens prescription.
+		 *  Accepts explicit nulls so the editor can clear a measure; sending the
+		 *  field absent means «don't touch». */
+		prescription: z
+			.object({
+				dp: DpPatchSchema,
+				npRight: NpPatchSchema,
+				npLeft: NpPatchSchema
+			})
+			.optional(),
+		/**
+		 * Per-person grouping (client item ids, same as `items[].id`). Absent = keep the
+		 * current groups (remapped onto the replaced items); [] = remove all groups.
+		 */
+		groups: ItemGroupsSchema.optional(),
+		/** Primary lens (client id). Absent = keep; null = unmark (deletes no prescription). */
+		primaryLensItemId: z.uuid().nullable().optional()
+	})
+	.superRefine(refineItemGroups);
+
+/**
+ * Groups-only save (detail "Organizar", completed sales). Real sale item ids.
+ * Allowed in every status except CANCELLED: touches no money nor inventory.
+ */
+export const SaveSaleItemGroupsSchema = z.object({
+	saleId: z.uuid('ID de venta inválido'),
+	groups: ItemGroupsSchema,
+	primaryLensItemId: z.uuid().nullable()
 });
 
 // ============================================================================
@@ -486,5 +573,6 @@ export type CancelSaleInput = z.infer<typeof CancelSaleSchema>;
 export type CustomerLookupInput = z.infer<typeof CustomerLookupSchema>;
 export type EnrichFreeItemInput = z.infer<typeof EnrichFreeItemSchema>;
 export type UpdateSaleInput = z.infer<typeof UpdateSaleSchema>;
+export type SaveSaleItemGroupsInput = z.infer<typeof SaveSaleItemGroupsSchema>;
 export type SetSaleStatusInput = z.infer<typeof SetSaleStatusSchema>;
 export type UpdateSaleItemCostsInput = z.infer<typeof UpdateSaleItemCostsSchema>;
