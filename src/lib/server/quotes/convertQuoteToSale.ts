@@ -9,7 +9,6 @@ import {
 	prescriptionFromLensLine
 } from '$lib/server/sales/primaryPrescription';
 import { defaultPrimaryLens, remapGroupItemIds } from '$lib/shared/saleItemGroups';
-import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
 import { createSale } from '$lib/server/db/queries/sales/writes';
 import { db } from '$lib/server/db';
 import type { Customer, Prescription, Quote } from '$lib/server/db/schema';
@@ -145,10 +144,10 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 			const now = nowISO();
 
 			// Create the sale via the query function (no Drizzle inline).
+			// El número lo asigna la sequence `sales_order_number_seq`.
 			// `createdAt` la fija createSale (= now del submit, fecha-verdad).
 			sale = await createSale(
 				{
-					orderNumber: await getNextOrderNumber(tx),
 					customerId,
 					sellerId: ctx.userId!,
 					status: SaleStatus.PENDING,

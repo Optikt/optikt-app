@@ -3,6 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
+import { partialUpdate } from './common/partialUpdate';
 import { ProductType, ProductStockFilter } from '$lib/shared/enums';
 import { MaterialCategories } from './materials';
 import {
@@ -108,7 +109,7 @@ export const CreateProductSchema = z.object({
 	})
 });
 
-export const UpdateProductSchema = CreateProductSchema.partial().extend({
+export const UpdateProductSchema = partialUpdate(CreateProductSchema).extend({
 	id: z.uuid()
 });
 

@@ -53,5 +53,36 @@ describe('customers remotes (Capa 3)', () => {
 			{ user }
 		);
 		expect(cleared.gender).toBeNull();
+		// DT26: the partial updates above must not null the omitted fields
+		expect(cleared.idNumber).toBe('V-99887766');
+	});
+
+	it('DT26: update parcial no anula idNumber/birthDate/notas omitidos; "" vacía a propósito', async () => {
+		const user = await createUser({ role: UserRole.ADMIN });
+		const existing = await createCustomer({
+			idNumber: 'V-55667788',
+			birthDate: '1990-05-01T00:00:00.000Z',
+			gender: CustomerGender.FEMENINO,
+			notes: 'Cliente frecuente'
+		});
+
+		const updated = await callRemoteForm<Record<string, unknown>, Customer>(
+			updateCustomerForm,
+			{ id: existing.id, firstName: 'Nuevo' },
+			{ user }
+		);
+		expect(updated.firstName).toBe('Nuevo');
+		expect(updated.idNumber).toBe('V-55667788');
+		expect(updated.birthDate).toContain('1990-05-01');
+		expect(updated.gender).toBe('FEMENINO');
+		expect(updated.notes).toBe('Cliente frecuente');
+
+		const cleared = await callRemoteForm<Record<string, unknown>, Customer>(
+			updateCustomerForm,
+			{ id: existing.id, birthDate: '' },
+			{ user }
+		);
+		expect(cleared.birthDate).toBeNull();
+		expect(cleared.idNumber).toBe('V-55667788');
 	});
 });

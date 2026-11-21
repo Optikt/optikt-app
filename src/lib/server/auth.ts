@@ -76,10 +76,6 @@ export async function invalidateSession(sessionId: string) {
 	await sessionQueries.deactivateSession(sessionId);
 }
 
-export async function invalidateAllUserSessions(userId: string) {
-	await sessionQueries.deactivateAllUserSessions(userId);
-}
-
 export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: string) {
 	event.cookies.set(sessionCookieName, token, {
 		expires: fromISO(expiresAt),

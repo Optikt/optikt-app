@@ -11,6 +11,7 @@ import {
 	saleItems
 } from '$lib/server/db/schema';
 import { buildQuoteItemValues } from './quoteHelpers';
+import { bumpSaleOrderSequence } from '$lib/server/db/queries/sales/writes';
 import { resetDb } from '$lib/testing/integration/db';
 import {
 	createCustomer,
@@ -18,6 +19,7 @@ import {
 	createMaterial,
 	createProduct,
 	createQuote,
+	createSale,
 	createSupplier,
 	createUser
 } from '$lib/testing/integration/factories';
@@ -136,6 +138,25 @@ describe('convertQuoteToSaleCore', () => {
 		expect(quoteAfter.conversionSaleId).toBe(result.sale.id);
 		expect(result.sale.isCashea).toBe(true);
 		expect(items).toHaveLength(1);
+	});
+
+	it('numbers the converted sale with the sales sequence, after a manual jump', async () => {
+		const seller = await createUser();
+		const customer = await createCustomer();
+		const { product } = await seedStockProduct();
+		// Admin skipped ahead to #210 (paper sales pending) → next automatic is #211
+		await createSale({ orderNumber: 210 });
+		await bumpSaleOrderSequence(210);
+		const quote = await createQuote({ customerId: customer.id, sellerId: seller.id });
+		await db
+			.insert(quoteItems)
+			.values(buildQuoteItemValues(productItem(product.id), quote.id, nowISO()));
+
+		const result = await convertQuoteToSaleCore({ id: quote.id }, ctx(seller.id));
+
+		expect(result.success).toBe(true);
+		if (!result.success) throw new Error('quote was not converted');
+		expect(result.sale.orderNumber).toBe(211);
 	});
 
 	it('assigns an existing customerId to the quote and creates the sale in the same tx (D5)', async () => {

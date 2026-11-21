@@ -24,6 +24,7 @@
 	view={ctx.view}
 	canCreate={ctx.canAct}
 	onViewChange={ctx.handlers.onViewChange}
+	onCreate={ctx.handlers.onCreate}
 />
 
 <SaleKpiCards stats={ctx.stats} onSelect={ctx.handlers.onKpiSelect} />

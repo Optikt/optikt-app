@@ -21,6 +21,8 @@ CRUD de proveedores + tratamientos de laboratorio (category/price/salePrice/isTa
 - **Vínculo marca-proveedor**: upsert onConflict (`:229-238`); desvincular **bloqueado si existen productos activos** con esa dupla (`:246-250`, `queries/brandSuppliers.ts:51-68`). El link es **hard-delete** físico (`brandSuppliers.ts:41-49`) — apropiado por ser tabla de unión.
 - `resolvePendingSupplier` (`queries/suppliers.ts:204-228`): busca activo por nombre (ilike) o crea DISTRIBUTOR dentro de la tx del caller — patrón pendings del wizard.
 
+- **Update parcial (DT26)**: `UpdateSupplierSchema = partialUpdate(Create) + id`; `updateSupplierForm` persiste solo el diff (`buildChangedFields`, `emptyToNull: ['rif']`). RIF omitido se conserva (antes se anulaba), `''` lo vacía; sin cambios → no escribe. Spec: `remote/catalogPartialUpdates.int.spec.ts`.
+
 ## Patrones locales
 
 - Overload de `getAllSuppliers` con proyección `columns` (`$dynamic()`, `suppliers.remote.ts:55-83`); filtros `deleted` opcionales en finders.

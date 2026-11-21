@@ -33,7 +33,7 @@ La ⭐ principal se ancla al **cristal**, no al grupo: `sales.primary_lens_item_
 
 ## Modelo de datos
 
-Migración Drizzle `0054_sale-item-groups` (generar con `pnpm drizzle-kit generate`, revisar SQL, no aplicar sin confirmar):
+Migración Drizzle `0055_sale-item-groups` (generar con `pnpm drizzle-kit generate`, revisar SQL, no aplicar sin confirmar):
 
 - `sale_item_groups`: `id uuid pk default random`, `sale_id uuid not null → sales(id) on delete cascade`, `label varchar(60) null`, `position integer not null`, `created_at`, `updated_at`. Índice `ix_sale_item_groups_sale_id`.
 - `sale_item_group_members`: `group_id uuid not null → sale_item_groups(id) on delete cascade`, `sale_item_id uuid not null → sale_items(id) on delete cascade`, `quantity integer not null check (quantity > 0)`. PK `(group_id, sale_item_id)`. Índice por `sale_item_id`.
@@ -64,7 +64,7 @@ groups: z.array(z.object({
 
 ## Implementation
 
-- **Fase 0 · Schema y migración.** Tablas + columna en `src/lib/server/db/schema/sales.ts` y `quotes.ts` (relations incluidas), migración 0054, tipos `SaleItemGroup`/`QuoteItemGroup` en `queries/*/types.ts`. Gate: `pnpm check`.
+- **Fase 0 · Schema y migración.** Tablas + columna en `src/lib/server/db/schema/sales.ts` y `quotes.ts` (relations incluidas), migración 0055, tipos `SaleItemGroup`/`QuoteItemGroup` en `queries/*/types.ts`. Gate: `pnpm check`.
 - **Fase 1 · Lógica pura + schemas.** `src/lib/shared/saleItemGroups.ts` (+ `.spec.ts`), dominio `sales` por la excepción de `shared/saleItem*`: `assignedQty`, `remainingQty`, `clampAllocations(groups, items)` (al bajar cantidad o borrar ítem), `dropEmptyGroups`, `groupDisplayLabel(label, index)` → "Trabajo N", `chipModel(item, groups)` (sin asignar / 1 persona / N personas · M libre + texto del tooltip), `defaultPrimaryLens(items, groups)` (un cristal y ningún nombre), `clearLabels(groups)` (duplicado), `orderItemsByGroups(items, groups)` (orden de display estable: por grupo → montura/producto, cristal + tratamientos hijos, accesorio; línea compartida en su primer grupo; sin asignar al final en orden original; sin grupos = identidad), `followIncludedAccessories(groups, frameRowId, accessoryMap)` (wizard). Schemas Zod de la sección anterior en `schemas/sales.ts` y `schemas/quotes.ts` con specs.
 - **Fase 2 · Server.**
   - Query functions con `executor` en `src/lib/server/db/queries/sales/itemGroups.ts` y `queries/quotes/itemGroups.ts`: `replaceSaleItemGroups(saleId, groups, tx)` (delete + insert), `findSaleItemGroups(saleId)`, `setSalePrimaryLens(saleId, itemId|null, tx)`; espejos para quotes.

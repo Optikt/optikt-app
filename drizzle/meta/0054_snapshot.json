@@ -1,5 +1,5 @@
 {
-  "id": "7c56065a-de69-49aa-bdcf-ab2be315ecfd",
+  "id": "1c083119-501c-4586-aa18-1949a3589945",
   "prevId": "0ce69317-9b5e-47ad-9462-7719ad4e4fff",
   "version": "7",
   "dialect": "postgresql",
@@ -3506,177 +3506,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.sale_item_group_members": {
-      "name": "sale_item_group_members",
-      "schema": "",
-      "columns": {
-        "group_id": {
-          "name": "group_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sale_item_id": {
-          "name": "sale_item_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "quantity": {
-          "name": "quantity",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "ix_sale_item_group_members_sale_item_id": {
-          "name": "ix_sale_item_group_members_sale_item_id",
-          "columns": [
-            {
-              "expression": "sale_item_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "sale_item_group_members_group_id_sale_item_groups_id_fk": {
-          "name": "sale_item_group_members_group_id_sale_item_groups_id_fk",
-          "tableFrom": "sale_item_group_members",
-          "tableTo": "sale_item_groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "sale_item_group_members_sale_item_id_sale_items_id_fk": {
-          "name": "sale_item_group_members_sale_item_id_sale_items_id_fk",
-          "tableFrom": "sale_item_group_members",
-          "tableTo": "sale_items",
-          "columnsFrom": [
-            "sale_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "sale_item_group_members_group_id_sale_item_id_pk": {
-          "name": "sale_item_group_members_group_id_sale_item_id_pk",
-          "columns": [
-            "group_id",
-            "sale_item_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "sale_item_group_members_quantity_positive": {
-          "name": "sale_item_group_members_quantity_positive",
-          "value": "\"sale_item_group_members\".\"quantity\" > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.sale_item_groups": {
-      "name": "sale_item_groups",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "sale_id": {
-          "name": "sale_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "label": {
-          "name": "label",
-          "type": "varchar(60)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "ix_sale_item_groups_sale_id": {
-          "name": "ix_sale_item_groups_sale_id",
-          "columns": [
-            {
-              "expression": "sale_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "sale_item_groups_sale_id_sales_id_fk": {
-          "name": "sale_item_groups_sale_id_sales_id_fk",
-          "tableFrom": "sale_item_groups",
-          "tableTo": "sales",
-          "columnsFrom": [
-            "sale_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.sale_items": {
       "name": "sale_items",
       "schema": "",
@@ -4354,7 +4183,8 @@
           "name": "order_number",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "nextval('sales_order_number_seq')"
         },
         "customer_id": {
           "name": "customer_id",
@@ -4427,12 +4257,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "primary_lens_item_id": {
-          "name": "primary_lens_item_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
         },
         "notes": {
           "name": "notes",
@@ -4612,19 +4436,6 @@
         }
       },
       "foreignKeys": {
-        "sales_primary_lens_item_id_sale_items_id_fk": {
-          "name": "sales_primary_lens_item_id_sale_items_id_fk",
-          "tableFrom": "sales",
-          "tableTo": "sale_items",
-          "columnsFrom": [
-            "primary_lens_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "sales_customer_id_fkey": {
           "name": "sales_customer_id_fkey",
           "tableFrom": "sales",
@@ -4836,177 +4647,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.quote_item_group_members": {
-      "name": "quote_item_group_members",
-      "schema": "",
-      "columns": {
-        "group_id": {
-          "name": "group_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "quote_item_id": {
-          "name": "quote_item_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "quantity": {
-          "name": "quantity",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "ix_quote_item_group_members_quote_item_id": {
-          "name": "ix_quote_item_group_members_quote_item_id",
-          "columns": [
-            {
-              "expression": "quote_item_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "quote_item_group_members_group_id_quote_item_groups_id_fk": {
-          "name": "quote_item_group_members_group_id_quote_item_groups_id_fk",
-          "tableFrom": "quote_item_group_members",
-          "tableTo": "quote_item_groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "quote_item_group_members_quote_item_id_quote_items_id_fk": {
-          "name": "quote_item_group_members_quote_item_id_quote_items_id_fk",
-          "tableFrom": "quote_item_group_members",
-          "tableTo": "quote_items",
-          "columnsFrom": [
-            "quote_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "quote_item_group_members_group_id_quote_item_id_pk": {
-          "name": "quote_item_group_members_group_id_quote_item_id_pk",
-          "columns": [
-            "group_id",
-            "quote_item_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "quote_item_group_members_quantity_positive": {
-          "name": "quote_item_group_members_quantity_positive",
-          "value": "\"quote_item_group_members\".\"quantity\" > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.quote_item_groups": {
-      "name": "quote_item_groups",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "quote_id": {
-          "name": "quote_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "label": {
-          "name": "label",
-          "type": "varchar(60)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "ix_quote_item_groups_quote_id": {
-          "name": "ix_quote_item_groups_quote_id",
-          "columns": [
-            {
-              "expression": "quote_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "quote_item_groups_quote_id_quotes_id_fk": {
-          "name": "quote_item_groups_quote_id_quotes_id_fk",
-          "tableFrom": "quote_item_groups",
-          "tableTo": "quotes",
-          "columnsFrom": [
-            "quote_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

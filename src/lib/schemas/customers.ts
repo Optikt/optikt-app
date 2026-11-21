@@ -3,6 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
+import { partialUpdate } from './common/partialUpdate';
 import { PhoneSchema, IdNumberSchema } from './common/contacts';
 import {
 	NameSchema,
@@ -31,7 +32,7 @@ export const CreateCustomerSchema = z.object({
 	notes: z.string().optional()
 });
 
-export const UpdateCustomerSchema = CreateCustomerSchema.partial().extend({
+export const UpdateCustomerSchema = partialUpdate(CreateCustomerSchema).extend({
 	id: z.uuid()
 });
 

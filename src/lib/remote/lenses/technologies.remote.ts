@@ -5,6 +5,7 @@
 import { query, form, command } from '$app/server';
 import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 import { db } from '$lib/server/db';
 import { softDelete } from '$lib/server/db/queries/deletedItems';
 
@@ -66,7 +67,11 @@ export const updateLensTechnologyForm = form(
 		const existing = await findLensTechnologyById(id);
 		if (!existing) invalid('Tecnología no encontrada');
 
-		const updated = await updateLensTechnology(id, updates);
+		// DT26: only persist what changed (omitted keys are not touched)
+		const changes = buildChangedFields(existing, updates);
+		if (!hasChangedFields(changes)) return existing;
+
+		const updated = await updateLensTechnology(id, changes);
 		if (!updated) invalid('Error actualizando tecnología');
 
 		await auditService.logUpdate('lens_technology', id, existing, updated, getAuditContext());

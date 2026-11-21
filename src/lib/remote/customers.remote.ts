@@ -29,6 +29,7 @@ import { auditService, getAuditContext } from '$lib/server/audit';
 import { db } from '$lib/server/db';
 import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
+import { buildChangedFields, hasChangedFields } from '$lib/shared/buildChangedFields';
 
 /**
  * List customers with pagination and search
@@ -97,12 +98,18 @@ export const updateCustomerForm = form(
 			}
 		}
 
-		const updated = await updateCustomer(id, {
-			...rest,
-			idNumber: idNumber || null,
-			birthDate: birthDate || null,
-			gender: gender || null
-		});
+		// DT26: only persist what changed. Omitted keys (undefined) are not touched;
+		// '' on idNumber/birthDate/gender means "cleared" → null.
+		const changes = buildChangedFields(
+			{ ...existing, birthDate: existing.birthDate?.slice(0, 10) ?? null },
+			{ ...rest, idNumber, birthDate, gender },
+			{ emptyToNull: ['idNumber', 'birthDate', 'gender'] }
+		);
+		if (!hasChangedFields(changes)) {
+			return existing;
+		}
+
+		const updated = await updateCustomer(id, changes);
 
 		if (!updated) {
 			invalid('Error al actualizar cliente');

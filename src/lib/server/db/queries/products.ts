@@ -322,9 +322,10 @@ export async function findProductBySku(
  */
 export async function updateProduct(
 	id: string,
-	data: Partial<Omit<Product, 'id' | 'createdAt'>>
+	data: Partial<Omit<Product, 'id' | 'createdAt'>>,
+	executor: DbOrTx = db
 ): Promise<Product | null> {
-	const [product] = await db
+	const [product] = await executor
 		.update(products)
 		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(products.id, id))

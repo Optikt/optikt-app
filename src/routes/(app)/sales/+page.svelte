@@ -417,6 +417,7 @@
 			onKpiSelect: handleKpiSelect,
 			onViewChange: handleViewChange,
 			onClearFilters: clearFilters,
+			onCreate: () => void goto(resolve('/sales/new')),
 			onOpenSale: handleView,
 			onCancelRequest: handleCancelRequest,
 			onPageChange: (next, opts) => void fetchSales(next, opts),

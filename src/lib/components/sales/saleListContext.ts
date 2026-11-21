@@ -32,6 +32,8 @@ export interface SaleListHandlers {
 	onKpiSelect(kpi: SaleListKpi): void;
 	onViewChange(next: SaleListView): void;
 	onClearFilters(): void;
+	/** CTA «Nueva venta» del header de escritorio (en móvil va al FAB). */
+	onCreate(): void;
 	onOpenSale(sale: SaleListItem): void;
 	onCancelRequest(sale: SaleListItem): void;
 	onPageChange(next: number, opts?: { scrollTop?: boolean }): void;
