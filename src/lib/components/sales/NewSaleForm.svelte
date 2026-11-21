@@ -30,6 +30,9 @@
 	import SaleStep2Items from './step2/SaleStep2Items.svelte';
 	import SaleStep3Summary from './step3/SaleStep3Summary.svelte';
 	import PrescriptionValidationModal from './PrescriptionValidationModal.svelte';
+	import { toSubmitGroups, type UiGroup } from './groups/groupsState';
+	import { wizardGroupItems } from './groups/wizardGroups';
+	import { clampAllocations, defaultPrimaryLens } from '$lib/shared/saleItemGroups';
 
 	interface Props {
 		suppliers: Supplier[];
@@ -169,6 +172,19 @@
 	let items = $state<SaleItemRow[]>([]);
 	let includedAccessoryMap = $state<IncludedAccessoryMap>({});
 
+	// Per-person grouping + "fórmula principal" (sales only).
+	let groups = $state<UiGroup[]>([]);
+	/** undefined = automatic (one lens and no names → that lens); null = "Ninguna". */
+	let primaryChoice = $state<string | null | undefined>(undefined);
+	const groupItems = $derived(
+		wizardGroupItems(items, getCachedProducts(), getCachedLensItems())
+	);
+	const primaryLensId = $derived.by(() => {
+		if (primaryChoice === undefined) return defaultPrimaryLens(groupItems, groups);
+		if (primaryChoice === null) return null;
+		return items.some((i) => i.kind === 'lens' && i.id === primaryChoice) ? primaryChoice : null;
+	});
+
 	const step2PrescriptionConfirmation = $derived(
 		buildStep2PrescriptionConfirmation(items, getCachedLensItems())
 	);
@@ -287,8 +303,12 @@
 		try {
 			const saleItems = buildSaleItemsFromWizard(items, getCachedProducts(), getCachedLensItems());
 			const snapshotTaxRate = defaultTaxRate ?? DEFAULT_TAX_RATE;
-			const prescription = buildPrescriptionPayload(items, dateToISODateString(saleDate)) as
-				Parameters<typeof createSale>[0]['prescription'] | undefined;
+			const prescription = buildPrescriptionPayload(
+				items,
+				dateToISODateString(saleDate),
+				primaryLensId
+			) as Parameters<typeof createSale>[0]['prescription'] | undefined;
+			const submitGroups = toSubmitGroups(clampAllocations(groups, groupItems));
 
 			const result = await createSale({
 				customerId: customerId || undefined,
@@ -303,7 +323,9 @@
 				notes: notes || undefined,
 				isCashea,
 				prescription,
-				items: saleItems
+				items: saleItems,
+				groups: submitGroups.length > 0 ? submitGroups : undefined,
+				primaryLensItemId: primaryLensId
 			});
 
 			if (!result.success) {
@@ -354,6 +376,11 @@
 		<SaleStep2Items
 			bind:items
 			bind:includedAccessoryMap
+			bind:groups
+			showPrimary={true}
+			{primaryLensId}
+			onprimarychange={(id) => (primaryChoice = id)}
+			docLabel={orderNumberInput ? `#${orderNumberInput.padStart(4, '0')}` : undefined}
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}

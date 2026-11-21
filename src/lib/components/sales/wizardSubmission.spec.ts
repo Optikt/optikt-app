@@ -241,6 +241,47 @@ describe('buildPrescriptionPayload', () => {
 		});
 	});
 
+	it('uses the primary lens, and none when the primary is null', () => {
+		const lens = (id: string, sphere: number): LensSaleItemRow => ({
+			id,
+			kind: 'lens',
+			productId: '',
+			quantity: 1,
+			lensPair: {
+				catalogItemId: 'lens-1',
+				od: {
+					enabled: true,
+					prescription: { sphere, cylinder: null, axis: null, addition: null },
+					dp: null,
+					np: null,
+					altura: null
+				},
+				oi: {
+					enabled: false,
+					prescription: { sphere: null, cylinder: null, axis: null, addition: null },
+					dp: null,
+					np: null,
+					altura: null
+				},
+				lensType: LensType.MONOFOCAL,
+				doctorName: ''
+			},
+			unitPrice: 25,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			notes: '',
+			costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
+			treatments: [],
+			shippingCostPending: false,
+			isIncludedAccessory: false,
+			includedAccessoryParentItemId: null
+		});
+		const rows = [lens('a', -1), lens('b', -3)];
+		expect(buildPrescriptionPayload(rows, '2026-11-20', 'b')?.odSphere).toBe(-3);
+		expect(buildPrescriptionPayload(rows, '2026-11-20', null)).toBeUndefined();
+		expect(buildPrescriptionPayload(rows, '2026-11-20')?.odSphere).toBe(-1);
+	});
+
 	it('returns undefined when no lens items have prescription values', () => {
 		const item: ProductSaleItemRow = {
 			id: 'row-1',

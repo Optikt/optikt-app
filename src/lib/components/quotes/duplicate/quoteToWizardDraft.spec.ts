@@ -199,4 +199,33 @@ describe('quoteToWizardDraft', () => {
 		// El tratamiento va inmediatamente después de su lente
 		expect(draft.items.indexOf(treatment!)).toBe(1);
 	});
+
+	it('conserva el emparejamiento por persona con ids nuevos y limpia los nombres', () => {
+		const draft = quoteToWizardDraft({
+			quote,
+			items: [item({ id: 'f', quantity: 2 }), item({ id: 'g', productId: 'p-2' })],
+			groups: [
+				{ label: 'Sofía', members: [{ itemId: 'f', quantity: 1 }] },
+				{
+					label: null,
+					members: [
+						{ itemId: 'f', quantity: 1 },
+						{ itemId: 'g', quantity: 1 }
+					]
+				}
+			]
+		});
+		const [fRow, gRow] = draft.items;
+		expect(draft.clearedNames).toBe(1);
+		expect(draft.groups).toEqual([
+			{ label: null, members: [{ itemId: fRow.id, quantity: 1 }] },
+			{
+				label: null,
+				members: [
+					{ itemId: fRow.id, quantity: 1 },
+					{ itemId: gRow.id, quantity: 1 }
+				]
+			}
+		]);
+	});
 });

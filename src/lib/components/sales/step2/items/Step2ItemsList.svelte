@@ -5,6 +5,7 @@
 	import type { PrescriptionFieldErrors } from '../../saleItemHelpers';
 	import { getEnabledEyeCount } from '../../saleItemHelpers';
 	import type { SaleItemRow } from '../../newSaleTypes';
+	import type { Snippet } from 'svelte';
 	import SaleStep2ItemCard from '../SaleStep2ItemCard.svelte';
 
 	interface Props {
@@ -15,6 +16,8 @@
 		onRemoveItem: (id: string) => void;
 		onRemoveTreatment: (treatmentItemId: string) => void;
 		onOpenTreatment: (lensItemId: string) => void;
+		/** Per-person chip for groupable lines (sale/quote wizard). */
+		personChip?: Snippet<[SaleItemRow]>;
 	}
 
 	let {
@@ -24,7 +27,8 @@
 		rxErrorsPerLens,
 		onRemoveItem,
 		onRemoveTreatment,
-		onOpenTreatment
+		onOpenTreatment,
+		personChip
 	}: Props = $props();
 </script>
 
@@ -72,7 +76,11 @@
 						onopenTreatment={item.kind === 'lens' && itemTreatmentsMap[item.id]?.length > 0
 							? () => onOpenTreatment(item.id)
 							: undefined}
-					/>
+					>
+						{#snippet person()}
+							{@render personChip?.(item)}
+						{/snippet}
+					</SaleStep2ItemCard>
 				{/if}
 			{/each}
 		{/if}

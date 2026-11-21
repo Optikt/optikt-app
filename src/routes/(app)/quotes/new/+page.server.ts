@@ -9,6 +9,7 @@ import {
 	getQuoteItemsWithDetails
 } from '$lib/server/db/queries/quotes/reads';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+import { findQuoteItemGroups } from '$lib/server/db/queries/quotes/itemGroups';
 
 /** Wizard de nuevo presupuesto — `?from=<id>` precarga el duplicado (D7). */
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -25,8 +26,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			? (async () => {
 					const quote = await findQuoteByIdWithRelations(fromId);
 					if (!quote) return null;
-					const items = await getQuoteItemsWithDetails(fromId);
-					return { quote, items };
+					const [items, groups] = await Promise.all([
+						getQuoteItemsWithDetails(fromId),
+						findQuoteItemGroups(fromId)
+					]);
+					return { quote, items, groups };
 				})()
 			: Promise.resolve(null)
 	]);

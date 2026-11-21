@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Copy, PackagePlus } from '@lucide/svelte';
+	import { Copy, PackagePlus, Users } from '@lucide/svelte';
 
 	type QuickAddFilter = 'all' | 'product' | 'lens';
 
@@ -9,9 +9,20 @@
 		onaddfree: () => void;
 		oncopyrx: () => void;
 		canCopyRxToAll?: boolean;
+		/** Opens the "Personas" drawer (per-person grouping). */
+		onpersons?: () => void;
+		personCount?: number;
 	}
 
-	let { filter, onfilterchange, onaddfree, oncopyrx, canCopyRxToAll = false }: Props = $props();
+	let {
+		filter,
+		onfilterchange,
+		onaddfree,
+		oncopyrx,
+		canCopyRxToAll = false,
+		onpersons,
+		personCount = 0
+	}: Props = $props();
 
 	const quickAddFilterOptions: { value: QuickAddFilter; label: string }[] = [
 		{ value: 'all', label: 'Todo' },
@@ -62,6 +73,18 @@
 		>
 			<Copy class="h-3.5 w-3.5" />
 			Copiar Rx a todos
+		</button>
+	{/if}
+
+	{#if onpersons}
+		<button
+			type="button"
+			onclick={onpersons}
+			class="inline-flex items-center gap-1.5 rounded-lg border border-brand-navy bg-white px-3 py-1.5 text-xs font-semibold text-brand-navy transition-colors hover:bg-surface-container-low"
+		>
+			<Users class="h-3.5 w-3.5" />
+			Personas
+			<span class="rounded-full bg-brand-navy px-1.5 text-[11px] text-white">{personCount}</span>
 		</button>
 	{/if}
 </div>
