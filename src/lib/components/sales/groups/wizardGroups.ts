@@ -5,7 +5,11 @@
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { orderItemsByGroups, type ItemGroup } from '$lib/shared/saleItemGroups';
+import {
+	followIncludedAccessories,
+	orderItemsByGroups,
+	type ItemGroup
+} from '$lib/shared/saleItemGroups';
 import type { SaleItemRow } from '../newSaleTypes';
 import type { GroupItemView } from './groupsState';
 
@@ -55,4 +59,30 @@ export function orderWizardRows(
 	const ordered = orderItemsByGroups(views, groups).map((v) => byId.get(v.id)!);
 	const unchanged = ordered.every((row, i) => row === rows[i]);
 	return unchanged ? [...rows] : ordered;
+}
+
+/**
+ * Applies a grouping edit and makes auto-included accessories follow their
+ * frame (same person, same split) whenever the frame's allocation changed —
+ * from its chip or from the drawer. The link only lives in the wizard.
+ */
+export function applyWizardGroupsChange<G extends ItemGroup>(
+	previous: readonly G[],
+	next: G[],
+	views: readonly GroupItemView[],
+	accessoryMap: Readonly<Record<string, string[]>>
+): G[] {
+	let result = next;
+	for (const [frameId, accessoryIds] of Object.entries(accessoryMap)) {
+		if (allocationKey(previous, frameId) === allocationKey(next, frameId)) continue;
+		result = followIncludedAccessories(result, views, frameId, accessoryIds);
+	}
+	return result;
+}
+
+function allocationKey(list: readonly ItemGroup[], itemId: string): string {
+	return list
+		.map((g) => g.members.find((m) => m.itemId === itemId)?.quantity ?? 0)
+		.filter((n, i, arr) => n > 0 || arr.slice(i).some((x) => x > 0))
+		.join(',');
 }

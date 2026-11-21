@@ -409,7 +409,7 @@
 			bind:items
 			bind:includedAccessoryMap
 			bind:groups
-			docLabel={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
+			persons={{ docLabel: `P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}` }}
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}

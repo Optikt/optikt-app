@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { NarrowContainer } from '$lib/components/sales/detail/narrowContainer.svelte';
+	import GroupsOrganizer from '$lib/components/sales/groups/GroupsOrganizer.svelte';
+	import { persistedGroupItems } from '$lib/components/sales/groups/detailGroups';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -59,19 +62,7 @@
 	let isCancelled = $derived(quote.status === QuoteStatus.CANCELLED);
 
 	// ── Barra móvil: ResizeObserver sobre el contenedor de página (<700) ────
-	let pageEl = $state<HTMLElement | undefined>(undefined);
-	let isNarrow = $state(false);
-
-	$effect(() => {
-		const target = pageEl;
-		if (!target) return;
-		const observer = new ResizeObserver((entries) => {
-			const width = entries[0]?.contentRect.width;
-			if (width !== undefined) isNarrow = width < 700;
-		});
-		observer.observe(target);
-		return () => observer.disconnect();
-	});
+	const pageWidth = new NarrowContainer();
 
 	// ── Tabla de ítems (solo lectura, reusa SaleItemsTable) ────────────────
 	const displayItems = $derived(data.items);
@@ -79,6 +70,9 @@
 		displayItems.map((item) => quoteItemToDisplayItem(item, quote.id))
 	);
 	const groups = $derived(buildQuoteDisplayGroups(displayItems, quote.id));
+	// Per-person grouping (chip per line, Por persona, Organizar — only DRAFT).
+	const groupViews = $derived(persistedGroupItems(displayItems, (i) => i.parentQuoteItemId));
+	let showOrganizer = $state(false);
 	// Misma fuente que ventas: respeta discountType, descuento por línea e IVA.
 	const breakdown = $derived(computeSaleBreakdown(quote, displayItems));
 	const subtotalNet = $derived(breakdown.subtotalNet);
@@ -198,7 +192,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-surface">
-	<div bind:this={pageEl} class="page anim-page @container w-full px-5 pt-3.5 pb-7">
+	<div {@attach pageWidth.attach} class="page anim-page @container w-full px-5 pt-3.5 pb-7">
 		<QuoteDetailHero
 			{quote}
 			{items}
@@ -254,6 +248,11 @@
 					bsApproximate={true}
 					{groups}
 					headerBadge={itemsHeaderBadge}
+					persons={{
+						items: groupViews,
+						groups: data.itemGroups,
+						onOrganize: canAct && isDraft ? () => (showOrganizer = true) : undefined
+					}}
 				/>
 			</div>
 
@@ -272,7 +271,7 @@
 	</div>
 </div>
 
-{#if isNarrow}
+{#if pageWidth.narrow}
 	<QuoteDetailMobileBar
 		{quote}
 		{canAct}
@@ -299,8 +298,22 @@
 	bind:open={showEditDrawer}
 	{quote}
 	quoteItems={items}
+	itemGroups={data.itemGroups}
 	treatments={data.allTreatments}
 	onSuccess={async () => {
+		await refresh();
+	}}
+/>
+
+<GroupsOrganizer
+	bind:open={showOrganizer}
+	kind="quote"
+	docId={quote.id}
+	docLabel={formattedQuoteNumber}
+	items={groupViews}
+	itemGroups={data.itemGroups}
+	sheet={pageWidth.narrow}
+	onsaved={async () => {
 		await refresh();
 	}}
 />

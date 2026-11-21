@@ -16,11 +16,20 @@ import {
 	type QuoteEditDraft
 } from '$lib/components/quotes/editQuote/quoteEditAdapter';
 import { buildUpdateSalePayload, type UpdateSaleDraft } from '../editSaleDraft';
+import type { ItemGroup } from '$lib/shared/saleItemGroups';
+
+/** Per-person grouping changes from the Personas tab (only what changed is sent). */
+export interface GroupsPatch {
+	groups?: ItemGroup[];
+	/** Sales only. */
+	primaryLensItemId?: string | null;
+}
 
 export interface SubmitQuoteEditInput {
 	mode: 'quote';
 	quote: QuoteWithRelations;
 	draft: QuoteEditDraft;
+	groupsPatch?: GroupsPatch;
 }
 
 export interface SubmitSaleEditInput {
@@ -28,6 +37,7 @@ export interface SubmitSaleEditInput {
 	sale: SaleWithRelations;
 	originalItems: SaleItemWithDetails[];
 	draft: UpdateSaleDraft;
+	groupsPatch?: GroupsPatch;
 }
 
 /** Devuelve `null` si guardó, o el mensaje de error ya notificado con toast. */
@@ -36,7 +46,9 @@ export async function submitEditSale(
 ): Promise<string | null> {
 	if (input.mode === 'quote') {
 		try {
-			const result = await updateExistingQuote(buildQuoteUpdatePayload(input.quote, input.draft));
+			const payload = buildQuoteUpdatePayload(input.quote, input.draft);
+			if (input.groupsPatch?.groups) payload.groups = input.groupsPatch.groups;
+			const result = await updateExistingQuote(payload);
 			if (result.success) {
 				toast.success('Presupuesto actualizado');
 				return null;
@@ -54,6 +66,10 @@ export async function submitEditSale(
 
 	try {
 		const payload = buildUpdateSalePayload(input.sale, input.draft);
+		if (input.groupsPatch?.groups) payload.groups = input.groupsPatch.groups;
+		if (input.groupsPatch?.primaryLensItemId !== undefined) {
+			payload.primaryLensItemId = input.groupsPatch.primaryLensItemId;
+		}
 		const result = await updateSale(payload);
 		if (result.success) {
 			toast.success('Venta actualizada');
@@ -68,4 +84,72 @@ export async function submitEditSale(
 		toast.error(error);
 		return error;
 	}
+}
+
+/** Inputs of the drawer the submit needs (keeps the modal under the size gate). */
+export interface EditSubmitState {
+	quote?: QuoteWithRelations;
+	sale?: SaleWithRelations;
+	items: SaleItemWithDetails[];
+	editableItems: QuoteEditDraft['items'];
+	activeItems: UpdateSaleDraft['activeItems'];
+	removedCount: number;
+	saleDate: string;
+	validUntil: string;
+	notes: string;
+	isCashea: boolean;
+	discount: number;
+	discountType: string;
+	reason: string;
+	prescription: { dp: number | null; npRight: number | null; npLeft: number | null } | null;
+	measures: { odDp: number | null; odDnp: number | null; osDnp: number | null };
+	groupsPatch: GroupsPatch;
+}
+
+export function buildEditSubmitInput(
+	st: EditSubmitState
+): SubmitQuoteEditInput | SubmitSaleEditInput {
+	if (st.quote) {
+		return {
+			mode: 'quote',
+			quote: st.quote,
+			groupsPatch: st.groupsPatch,
+			draft: {
+				dateIso: st.saleDate,
+				validUntilIso: st.validUntil,
+				notes: st.notes,
+				isCashea: st.isCashea,
+				discount: st.discount,
+				discountType: st.discountType,
+				items: st.editableItems
+			}
+		};
+	}
+	return {
+		mode: 'sale',
+		sale: st.sale!,
+		groupsPatch: st.groupsPatch,
+		originalItems: st.items,
+		draft: {
+			saleDate: st.saleDate,
+			notes: st.notes,
+			isCashea: st.isCashea,
+			discount: st.discount,
+			discountType: st.discountType,
+			reason: st.reason,
+			removedCount: st.removedCount,
+			activeItems: st.activeItems,
+			originalItems: st.items,
+			prescription: {
+				dp: st.prescription?.dp ?? null,
+				npRight: st.prescription?.npRight ?? null,
+				npLeft: st.prescription?.npLeft ?? null
+			},
+			prescriptionPatch: {
+				dp: st.measures.odDp,
+				npRight: st.measures.odDnp,
+				npLeft: st.measures.osDnp
+			}
+		}
+	};
 }

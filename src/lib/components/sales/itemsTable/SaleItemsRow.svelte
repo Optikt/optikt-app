@@ -17,6 +17,7 @@
 	} from './itemDisplay';
 	import CostEditForm from './CostEditForm.svelte';
 	import LensRxPanel from './LensRxPanel.svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		group: DisplayGroup;
@@ -39,6 +40,8 @@
 		onStartEdit: (item: SaleItemWithDetails) => void;
 		onSaveEdit: () => void;
 		onCancelEdit: () => void;
+		/** Per-person line under the description (detail). */
+		person?: Snippet;
 	}
 
 	let {
@@ -59,7 +62,8 @@
 		onStartEnrich,
 		onStartEdit,
 		onSaveEdit,
-		onCancelEdit
+		onCancelEdit,
+		person
 	}: Props = $props();
 
 	const item = $derived(group.item);
@@ -202,6 +206,8 @@
 		{#if subtitle}
 			<p class="item-subtitle mt-0.5 truncate text-xs text-on-surface-variant">{subtitle}</p>
 		{/if}
+
+		{@render person?.()}
 
 		{#if hasRx}
 			{#if !expanded}

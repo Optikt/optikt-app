@@ -48,12 +48,11 @@
 	import { recalcSuggestedPrice } from './items/step2Pricing';
 	import { copyFirstRxToAll } from './items/step2RxCopy';
 	import { getValidationReasons } from './items/step2Validation';
-	import ItemPersonChip from '../groups/ItemPersonChip.svelte';
+	import PersonChipLine from '../groups/PersonChipLine.svelte';
 	import PersonsDrawer from '../groups/PersonsDrawer.svelte';
-	import { clampUiGroups, visibleGroupCount, type UiGroup } from '../groups/groupsState';
-	import { orderWizardRows, wizardGroupItems } from '../groups/wizardGroups';
-	import { primaryNote } from '../groups/primaryNote';
-	import { followIncludedAccessories, isGroupableItemType } from '$lib/shared/saleItemGroups';
+	import type { UiGroup, WizardPersonsOptions } from '../groups/groupsState';
+	import { WizardPersons } from '../groups/wizardPersons.svelte';
+	import { isGroupableItemType } from '$lib/shared/saleItemGroups';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -70,12 +69,7 @@
 		onCancel?: () => void;
 		/** Per-person grouping (sale and quote wizard). */
 		groups?: UiGroup[];
-		/** Sales only: ⭐ "Fórmula del cliente". */
-		showPrimary?: boolean;
-		primaryLensId?: string | null;
-		onprimarychange?: (lensId: string | null) => void;
-		/** Document chip in the Personas drawer ("#0313", "P-0019"). */
-		docLabel?: string;
+		persons?: WizardPersonsOptions;
 		valid: boolean;
 		onnext: () => void;
 		onprev: () => void;
@@ -95,10 +89,7 @@
 		itemsSectionTitle = 'Artículos',
 		onCancel,
 		groups = $bindable([]),
-		showPrimary = false,
-		primaryLensId = null,
-		onprimarychange,
-		docLabel,
+		persons = {},
 		valid,
 		onnext,
 		onprev
@@ -403,44 +394,17 @@
 	);
 
 	// ── Per-person grouping ────────────────────────────────────────────
-	const groupItems = $derived(
-		wizardGroupItems(items, catalog.getProducts(), catalog.getLensItems())
+	const wp = new WizardPersons(
+		() => ({
+			items,
+			groups,
+			accessoryMap: includedAccessoryMap,
+			products: catalog.getProducts(),
+			lenses: catalog.getLensItems(),
+			persons
+		}),
+		{ groups: (next) => (groups = next), items: (next) => (items = next) }
 	);
-	/** Allocations repaired against the current lines (removed line, lower qty). */
-	const effectiveGroups = $derived(clampUiGroups(groups, groupItems));
-	const personCount = $derived(visibleGroupCount(effectiveGroups));
-	let personsOpen = $state(false);
-
-	/**
-	 * Auto-included accessories follow their frame (same person, same split)
-	 * whenever the frame's allocation changes — from its chip or the drawer.
-	 */
-	function handleGroupsChange(next: UiGroup[]) {
-		let result = next;
-		for (const [frameId, accessoryIds] of Object.entries(includedAccessoryMap)) {
-			if (allocationKey(effectiveGroups, frameId) === allocationKey(next, frameId)) continue;
-			result = followIncludedAccessories(result, groupItems, frameId, accessoryIds);
-		}
-		groups = result;
-	}
-
-	function allocationKey(list: UiGroup[], itemId: string): string {
-		return list.map((g) => g.members.find((m) => m.itemId === itemId)?.quantity ?? 0).join(',');
-	}
-
-	const primaryFooterNote = $derived.by(() => {
-		if (!showPrimary || !groupItems.some((i) => i.itemType === 'LENS_PAIR')) return undefined;
-		return primaryNote(groupItems, effectiveGroups, primaryLensId).replace(
-			/\. Se guarda como su fórmula vigente\.$/,
-			''
-		);
-	});
-
-	/** Reorder cards by person only when a popover/drawer closes (cards never jump mid-edit). */
-	function reorderByPerson() {
-		const next = orderWizardRows(items, groupItems, effectiveGroups);
-		if (next.some((row, i) => row !== items[i])) items = next;
-	}
 
 	const rxErrorsPerLens = $derived.by((): Record<string, PrescriptionFieldErrors> => {
 		const map: Record<string, PrescriptionFieldErrors> = {};
@@ -468,8 +432,8 @@
 			{canCopyRxToAll}
 			oncopyrx={handleCopyRxToAll}
 			onaddfree={addFreeItem}
-			onpersons={items.length > 0 ? () => (personsOpen = true) : undefined}
-			{personCount}
+			onpersons={items.length > 0 ? () => (wp.open = true) : undefined}
+			personCount={wp.count}
 		/>
 	</div>
 
@@ -501,23 +465,16 @@
 		onOpenTreatment={handleOpenTreatmentSelector}
 	>
 		{#snippet personChip(row)}
-			{@const view = groupItems.find((g) => g.id === row.id)}
+			{@const view = wp.items.find((g) => g.id === row.id)}
 			{#if view && isGroupableItemType(view.itemType)}
-				<span class="inline-flex flex-wrap items-center gap-1.5">
-					<ItemPersonChip
-						item={view}
-						groups={effectiveGroups}
-						onchange={handleGroupsChange}
-						onorganize={() => (personsOpen = true)}
-						onclose={reorderByPerson}
-					/>
-					{#if showPrimary && primaryLensId === row.id}
-						<span
-							class="rounded bg-[#fff4c2] px-1.5 py-0.5 text-[9.5px] font-bold tracking-[0.06em] text-[#6f5900] uppercase"
-							>★ Fórmula del cliente</span
-						>
-					{/if}
-				</span>
+				<PersonChipLine
+					item={view}
+					groups={wp.groups}
+					onchange={wp.change}
+					onorganize={() => (wp.open = true)}
+					onclose={wp.reorder}
+					isPrimary={wp.isPrimary(row.id)}
+				/>
 			{/if}
 		{/snippet}
 	</Step2ItemsList>
@@ -532,7 +489,7 @@
 		primaryKind="next"
 		summaryLabel="Total previo"
 		summaryValue={formatPrice(partialTotal)}
-		note={primaryFooterNote}
+		note={wp.footerNote}
 		onBack={onprev}
 		onPrimary={onnext}
 	/>
@@ -547,13 +504,13 @@
 />
 
 <PersonsDrawer
-	bind:open={personsOpen}
-	onclose={reorderByPerson}
-	{docLabel}
-	items={groupItems}
-	groups={effectiveGroups}
-	onchange={handleGroupsChange}
-	{showPrimary}
-	{primaryLensId}
-	{onprimarychange}
+	bind:open={wp.open}
+	onclose={wp.reorder}
+	docLabel={persons.docLabel}
+	items={wp.items}
+	groups={wp.groups}
+	onchange={wp.change}
+	showPrimary={wp.showPrimary}
+	primaryLensId={wp.primaryLensId}
+	onprimarychange={persons.onprimarychange}
 />

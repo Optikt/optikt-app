@@ -19,7 +19,8 @@ import {
 	FreeItemCategory
 } from '$lib/shared/enums/lensTypes';
 import { AxisSchema, AlturaSchema } from '$lib/schemas/prescriptions';
-import { InlineCustomerSchema, ItemGroupsSchema, refineItemGroups } from '$lib/schemas/sales';
+import { InlineCustomerSchema } from '$lib/schemas/sales';
+import { ItemGroupsSchema, refineItemGroups } from '$lib/schemas/salesItemGroups';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];

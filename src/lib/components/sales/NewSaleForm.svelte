@@ -176,9 +176,7 @@
 	let groups = $state<UiGroup[]>([]);
 	/** undefined = automatic (one lens and no names → that lens); null = "Ninguna". */
 	let primaryChoice = $state<string | null | undefined>(undefined);
-	const groupItems = $derived(
-		wizardGroupItems(items, getCachedProducts(), getCachedLensItems())
-	);
+	const groupItems = $derived(wizardGroupItems(items, getCachedProducts(), getCachedLensItems()));
 	const primaryLensId = $derived.by(() => {
 		if (primaryChoice === undefined) return defaultPrimaryLens(groupItems, groups);
 		if (primaryChoice === null) return null;
@@ -377,10 +375,12 @@
 			bind:items
 			bind:includedAccessoryMap
 			bind:groups
-			showPrimary={true}
-			{primaryLensId}
-			onprimarychange={(id) => (primaryChoice = id)}
-			docLabel={orderNumberInput ? `#${orderNumberInput.padStart(4, '0')}` : undefined}
+			persons={{
+				showPrimary: true,
+				primaryLensId,
+				onprimarychange: (id) => (primaryChoice = id),
+				docLabel: orderNumberInput ? `#${orderNumberInput.padStart(4, '0')}` : undefined
+			}}
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}

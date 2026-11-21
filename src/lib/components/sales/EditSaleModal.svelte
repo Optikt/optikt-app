@@ -37,7 +37,7 @@
 		quoteItemToEditable
 	} from '$lib/components/quotes/editQuote/quoteEditAdapter';
 	import { formatQuoteNumber } from '$lib/components/quotes/list/quoteListDisplay';
-	import { submitEditSale } from './editSale/submitEditSale';
+	import { buildEditSubmitInput, submitEditSale } from './editSale/submitEditSale';
 	import {
 		EMPTY_MEASURES,
 		measuresChanged,
@@ -49,6 +49,9 @@
 		validateEditModal,
 		type Measures
 	} from './editSale/editSaleModalHelpers';
+	import EditSalePersonsTab from './editSale/EditSalePersonsTab.svelte';
+	import { EditPersons } from './groups/editPersons.svelte';
+	import type { ItemGroup } from '$lib/shared/saleItemGroups';
 	interface Props {
 		open: boolean;
 		sale?: SaleWithRelations;
@@ -59,6 +62,8 @@
 		/** Adapter quote (D1): mutually exclusive with `sale`. */
 		quote?: QuoteWithRelations;
 		quoteItems?: QuoteItemWithDetails[];
+		/** Current per-person groups of the sale/quote. */
+		itemGroups?: ItemGroup[];
 		onSuccess?: () => void;
 	}
 
@@ -70,6 +75,7 @@
 		prescription = null,
 		quote,
 		quoteItems = [],
+		itemGroups = [],
 		onSuccess
 	}: Props = $props();
 
@@ -108,6 +114,13 @@
 	});
 
 	let editableItems = $state<EditableItem[]>([]);
+
+	// ── Per-person grouping (Personas tab) ─────────────────────────────
+	const persons = new EditPersons(() => ({
+		mode,
+		editable: editableItems,
+		lines: [...items, ...quoteItems]
+	}));
 	let editingId = $state<string | null>(null);
 	let editorKind = $state<EditorKind | null>(null);
 	let creating = $state(false);
@@ -145,6 +158,7 @@
 	});
 
 	let hasChanges = $derived.by(() => {
+		if (persons.changed) return true;
 		if (mode === 'quote') return quoteChanges.changed;
 		return (
 			hasChangesForSale(
@@ -176,6 +190,7 @@
 		creating = false;
 		view = 'list';
 		staggerRows = false;
+		persons.seed(itemGroups, sale?.primaryLensItemId ?? null);
 
 		if (mode === 'quote' && quote) {
 			// quoteDate (no createdAt): fecha editable del presupuesto, en día de negocio.
@@ -346,46 +361,24 @@
 		saving = true;
 		try {
 			const error = await submitEditSale(
-				mode === 'quote' && quote
-					? {
-							mode: 'quote',
-							quote,
-							draft: {
-								dateIso: saleDate,
-								validUntilIso: validUntil,
-								notes,
-								isCashea,
-								discount,
-								discountType,
-								items: editableItems
-							}
-						}
-					: {
-							mode: 'sale',
-							sale: sale!,
-							originalItems: items,
-							draft: {
-								saleDate,
-								notes,
-								isCashea,
-								discount,
-								discountType,
-								reason,
-								removedCount,
-								activeItems,
-								originalItems: items,
-								prescription: {
-									dp: prescription?.dp ?? null,
-									npRight: prescription?.npRight ?? null,
-									npLeft: prescription?.npLeft ?? null
-								},
-								prescriptionPatch: {
-									dp: measures.odDp,
-									npRight: measures.odDnp,
-									npLeft: measures.osDnp
-								}
-							}
-						}
+				buildEditSubmitInput({
+					quote: mode === 'quote' ? quote : undefined,
+					sale,
+					items,
+					editableItems,
+					activeItems,
+					removedCount,
+					saleDate,
+					validUntil,
+					notes,
+					isCashea,
+					discount,
+					discountType,
+					reason,
+					prescription,
+					measures,
+					groupsPatch: persons.patch()
+				})
 			);
 			submitError = error ?? '';
 			if (error === null) {
@@ -455,7 +448,9 @@
 	{/snippet}
 
 	{#key view}
-		{#if view === 'list'}
+		{#if view === 'list' && persons.tab === 'persons'}
+			<EditSalePersonsTab {persons} />
+		{:else if view === 'list'}
 			<div transition:inFly>
 				<EditSaleItemsList
 					{activeItems}
@@ -468,6 +463,7 @@
 					onRestore={restoreItem}
 					onAdd={startAdd}
 					onRemoveChild={removeChild}
+					{persons}
 				/>
 			</div>
 		{:else}

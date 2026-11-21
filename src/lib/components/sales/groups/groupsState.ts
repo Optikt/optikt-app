@@ -130,3 +130,13 @@ export function groupLensIds(group: ItemGroup, items: readonly GroupableItem[]):
 	const lensIds = new Set(items.filter((i) => i.itemType === 'LENS_PAIR').map((i) => i.id));
 	return group.members.filter((m) => lensIds.has(m.itemId)).map((m) => m.itemId);
 }
+
+/** Wizard step 2 options for the sale (⭐ primary) / quote (no primary). */
+export interface WizardPersonsOptions {
+	/** Sales only: ⭐ "Fórmula del cliente". */
+	showPrimary?: boolean;
+	primaryLensId?: string | null;
+	onprimarychange?: (lensId: string | null) => void;
+	/** Document chip in the Personas drawer ("#0313", "P-0019"). */
+	docLabel?: string;
+}

@@ -18,3 +18,16 @@ export function primaryNote(
 		index >= 0 ? groupDisplayLabel(groups[index].label, index) : (lens?.name ?? 'cristal');
 	return `★ Fórmula del cliente: ${who}. Se guarda como su fórmula vigente.`;
 }
+
+/** Short footer note for the wizard (sales with at least one lens). */
+export function primaryFooterNote(
+	items: readonly GroupItemView[],
+	groups: readonly ItemGroup[],
+	primaryLensId: string | null
+): string | undefined {
+	if (!items.some((i) => i.itemType === 'LENS_PAIR')) return undefined;
+	return primaryNote(items, groups, primaryLensId).replace(
+		/\. Se guarda como su fórmula vigente\.$/,
+		''
+	);
+}
