@@ -76,10 +76,9 @@ export const sales = pgTable(
 		 * LENS_PAIR line whose prescription is the customer's current one ("fórmula principal").
 		 * Null = the sale created/overwrote no customer prescription (multi-person sales).
 		 */
-		primaryLensItemId: uuid('primary_lens_item_id').references(
-			(): AnyPgColumn => saleItems.id,
-			{ onDelete: 'set null' }
-		),
+		primaryLensItemId: uuid('primary_lens_item_id').references((): AnyPgColumn => saleItems.id, {
+			onDelete: 'set null'
+		}),
 		notes: varchar(),
 		/** Reason for cancellation (required when cancelling) */
 		cancellationReason: varchar('cancellation_reason', { length: 500 }),
