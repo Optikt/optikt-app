@@ -2,6 +2,17 @@ import { toSaleTotalsLine, computeSaleTotals } from '$lib/shared/saleTotals';
 import { findQuoteById, getQuoteItemsWithDetails } from '$lib/server/db/queries/quotes/reads';
 import { deleteQuoteItems, updateQuote } from '$lib/server/db/queries/quotes/writes';
 import { db } from '$lib/server/db';
+import type { ChangeRecord } from '$lib/server/db/schema';
+import {
+	findQuoteItemGroups,
+	replaceQuoteItemGroups
+} from '$lib/server/db/queries/quotes/itemGroups';
+import {
+	clampAllocations,
+	dropEmptyGroups,
+	normalizeGroupsForSubmit,
+	summarizeGroups
+} from '$lib/shared/saleItemGroups';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { auditService } from '$lib/server/audit';
 import { calculateDiff, hasChanges } from '$lib/server/audit/utils';
@@ -36,6 +47,7 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 
 	// Lectura de validación (fuera de la tx): ítems previos para el diff de auditoría.
 	const beforeItems = await getQuoteItemsWithDetails(data.id);
+	const beforeGroups = await findQuoteItemGroups(data.id);
 
 	// Calculate totals from new items
 	const discount = data.discount ?? existing.discount;
@@ -50,6 +62,7 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 	const subtotal = totals.subtotal;
 	const total = totals.total;
 
+	let afterGroups: ReturnType<typeof normalizeGroupsForSubmit> = [];
 	const quote = await db.transaction(async (tx) => {
 		const now = nowISO();
 
@@ -83,6 +96,17 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 		await deleteQuoteItems(data.id, tx);
 		await insertQuoteItems(tx, data.id, data.items, now);
 
+		// Items are re-inserted with their client ids (the drawer keeps the
+		// existing ids), so the current groups survive when `groups` is absent.
+		// Dropped lines / lower quantities are clamped; [] removes all groups.
+		const groupableItems = data.items
+			.filter((item): item is typeof item & { id: string } => !!item.id)
+			.map((item) => ({ id: item.id, itemType: item.itemType, quantity: item.quantity }));
+		afterGroups = normalizeGroupsForSubmit(
+			dropEmptyGroups(clampAllocations(data.groups ?? beforeGroups, groupableItems))
+		);
+		await replaceQuoteItemGroups(data.id, afterGroups, tx);
+
 		if (!updated) throw new Error('Presupuesto no encontrado al actualizar');
 		return updated;
 	});
@@ -113,12 +137,24 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 		afterTotals: { subtotal: quote.subtotal, total: quote.total }
 	});
 	const diffCount = countSaleAuditChanges(itemsDiff);
-	if (hasChanges(headerChanges) || diffCount > 0) {
+	const nameOf = (id: string) =>
+		data.items.find((i) => i.id === id)?.snapshotName ??
+		beforeItems.find((i) => i.id === id)?.snapshotName ??
+		'Artículo';
+	const groupsBefore = summarizeGroups(beforeGroups, nameOf);
+	const groupsAfter = summarizeGroups(afterGroups, nameOf);
+	const groupChanges: ChangeRecord =
+		groupsBefore !== groupsAfter ? { personGroups: { old: groupsBefore, new: groupsAfter } } : {};
+	if (hasChanges(headerChanges) || diffCount > 0 || hasChanges(groupChanges)) {
 		await auditService.logCustom(
 			'quote',
 			data.id,
 			'update',
-			{ ...headerChanges, ...(diffCount > 0 ? { itemsDiff: { old: null, new: itemsDiff } } : {}) },
+			{
+				...headerChanges,
+				...groupChanges,
+				...(diffCount > 0 ? { itemsDiff: { old: null, new: itemsDiff } } : {})
+			},
 			ctx
 		);
 	}

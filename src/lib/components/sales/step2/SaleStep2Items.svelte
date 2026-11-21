@@ -48,6 +48,11 @@
 	import { recalcSuggestedPrice } from './items/step2Pricing';
 	import { copyFirstRxToAll } from './items/step2RxCopy';
 	import { getValidationReasons } from './items/step2Validation';
+	import PersonChipLine from '../groups/PersonChipLine.svelte';
+	import PersonsDrawer from '../groups/PersonsDrawer.svelte';
+	import type { UiGroup, WizardPersonsOptions } from '../groups/groupsState';
+	import { WizardPersons } from '../groups/wizardPersons.svelte';
+	import { isGroupableItemType } from '$lib/shared/saleItemGroups';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -62,6 +67,9 @@
 		noCustomerContextLabel?: string;
 		itemsSectionTitle?: string;
 		onCancel?: () => void;
+		/** Per-person grouping (sale and quote wizard). */
+		groups?: UiGroup[];
+		persons?: WizardPersonsOptions;
 		valid: boolean;
 		onnext: () => void;
 		onprev: () => void;
@@ -80,6 +88,8 @@
 		noCustomerContextLabel = 'Venta sin cliente',
 		itemsSectionTitle = 'Artículos',
 		onCancel,
+		groups = $bindable([]),
+		persons = {},
 		valid,
 		onnext,
 		onprev
@@ -383,6 +393,19 @@
 			)
 	);
 
+	// ── Per-person grouping ────────────────────────────────────────────
+	const wp = new WizardPersons(
+		() => ({
+			items,
+			groups,
+			accessoryMap: includedAccessoryMap,
+			products: catalog.getProducts(),
+			lenses: catalog.getLensItems(),
+			persons
+		}),
+		{ groups: (next) => (groups = next), items: (next) => (items = next) }
+	);
+
 	const rxErrorsPerLens = $derived.by((): Record<string, PrescriptionFieldErrors> => {
 		const map: Record<string, PrescriptionFieldErrors> = {};
 		for (const item of items) {
@@ -409,6 +432,8 @@
 			{canCopyRxToAll}
 			oncopyrx={handleCopyRxToAll}
 			onaddfree={addFreeItem}
+			onpersons={items.length > 0 ? () => (wp.open = true) : undefined}
+			personCount={wp.count}
 		/>
 	</div>
 
@@ -438,7 +463,21 @@
 		onRemoveItem={removeItem}
 		onRemoveTreatment={handleRemoveTreatment}
 		onOpenTreatment={handleOpenTreatmentSelector}
-	/>
+	>
+		{#snippet personChip(row)}
+			{@const view = wp.items.find((g) => g.id === row.id)}
+			{#if view && isGroupableItemType(view.itemType)}
+				<PersonChipLine
+					item={view}
+					groups={wp.groups}
+					onchange={wp.change}
+					onorganize={() => (wp.open = true)}
+					onclose={wp.reorder}
+					isPrimary={wp.isPrimary(row.id)}
+				/>
+			{/if}
+		{/snippet}
+	</Step2ItemsList>
 
 	<Step2ValidationHints {valid} reasons={validationReasons} />
 
@@ -450,6 +489,7 @@
 		primaryKind="next"
 		summaryLabel="Total previo"
 		summaryValue={formatPrice(partialTotal)}
+		note={wp.footerNote}
 		onBack={onprev}
 		onPrimary={onnext}
 	/>
@@ -461,4 +501,16 @@
 	availableTreatments={activeTreatmentAvail}
 	currentTreatmentId={activeTreatmentItem?.supplierTreatmentId ?? null}
 	onselect={handleSelectTreatment}
+/>
+
+<PersonsDrawer
+	bind:open={wp.open}
+	onclose={wp.reorder}
+	docLabel={persons.docLabel}
+	items={wp.items}
+	groups={wp.groups}
+	onchange={wp.change}
+	showPrimary={wp.showPrimary}
+	primaryLensId={wp.primaryLensId}
+	onprimarychange={persons.onprimarychange}
 />

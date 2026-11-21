@@ -25,6 +25,16 @@ import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { UpdateSaleInput } from '$lib/schemas/sales';
+import {
+	findSaleGroupableItems,
+	findSaleItemGroups
+} from '$lib/server/db/queries/sales/itemGroups';
+import {
+	groupsAuditChanges,
+	persistSaleGroups,
+	type PersistSaleGroupsResult
+} from '$lib/server/sales/saleItemGroupsCore';
+import { remapGroupItemIds } from '$lib/shared/saleItemGroups';
 import type { ActionContext } from '$lib/server/actionContext';
 
 /**
@@ -164,6 +174,13 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		}
 	}
 
+	// Per-person groups + primary lens before the change (audit + remap source).
+	const beforeGroups = await findSaleItemGroups(data.id);
+	const beforeLines = await findSaleGroupableItems(data.id);
+	const touchesGroups = data.groups !== undefined || data.primaryLensItemId !== undefined;
+	const customerIdAfter = data.customerId ?? existing.customerId;
+	let groupsResult = null as PersistSaleGroupsResult | null;
+
 	// All writes in a single transaction
 	const beforeItems: SaleItem[] = [];
 	// A race on the reassigned number surfaces as the same friendly duplicate error
@@ -272,6 +289,22 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 					});
 				}
 
+				// ── 4b. Groups + primary lens follow the replaced items ─────────
+				// Items got new ids: translate (client id → new id) the incoming
+				// groups, or the current ones when the payload doesn't send groups.
+				const remapId = (id: string | null | undefined) => (id ? (idMap.get(id) ?? null) : null);
+				const previousPrimary = remapId(existing.primaryLensItemId);
+				groupsResult = await persistSaleGroups(tx, {
+					saleId: data.id,
+					customerId: customerIdAfter,
+					groups: remapGroupItemIds(data.groups ?? beforeGroups, idMap),
+					primaryLensItemId:
+						data.primaryLensItemId !== undefined
+							? remapId(data.primaryLensItemId)
+							: previousPrimary,
+					previousPrimaryLensItemId: previousPrimary
+				});
+
 				// ── 5. Recalculate tax snapshot if provided ─────────────────────
 				const taxRate = data.snapshotTaxRate ?? existing.snapshotTaxRate;
 				const updateData: Record<string, unknown> = {
@@ -302,6 +335,16 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 			}
 
 			// ── Header-only update (no item changes) ───────────────────────────
+			if (touchesGroups) {
+				groupsResult = await persistSaleGroups(tx, {
+					saleId: data.id,
+					customerId: customerIdAfter,
+					groups: data.groups,
+					primaryLensItemId: data.primaryLensItemId,
+					previousPrimaryLensItemId: existing.primaryLensItemId
+				});
+			}
+
 			const headerUpdate: Record<string, unknown> = {};
 			if (data.customerId) headerUpdate.customerId = data.customerId;
 			/** saleDate alias → createdAt (modal already composes day + preserved time) */
@@ -342,6 +385,13 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		});
 
 	const updatedSale = txResult.sale;
+
+	// New current prescription from the primary lens (best-effort audit).
+	if (groupsResult?.prescription) {
+		await auditService.logCreate('prescription', groupsResult.prescription, ctx, {
+			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+		});
+	}
 
 	// Prescription audit (best-effort, after transaction succeeds): the DP/NP patch
 	// does NOT land on the sale row, so the sale logUpdate above would never show it.
@@ -392,12 +442,33 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		);
 		itemsDiff = { old: null, new: diff };
 	}
-	if (hasChanges(headerChanges) || (itemsDiff && countSaleAuditChanges(itemsDiff.new) > 0)) {
+	const lineNames = new Map(
+		[...beforeLines, ...(groupsResult?.lines ?? [])].map((l) => [
+			l.id,
+			l.snapshotName ?? 'Artículo'
+		])
+	);
+	const groupChanges = groupsResult
+		? groupsAuditChanges({
+				before: beforeGroups,
+				after: groupsResult.groups,
+				beforePrimary: existing.primaryLensItemId,
+				afterPrimary: groupsResult.primaryLensItemId,
+				nameOf: (id) => lineNames.get(id) ?? 'Artículo'
+			})
+		: {};
+	// Item replacement alone changes the line ids; compare by readable summary only.
+	delete headerChanges.primaryLensItemId;
+	if (
+		hasChanges(headerChanges) ||
+		hasChanges(groupChanges) ||
+		(itemsDiff && countSaleAuditChanges(itemsDiff.new) > 0)
+	) {
 		await auditService.logCustom(
 			'sale',
 			data.id,
 			'update',
-			{ ...headerChanges, ...(itemsDiff ? { itemsDiff } : {}) },
+			{ ...headerChanges, ...groupChanges, ...(itemsDiff ? { itemsDiff } : {}) },
 			{ ...ctx, reason: data.reason }
 		);
 	}

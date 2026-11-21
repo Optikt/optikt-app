@@ -20,6 +20,8 @@ Fórmulas ópticas por cliente (OD/OS: esfera/cilindro/eje/add/altura, DP/NP, tr
 - Eliminación: soft-delete vía texto `softDelete('prescription', …, tx)` siempre; falla atrapada como `{success:false}` (`:260-272`).
 - **Snapshot** (`schema/sales.ts:155-168`, `schema/quotes.ts:118-130`): sale/quote items con `itemType=LENS_PAIR` copian od/os* + `prescriptionId` — **inmutables tras la venta** (los cambios de la fórmula no retro-activan ventas). Display via `hasPrescriptionSnapshot`/`formatPrescriptionEye` (`shared/prescriptionSnapshot.ts:16-48`).
 
+- ⚠️ **Desde ventas solo la fórmula principal toca `isCurrent`** (plan `sale-item-groups`): crear venta, editarla, "Organizar" o convertir un presupuesto crean una fórmula vigente **solo** desde el cristal marcado como principal (`sales.primary_lens_item_id`, `server/sales/primaryPrescription.ts`). Sin principal (venta multi-persona o "Ninguna") no se crea ni se despersonaliza ninguna. Cambiar la principal crea una nueva vigente; la anterior queda en el historial; desmarcar no borra nada. Doctor opcional en ese insert (null), igual que la conversión.
+
 ## Patrones locales
 
 - Form helper puro `prescription-form.ts` (`createPrescriptionFormData` default date=hoy + isCurrent=true; `prescriptionToFormData`).

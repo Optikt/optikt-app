@@ -20,6 +20,7 @@
 				"src/lib/shared/saleTotals*",
 				"src/lib/shared/saleItemCosts*",
 				"src/lib/shared/saleItemValues.ts",
+				"src/lib/shared/saleItemGroups*",
 				"src/lib/shared/tickera*",
 				"src/lib/shared/ticketRate*",
 				"src/lib/shared/saleBalance*"

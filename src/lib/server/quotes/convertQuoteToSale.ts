@@ -1,13 +1,14 @@
 import { toSaleTotalsLine, computeSaleTotals } from '$lib/shared/saleTotals';
-import { derivePrescriptionFromQuoteItems } from './quoteHelpers';
 import { findQuoteById, getQuoteItemsWithDetails } from '$lib/server/db/queries/quotes/reads';
 import { markQuoteConverted } from '$lib/server/db/queries/quotes/conversion';
+import { findCustomerById, resolveInlineCustomer } from '$lib/server/db/queries/customers';
+import { findQuoteItemGroups } from '$lib/server/db/queries/quotes/itemGroups';
+import { replaceSaleItemGroups, setSalePrimaryLens } from '$lib/server/db/queries/sales/itemGroups';
 import {
-	findCustomerById,
-	createPrescription,
-	unsetCurrentPrescriptions,
-	resolveInlineCustomer
-} from '$lib/server/db/queries/customers';
+	applyPrimaryPrescription,
+	prescriptionFromLensLine
+} from '$lib/server/sales/primaryPrescription';
+import { defaultPrimaryLens, remapGroupItemIds } from '$lib/shared/saleItemGroups';
 import { createSale } from '$lib/server/db/queries/sales/writes';
 import { db } from '$lib/server/db';
 import type { Customer, Prescription, Quote } from '$lib/server/db/schema';
@@ -17,7 +18,6 @@ import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { auditService } from '$lib/server/audit';
 import { toISODate, nowUTC, nowISO } from '$lib/dates';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
-import { toPrescriptionInsert } from '$lib/utils/prescription';
 import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import type { ConvertQuoteInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
@@ -89,10 +89,33 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 		quote.discountType
 	);
 
-	// Build a map of quote item IDs → new sale item IDs (for treatment parent references)
+	// Build a map of quote item IDs → new sale item IDs (treatment parents + groups)
 	const idMap = new Map<string, string>();
 	for (const item of items) {
 		idMap.set(item.id, crypto.randomUUID());
+	}
+
+	// Per-person groups pass through as-is (names + unit split).
+	const quoteGroups = await findQuoteItemGroups(data.id);
+
+	// "Fórmula del cliente": chosen in the modal (null = "Ninguna"); absent →
+	// default rule (exactly one lens and no names). Replaces the old
+	// `firstDefined` derivation over every lens (multi-person debt).
+	const primaryQuoteItemId =
+		data.primaryQuoteItemId !== undefined
+			? data.primaryQuoteItemId
+			: defaultPrimaryLens(
+					items.map((item) => ({ ...item, parentId: item.parentQuoteItemId })),
+					quoteGroups
+				);
+	const primaryQuoteItem = primaryQuoteItemId
+		? items.find((i) => i.id === primaryQuoteItemId && i.itemType === SaleItemType.LENS_PAIR)
+		: undefined;
+	if (primaryQuoteItemId && !primaryQuoteItem) {
+		return {
+			success: false as const,
+			error: 'La fórmula elegida no es un cristal del presupuesto'
+		};
 	}
 
 	// Freeze the live USD BCV rate for future tickera reprints (null when API down)
@@ -119,20 +142,6 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 			}
 
 			const now = nowISO();
-
-			// Prescripción derivada de los ítems LENS_PAIR (mismo flujo que hoy).
-			// DEBT(multi-person-rx): con lentes de varias personas se deriva UNA
-			// prescripción con firstDefined y se marca isCurrent para el titular.
-			// Ver docs/agents/quotes.md (Known gaps).
-			const prescriptionPayload = derivePrescriptionFromQuoteItems(items, toISODate(nowUTC()));
-
-			if (prescriptionPayload) {
-				await unsetCurrentPrescriptions(customerId, undefined, tx);
-				createdPrescription = await createPrescription(
-					toPrescriptionInsert(customerId, prescriptionPayload),
-					tx
-				);
-			}
 
 			// Create the sale via the query function (no Drizzle inline).
 			// El número lo asigna la sequence `sales_order_number_seq`.
@@ -163,17 +172,39 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 					? (idMap.get(item.parentQuoteItemId) ?? null)
 					: null;
 
-				const prescriptionId =
-					item.itemType === SaleItemType.LENS_PAIR ? (createdPrescription?.id ?? null) : null;
 				await insertSaleItem(tx, {
 					id: newId,
 					saleId: sale.id,
 					item,
 					parentSaleItemId,
-					prescriptionId,
+					prescriptionId: null,
 					userId: ctx.userId!,
 					now
 				});
+			}
+
+			if (quoteGroups.length > 0) {
+				await replaceSaleItemGroups(sale.id, remapGroupItemIds(quoteGroups, idMap), tx);
+			}
+
+			// Only the chosen lens becomes the customer's current Rx (and is the
+			// only lens linked to it). "Ninguna" → nothing is created/overwritten.
+			if (primaryQuoteItem) {
+				const saleLensId = idMap.get(primaryQuoteItem.id)!;
+				await setSalePrimaryLens(sale.id, saleLensId, tx);
+				sale = { ...sale, primaryLensItemId: saleLensId };
+				const fields = prescriptionFromLensLine(
+					primaryQuoteItem,
+					toISODate(nowUTC()),
+					primaryQuoteItem.lensCatalogItem?.type
+				);
+				if (fields) {
+					createdPrescription = await applyPrimaryPrescription(tx, {
+						customerId,
+						saleItemId: saleLensId,
+						fields
+					});
+				}
 			}
 
 			// Guard de concurrencia: solo transiciona si sigue DRAFT.

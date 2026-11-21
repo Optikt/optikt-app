@@ -8,6 +8,7 @@ import { getSaleAuditHistoryCount } from '$lib/server/db/queries/changeHistory';
 import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
 import { getAllSuppliers, getAllTreatments } from '$lib/server/db/queries/suppliers';
 import { getSalePrescription } from '$lib/server/db/queries/sales/reads';
+import { findSaleItemGroups } from '$lib/server/db/queries/sales/itemGroups';
 import { findLensCatalogItemByIdWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import { MovementReferenceType, SaleItemType } from '$lib/shared/enums';
 
@@ -29,7 +30,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		allTreatments,
 		auditHistory,
 		auditTotal,
-		prescription
+		prescription,
+		itemGroups
 	] = await Promise.all([
 		getSaleItemsWithDetails(params.id),
 		getSalePayments(params.id, { includeVoided: true }),
@@ -42,7 +44,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		getAllTreatments(),
 		getSaleAuditHistory(params.id),
 		getSaleAuditHistoryCount(params.id),
-		getSalePrescription(params.id)
+		getSalePrescription(params.id),
+		findSaleItemGroups(params.id)
 	]);
 
 	/** Lens catalog entries for the sale's crystals: factory treatments in the item meta (drawer parity). */
@@ -67,6 +70,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		auditHistory,
 		auditTotal,
 		prescription,
-		lensCatalogItems
+		lensCatalogItems,
+		itemGroups
 	};
 };

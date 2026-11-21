@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, type Snippet } from 'svelte';
 	import { Trash2, FlaskConical } from '@lucide/svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { formatPrice } from '$lib/utils';
@@ -25,6 +25,8 @@
 		availableTreatments?: SupplierTreatment[];
 		currentTreatmentName?: string | null;
 		onopenTreatment?: (() => void) | undefined;
+		/** Per-person chip ("PARA …") under the item info. */
+		person?: Snippet;
 	}
 
 	let {
@@ -35,7 +37,8 @@
 		isIncludedAccessory = false,
 		availableTreatments = [],
 		currentTreatmentName = null,
-		onopenTreatment = undefined
+		onopenTreatment = undefined,
+		person
 	}: Props = $props();
 
 	const catalog = getContext<CatalogData>(CATALOG_KEY);
@@ -111,6 +114,11 @@
 							Editar
 						</button>
 					{/if}
+				</div>
+			{:else if person}
+				<div class="flex min-w-0 flex-col gap-1">
+					<SaleItemInfo {item} showAccessoryBadge={isIncludedAccessory} />
+					<div class="pl-1">{@render person()}</div>
 				</div>
 			{:else}
 				<SaleItemInfo {item} showAccessoryBadge={isIncludedAccessory} />

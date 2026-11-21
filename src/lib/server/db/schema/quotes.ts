@@ -10,6 +10,8 @@ import {
 	integer,
 	doublePrecision,
 	foreignKey,
+	primaryKey,
+	check,
 	type AnyPgColumn
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -280,3 +282,56 @@ export const quoteItemFreeDetails = pgTable(
 
 export type QuoteItemFreeDetails = typeof quoteItemFreeDetails.$inferSelect;
 export type NewQuoteItemFreeDetails = typeof quoteItemFreeDetails.$inferInsert;
+
+// ============================================================================
+// QUOTE ITEM GROUPS (mirror of sale_item_groups — no primary prescription in quotes)
+// ============================================================================
+
+export const quoteItemGroups = pgTable(
+	'quote_item_groups',
+	{
+		id: uuid().primaryKey().notNull().defaultRandom(),
+		quoteId: uuid('quote_id')
+			.notNull()
+			.references(() => quotes.id, { onDelete: 'cascade' }),
+		/** Free text, never linked to customers. Null → shown as "Trabajo N". */
+		label: varchar({ length: 60 }),
+		position: integer().notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
+	},
+	(table) => [
+		index('ix_quote_item_groups_quote_id').using(
+			'btree',
+			table.quoteId.asc().nullsLast().op('uuid_ops')
+		)
+	]
+);
+
+export const quoteItemGroupMembers = pgTable(
+	'quote_item_group_members',
+	{
+		groupId: uuid('group_id')
+			.notNull()
+			.references(() => quoteItemGroups.id, { onDelete: 'cascade' }),
+		quoteItemId: uuid('quote_item_id')
+			.notNull()
+			.references(() => quoteItems.id, { onDelete: 'cascade' }),
+		quantity: integer().notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.groupId, table.quoteItemId] }),
+		index('ix_quote_item_group_members_quote_item_id').using(
+			'btree',
+			table.quoteItemId.asc().nullsLast().op('uuid_ops')
+		),
+		check('quote_item_group_members_quantity_positive', sql`${table.quantity} > 0`)
+	]
+);
+
+export type QuoteItemGroupRow = typeof quoteItemGroups.$inferSelect;
+export type QuoteItemGroupMemberRow = typeof quoteItemGroupMembers.$inferSelect;

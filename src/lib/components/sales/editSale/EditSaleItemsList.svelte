@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import PersonChipLine from '../groups/PersonChipLine.svelte';
+	import EditSaleTabs from './EditSaleTabs.svelte';
+	import type { EditPersons } from '../groups/editPersons.svelte';
 	import { ChevronDown, Plus } from '@lucide/svelte';
 	import DocumentItemRow from '$lib/components/commercialDocument/DocumentItemRow.svelte';
 	import DocumentChildRow from '$lib/components/commercialDocument/DocumentChildRow.svelte';
@@ -28,6 +31,8 @@
 		onRestore: (item: EditableItem) => void;
 		onAdd: (kind: AddItemKind) => void;
 		onRemoveChild: (child: EditableItem) => void;
+		/** Per-person grouping: tabs in the header + chip under each line. */
+		persons?: EditPersons;
 	}
 
 	let {
@@ -40,7 +45,8 @@
 		onRemove,
 		onRestore,
 		onAdd,
-		onRemoveChild
+		onRemoveChild,
+		persons
 	}: Props = $props();
 
 	let menuOpen = $state(false);
@@ -212,6 +218,13 @@
 		>
 			{mainItems.filter((item) => !item._removed).length}
 		</span>
+		{#if persons}
+			<EditSaleTabs
+				tab={persons.tab}
+				personCount={persons.count}
+				onchange={(t) => (persons.tab = t)}
+			/>
+		{/if}
 
 		<div class="relative ml-auto" bind:this={menuRoot}>
 			{#snippet addTrigger({ props }: { props: Record<string, unknown> })}
@@ -279,7 +292,22 @@
 						onOpen={() => onToggleEditor(item)}
 						onRemove={() => onRemove(item)}
 						onRestore={() => onRestore(item)}
+						extra={persons && item.id && item.itemType !== SaleItemType.TREATMENT
+							? personExtra
+							: undefined}
 					/>
+					{#snippet personExtra()}
+						{@const view = persons?.items.find((g) => g.id === item.id)}
+						{#if persons && view}
+							<PersonChipLine
+								item={view}
+								groups={persons.groups}
+								onchange={persons.change}
+								onorganize={() => (persons.tab = 'persons')}
+								isPrimary={persons.showPrimary && persons.primary === item.id}
+							/>
+						{/if}
+					{/snippet}
 
 					{#each childItemsOf(item) as child, childIndex (child.id)}
 						{@const childVm = childView(child)}

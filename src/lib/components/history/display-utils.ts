@@ -92,7 +92,9 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		refundAmount: 'Monto reembolsado',
 		isCashea: 'Cashea',
 		snapshotBcvRate: 'Tasa BCV',
-		snapshotTaxRate: 'Tasa de IVA'
+		snapshotTaxRate: 'Tasa de IVA',
+		personGroups: 'Agrupación por persona',
+		primaryLens: 'Fórmula del cliente'
 	},
 	sale_item: {
 		saleId: 'Venta',
@@ -222,7 +224,8 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		total: 'Total',
 		validUntil: 'Válido hasta',
 		notes: 'Notas',
-		conversionSaleId: 'Venta Convertida'
+		conversionSaleId: 'Venta Convertida',
+		personGroups: 'Agrupación por persona'
 	},
 	cash_expense: {
 		category: 'Categoría',

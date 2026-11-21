@@ -23,6 +23,8 @@ PDF A4 server-side vía Chromium headless (puppeteer-core + @sparticuz/chromium)
 - Roles tickera: ADMIN/MANAGER/SELLER; páginas `(print)` con guard `locals.user` → 401.
 - Recibo A4 inline con `Cache-Control: no-store` (`routes/api/pdf/sale/[id]/+server.ts:24-32`).
 
+- **Orden por persona** en recibo A4/PDF (`print/sale`, `print/quote`) y tickera: las líneas se ordenan con `orderLinesByGroups` (`shared/saleItemGroups.ts`) para que cada persona quede junta ("montura, cristal, montura, cristal"; compartida "montura ×2, cristal, cristal"). **No se imprimen nombres.** Sin grupos el orden es el de siempre.
+
 ## Patrones locales
 
 - `routes/api/pdf/[entity]/[id]` es thin: valida, compone URL de impresión y delega a `generatePdf` (señala al print route as SSR source).

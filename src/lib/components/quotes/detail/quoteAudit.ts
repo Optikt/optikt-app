@@ -7,6 +7,7 @@
  * `updateExistingQuoteCore`), convertido (+ venta) y cancelado (+ motivo).
  */
 
+import { isGroupsOnlyChange } from '$lib/utils/saleDetail';
 import { countSaleAuditChanges } from '$lib/schemas/sales';
 import type { ChangeRecord as HistoryChangeRecord } from '$lib/components/history/display-utils';
 import {
@@ -108,7 +109,11 @@ export function classifyQuoteAuditEntry(
 	// Edición normal (sin cambio de estado): diff estructurado como ventas.
 	const itemsDiff = extractSaleAuditDiff(entry.changes);
 	return buildAuditEvent(entry, {
-		label: fields.customerId ? 'Cliente actualizado' : 'Presupuesto editado',
+		label: fields.customerId
+			? 'Cliente actualizado'
+			: isGroupsOnlyChange(fields)
+				? 'Agrupación por persona actualizada'
+				: 'Presupuesto editado',
 		kind: 'update',
 		changes: hasChanges ? record : null,
 		reason: entry.reason || null,
@@ -116,6 +121,10 @@ export function classifyQuoteAuditEntry(
 		totalDelta: saleAuditTotalDelta(itemsDiff),
 		changeCount: itemsDiff ? countSaleAuditChanges(itemsDiff) : 0,
 		// Eventos viejos sin diff: resumen corto + filas campo a campo al expandir.
-		note: itemsDiff ? null : quoteEditSummary(fields)
+		note: itemsDiff
+			? null
+			: isGroupsOnlyChange(fields)
+				? String(fields.personGroups?.new ?? '')
+				: quoteEditSummary(fields)
 	});
 }

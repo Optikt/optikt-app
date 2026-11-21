@@ -6,6 +6,7 @@ import {
 	findQuoteById
 } from '$lib/server/db/queries/quotes/reads';
 import { getQuoteConversionPreview } from '$lib/server/db/queries/quotes/conversion';
+import { findQuoteItemGroups } from '$lib/server/db/queries/quotes/itemGroups';
 import { findConvertedSaleSummaryById } from '$lib/server/db/queries/sales/reads';
 import { getEntityHistory } from '$lib/server/db/queries/changeHistory';
 import { getAllTreatments } from '$lib/server/db/queries/suppliers';
@@ -23,7 +24,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Presupuesto no encontrado');
 	}
 
-	const [items, preview, auditHistory, sourceQuote, convertedSale, allTreatments] =
+	const [items, preview, auditHistory, sourceQuote, convertedSale, allTreatments, itemGroups] =
 		await Promise.all([
 			getQuoteItemsWithDetails(params.id),
 			getQuoteConversionPreview(params.id),
@@ -33,7 +34,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				? findConvertedSaleSummaryById(quote.conversionSaleId)
 				: Promise.resolve(null),
 			// Igual que /sales/[id]: el drawer de edición necesita el catálogo de tratamientos.
-			getAllTreatments()
+			getAllTreatments(),
+			findQuoteItemGroups(params.id)
 		]);
 
 	/** Catálogo de los cristales del presupuesto (tratamientos de fábrica en el meta). */
@@ -56,6 +58,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		sourceQuoteNumber: sourceQuote?.quoteNumber ?? null,
 		convertedSale,
 		allTreatments,
-		lensCatalogItems
+		lensCatalogItems,
+		itemGroups
 	};
 };

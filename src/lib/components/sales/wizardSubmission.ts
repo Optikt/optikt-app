@@ -45,6 +45,7 @@ export function buildSaleItemsFromWizard(
 		if (item.kind === 'free') {
 			if (!item.freeItem) continue;
 			saleItems.push({
+				id: item.id,
 				itemType: SaleItemType.FREE_ITEM,
 				quantity: item.quantity,
 				unitPrice: item.unitPrice,
@@ -63,6 +64,7 @@ export function buildSaleItemsFromWizard(
 		if (item.kind === 'product') {
 			const product = products.find((candidate) => candidate.id === item.productId);
 			saleItems.push({
+				id: item.id,
 				itemType: SaleItemType.PRODUCT,
 				productId: item.productId,
 				quantity: item.quantity,
@@ -81,6 +83,7 @@ export function buildSaleItemsFromWizard(
 		if (item.kind === 'treatment') {
 			const lensParent = items.find((i) => i.id === item.parentLensItemId);
 			saleItems.push({
+				id: item.id,
 				itemType: SaleItemType.TREATMENT,
 				parentSaleItemId: lensParent?.id ?? item.parentLensItemId,
 				supplierTreatmentId: item.supplierTreatmentId,
@@ -170,6 +173,7 @@ export function buildQuoteItemsFromWizard(
 		if (item.kind === 'free') {
 			if (!item.freeItem) continue;
 			quoteItems.push({
+				id: item.id,
 				itemType: SaleItemType.FREE_ITEM,
 				quantity: item.quantity,
 				unitPrice: item.unitPrice,
@@ -188,6 +192,7 @@ export function buildQuoteItemsFromWizard(
 		if (item.kind === 'product') {
 			const product = products.find((candidate) => candidate.id === item.productId);
 			quoteItems.push({
+				id: item.id,
 				itemType: SaleItemType.PRODUCT,
 				productId: item.productId,
 				quantity: item.quantity,
@@ -206,6 +211,7 @@ export function buildQuoteItemsFromWizard(
 		if (item.kind === 'treatment') {
 			const lensParent = items.find((i) => i.id === item.parentLensItemId);
 			quoteItems.push({
+				id: item.id,
 				itemType: SaleItemType.TREATMENT,
 				parentQuoteItemId: lensParent?.id ?? item.parentLensItemId,
 				supplierTreatmentId: item.supplierTreatmentId,
@@ -278,11 +284,21 @@ export function buildQuoteItemsFromWizard(
 	return quoteItems;
 }
 
+/**
+ * Rx payload for the customer's current prescription, taken from the PRIMARY
+ * lens ("fórmula principal"). `primaryRowId` null → no payload (multi-person
+ * sale, nothing is created/overwritten); undefined → first lens (legacy).
+ */
 export function buildPrescriptionPayload(
 	items: SaleItemRow[],
-	prescriptionDate: string
+	prescriptionDate: string,
+	primaryRowId?: string | null
 ): PrescriptionFieldsPayload | undefined {
-	const lensItem = items.find((i): i is LensSaleItemRow => i.kind === 'lens');
+	if (primaryRowId === null) return undefined;
+	const lensItem = items.find(
+		(i): i is LensSaleItemRow =>
+			i.kind === 'lens' && (primaryRowId === undefined || i.id === primaryRowId)
+	);
 	if (!lensItem) return undefined;
 
 	const pair = lensItem.lensPair;

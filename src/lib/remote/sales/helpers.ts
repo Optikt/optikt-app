@@ -31,8 +31,12 @@ export interface PaginatedSales {
 
 export type { SalesStats } from '$lib/server/db/queries/sales/types';
 
+import type { SaleItemGroupRecord } from '$lib/server/db/queries/sales/itemGroups';
+
 export interface SaleDetail {
 	sale: SaleWithRelations;
 	items: SaleItemWithDetails[];
 	payments: SalePayment[];
+	/** Per-person groups (empty = legacy / ungrouped sale). */
+	itemGroups: SaleItemGroupRecord[];
 }

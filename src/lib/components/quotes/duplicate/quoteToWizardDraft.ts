@@ -22,6 +22,13 @@ import type {
 } from '$lib/components/sales/newSaleTypes';
 import { DiscountType } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import {
+	clearLabels,
+	hasAnyLabel,
+	remapGroupItemIds,
+	dropEmptyGroups,
+	type ItemGroup
+} from '$lib/shared/saleItemGroups';
 
 export interface QuoteWizardDraft {
 	items: SaleItemRow[];
@@ -29,6 +36,10 @@ export interface QuoteWizardDraft {
 	discountType: string;
 	notes: string;
 	isCashea: boolean;
+	/** Per-person pairing kept, names cleared (like the Rx). */
+	groups: ItemGroup[];
+	/** Names cleared → the wizard warns (never blocks). */
+	clearedNames: number;
 }
 
 /** Ojo vacío: conserva si el ojo aplicaba, nunca los valores de la fórmula. */
@@ -158,6 +169,7 @@ function treatmentRow(
 export function quoteToWizardDraft(detail: {
 	quote: QuoteWithRelations;
 	items: QuoteItemWithDetails[];
+	groups?: ItemGroup[];
 }): QuoteWizardDraft {
 	const rows: SaleItemRow[] = [];
 	// id del origen → id nuevo (los tratamientos apuntan al lente por id)
@@ -195,8 +207,19 @@ export function quoteToWizardDraft(detail: {
 		}
 	}
 
+	// Pairing survives with the new ids (only rows that made it into the wizard).
+	const rowIds = new Set(rows.map((r) => r.id));
+	const keptIds = new Map([...newIds].filter(([, id]) => rowIds.has(id)));
+	const sourceGroups = detail.groups ?? [];
+	const groups = dropEmptyGroups(clearLabels(remapGroupItemIds(sourceGroups, keptIds)));
+	const clearedNames = hasAnyLabel(sourceGroups)
+		? sourceGroups.filter((g) => (g.label ?? '').trim() !== '').length
+		: 0;
+
 	return {
 		items: rows,
+		groups,
+		clearedNames,
 		discount: detail.quote.discount,
 		discountType: detail.quote.discountType,
 		notes: detail.quote.notes ?? '',

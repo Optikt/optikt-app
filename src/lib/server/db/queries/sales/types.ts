@@ -28,7 +28,8 @@ export type SaleWithRelations = Sale & {
 };
 
 export type SaleItemWithDetails = SaleItem & {
-	product: { id: string; name: string; sku: string } | null;
+	/** `type` = ProductType (orders frame → lens → accessory in per-person views). */
+	product: { id: string; name: string; sku: string; type: string } | null;
 	lensCatalogItem: { id: string; name: string; type: string } | null;
 	supplierTreatment: { id: string; name: string; category: string } | null;
 	freeDetails: SaleItemFreeDetails | null;
