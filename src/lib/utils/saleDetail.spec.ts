@@ -7,7 +7,8 @@ import {
 	hasAuditDetail,
 	matchesAuditFilter,
 	saleAuditTotalDelta,
-	type AuditEvent
+	type AuditEvent,
+	isGroupsOnlyChange
 } from './saleDetail';
 
 function entry(overrides: Record<string, unknown> = {}): ChangeHistoryWithUser {
@@ -379,5 +380,14 @@ describe('saleDetail edge branches', () => {
 		const { auditChangeCountLabel } = await import('./saleDetail');
 		expect(auditChangeCountLabel({ changeCount: 1 } as AuditEvent)).toBe('1 cambio');
 		expect(auditChangeCountLabel({ changeCount: 3 } as AuditEvent)).toBe('3 cambios');
+	});
+});
+
+describe('isGroupsOnlyChange', () => {
+	it('true only when grouping keys changed', () => {
+		expect(isGroupsOnlyChange({ personGroups: { old: 'a', new: 'b' } })).toBe(true);
+		expect(isGroupsOnlyChange({ primaryLens: { old: 'Ninguna', new: 'Cristal' } })).toBe(true);
+		expect(isGroupsOnlyChange({ personGroups: {}, total: {} })).toBe(false);
+		expect(isGroupsOnlyChange({})).toBe(false);
 	});
 });

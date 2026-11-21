@@ -212,7 +212,9 @@ export function classifySaleAuditEntry(entry: ClassifiableAuditEntry): AuditEven
 			? 'Cliente actualizado'
 			: fields.sellerId
 				? 'Vendedor actualizado'
-				: 'Venta actualizada';
+				: isGroupsOnlyChange(fields)
+					? 'Agrupación por persona actualizada'
+					: 'Venta actualizada';
 		const itemsDiff = extractSaleAuditDiff(changes as ChangeRecord);
 		return baseEvent(entry, {
 			label,
@@ -353,4 +355,10 @@ export function hasAuditDetail(event: AuditEvent): boolean {
 export function auditChangeCountLabel(event: AuditEvent): string {
 	if (event.changeCount === 1) return '1 cambio';
 	return `${event.changeCount} cambios`;
+}
+
+/** Groups-only edits ("Organizar"): only `personGroups` / `primaryLens` changed. */
+export function isGroupsOnlyChange(fields: Record<string, unknown>): boolean {
+	const keys = Object.keys(fields);
+	return keys.length > 0 && keys.every((k) => k === 'personGroups' || k === 'primaryLens');
 }

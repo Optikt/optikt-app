@@ -21,16 +21,24 @@
 		formatQuoteNumber,
 		formatConvertedSaleRef
 	} from '$lib/components/quotes/list/quoteListDisplay';
+	import ConvertPersonsSection from './ConvertPersonsSection.svelte';
+	import type { GroupItemView } from '$lib/components/sales/groups/groupsState';
+	import { defaultPrimaryLens, type ItemGroup } from '$lib/shared/saleItemGroups';
 
 	interface Props {
 		quote: QuoteWithRelations;
 		open: boolean;
 		/** Abre directo en modo "selecciona o registra al cliente" (hero sin cliente). */
 		forceCustomerRequired?: boolean;
+		/** Per-person groups + lines (choose the customer's formula). */
+		persons?: { items: GroupItemView[]; groups: ItemGroup[] };
 		onclose: () => void;
 	}
 
-	let { quote, open, forceCustomerRequired = false, onclose }: Props = $props();
+	let { quote, open, forceCustomerRequired = false, persons, onclose }: Props = $props();
+
+	/** Quote LENS_PAIR whose Rx becomes the customer's current one (null = "Ninguna"). */
+	let primaryChoice = $state<string | null>(null);
 
 	// ── Estado del cliente ────────────────────────────────────────────────
 	// El cliente nuevo NO se crea al tipear: se manda como `newCustomer` en el
@@ -112,6 +120,7 @@
 	$effect(() => {
 		if (!open) return;
 		isCashea = quote.isCashea;
+		primaryChoice = persons ? defaultPrimaryLens(persons.items, persons.groups) : null;
 		customerId = quote.customer?.id ?? '';
 		selectedCustomer = null;
 		newCustomer = null;
@@ -164,7 +173,8 @@
 				customerId: customerId || undefined,
 				newCustomer:
 					newCustomer && newCustomer.firstName && newCustomer.lastName ? newCustomer : undefined,
-				isCashea
+				isCashea,
+				primaryQuoteItemId: persons ? primaryChoice : undefined
 			});
 			if (result.success) {
 				toast.success(
@@ -319,6 +329,15 @@
 						? 'Viene marcado desde el presupuesto'
 						: 'Financia el saldo a través de Cashea'}
 				/>
+
+				{#if persons && (persons.groups.length > 0 || persons.items.some((i) => i.itemType === 'LENS_PAIR'))}
+					<ConvertPersonsSection
+						items={persons.items}
+						groups={persons.groups}
+						primary={primaryChoice}
+						onprimarychange={(id) => (primaryChoice = id)}
+					/>
+				{/if}
 
 				<!-- Revisión (avisos, no bloqueos — D8) -->
 				<div class="rounded-xl bg-white shadow-sm">

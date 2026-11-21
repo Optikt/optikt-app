@@ -10,6 +10,7 @@ import {
 	groupDisplayLabel,
 	normalizeGroupsForSubmit,
 	orderItemsByGroups,
+	orderLinesByGroups,
 	remainingQty,
 	remapGroupItemIds,
 	setMemberQuantity,
@@ -206,5 +207,34 @@ describe('remap + summary', () => {
 	it('summarizes groups for history', () => {
 		expect(summarizeGroups([g(null, [['f', 1]])], () => 'Montura')).toBe('Trabajo 1: Montura ×1');
 		expect(summarizeGroups([], () => '')).toBe('Sin agrupación');
+	});
+});
+
+describe('orderLinesByGroups (ticket / PDF)', () => {
+	it('keeps each person together and treatments under their lens', () => {
+		const lines = [
+			{ id: 'la', itemType: 'LENS_PAIR', quantity: 1, parent: null, product: null },
+			{ id: 'ta', itemType: 'TREATMENT', quantity: 1, parent: 'la', product: null },
+			{ id: 'lb', itemType: 'LENS_PAIR', quantity: 1, parent: null, product: null },
+			{ id: 'f', itemType: 'PRODUCT', quantity: 2, parent: null, product: { type: 'FRAME' } }
+		];
+		const groups = [
+			g('A', [
+				['f', 1],
+				['la', 1]
+			]),
+			g('B', [
+				['f', 1],
+				['lb', 1]
+			])
+		];
+		const ordered = orderLinesByGroups(lines, groups, (l) => l.parent).map((l) => l.id);
+		expect(ordered).toEqual(['f', 'la', 'ta', 'lb']);
+		expect(orderLinesByGroups(lines, [], (l) => l.parent).map((l) => l.id)).toEqual([
+			'la',
+			'ta',
+			'lb',
+			'f'
+		]);
 	});
 });

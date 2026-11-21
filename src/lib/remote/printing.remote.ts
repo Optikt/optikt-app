@@ -5,6 +5,8 @@
  * guards, carga de datos (sale/items/payments/settings), tasa BCV, labels,
  * y el POST al agente (fase 1 síncrona, timeout, errores amigables).
  */
+import { findSaleItemGroups } from '$lib/server/db/queries/sales/itemGroups';
+import { orderLinesByGroups } from '$lib/shared/saleItemGroups';
 import { command } from '$app/server';
 import { env } from '$env/dynamic/private';
 import { requireRole } from '$lib/server/guards';
@@ -88,13 +90,15 @@ export const printTickeraReceipt = command(PrintTickeraSchema, async (data) => {
 		};
 	}
 
-	const [saleItems, payments, settings] = await Promise.all([
+	const [rawItems, payments, settings, groups] = await Promise.all([
 		getSaleItemsWithDetails(data.saleId),
 		getSalePayments(data.saleId),
-		getSettings()
+		getSettings(),
+		findSaleItemGroups(data.saleId)
 	]);
 
-	const rows = buildItemsRows(saleItems);
+	// Lines of each person together ("montura, cristal, montura, cristal"); names are not printed.
+	const rows = buildItemsRows(orderLinesByGroups(rawItems, groups, (i) => i.parentSaleItemId));
 
 	const payload: TickeraPayload = buildTickeraPayload({
 		store: {

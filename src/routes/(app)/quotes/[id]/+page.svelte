@@ -291,6 +291,7 @@
 	{quote}
 	open={showConvertModal}
 	forceCustomerRequired={convertForceCustomer}
+	persons={{ items: groupViews, groups: data.itemGroups }}
 	onclose={() => (showConvertModal = false)}
 />
 

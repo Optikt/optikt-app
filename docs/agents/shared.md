@@ -40,6 +40,8 @@ Código usado por dos o más dominios o por cliente+servidor, sin reglas de nego
 - `src/lib/shared/` = frontera client/server: lógica idéntica a ambos lados vive ahí; lo que es solo-cliente va a `utils/`, solo-servidor a `src/lib/server/`.
 - Conteo Físico (archivos en shared, reglas del dominio `inventory`): `countLineSaveQueue.ts` = cola de guardado «último valor gana» (un envío por línea, líneas distintas en paralelo, el caller aporta el `Set` in-flight como `$state`); `countSessionPhase.ts` = fases/CTA/stepper + `buildDiffRows`; `inventoryCount.ts` = math del ciclo. Specs co-ubicados.
 
+- `commercialDocument/DocumentItemRow` acepta `extra` (snippet bajo la descripción; sus clics no abren la fila) — lo usa el chip "PARA" de la agrupación por persona en el drawer de edición.
+
 ## Known gaps / tech debt
 
 - 🟡 Barrels legacy además de los listados: `schemas/index.ts`, `remote/index.ts`, `utils/index.ts`, `audit/index.ts` — consumibles, no extendibles; eliminar en futuras limpiezas.

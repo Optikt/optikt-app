@@ -370,6 +370,30 @@ export function orderItemsByGroups<T extends GroupableItem>(
 	return out;
 }
 
+/**
+ * Print order (ticket / PDF) for persisted lines: same rule as the detail,
+ * names are never printed — only the order changes. Identity without groups.
+ */
+export function orderLinesByGroups<
+	L extends {
+		id: string;
+		itemType: string;
+		quantity: number;
+		product?: { type: string } | null;
+	}
+>(lines: readonly L[], groups: readonly ItemGroup[], parentOf: (line: L) => string | null): L[] {
+	if (groups.length === 0) return [...lines];
+	const views = lines.map((line) => ({
+		id: line.id,
+		itemType: line.itemType,
+		quantity: line.quantity,
+		parentId: parentOf(line),
+		productType: line.product?.type ?? null,
+		line
+	}));
+	return orderItemsByGroups(views, groups).map((v) => v.line);
+}
+
 // ============================================================================
 // WIZARD: auto-included accessories follow their frame
 // ============================================================================
