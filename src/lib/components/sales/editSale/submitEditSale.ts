@@ -140,11 +140,13 @@ export function buildEditSubmitInput(
 			removedCount: st.removedCount,
 			activeItems: st.activeItems,
 			originalItems: st.items,
-			prescription: {
-				dp: st.prescription?.dp ?? null,
-				npRight: st.prescription?.npRight ?? null,
-				npLeft: st.prescription?.npLeft ?? null
-			},
+			prescription: st.prescription
+				? {
+						dp: st.prescription.dp ?? null,
+						npRight: st.prescription.npRight ?? null,
+						npLeft: st.prescription.npLeft ?? null
+					}
+				: null,
 			prescriptionPatch: {
 				dp: st.measures.odDp,
 				npRight: st.measures.odDnp,

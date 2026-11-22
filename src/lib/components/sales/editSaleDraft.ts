@@ -474,17 +474,18 @@ export function buildUpdateSalePayload(
 		payload.items = draft.activeItems.map(({ _removed, ...input }) => input);
 	}
 
-	if (draft.prescriptionPatch) {
+	// Without a linked prescription (no primary lens: multi-person sale or a
+	// conversion with "Ninguna") there is no customer formula to patch. The
+	// measures still persist on the lens line itself (items payload).
+	if (draft.prescriptionPatch && draft.prescription) {
 		const patch = draft.prescriptionPatch;
-		const seed = draft.prescription ?? null;
-		const changed = seed
-			? seed.dp !== patch.dp || seed.npRight !== patch.npRight || seed.npLeft !== patch.npLeft
-			: patch.dp != null || patch.npRight != null || patch.npLeft != null;
+		const seed = draft.prescription;
+		const changed =
+			seed.dp !== patch.dp || seed.npRight !== patch.npRight || seed.npLeft !== patch.npLeft;
 		if (changed) {
 			// Full triple patch: explicit nulls CLEAR the stored measure (the
 			// server schema `NullableCoercedInteger` preserves them); a number
-			// sets it. Absent prescription ⇒ sales without a prescription row
-			// are rejected server-side with an explicit error.
+			// sets it.
 			payload.prescription = {
 				dp: patch.dp,
 				npRight: patch.npRight,

@@ -485,13 +485,13 @@ describe('buildUpdateSalePayload', () => {
 		expect(payload.prescription).toBeUndefined();
 	});
 
-	it('sends a patch when the measures go from empty to a value without a seed', () => {
+	it('never patches without a seed (no primary lens: measures live on the lens line)', () => {
 		const payload = buildUpdateSalePayload(sale, {
 			...base,
 			prescription: null,
 			prescriptionPatch: { dp: 62, npRight: null, npLeft: null }
 		});
-		expect(payload.prescription).toEqual({ dp: 62, npRight: null, npLeft: null });
+		expect(payload.prescription).toBeUndefined();
 	});
 });
 
