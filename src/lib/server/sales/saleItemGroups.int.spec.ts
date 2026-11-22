@@ -157,6 +157,69 @@ describe('sale item groups', () => {
 		expect(saleRow.primaryLensItemId).toBe(live.id);
 	});
 
+	async function createWithPrimary(customerId: string, userId: string, a: SaleItemInput) {
+		const created = await createSaleCore(
+			{
+				customerId,
+				saleDate: '2026-11-20',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				items: [a],
+				primaryLensItemId: a.id
+			},
+			ctx(userId)
+		);
+		if (!created.success) throw new Error(created.error);
+		return created.sale.id;
+	}
+
+	it('header-only update: rejects a primary that is not a live lens line', async () => {
+		const { admin, customer } = await seed();
+		const a = lens(-1);
+		const saleId = await createWithPrimary(customer.id, admin.id, a);
+
+		const result = await updateSaleCore(
+			{ id: saleId, reason: 'x', primaryLensItemId: crypto.randomUUID() },
+			ctx(admin.id)
+		);
+		expect(result.success).toBe(false);
+		const [saleRow] = await db.select().from(sales).where(eq(sales.id, saleId));
+		expect(saleRow.primaryLensItemId).toBe(a.id);
+	});
+
+	it('update: editing the primary lens graduation refreshes the current Rx', async () => {
+		const { admin, customer } = await seed();
+		const a = lens(-1);
+		const saleId = await createWithPrimary(customer.id, admin.id, a);
+
+		const updated = await updateSaleCore(
+			{ id: saleId, reason: 'graduación', items: [{ ...a, odSphere: -1.5, osSphere: -1.5 }] },
+			ctx(admin.id)
+		);
+		if (!updated.success) throw new Error(updated.error);
+
+		const current = await currentRx(customer.id);
+		expect(current).toHaveLength(1);
+		expect(current[0].odSphere).toBe(-1.5);
+	});
+
+	it('update: moving the sale to another customer gives them the primary Rx', async () => {
+		const { admin, customer } = await seed();
+		const other = await createCustomer();
+		const saleId = await createWithPrimary(customer.id, admin.id, lens(-2));
+
+		const updated = await updateSaleCore(
+			{ id: saleId, reason: 'cliente', customerId: other.id },
+			ctx(admin.id)
+		);
+		if (!updated.success) throw new Error(updated.error);
+
+		const current = await currentRx(other.id);
+		expect(current).toHaveLength(1);
+		expect(current[0].odSphere).toBe(-2);
+	});
+
 	it('groups-only save: allowed on COMPLETED, rejected on CANCELLED and over-allocation', async () => {
 		const { admin, customer } = await seed();
 		const a = lens(-1);

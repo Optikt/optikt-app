@@ -3,18 +3,20 @@
  * `updateSale` (after the item replacement) and the groups-only command
  * `saveSaleItemGroups`. Runs inside the caller's transaction.
  */
-import { eq } from 'drizzle-orm';
+import { findPrescriptionById } from '$lib/server/db/queries/customers';
 import {
+	findLensCatalogType,
 	findSaleGroupableItems,
 	replaceSaleItemGroups,
 	setSalePrimaryLens
 } from '$lib/server/db/queries/sales/itemGroups';
-import { prescriptions, type Prescription } from '$lib/server/db/schema';
+import type { Prescription } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
 	applyPrimaryPrescription,
-	findLensCatalogType,
-	prescriptionFromLensLine
+	prescriptionFromLensLine,
+	sameLensRx,
+	type LensRxSnapshot
 } from '$lib/server/sales/primaryPrescription';
 import {
 	clampAllocations,
@@ -36,6 +38,10 @@ export interface PersistSaleGroupsInput {
 	primaryLensItemId?: string | null;
 	/** Primary before the change (real id of the same logical line, already remapped). */
 	previousPrimaryLensItemId: string | null;
+	/** Graduation of the primary line before the edit (item replacement only). */
+	previousPrimaryRx?: LensRxSnapshot | null;
+	/** The sale moved to another customer: the new one gets the current Rx. */
+	customerChanged?: boolean;
 }
 
 export interface PersistSaleGroupsResult {
@@ -67,9 +73,14 @@ export async function persistSaleGroups(
 		primary = line?.id ?? null;
 		await setSalePrimaryLens(input.saleId, primary, tx);
 
-		// A new primary lens creates a new current prescription; unmarking
-		// deletes nothing (the old one stays in the customer's history).
-		if (line && primary !== input.previousPrimaryLensItemId) {
+		// A new primary lens creates a new current prescription; so does the
+		// same primary when the sale changes customer or its graduation was
+		// edited. Unmarking deletes nothing (the old one stays in the history).
+		const refresh =
+			primary !== input.previousPrimaryLensItemId ||
+			!!input.customerChanged ||
+			(!!input.previousPrimaryRx && !!line && !sameLensRx(input.previousPrimaryRx, line));
+		if (line && refresh) {
 			prescription = await createPrimaryFromLine(tx, input.customerId, line);
 		}
 	}
@@ -88,10 +99,7 @@ async function createPrimaryFromLine(
 
 	// Keep the doctor of the Rx the lens was linked to, when there is one.
 	if (line.prescriptionId) {
-		const [linked] = await tx
-			.select({ doctorName: prescriptions.doctorName })
-			.from(prescriptions)
-			.where(eq(prescriptions.id, line.prescriptionId));
+		const linked = await findPrescriptionById(line.prescriptionId, tx);
 		if (linked?.doctorName) fields.doctorName = linked.doctorName;
 	}
 

@@ -5,13 +5,12 @@
  * customer. Changing the primary creates a new current prescription; the old
  * one stays in the customer's history (unmarking deletes nothing).
  */
-import { eq } from 'drizzle-orm';
 import { createPrescription, unsetCurrentPrescriptions } from '$lib/server/db/queries/customers';
-import { lensCatalogItems, saleItems, type Prescription } from '$lib/server/db/schema';
+import { setSaleItemPrescription } from '$lib/server/db/queries/sales/itemGroups';
+import type { Prescription } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
 import { ALL_LENS_TYPES, LensType } from '$lib/shared/enums/lensTypes';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
-import { nowISO } from '$lib/dates';
 import type { PrescriptionFieldsInput } from '$lib/schemas/prescriptions';
 
 /** Rx snapshot carried by a LENS_PAIR line (sale or quote item). */
@@ -85,16 +84,9 @@ export function prescriptionFromLensLine(
 	} as PrescriptionFieldsInput;
 }
 
-export async function findLensCatalogType(
-	lensCatalogItemId: string | null,
-	executor: DbOrTx
-): Promise<string | null> {
-	if (!lensCatalogItemId) return null;
-	const [row] = await executor
-		.select({ type: lensCatalogItems.type })
-		.from(lensCatalogItems)
-		.where(eq(lensCatalogItems.id, lensCatalogItemId));
-	return row?.type ?? null;
+/** True when both carry the same graduation (sphere, cylinder, axis, addition, height). */
+export function sameLensRx(a: LensRxSnapshot, b: LensRxSnapshot): boolean {
+	return RX_KEYS.every((key) => (a[key] ?? null) === (b[key] ?? null));
 }
 
 /**
@@ -114,9 +106,6 @@ export async function applyPrimaryPrescription(
 		},
 		executor
 	);
-	await executor
-		.update(saleItems)
-		.set({ prescriptionId: prescription.id, updatedAt: nowISO() })
-		.where(eq(saleItems.id, input.saleItemId));
+	await setSaleItemPrescription(input.saleItemId, prescription.id, executor);
 	return prescription;
 }

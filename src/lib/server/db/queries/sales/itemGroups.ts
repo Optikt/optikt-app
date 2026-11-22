@@ -8,7 +8,13 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
-import { saleItemGroupMembers, saleItemGroups, saleItems, sales } from '$lib/server/db/schema';
+import {
+	lensCatalogItems,
+	saleItemGroupMembers,
+	saleItemGroups,
+	saleItems,
+	sales
+} from '$lib/server/db/schema';
 import { nowISO } from '$lib/dates';
 import type { ItemGroup } from '$lib/shared/saleItemGroups';
 
@@ -95,6 +101,44 @@ export async function setSalePrimaryLens(
 	executor: DbOrTx = db
 ): Promise<void> {
 	await executor.update(sales).set({ primaryLensItemId: saleItemId }).where(eq(sales.id, saleId));
+}
+
+/**
+ * Locks the sale row and returns its current primary lens. Concurrent group
+ * saves serialize here, so only one of them sees the primary as "changed".
+ */
+export async function lockSalePrimaryLens(saleId: string, tx: DbOrTx): Promise<string | null> {
+	const [row] = await tx
+		.select({ primaryLensItemId: sales.primaryLensItemId })
+		.from(sales)
+		.where(eq(sales.id, saleId))
+		.for('update');
+	return row?.primaryLensItemId ?? null;
+}
+
+/** Links one sale line to a prescription (the primary lens → the new current Rx). */
+export async function setSaleItemPrescription(
+	saleItemId: string,
+	prescriptionId: string,
+	executor: DbOrTx = db
+): Promise<void> {
+	await executor
+		.update(saleItems)
+		.set({ prescriptionId, updatedAt: nowISO() })
+		.where(eq(saleItems.id, saleItemId));
+}
+
+/** Lens type of a catalog lens (recommended lens type of the derived Rx). */
+export async function findLensCatalogType(
+	lensCatalogItemId: string | null,
+	executor: DbOrTx = db
+): Promise<string | null> {
+	if (!lensCatalogItemId) return null;
+	const [row] = await executor
+		.select({ type: lensCatalogItems.type })
+		.from(lensCatalogItems)
+		.where(eq(lensCatalogItems.id, lensCatalogItemId));
+	return row?.type ?? null;
 }
 
 /** Live lines of a sale in the minimal shape the grouping helpers need. */

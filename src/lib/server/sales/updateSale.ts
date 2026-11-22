@@ -34,7 +34,7 @@ import {
 	persistSaleGroups,
 	type PersistSaleGroupsResult
 } from '$lib/server/sales/saleItemGroupsCore';
-import { remapGroupItemIds } from '$lib/shared/saleItemGroups';
+import { remapGroupItemIds, validateItemGroups } from '$lib/shared/saleItemGroups';
 import type { ActionContext } from '$lib/server/actionContext';
 
 /**
@@ -179,6 +179,17 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	const beforeLines = await findSaleGroupableItems(data.id);
 	const touchesGroups = data.groups !== undefined || data.primaryLensItemId !== undefined;
 	const customerIdAfter = data.customerId ?? existing.customerId;
+	const customerChanged = customerIdAfter !== existing.customerId;
+	// Item edits are validated by the schema (client ids). A header-only edit
+	// sends real ids: check them here, never clamp a bad primary to null.
+	if (!hasItemChanges && touchesGroups) {
+		const errors = validateItemGroups(
+			data.groups ?? beforeGroups,
+			beforeLines,
+			data.primaryLensItemId
+		);
+		if (errors.length > 0) return { success: false as const, error: errors[0] };
+	}
 	let groupsResult = null as PersistSaleGroupsResult | null;
 
 	// All writes in a single transaction
@@ -302,7 +313,9 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 						data.primaryLensItemId !== undefined
 							? remapId(data.primaryLensItemId)
 							: previousPrimary,
-					previousPrimaryLensItemId: previousPrimary
+					previousPrimaryLensItemId: previousPrimary,
+					previousPrimaryRx: beforeLines.find((l) => l.id === existing.primaryLensItemId),
+					customerChanged
 				});
 
 				// ── 5. Recalculate tax snapshot if provided ─────────────────────
@@ -335,13 +348,19 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 			}
 
 			// ── Header-only update (no item changes) ───────────────────────────
-			if (touchesGroups) {
+			if (touchesGroups || (customerChanged && existing.primaryLensItemId)) {
 				groupsResult = await persistSaleGroups(tx, {
 					saleId: data.id,
 					customerId: customerIdAfter,
 					groups: data.groups,
-					primaryLensItemId: data.primaryLensItemId,
-					previousPrimaryLensItemId: existing.primaryLensItemId
+					primaryLensItemId:
+						data.primaryLensItemId !== undefined
+							? data.primaryLensItemId
+							: customerChanged
+								? existing.primaryLensItemId
+								: undefined,
+					previousPrimaryLensItemId: existing.primaryLensItemId,
+					customerChanged
 				});
 			}
 

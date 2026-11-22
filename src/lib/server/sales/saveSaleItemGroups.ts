@@ -2,7 +2,8 @@ import { db } from '$lib/server/db';
 import { findSaleById } from '$lib/server/db/queries/sales/reads';
 import {
 	findSaleGroupableItems,
-	findSaleItemGroups
+	findSaleItemGroups,
+	lockSalePrimaryLens
 } from '$lib/server/db/queries/sales/itemGroups';
 import { auditService } from '$lib/server/audit';
 import { hasChanges } from '$lib/server/audit/utils';
@@ -35,15 +36,19 @@ export async function saveSaleItemGroupsCore(data: SaveSaleItemGroupsInput, ctx:
 
 	const beforeGroups = await findSaleItemGroups(data.saleId);
 
-	const result = await db.transaction((tx) =>
-		persistSaleGroups(tx, {
+	const { result, beforePrimary } = await db.transaction(async (tx) => {
+		// Read the primary under a row lock: two concurrent saves must not both
+		// see it as "changed" and create two current prescriptions.
+		const lockedPrimary = await lockSalePrimaryLens(data.saleId, tx);
+		const persisted = await persistSaleGroups(tx, {
 			saleId: data.saleId,
 			customerId: sale.customerId,
 			groups: data.groups,
 			primaryLensItemId: data.primaryLensItemId,
-			previousPrimaryLensItemId: sale.primaryLensItemId
-		})
-	);
+			previousPrimaryLensItemId: lockedPrimary
+		});
+		return { result: persisted, beforePrimary: lockedPrimary };
+	});
 
 	// Audit (best-effort, after the transaction)
 	if (result.prescription) {
@@ -55,7 +60,7 @@ export async function saveSaleItemGroupsCore(data: SaveSaleItemGroupsInput, ctx:
 	const changes = groupsAuditChanges({
 		before: beforeGroups,
 		after: result.groups,
-		beforePrimary: sale.primaryLensItemId,
+		beforePrimary,
 		afterPrimary: result.primaryLensItemId,
 		nameOf: (id) => names.get(id) ?? 'Artículo'
 	});

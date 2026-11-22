@@ -271,8 +271,11 @@ export async function getLatestPrescription(customerId: string): Promise<Prescri
 /**
  * Find a prescription by ID
  */
-export async function findPrescriptionById(id: string): Promise<Prescription | null> {
-	const [prescription] = await db
+export async function findPrescriptionById(
+	id: string,
+	executor: DbOrTx = db
+): Promise<Prescription | null> {
+	const [prescription] = await executor
 		.select()
 		.from(prescriptions)
 		.where(and(eq(prescriptions.id, id), isNull(prescriptions.deletedAt)));
