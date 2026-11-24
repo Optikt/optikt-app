@@ -2,12 +2,16 @@ import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm';
 
 import { nowISO } from '$lib/dates';
 import { db } from '$lib/server/db';
+import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import {
 	brandAccessories,
-	products,
 	type BrandAccessory,
 	type NewBrandAccessory
-} from '$lib/server/db/schema';
+} from '$lib/server/db/schema/brandAccessories';
+import { brands } from '$lib/server/db/schema/brands';
+import { materials } from '$lib/server/db/schema/materials';
+import { products, type Product } from '$lib/server/db/schema/products';
+import { suppliers } from '$lib/server/db/schema/suppliers';
 import type { DbOrTx } from '$lib/server/db/types';
 import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
 import { ProductType } from '$lib/shared/enums/productTypes';
@@ -20,7 +24,18 @@ import type {
 
 export type BrandAccessoryJoinRow = {
 	rule: BrandAccessory;
-	accessory: AccessoryProductSummary | null;
+	product: Product | null;
+	brand: { id: string; name: string } | null;
+	supplier: { id: string; name: string } | null;
+	material: { id: string; name: string; code: string } | null;
+};
+
+const ACCESSORY_JOIN_SELECT = {
+	rule: brandAccessories,
+	product: products,
+	brand: { id: brands.id, name: brands.name },
+	supplier: { id: suppliers.id, name: suppliers.name },
+	material: { id: materials.id, name: materials.name, code: materials.code }
 };
 
 export type ProductSelection = {
@@ -36,8 +51,19 @@ export function isEligibleAccessoryHost(productType: string): boolean {
 	return ELIGIBLE_PRODUCT_TYPES.has(productType as ProductType);
 }
 
+function mapAccessoryProduct(row: BrandAccessoryJoinRow): ProductWithRelations | null {
+	if (!row.rule.accessoryProductId || !row.product?.id) return null;
+
+	return {
+		...row.product,
+		brand: row.brand?.id ? row.brand : null,
+		supplier: row.supplier?.id ? row.supplier : null,
+		material: row.material?.id ? row.material : null
+	};
+}
+
 export function mapAccessorySummary(row: BrandAccessoryJoinRow): BrandAccessoryRuleRow | null {
-	if (!row.rule.accessoryProductId || !row.accessory?.id) return null;
+	if (!row.rule.accessoryProductId || !row.product?.id) return null;
 
 	return {
 		id: row.rule.id,
@@ -46,23 +72,30 @@ export function mapAccessorySummary(row: BrandAccessoryJoinRow): BrandAccessoryR
 		accessoryProductId: row.rule.accessoryProductId,
 		priceMode: row.rule.priceMode as BrandAccessoryPriceMode,
 		customPrice: row.rule.customPrice,
-		currentProductPrice: row.accessory.currentSalePrice,
+		currentProductPrice: row.product.currentSalePrice,
 		isActive: row.rule.isActive,
-		accessory: row.accessory
+		accessory: {
+			id: row.product.id,
+			name: row.product.name,
+			sku: row.product.sku,
+			stock: row.product.stock,
+			type: row.product.type,
+			currentSalePrice: row.product.currentSalePrice
+		}
 	};
 }
 
 export function mapResolvedAccessory(row: BrandAccessoryJoinRow): ResolvedAccessoryRule | null {
-	const summary = mapAccessorySummary(row);
-	if (!summary) return null;
+	const accessory = mapAccessoryProduct(row);
+	if (!accessory || !row.rule.accessoryProductId) return null;
 
 	return {
-		ruleId: summary.id,
-		accessoryProductId: summary.accessoryProductId,
-		priceMode: summary.priceMode,
-		customPrice: summary.customPrice,
-		currentProductPrice: summary.currentProductPrice,
-		accessory: summary.accessory
+		ruleId: row.rule.id,
+		accessoryProductId: row.rule.accessoryProductId,
+		priceMode: row.rule.priceMode as BrandAccessoryPriceMode,
+		customPrice: row.rule.customPrice,
+		currentProductPrice: accessory.currentSalePrice,
+		accessory
 	};
 }
 
@@ -127,19 +160,15 @@ export async function getBrandAccessoryRows(
 	executor: DbOrTx = db
 ): Promise<BrandAccessoryJoinRow[]> {
 	return executor
-		.select({
-			rule: brandAccessories,
-			accessory: {
-				id: products.id,
-				name: products.name,
-				sku: products.sku,
-				stock: products.stock,
-				type: products.type,
-				currentSalePrice: products.currentSalePrice
-			}
-		})
+		.select(ACCESSORY_JOIN_SELECT)
 		.from(brandAccessories)
-		.leftJoin(products, eq(brandAccessories.accessoryProductId, products.id))
+		.leftJoin(
+			products,
+			and(eq(brandAccessories.accessoryProductId, products.id), isNull(products.deletedAt))
+		)
+		.leftJoin(brands, eq(products.brandId, brands.id))
+		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+		.leftJoin(materials, eq(products.materialId, materials.id))
 		.where(
 			and(
 				eq(brandAccessories.brandId, brandId),
@@ -157,19 +186,15 @@ export async function getProductOverrideRows(
 	executor: DbOrTx = db
 ): Promise<BrandAccessoryJoinRow[]> {
 	return executor
-		.select({
-			rule: brandAccessories,
-			accessory: {
-				id: products.id,
-				name: products.name,
-				sku: products.sku,
-				stock: products.stock,
-				type: products.type,
-				currentSalePrice: products.currentSalePrice
-			}
-		})
+		.select(ACCESSORY_JOIN_SELECT)
 		.from(brandAccessories)
-		.leftJoin(products, eq(brandAccessories.accessoryProductId, products.id))
+		.leftJoin(
+			products,
+			and(eq(brandAccessories.accessoryProductId, products.id), isNull(products.deletedAt))
+		)
+		.leftJoin(brands, eq(products.brandId, brands.id))
+		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+		.leftJoin(materials, eq(products.materialId, materials.id))
 		.where(and(eq(brandAccessories.brandId, brandId), eq(brandAccessories.productId, productId)))
 		.orderBy(asc(products.name), asc(brandAccessories.id));
 }
