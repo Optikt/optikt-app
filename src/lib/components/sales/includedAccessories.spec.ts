@@ -6,6 +6,7 @@ import {
 	linkIncludedAccessories,
 	pruneIncludedAccessoryMap,
 	removeItemWithIncludedAccessories,
+	syncIncludedAccessoryQuantities,
 	type IncludedAccessoryMap
 } from './includedAccessories';
 import { DiscountType } from '$lib/shared/enums';
@@ -78,5 +79,48 @@ describe('includedAccessories helpers', () => {
 
 		expect(result.items.map((item) => item.id)).toEqual(['frame-1', 'cloth-1']);
 		expect(result.includedAccessoryMap).toEqual({ 'frame-1': ['cloth-1'] });
+	});
+
+	it('syncs linked accessory quantities up and down when parent quantity changes', () => {
+		const items = [
+			createProductRow('frame-1', 'product-frame'),
+			createProductRow('case-1', 'product-case', 'frame-1'),
+			createProductRow('manual-1', 'product-manual')
+		];
+		const map: IncludedAccessoryMap = { 'frame-1': ['case-1'] };
+
+		const up = syncIncludedAccessoryQuantities(items, map, 'frame-1', 3);
+		expect(up.cappedIds).toEqual([]);
+		expect(up.items.find((i) => i.id === 'case-1')?.quantity).toBe(3);
+		expect(up.items.find((i) => i.id === 'manual-1')?.quantity).toBe(1);
+
+		const down = syncIncludedAccessoryQuantities(up.items, map, 'frame-1', 1);
+		expect(down.items.find((i) => i.id === 'case-1')?.quantity).toBe(1);
+	});
+
+	it('clamps synced accessory quantity to available stock and reports capped ids', () => {
+		const items = [
+			createProductRow('frame-1', 'product-frame'),
+			createProductRow('case-1', 'product-case', 'frame-1')
+		];
+		const map: IncludedAccessoryMap = { 'frame-1': ['case-1'] };
+
+		const result = syncIncludedAccessoryQuantities(items, map, 'frame-1', 4, (pid) =>
+			pid === 'product-case' ? 2 : 10
+		);
+		expect(result.items.find((i) => i.id === 'case-1')?.quantity).toBe(2);
+		expect(result.cappedIds).toEqual(['case-1']);
+	});
+
+	it('ignores invalid or zero parent quantities during typing', () => {
+		const items = [
+			createProductRow('frame-1', 'product-frame'),
+			createProductRow('case-1', 'product-case', 'frame-1')
+		];
+		const map: IncludedAccessoryMap = { 'frame-1': ['case-1'] };
+
+		const result = syncIncludedAccessoryQuantities(items, map, 'frame-1', Number.NaN);
+		expect(result.items).toBe(items);
+		expect(result.cappedIds).toEqual([]);
 	});
 });

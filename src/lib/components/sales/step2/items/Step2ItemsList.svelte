@@ -14,6 +14,7 @@
 		lensTreatmentInfo: Record<string, { name: string; total: number } | null>;
 		rxErrorsPerLens: Record<string, PrescriptionFieldErrors>;
 		onRemoveItem: (id: string) => void;
+		onQuantityChange?: (id: string, quantity: number) => void;
 		onRemoveTreatment: (treatmentItemId: string) => void;
 		onOpenTreatment: (lensItemId: string) => void;
 		/** Per-person chip for groupable lines (sale/quote wizard). */
@@ -26,6 +27,7 @@
 		lensTreatmentInfo,
 		rxErrorsPerLens,
 		onRemoveItem,
+		onQuantityChange,
 		onRemoveTreatment,
 		onOpenTreatment,
 		personChip
@@ -69,6 +71,7 @@
 						{item}
 						rxErrs={item.kind === 'lens' ? (rxErrorsPerLens[item.id] ?? {}) : {}}
 						onremove={() => onRemoveItem(item.id)}
+						onquantitychange={(qty) => onQuantityChange?.(item.id, qty)}
 						eyeCount={item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
 						isIncludedAccessory={item.isIncludedAccessory}
 						availableTreatments={itemTreatmentsMap[item.id] ?? []}

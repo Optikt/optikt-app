@@ -39,3 +39,35 @@ export function createIncludedAccessoryItem(
 		includedAccessoryParentItemId: parentItemId
 	} as SaleItemRow;
 }
+
+/** Builds auto-included accessory rows for a parent item, splitting out-of-stock warnings. */
+export function buildIncludedAccessoriesForParent(
+	parentItemId: string,
+	parentQuantity: number,
+	rules: readonly IncludedAccessoryRule[]
+): {
+	accessoryItems: SaleItemRow[];
+	linkedIds: string[];
+	addedNames: string[];
+	outOfStockNames: string[];
+} {
+	const qty = Math.max(1, Math.floor(parentQuantity || 1));
+	const accessoryItems: SaleItemRow[] = [];
+	const linkedIds: string[] = [];
+	const addedNames: string[] = [];
+	const outOfStockNames: string[] = [];
+
+	for (const rule of rules) {
+		if (rule.accessory.stock <= 0) {
+			outOfStockNames.push(rule.accessory.name);
+			continue;
+		}
+		const accessoryItem = createIncludedAccessoryItem(parentItemId, rule);
+		accessoryItem.quantity = Math.min(qty, rule.accessory.stock);
+		accessoryItems.push(accessoryItem);
+		linkedIds.push(accessoryItem.id);
+		addedNames.push(rule.accessory.name);
+	}
+
+	return { accessoryItems, linkedIds, addedNames, outOfStockNames };
+}

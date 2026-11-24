@@ -32,6 +32,7 @@
 		canAutoIncludeAccessories,
 		linkIncludedAccessories,
 		removeItemWithIncludedAccessories,
+		syncIncludedAccessoryQuantities,
 		type IncludedAccessoryMap
 	} from '../includedAccessories';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
@@ -42,7 +43,7 @@
 	import Step2ItemsList from './items/Step2ItemsList.svelte';
 	import Step2ValidationHints from './items/Step2ValidationHints.svelte';
 	import {
-		createIncludedAccessoryItem,
+		buildIncludedAccessoriesForParent,
 		type IncludedAccessoryRule
 	} from './items/step2Accessories';
 	import { recalcSuggestedPrice } from './items/step2Pricing';
@@ -140,53 +141,30 @@
 		option: { kind: string; brandId?: string | null; productType?: string; id: string },
 		parentItem: SaleItemRow
 	) {
-		if (
-			option.kind !== 'product' ||
-			!option.brandId ||
-			!canAutoIncludeAccessories(option.productType)
-		) {
+		if (option.kind !== 'product' || !option.brandId || !canAutoIncludeAccessories(option.productType)) {
 			return;
 		}
-
 		try {
 			const accessories = await getAccessoriesForProduct({
 				productId: option.id,
 				brandId: option.brandId
 			});
+			const currentParent = items.find((item) => item.id === parentItem.id);
+			if (!currentParent) return;
 
-			if (!items.some((item) => item.id === parentItem.id)) {
-				return;
+			const { accessoryItems, linkedIds, addedNames, outOfStockNames } =
+				buildIncludedAccessoriesForParent(
+					parentItem.id,
+					currentParent.quantity,
+					accessories as unknown as IncludedAccessoryRule[]
+				);
+			for (const name of outOfStockNames) {
+				toast.warning(`⚠ ${name} no tiene stock disponible y no fue agregado automáticamente.`);
 			}
-
-			const addedNames: string[] = [];
-			const linkedIds: string[] = [];
-			const accessoryItems: SaleItemRow[] = [];
-
-			for (const accessoryRule of accessories as unknown as IncludedAccessoryRule[]) {
-				if (accessoryRule.accessory.stock <= 0) {
-					toast.warning(
-						`⚠ ${accessoryRule.accessory.name} no tiene stock disponible y no fue agregado automáticamente.`
-					);
-					continue;
-				}
-
-				const accessoryItem = createIncludedAccessoryItem(parentItem.id, accessoryRule);
-				accessoryItems.push(accessoryItem);
-				linkedIds.push(accessoryItem.id);
-				addedNames.push(accessoryRule.accessory.name);
-			}
-
-			if (accessoryItems.length === 0) {
-				return;
-			}
+			if (accessoryItems.length === 0) return;
 
 			items = [...items, ...accessoryItems];
-			includedAccessoryMap = linkIncludedAccessories(
-				includedAccessoryMap,
-				parentItem.id,
-				linkedIds
-			);
-
+			includedAccessoryMap = linkIncludedAccessories(includedAccessoryMap, parentItem.id, linkedIds);
 			if (addedNames.length > 1) {
 				toast.info(`✓ Se agregaron automáticamente: ${addedNames.join(', ')}`);
 			}
@@ -215,6 +193,23 @@
 		items = [...items, nextItem];
 
 		await addIncludedAccessoriesForItem(option, nextItem);
+	}
+
+	function handleQuantityChange(id: string, quantity: number) {
+		const productById = (pid: string) => catalog.getProducts().find((p) => p.id === pid);
+		const { items: synced, cappedIds } = syncIncludedAccessoryQuantities(
+			items,
+			includedAccessoryMap,
+			id,
+			quantity,
+			(pid) => productById(pid)?.stock
+		);
+		if (synced !== items) items = synced;
+		for (const accId of cappedIds) {
+			const acc = synced.find((i) => i.id === accId);
+			const prod = acc?.kind === 'product' && acc.productId ? productById(acc.productId) : null;
+			if (prod) toast.warning(`⚠ ${prod.name} solo tiene ${prod.stock} en stock.`);
+		}
 	}
 
 	function removeItem(id: string) {
@@ -461,6 +456,7 @@
 		{lensTreatmentInfo}
 		{rxErrorsPerLens}
 		onRemoveItem={removeItem}
+		onQuantityChange={handleQuantityChange}
 		onRemoveTreatment={handleRemoveTreatment}
 		onOpenTreatment={handleOpenTreatmentSelector}
 	>

@@ -20,6 +20,7 @@
 		item: SaleItemRow;
 		rxErrs?: PrescriptionFieldErrors;
 		onremove: () => void;
+		onquantitychange?: (quantity: number) => void;
 		eyeCount: number;
 		isIncludedAccessory: boolean;
 		availableTreatments?: SupplierTreatment[];
@@ -33,6 +34,7 @@
 		item = $bindable(),
 		rxErrs = {},
 		onremove,
+		onquantitychange,
 		eyeCount = 0,
 		isIncludedAccessory = false,
 		availableTreatments = [],
@@ -139,6 +141,7 @@
 						min="1"
 						max={isProductKind ? (maxStock ?? undefined) : undefined}
 						bind:value={item.quantity}
+						oninput={() => onquantitychange?.(item.quantity)}
 					/>
 					{#if outOfStock}
 						<p class="mt-0.5 text-[10px] text-red-600">Disp: {maxStock}</p>
