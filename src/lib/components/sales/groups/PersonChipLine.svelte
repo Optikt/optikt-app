@@ -10,16 +10,25 @@
 		onorganize?: () => void;
 		onclose?: () => void;
 		isPrimary?: boolean;
+		docLabel?: string;
 	}
 
-	let { item, groups, onchange, onorganize, onclose, isPrimary = false }: Props = $props();
+	let {
+		item,
+		groups,
+		onchange,
+		onorganize,
+		onclose,
+		isPrimary = false,
+		docLabel
+	}: Props = $props();
 </script>
 
 <span class="inline-flex flex-wrap items-center gap-1.5">
-	<ItemPersonChip {item} {groups} {onchange} {onorganize} {onclose} />
+	<ItemPersonChip {item} {groups} {onchange} {onorganize} {onclose} {docLabel} />
 	{#if isPrimary}
 		<span
-			class="rounded bg-[#fff4c2] px-1.5 py-0.5 text-[9.5px] font-bold tracking-[0.06em] text-[#6f5900] uppercase"
+			class="rounded bg-[#fff4c2] px-2 py-0.5 text-[11px] font-bold tracking-[0.05em] text-[#6f5900] uppercase"
 			>★ Fórmula del cliente</span
 		>
 	{/if}

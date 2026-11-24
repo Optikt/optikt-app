@@ -335,6 +335,9 @@
 						items={persons.items}
 						groups={persons.groups}
 						primary={primaryChoice}
+						docLabel={nextOrderNumber
+							? `#${String(nextOrderNumber).padStart(4, '0')}`
+							: formatQuoteNumber(quote.quoteNumber)}
 						onprimarychange={(id) => (primaryChoice = id)}
 					/>
 				{/if}

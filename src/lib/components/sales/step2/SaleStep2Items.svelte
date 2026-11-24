@@ -474,6 +474,7 @@
 					onorganize={() => (wp.open = true)}
 					onclose={wp.reorder}
 					isPrimary={wp.isPrimary(row.id)}
+					docLabel={persons.docLabel}
 				/>
 			{/if}
 		{/snippet}
@@ -510,6 +511,8 @@
 	items={wp.items}
 	groups={wp.groups}
 	onchange={wp.change}
+	transformGroups={wp.previewChange}
+	oncommit={wp.commit}
 	showPrimary={wp.showPrimary}
 	primaryLensId={wp.primaryLensId}
 	onprimarychange={persons.onprimarychange}

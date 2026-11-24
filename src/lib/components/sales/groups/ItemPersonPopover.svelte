@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Minus, Plus } from '@lucide/svelte';
-	import { groupDisplayLabel, remainingQty } from '$lib/shared/saleItemGroups';
+	import { groupCode, groupDisplayLabel, remainingQty } from '$lib/shared/saleItemGroups';
 	import PersonAvatar from './PersonAvatar.svelte';
 	import {
 		assignWhole,
@@ -16,11 +16,12 @@
 		groups: UiGroup[];
 		onchange: (groups: UiGroup[]) => void;
 		onorganize?: () => void;
+		docLabel?: string;
 		/** Larger touch targets (mobile bottom sheet). */
 		touch?: boolean;
 	}
 
-	let { item, groups, onchange, onorganize, touch = false }: Props = $props();
+	let { item, groups, onchange, onorganize, docLabel, touch = false }: Props = $props();
 
 	let newName = $state('');
 
@@ -50,13 +51,21 @@
 
 	{#each groups as group, index (group.key)}
 		{@const n = memberQty(group, item.id)}
+		{@const code = groupCode(docLabel, index)}
 		<div
-			class="flex min-h-[38px] items-center gap-2 rounded-lg px-1.5 py-0.5 {n > 0
+			class="flex min-h-10 items-center gap-2 rounded-lg px-2 py-1 {n > 0
 				? 'bg-info-container/60'
 				: ''}"
 		>
-			<PersonAvatar label={group.label} {index} />
-			<span class="min-w-0 flex-1 truncate text-[13px] font-semibold text-brand-navy">
+			<PersonAvatar label={group.label} {index} size="sm" />
+			{#if code}
+				<span
+					class="rounded bg-surface-container-high px-1.5 py-0.5 font-mono text-xs font-bold text-brand-navy"
+				>
+					{code}
+				</span>
+			{/if}
+			<span class="min-w-0 flex-1 truncate text-sm font-semibold text-brand-navy">
 				{groupDisplayLabel(group.label, index)}
 			</span>
 			{#if single}

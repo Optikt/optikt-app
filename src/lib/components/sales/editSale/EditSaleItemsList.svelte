@@ -305,6 +305,7 @@
 								onchange={persons.change}
 								onorganize={() => (persons.tab = 'persons')}
 								isPrimary={persons.showPrimary && persons.primary === item.id}
+								docLabel={persons.docLabel}
 							/>
 						{/if}
 					{/snippet}

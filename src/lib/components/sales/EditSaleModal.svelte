@@ -118,6 +118,12 @@
 	// ── Per-person grouping (Personas tab) ─────────────────────────────
 	const persons = new EditPersons(() => ({
 		mode,
+		docLabel:
+			mode === 'quote' && quote
+				? formatQuoteNumber(quote.quoteNumber)
+				: sale
+					? `#${String(sale.orderNumber).padStart(4, '0')}`
+					: undefined,
 		editable: editableItems,
 		lines: [...items, ...quoteItems]
 	}));
@@ -242,11 +248,7 @@
 				(item) => item.id !== id && item.parentSaleItemId !== id
 			);
 		}
-		editingId = null;
-		editorKind = null;
-		creating = false;
-		view = 'list';
-		staggerRows = false;
+		finishEditing();
 	}
 
 	function startAdd(kind: AddItemKind) {
@@ -284,15 +286,7 @@
 		savedItem: EditableItem,
 		editTreatments: EditLensTreatment[],
 		brandName: string | undefined,
-		applyInfo?: {
-			measures: {
-				odDp: number | null;
-				osDp: number | null;
-				odDnp: number | null;
-				osDnp: number | null;
-			};
-			eyesWithRx: number;
-		}
+		applyInfo?: { measures: Measures; eyesWithRx: number }
 	) {
 		const wasNew = creating;
 		if (applyInfo) measures = applyInfo.measures;
@@ -308,23 +302,15 @@
 		toast.success(wasNew ? 'Cristal agregado' : 'Cristal actualizado');
 	}
 
-	function replaceItem(updated: EditableItem) {
+	function commitSimpleItem(updated: EditableItem, noun: string) {
+		const wasNew = creating;
 		editableItems = editableItems.map((item) => (item.id === updated.id ? updated : item));
+		finishEditing();
+		toast.success(`${noun} ${wasNew ? 'agregado' : 'actualizado'}`);
 	}
 
-	function handleCommitProduct(updated: EditableItem) {
-		const wasNew = creating;
-		replaceItem(updated);
-		finishEditing();
-		toast.success(wasNew ? 'Producto agregado' : 'Producto actualizado');
-	}
-
-	function handleCommitFree(updated: EditableItem) {
-		const wasNew = creating;
-		replaceItem(updated);
-		finishEditing();
-		toast.success(wasNew ? 'Ítem libre agregado' : 'Ítem libre actualizado');
-	}
+	const handleCommitProduct = (updated: EditableItem) => commitSimpleItem(updated, 'Producto');
+	const handleCommitFree = (updated: EditableItem) => commitSimpleItem(updated, 'Ítem libre');
 
 	function removeItem(item: EditableItem) {
 		editableItems = removeEditableItem(editableItems, item);
@@ -355,9 +341,13 @@
 		return result.valid;
 	}
 
-	async function handleSubmit() {
+	async function handleSubmit(skipReorganizeCheck = false) {
 		submitError = '';
 		if (!validate()) return;
+		if (!skipReorganizeCheck && persons.needsReorganizeConfirm) {
+			persons.confirmReorganize = true;
+			return;
+		}
 		saving = true;
 		try {
 			const error = await submitEditSale(
@@ -511,6 +501,9 @@
 <EditSaleDiscardConfirm
 	bind:open={confirmDiscard}
 	{mode}
+	{persons}
+	{saving}
 	onConfirm={discardAndClose}
 	onCancel={() => (confirmDiscard = false)}
+	onConfirmReorganize={() => void handleSubmit(true)}
 />

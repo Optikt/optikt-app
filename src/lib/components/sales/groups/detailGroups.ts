@@ -10,7 +10,7 @@ interface PersistedLine {
 	itemType: string;
 	quantity: number;
 	snapshotName: string | null;
-	product?: { type: string } | null;
+	product?: { name?: string | null; type: string } | null;
 	freeDetails?: { description: string } | null;
 	lensCatalogItem?: { name: string } | null;
 }
@@ -28,7 +28,7 @@ export function persistedGroupItems<T extends PersistedLine>(
 		name:
 			line.itemType === 'FREE_ITEM'
 				? (line.freeDetails?.description ?? 'Ítem libre')
-				: (line.snapshotName ?? line.lensCatalogItem?.name ?? 'Artículo')
+				: (line.snapshotName ?? line.product?.name ?? line.lensCatalogItem?.name ?? 'Artículo')
 	}));
 }
 

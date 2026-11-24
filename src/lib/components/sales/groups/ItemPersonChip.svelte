@@ -5,7 +5,7 @@
 	import PopoverTrigger from '$lib/components/ui/popover/popover-trigger.svelte';
 	import PopoverContent from '$lib/components/ui/popover/popover-content.svelte';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
-	import { chipModel } from '$lib/shared/saleItemGroups';
+	import { chipModel, groupCode } from '$lib/shared/saleItemGroups';
 	import PersonAvatar from './PersonAvatar.svelte';
 	import ItemPersonPopover from './ItemPersonPopover.svelte';
 	import { personColor, type GroupItemView, type UiGroup } from './groupsState';
@@ -20,6 +20,7 @@
 		onclose?: () => void;
 		/** Show the "PARA" caption before the chip. */
 		caption?: boolean;
+		docLabel?: string;
 		touch?: boolean;
 	}
 
@@ -30,6 +31,7 @@
 		onorganize,
 		onclose,
 		caption = true,
+		docLabel,
 		touch = false
 	}: Props = $props();
 
@@ -37,6 +39,9 @@
 
 	const chip = $derived(chipModel(item, groups));
 	const color = $derived(chip.state === 'single' ? personColor(chip.shares[0].groupIndex) : null);
+	const singleCode = $derived(
+		chip.state === 'single' ? groupCode(docLabel, chip.shares[0].groupIndex) : null
+	);
 	const tooltipItems = $derived(chip.state === 'multi' || chip.free > 0 ? chip.detail : []);
 
 	function handleOpenChange(next: boolean) {
@@ -51,7 +56,7 @@
 
 <span class="inline-flex items-center gap-1.5">
 	{#if caption}
-		<span class="text-[10px] font-bold tracking-[0.08em] text-on-surface-variant">PARA</span>
+		<span class="text-[11px] font-bold tracking-[0.08em] text-on-surface-variant">PARA</span>
 	{/if}
 	<PopoverRoot bind:open onOpenChange={handleOpenChange}>
 		<PopoverTrigger>
@@ -61,12 +66,12 @@
 						{...mergeProps(popoverProps, tooltipProps)}
 						type="button"
 						aria-label="Para quién es: {chip.text}"
-						class="inline-flex items-center gap-1 rounded-full border text-xs font-semibold transition-colors {touch
+						class="inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold transition-colors {touch
 							? 'h-11 px-3'
-							: 'h-6 py-0 pr-2 pl-[3px]'} {chip.state === 'none'
-							? 'border-dashed border-outline bg-white pl-2 text-on-surface-variant hover:bg-surface-container-low'
+							: 'min-h-7 py-0.5 pr-2.5 pl-1'} {chip.state === 'none'
+							? 'border-dashed border-outline bg-white pl-2.5 text-on-surface-variant hover:bg-surface-container-low'
 							: chip.state === 'multi'
-								? 'border-[#c9dcf3] bg-[#e3eefb] pl-2 text-[#16357f]'
+								? 'border-[#c9dcf3] bg-[#e3eefb] pl-2.5 text-[#16357f]'
 								: 'border-transparent'}"
 						style:background-color={color?.bg}
 						style:color={color?.fg}
@@ -77,9 +82,17 @@
 								index={chip.shares[0].groupIndex}
 								size="sm"
 							/>
+							{#if singleCode}
+								<span
+									class="rounded bg-white/85 px-1.5 py-0.5 font-mono text-xs font-bold tracking-tight"
+									style:color={color?.fg}
+								>
+									{singleCode}
+								</span>
+							{/if}
 						{/if}
-						<span class="max-w-40 truncate">{chip.text}</span>
-						<ChevronDown class="h-3 w-3" />
+						<span class="max-w-44 truncate font-bold">{chip.text}</span>
+						<ChevronDown class="h-3.5 w-3.5" />
 					</button>
 				{/snippet}
 				{#if tooltipItems.length > 0}
@@ -94,6 +107,7 @@
 				{item}
 				{groups}
 				{onchange}
+				{docLabel}
 				{touch}
 				onorganize={onorganize ? organize : undefined}
 			/>

@@ -408,6 +408,9 @@
 	<div class:hidden={currentStep !== 3}>
 		<SaleStep3Summary
 			{items}
+			{groups}
+			{primaryLensId}
+			docLabel={orderNumberInput ? `#${orderNumberInput.padStart(4, '0')}` : undefined}
 			{customerId}
 			{selectedCustomer}
 			{newCustomer}

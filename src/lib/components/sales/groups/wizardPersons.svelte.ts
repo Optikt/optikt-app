@@ -48,11 +48,25 @@ export class WizardPersons {
 		}
 	) {}
 
+	/** Auto-included accessories follow their frame (also used inside the drawer draft). */
+	previewChange = (previous: UiGroup[], next: UiGroup[]): UiGroup[] =>
+		applyWizardGroupsChange(previous, next, this.items, this.source().accessoryMap);
+
 	/** Auto-included accessories follow their frame. */
 	change = (next: UiGroup[]) => {
-		this.write.groups(
-			applyWizardGroupsChange(this.groups, next, this.items, this.source().accessoryMap)
-		);
+		this.write.groups(this.previewChange(this.groups, next));
+	};
+
+	/** Commit a draft from the Personas drawer and reorder cards right away. */
+	commit = (nextGroups: UiGroup[], nextPrimary: string | null) => {
+		const finalGroups = clampUiGroups(nextGroups, this.items);
+		this.write.groups(finalGroups);
+		if (this.showPrimary && nextPrimary !== this.primaryLensId) {
+			this.source().persons.onprimarychange?.(nextPrimary);
+		}
+		const rows = this.source().items;
+		const reordered = orderWizardRows(rows, this.items, finalGroups);
+		if (reordered.some((row, i) => row !== rows[i])) this.write.items(reordered);
 	};
 
 	/** Reorder cards by person only when a popover/drawer closes (cards never jump mid-edit). */

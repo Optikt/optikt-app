@@ -34,7 +34,7 @@
 	);
 </script>
 
-<div class="flex w-2/3 min-w-0 flex-1 items-start gap-2.5">
+<div class="flex w-full min-w-0 flex-1 items-start gap-2.5">
 	<div
 		class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {isLensKind
 			? 'bg-brand-blue/15 text-brand-blue'

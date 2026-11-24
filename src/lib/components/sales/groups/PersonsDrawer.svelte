@@ -8,15 +8,21 @@
 	interface Props {
 		open: boolean;
 		onclose: () => void;
-		/** "#0313" / "P-0019" chip next to the title. */
+		/** "#0313" / "P-0019" chip next to the title and prefix for person codes. */
 		docLabel?: string;
 		items: GroupItemView[];
 		groups: UiGroup[];
 		onchange: (groups: UiGroup[]) => void;
+		/** Optional transform applied inside the wizard draft (e.g. accessories following frame). */
+		transformGroups?: (prev: UiGroup[], next: UiGroup[]) => UiGroup[];
+		/** Optional warning banner inside the editor (e.g. persisted groups already have codes). */
+		warningMessage?: string;
 		showPrimary?: boolean;
 		primaryLensId?: string | null;
 		onprimarychange?: (lensId: string | null) => void;
-		/** Detail "Organizar": persist on "Guardar". Without it the button just closes ("Listo"). */
+		/** Wizard "Listo": commits draft groups/primary and runs post-apply logic (reorder). */
+		oncommit?: (groups: UiGroup[], primaryLensId: string | null) => void;
+		/** Detail "Organizar": persist on "Guardar". Without it, edits a local draft until "Listo". */
 		onsave?: () => void;
 		saving?: boolean;
 		/** Bottom sheet with 44px targets (mobile detail). */
@@ -30,24 +36,97 @@
 		items,
 		groups,
 		onchange,
+		transformGroups,
+		warningMessage,
 		showPrimary = false,
 		primaryLensId = null,
 		onprimarychange,
+		oncommit,
 		onsave,
 		saving = false,
 		sheet = false
 	}: Props = $props();
 
+	/**
+	 * In wizard mode (no `onsave`), edits stay in a local draft so closing with
+	 * X / Esc / Cancelar discards changes, and "Listo" commits & closes cleanly.
+	 * In persisted mode (`onsave`), the caller (`GroupsOrganizer`) owns the draft.
+	 */
+	const draftMode = $derived(!onsave);
+	let draftGroups = $state<UiGroup[]>([]);
+	let draftPrimary = $state<string | null>(null);
+	let primaryTouched = $state(false);
+	let wasOpen = false;
+
+	function cloneUiGroups(source: readonly UiGroup[]): UiGroup[] {
+		return source.map((g) => ({
+			key: g.key,
+			label: g.label,
+			members: g.members.map((m) => ({ ...m }))
+		}));
+	}
+
+	$effect.pre(() => {
+		if (open && !wasOpen && draftMode) {
+			draftGroups = cloneUiGroups(groups);
+			draftPrimary = primaryLensId;
+			primaryTouched = false;
+		}
+		wasOpen = open;
+	});
+
+	const activeGroups = $derived(draftMode ? draftGroups : groups);
+	const activePrimary = $derived(draftMode ? draftPrimary : primaryLensId);
+
+	function handleGroupsChange(next: UiGroup[]) {
+		if (draftMode) {
+			draftGroups = transformGroups ? transformGroups(draftGroups, next) : next;
+		} else {
+			onchange(next);
+		}
+	}
+
+	function handlePrimaryChange(lensId: string | null) {
+		if (draftMode) {
+			draftPrimary = lensId;
+			primaryTouched = true;
+		} else {
+			onprimarychange?.(lensId);
+		}
+	}
+
+	function handleCancel() {
+		if (saving) return;
+		open = false;
+		if (!draftMode) onclose();
+	}
+
+	function handlePrimaryAction() {
+		if (saving) return;
+		if (onsave) {
+			onsave();
+			return;
+		}
+		if (oncommit) {
+			oncommit(draftGroups, primaryTouched ? draftPrimary : primaryLensId);
+		} else {
+			onchange(draftGroups);
+			if (primaryTouched) onprimarychange?.(draftPrimary);
+		}
+		open = false;
+		onclose();
+	}
+
 	const note = $derived(
 		showPrimary
-			? primaryNote(items, groups, primaryLensId)
+			? primaryNote(items, activeGroups, activePrimary)
 			: 'Agrupa cada ítem con la persona que lo usará. No cambia precios.'
 	);
 </script>
 
 <SlideOver
 	bind:open
-	{onclose}
+	onclose={draftMode ? undefined : onclose}
 	direction={sheet ? 'bottom' : 'right'}
 	dragClose={sheet}
 	widthClass="w-full max-w-[600px]"
@@ -92,26 +171,32 @@
 
 	<PersonsEditor
 		{items}
-		{groups}
-		{onchange}
+		groups={activeGroups}
+		onchange={handleGroupsChange}
+		{docLabel}
+		{warningMessage}
 		{showPrimary}
-		{primaryLensId}
-		{onprimarychange}
+		primaryLensId={activePrimary}
+		onprimarychange={handlePrimaryChange}
 		touch={sheet}
 	/>
 
 	{#snippet footer()}
-		<footer class="flex items-center gap-3 bg-brand-navy px-[18px] py-3 text-white">
-			<p class="flex-1 text-xs text-[#d4eef8]">{note}</p>
+		<footer class="flex items-center gap-2.5 bg-brand-navy px-[18px] py-3 text-white">
+			<p class="min-w-0 flex-1 text-xs text-[#d4eef8]">{note}</p>
 			<button
 				type="button"
 				aria-disabled={saving}
-				onclick={() => {
-					if (saving) return;
-					if (onsave) onsave();
-					else onclose();
-				}}
-				class="h-11 rounded-lg bg-brand-gold px-4 font-bold text-brand-navy aria-disabled:opacity-60 sm:h-[38px]"
+				onclick={handleCancel}
+				class="h-11 shrink-0 rounded-lg border border-white/25 bg-white/10 px-3.5 text-xs font-semibold text-white transition-colors hover:bg-white/20 aria-disabled:opacity-50 sm:h-[38px]"
+			>
+				Cancelar
+			</button>
+			<button
+				type="button"
+				aria-disabled={saving}
+				onclick={handlePrimaryAction}
+				class="h-11 shrink-0 rounded-lg bg-brand-gold px-4 text-sm font-bold text-brand-navy transition-colors hover:brightness-95 aria-disabled:opacity-60 sm:h-[38px]"
 			>
 				{onsave ? (saving ? 'Guardando…' : 'Guardar') : 'Listo'}
 			</button>

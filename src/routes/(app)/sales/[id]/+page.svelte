@@ -326,6 +326,7 @@
 						items: groupViews,
 						groups: data.itemGroups,
 						primaryLensItemId: sale.primaryLensItemId,
+						docLabel: `#${String(sale.orderNumber).padStart(4, '0')}`,
 						onOrganize: canManageSale && !isCancelled ? () => (showOrganizer = true) : undefined
 					}}
 				/>

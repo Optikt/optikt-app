@@ -7,7 +7,7 @@
 	import { updateItemCosts, enrichFreeItem } from '$lib/remote/sales/items.remote';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 	import DocumentChildRow from '$lib/components/commercialDocument/DocumentChildRow.svelte';
-	import { rxRowLine, type DocumentChildView } from '$lib/components/commercialDocument/itemView';
+	import type { DocumentChildView } from '$lib/components/commercialDocument/itemView';
 	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import { buildPersistedDisplayGroups } from '../helpers/items';
 	import { treatmentChildDisplay } from '../editSaleDraft';
@@ -20,7 +20,7 @@
 	import ItemPersonBadge from '../groups/ItemPersonBadge.svelte';
 	import PersonsView from '../groups/PersonsView.svelte';
 	import { orderByPerson } from '../groups/detailGroups';
-	import type { GroupItemView } from '../groups/groupsState';
+	import { rowTintForItem, type GroupItemView } from '../groups/groupsState';
 	import type { ItemGroup } from '$lib/shared/saleItemGroups';
 
 	interface Props {
@@ -44,6 +44,7 @@
 			items: GroupItemView[];
 			groups: ItemGroup[];
 			primaryLensItemId?: string | null;
+			docLabel?: string;
 			onOrganize?: () => void;
 		};
 	}
@@ -107,24 +108,6 @@
 			? orderByPerson(baseGroups, (g) => g.item.id, persons.items, persons.groups)
 			: baseGroups
 	);
-	function rxSummary(itemId: string): string | undefined {
-		const i = displayGroups.find((g) => g.item.id === itemId)?.item;
-		if (!i) return undefined;
-		const od = {
-			sphere: i.odSphere,
-			cylinder: i.odCylinder,
-			axis: i.odAxis,
-			addition: i.odAddition
-		};
-		const os = {
-			sphere: i.osSphere,
-			cylinder: i.osCylinder,
-			axis: i.osAxis,
-			addition: i.osAddition
-		};
-		const empty = (e: typeof od) => Object.values(e).every((v) => v == null);
-		return `${rxRowLine('OD', empty(od), od)}\n${rxRowLine('OI', empty(os), os)}`;
-	}
 
 	const totalInternalCost = $derived(computeInternalCostTotal(displayGroups));
 	const hasAnyCost = $derived(checkHasAnyCost(displayGroups));
@@ -331,10 +314,11 @@
 
 	{#if persons && hasGroups && personView === 'people'}
 		<PersonsView
+			{displayGroups}
 			items={persons.items}
 			groups={persons.groups}
 			primaryLensItemId={persons.primaryLensItemId}
-			rxOf={rxSummary}
+			docLabel={persons.docLabel}
 		/>
 	{:else}
 		<!-- Column header -->
@@ -357,6 +341,7 @@
 			</p>
 		{:else}
 			{#each displayGroups as group (group.key)}
+				{@const personViewItem = persons?.items.find((v) => v.id === group.item.id)}
 				<SaleItemsRow
 					{group}
 					expanded={expandedItems.get(group.key) ?? false}
@@ -370,6 +355,7 @@
 					bind:editShipping
 					bind:editShippingPending
 					{saving}
+					rowTint={persons && hasGroups ? rowTintForItem(personViewItem, persons.groups) : null}
 					onToggle={() => toggleExpanded(group.key)}
 					onKeydown={(e) => handleRowKeydown(e, group.key)}
 					onStartEnrich={startEnrich}
@@ -378,16 +364,16 @@
 					onCancelEdit={cancelEdit}
 				>
 					{#snippet person()}
-						{@const view = persons?.items.find((v) => v.id === group.item.id)}
-						{#if persons && hasGroups && view}
+						{#if persons && hasGroups && personViewItem}
 							<ItemPersonBadge
-								item={view}
+								item={personViewItem}
 								groups={persons.groups}
 								isPrimary={persons.primaryLensItemId === group.item.id}
+								docLabel={persons.docLabel}
 							/>
 						{:else if persons?.primaryLensItemId === group.item.id && displayGroups.filter((g) => g.item.itemType === SaleItemType.LENS_PAIR).length > 1}
 							<span
-								class="mt-1 inline-block rounded bg-[#fff4c2] px-1.5 py-0.5 text-[9.5px] font-bold text-[#6f5900]"
+								class="mt-1 inline-block rounded bg-[#fff4c2] px-2 py-0.5 text-[11px] font-bold text-[#6f5900]"
 								>★ FÓRMULA DEL CLIENTE</span
 							>
 						{/if}

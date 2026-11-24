@@ -7,8 +7,10 @@ import {
 	defaultPrimaryLens,
 	dropEmptyGroups,
 	followIncludedAccessories,
+	groupCode,
 	groupDisplayLabel,
 	normalizeGroupsForSubmit,
+	orderGroupMembers,
 	orderItemsByGroups,
 	orderLinesByGroups,
 	remainingQty,
@@ -88,6 +90,30 @@ describe('labels', () => {
 	it('normalizeGroupsForSubmit trims, nulls empty labels and drops empty groups', () => {
 		expect(normalizeGroupsForSubmit([g(' ', [['f', 1]]), g('X', [])])).toEqual([
 			{ label: null, members: [{ itemId: 'f', quantity: 1 }] }
+		]);
+	});
+
+	it('groupCode builds numeric identifiers for sales and quotes', () => {
+		expect(groupCode('#0230', 0)).toBe('230-1');
+		expect(groupCode('#0230', 2)).toBe('230-3');
+		expect(groupCode('#310', 1)).toBe('310-2');
+		expect(groupCode('230', 0)).toBe('230-1');
+		expect(groupCode('P-0055', 0)).toBe('P-0055-1');
+		expect(groupCode('P-0055', 1)).toBe('P-0055-2');
+		expect(groupCode('', 0)).toBeNull();
+		expect(groupCode(undefined, 0)).toBeNull();
+	});
+
+	it('orderGroupMembers puts frames before lenses before accessories', () => {
+		const members = [
+			{ itemId: 'c', quantity: 1 },
+			{ itemId: 'la', quantity: 1 },
+			{ itemId: 'g', quantity: 1 }
+		];
+		expect(orderGroupMembers(members, [caseAcc, lensA, frameB]).map((m) => m.itemId)).toEqual([
+			'g',
+			'la',
+			'c'
 		]);
 	});
 });

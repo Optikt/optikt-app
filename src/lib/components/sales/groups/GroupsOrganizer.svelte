@@ -5,7 +5,15 @@
 	import { getErrorMessage, logger } from '$lib/utils';
 	import type { ItemGroup } from '$lib/shared/saleItemGroups';
 	import PersonsDrawer from './PersonsDrawer.svelte';
-	import { toSubmitGroups, toUiGroups, type GroupItemView, type UiGroup } from './groupsState';
+	import ReorganizeGroupsConfirm from './ReorganizeGroupsConfirm.svelte';
+	import { groupsSignature } from './editGroups';
+	import {
+		reorganizeWarningMessage,
+		toSubmitGroups,
+		toUiGroups,
+		type GroupItemView,
+		type UiGroup
+	} from './groupsState';
 
 	/**
 	 * "Organizar" from the detail: groups-only save (also for completed sales —
@@ -38,21 +46,36 @@
 	let groups = $state<UiGroup[]>([]);
 	let primary = $state<string | null>(null);
 	let saving = $state(false);
+	let confirmReorganize = $state(false);
 	let wasOpen = false;
+
+	const submittedGroups = $derived(toSubmitGroups(groups));
+	const hadSavedGroups = $derived(itemGroups.length > 0);
+	const groupsChanged = $derived(groupsSignature(submittedGroups) !== groupsSignature(itemGroups));
+	const warningMessage = $derived(reorganizeWarningMessage(kind, itemGroups, docLabel));
 
 	// Seed each time the drawer opens (not while editing).
 	$effect.pre(() => {
 		if (open && !wasOpen) {
 			groups = toUiGroups(itemGroups);
 			primary = primaryLensItemId;
+			confirmReorganize = false;
 		}
 		wasOpen = open;
 	});
 
-	async function save() {
+	function requestSave() {
+		if (hadSavedGroups && groupsChanged) {
+			confirmReorganize = true;
+			return;
+		}
+		void executeSave();
+	}
+
+	async function executeSave() {
 		saving = true;
 		try {
-			const payload = toSubmitGroups(groups);
+			const payload = submittedGroups;
 			const result =
 				kind === 'sale'
 					? await saveSaleItemGroups({ saleId: docId, groups: payload, primaryLensItemId: primary })
@@ -66,6 +89,7 @@
 			} else {
 				toast.success('Personas guardadas');
 			}
+			confirmReorganize = false;
 			open = false;
 			onsaved?.();
 		} catch (e) {
@@ -81,13 +105,25 @@
 	bind:open
 	onclose={() => (open = false)}
 	{docLabel}
+	{warningMessage}
 	{items}
 	{groups}
 	onchange={(next) => (groups = next)}
 	showPrimary={kind === 'sale'}
 	primaryLensId={primary}
 	onprimarychange={(id) => (primary = id)}
-	onsave={save}
+	onsave={requestSave}
 	{saving}
 	{sheet}
+/>
+
+<ReorganizeGroupsConfirm
+	bind:open={confirmReorganize}
+	{kind}
+	{docLabel}
+	previousGroups={itemGroups}
+	nextGroups={submittedGroups}
+	loading={saving}
+	onConfirm={executeSave}
+	onCancel={() => (confirmReorganize = false)}
 />

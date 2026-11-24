@@ -430,6 +430,8 @@
 	<div class:hidden={currentStep !== 3}>
 		<SaleStep3Summary
 			{items}
+			{groups}
+			docLabel={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
 			{selectedCustomer}
 			{newCustomer}
 			bind:discount

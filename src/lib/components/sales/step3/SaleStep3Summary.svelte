@@ -15,9 +15,22 @@
 	import SummaryItemList from './summary/SummaryItemList.svelte';
 	import SummaryTotals from './summary/SummaryTotals.svelte';
 	import SummaryGlobalDiscount from './summary/SummaryGlobalDiscount.svelte';
+	import { Users } from '@lucide/svelte';
+	import {
+		clampAllocations,
+		groupCode,
+		groupDisplayLabel,
+		normalizeGroupsForSubmit
+	} from '$lib/shared/saleItemGroups';
+	import PersonAvatar from '../groups/PersonAvatar.svelte';
+	import { groupUnits, personColor, type UiGroup } from '../groups/groupsState';
+	import { orderWizardRows, wizardGroupItems } from '../groups/wizardGroups';
 
 	interface Props {
 		items: SaleItemRow[];
+		groups?: UiGroup[];
+		primaryLensId?: string | null;
+		docLabel?: string;
 		customerId?: string;
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
@@ -42,6 +55,9 @@
 
 	let {
 		items,
+		groups = [],
+		primaryLensId = null,
+		docLabel,
 		customerId = '',
 		selectedCustomer,
 		newCustomer,
@@ -65,6 +81,12 @@
 	}: Props = $props();
 
 	const catalog = getContext<CatalogData>(CATALOG_KEY);
+
+	const groupViews = $derived(
+		wizardGroupItems(items, catalog.getProducts(), catalog.getLensItems())
+	);
+	const activeGroups = $derived(normalizeGroupsForSubmit(clampAllocations(groups, groupViews)));
+	const orderedItems = $derived(orderWizardRows(items, groupViews, activeGroups));
 
 	const grossSubtotal = $derived(calculateSaleSummarySubtotal(items));
 
@@ -167,7 +189,57 @@
 	/>
 
 	<div class="flex min-h-0 flex-1 gap-3">
-		<SummaryItemList {items} {defaultTaxRate} />
+		<div class="flex min-w-0 flex-1 flex-col gap-2">
+			{#if activeGroups.length > 0}
+				<div
+					class="flex flex-wrap items-center gap-2 rounded-lg border border-outline-variant/60 bg-white px-3 py-2"
+				>
+					<span
+						class="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-[0.08em] text-brand-navy uppercase"
+					>
+						<Users class="h-3.5 w-3.5" />
+						Personas
+					</span>
+					{#each activeGroups as group, index (index)}
+						{@const color = personColor(index)}
+						{@const code = groupCode(docLabel, index)}
+						{@const hasPrimary =
+							primaryLensId !== null && group.members.some((m) => m.itemId === primaryLensId)}
+						<span
+							class="inline-flex items-center gap-1.5 rounded-full py-1 pr-3 pl-1.5 text-[13px] font-semibold"
+							style:background-color={color.bg}
+							style:color={color.fg}
+						>
+							<PersonAvatar label={group.label} {index} size="sm" />
+							{#if code}
+								<span
+									class="rounded bg-white/85 px-1.5 py-0.5 font-mono text-xs font-bold tracking-tight"
+									style:color={color.fg}
+								>
+									{code}
+								</span>
+							{/if}
+							<span class="font-bold">{groupDisplayLabel(group.label, index)}</span>
+							<span class="text-xs font-medium opacity-80">
+								({groupUnits(group)})
+							</span>
+							{#if hasPrimary}
+								<span class="text-[#947600]" aria-label="Fórmula del cliente">★</span>
+							{/if}
+						</span>
+					{/each}
+				</div>
+			{/if}
+
+			<SummaryItemList
+				items={orderedItems}
+				{defaultTaxRate}
+				{groupViews}
+				groups={activeGroups}
+				{primaryLensId}
+				{docLabel}
+			/>
+		</div>
 
 		<div class="w-64 shrink-0 space-y-2">
 			<SummaryTotals

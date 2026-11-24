@@ -25,6 +25,8 @@
 		items={persons.items}
 		groups={persons.groups}
 		onchange={persons.change}
+		docLabel={persons.docLabel}
+		warningMessage={persons.warningMessage}
 		showPrimary={persons.showPrimary}
 		primaryLensId={persons.primary}
 		onprimarychange={persons.setPrimary}

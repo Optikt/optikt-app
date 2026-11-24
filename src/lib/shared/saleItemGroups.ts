@@ -146,6 +146,32 @@ export function groupDisplayLabel(label: string | null | undefined, index: numbe
 	return normalizeGroupLabel(label) ?? `Trabajo ${index + 1}`;
 }
 
+/**
+ * Internal work/person identifier derived from the document number and 1-based group position.
+ * Strips leading `#` and zero-padding on plain numeric sale numbers ("#0230" → "230-1"),
+ * keeping prefixes on quotes ("P-0055" → "P-0055-1"). Returns null when no docLabel exists.
+ */
+export function groupCode(docLabel: string | null | undefined, index: number): string | null {
+	const raw = (docLabel ?? '').trim();
+	if (!raw) return null;
+	const base = raw.replace(/^#0*(?=\d)/, '');
+	return `${base}-${index + 1}`;
+}
+
+/** Orders a single group's members by visual role (frame/product → lens → accessory). */
+export function orderGroupMembers<M extends { itemId: string }, T extends GroupableItem>(
+	members: readonly M[],
+	items: readonly T[]
+): M[] {
+	const byId = new Map(items.map((item, idx) => [item.id, { item, idx }]));
+	return [...members].sort((a, b) => {
+		const ea = byId.get(a.itemId);
+		const eb = byId.get(b.itemId);
+		if (!ea || !eb) return 0;
+		return displayRank(ea.item) - displayRank(eb.item) || ea.idx - eb.idx;
+	});
+}
+
 export function hasAnyLabel(groups: readonly ItemGroup[]): boolean {
 	return groups.some((group) => normalizeGroupLabel(group.label) !== null);
 }

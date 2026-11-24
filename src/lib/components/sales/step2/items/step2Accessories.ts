@@ -1,18 +1,27 @@
 import type { SaleItemRow } from '../../newSaleTypes';
 import { createEmptyProductItem } from '../../newSaleTypes';
+import { cacheProductIfMissing } from '../../catalogCache.svelte';
 
 export interface IncludedAccessoryRule {
 	accessoryProductId: string;
 	priceMode: string;
 	customPrice: number | null;
 	currentProductPrice: number | null;
-	accessory: { id: string; name: string; stock: number };
+	accessory: {
+		id: string;
+		name: string;
+		sku?: string;
+		stock: number;
+		type?: string;
+		currentSalePrice?: number | null;
+	};
 }
 
 export function createIncludedAccessoryItem(
 	parentItemId: string,
 	accessoryRule: IncludedAccessoryRule
 ): SaleItemRow {
+	cacheProductIfMissing(accessoryRule.accessory);
 	const price = (() => {
 		switch (accessoryRule.priceMode) {
 			case 'PRODUCT':

@@ -251,6 +251,7 @@
 					persons={{
 						items: groupViews,
 						groups: data.itemGroups,
+						docLabel: formatQuoteNumber(quote.quoteNumber),
 						onOrganize: canAct && isDraft ? () => (showOrganizer = true) : undefined
 					}}
 				/>

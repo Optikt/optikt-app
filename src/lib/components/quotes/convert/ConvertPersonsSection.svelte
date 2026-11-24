@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { groupDisplayLabel, type ItemGroup } from '$lib/shared/saleItemGroups';
+	import { groupCode, groupDisplayLabel, type ItemGroup } from '$lib/shared/saleItemGroups';
 	import PersonAvatar from '$lib/components/sales/groups/PersonAvatar.svelte';
 	import type { GroupItemView } from '$lib/components/sales/groups/groupsState';
 
@@ -11,10 +11,11 @@
 		items: GroupItemView[];
 		groups: ItemGroup[];
 		primary: string | null;
+		docLabel?: string;
 		onprimarychange: (lensId: string | null) => void;
 	}
 
-	let { items, groups, primary, onprimarychange }: Props = $props();
+	let { items, groups, primary, docLabel, onprimarychange }: Props = $props();
 
 	const lenses = $derived(items.filter((i) => i.itemType === 'LENS_PAIR'));
 	const nameOf = (id: string) => items.find((i) => i.id === id)?.name ?? 'Artículo';
@@ -35,9 +36,17 @@
 			</p>
 			<ul class="mt-1.5 flex flex-col gap-1.5 text-[13px]">
 				{#each groups as group, index (index)}
-					<li class="flex items-start gap-2">
-						<PersonAvatar label={group.label} {index} />
+					{@const code = groupCode(docLabel, index)}
+					<li class="flex items-center gap-2 text-sm">
+						<PersonAvatar label={group.label} {index} size="sm" />
 						<span class="min-w-0 flex-1">
+							{#if code}
+								<span
+									class="mr-1.5 rounded bg-surface-container-high px-1.5 py-0.5 font-mono text-xs font-bold text-brand-navy"
+								>
+									{code}
+								</span>
+							{/if}
 							<b class="text-brand-navy">{groupDisplayLabel(group.label, index)}</b>
 							<span class="text-on-surface-variant">
 								· {group.members
