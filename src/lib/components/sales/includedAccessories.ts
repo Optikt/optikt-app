@@ -100,8 +100,7 @@ export function syncIncludedAccessoryQuantities(
 	const nextItems = currentItems.map((item) => {
 		if (!linkedSet.has(item.id) || item.kind !== 'product') return item;
 		const stock = item.productId ? stockOf?.(item.productId) : null;
-		const nextQty =
-			stock != null && stock > 0 && targetQty > stock ? stock : targetQty;
+		const nextQty = stock != null && stock > 0 && targetQty > stock ? stock : targetQty;
 		if (nextQty < targetQty) cappedIds.push(item.id);
 		if (item.quantity === nextQty) return item;
 		changed = true;

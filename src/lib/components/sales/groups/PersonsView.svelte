@@ -49,7 +49,9 @@
 		items
 			.filter((i) => isGroupableItemType(i.itemType))
 			.map((i) => ({ view: i, dg: byId.get(i.id), free: remainingQty(i, groups) }))
-			.filter((u): u is { view: GroupItemView; dg: DisplayGroup; free: number } => !!u.dg && u.free > 0)
+			.filter(
+				(u): u is { view: GroupItemView; dg: DisplayGroup; free: number } => !!u.dg && u.free > 0
+			)
 	);
 	const unassignedUnits = $derived(unassigned.reduce((sum, u) => sum + u.free, 0));
 

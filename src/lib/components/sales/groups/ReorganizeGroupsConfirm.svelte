@@ -60,9 +60,13 @@
 				laboratorio.
 			</p>
 
-			<div class="grid grid-cols-1 gap-2 rounded-lg border border-outline-variant/70 bg-surface-container-low p-3 text-[13px] sm:grid-cols-2">
+			<div
+				class="grid grid-cols-1 gap-2 rounded-lg border border-outline-variant/70 bg-surface-container-low p-3 text-[13px] sm:grid-cols-2"
+			>
 				<div>
-					<p class="mb-1.5 text-[11px] font-bold tracking-[0.08em] text-on-surface-variant uppercase">
+					<p
+						class="mb-1.5 text-[11px] font-bold tracking-[0.08em] text-on-surface-variant uppercase"
+					>
 						Actuales
 					</p>
 					<ul class="space-y-1.5">
@@ -71,7 +75,9 @@
 							<li class="flex items-center gap-1.5">
 								<PersonAvatar label={group.label} {index} size="sm" />
 								{#if code}
-									<span class="rounded bg-surface-container-high px-1.5 py-0.5 font-mono text-xs font-bold text-brand-navy">
+									<span
+										class="rounded bg-surface-container-high px-1.5 py-0.5 font-mono text-xs font-bold text-brand-navy"
+									>
 										{code}
 									</span>
 								{/if}
@@ -94,11 +100,14 @@
 								<li class="flex items-center gap-1.5">
 									<PersonAvatar label={group.label} {index} size="sm" />
 									{#if code}
-										<span class="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-xs font-bold text-amber-900">
+										<span
+											class="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-xs font-bold text-amber-900"
+										>
 											{code}
 										</span>
 									{/if}
-									<span class="truncate font-semibold">{groupDisplayLabel(group.label, index)}</span>
+									<span class="truncate font-semibold">{groupDisplayLabel(group.label, index)}</span
+									>
 								</li>
 							{/each}
 						</ul>

@@ -77,9 +77,7 @@
 			{@const lenses = groupLensIds(group, items)}
 			{@const isPrimary = lenses.length === 1 && lenses[0] === primaryLensId}
 			{@const code = groupCode(docLabel, index)}
-			<div
-				class="flex flex-wrap items-center gap-2 rounded-lg bg-white px-2.5 py-2 sm:flex-nowrap"
-			>
+			<div class="flex flex-wrap items-center gap-2 rounded-lg bg-white px-2.5 py-2 sm:flex-nowrap">
 				<PersonAvatar label={group.label} {index} size="lg" />
 				{#if code}
 					<span

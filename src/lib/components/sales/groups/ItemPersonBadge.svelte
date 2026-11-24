@@ -57,7 +57,9 @@
 				}}
 				class="inline-flex min-h-7 items-center gap-1 rounded-full border border-[#c9dcf3] bg-[#e3eefb] px-2.5 text-[13px] font-semibold text-[#16357f]"
 			>
-				{#if expanded}<ChevronDown class="h-3.5 w-3.5" />{:else}<ChevronRight class="h-3.5 w-3.5" />{/if}
+				{#if expanded}<ChevronDown class="h-3.5 w-3.5" />{:else}<ChevronRight
+						class="h-3.5 w-3.5"
+					/>{/if}
 				Para {chip.shares.length}
 				{chip.shares.length === 1 ? 'persona' : 'personas'}{chip.free > 0
 					? ` · ${chip.free} libre`
@@ -81,7 +83,9 @@
 						style:background-color={personColor(share.groupIndex).dot}
 					></span>
 					{#if code}
-						<span class="rounded bg-white/90 px-1.5 py-0.5 font-mono text-xs font-bold text-brand-navy">
+						<span
+							class="rounded bg-white/90 px-1.5 py-0.5 font-mono text-xs font-bold text-brand-navy"
+						>
 							{code}
 						</span>
 					{/if}
