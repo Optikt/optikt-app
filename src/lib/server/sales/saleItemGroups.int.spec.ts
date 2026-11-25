@@ -345,12 +345,26 @@ describe('sale item groups', () => {
 		const { admin, customer } = await seed();
 		const other = await createCustomer();
 		const a = lens(-2);
-		const saleId = await createWithPrimary(customer.id, admin.id, a);
+		const created = await createSaleCore(
+			{
+				customerId: customer.id,
+				saleDate: '2026-11-20',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				prescription: rx,
+				items: [a],
+				primaryLensItemId: a.id
+			},
+			ctx(admin.id)
+		);
+		if (!created.success) throw new Error(created.error);
 		const [oldRxBefore] = await currentRx(customer.id);
+		expect(oldRxBefore).toBeDefined();
 
 		const updated = await updateSaleCore(
 			{
-				id: saleId,
+				id: created.sale.id,
 				reason: 'cambio cliente y medidas',
 				customerId: other.id,
 				prescription: { dp: 64, npRight: 32, npLeft: 32 }

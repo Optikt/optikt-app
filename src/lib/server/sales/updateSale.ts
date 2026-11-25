@@ -164,9 +164,11 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	let prescriptionBefore: Prescription | null = null;
 	if (data.prescription) {
 		prescriptionBefore = await getSalePrescription(data.id);
-		const setsNewPrimary =
-			!!data.primaryLensItemId && data.primaryLensItemId !== existing.primaryLensItemId;
-		if (!prescriptionBefore && !setsNewPrimary) {
+		const customerChangedPre = !!data.customerId && data.customerId !== existing.customerId;
+		const createsPrimaryRx =
+			(!!data.primaryLensItemId && data.primaryLensItemId !== existing.primaryLensItemId) ||
+			(customerChangedPre && !!existing.primaryLensItemId);
+		if (!prescriptionBefore && !createsPrimaryRx) {
 			return {
 				success: false as const,
 				error:
