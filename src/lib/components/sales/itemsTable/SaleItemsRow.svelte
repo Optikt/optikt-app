@@ -17,6 +17,8 @@
 	} from './itemDisplay';
 	import CostEditForm from './CostEditForm.svelte';
 	import LensRxPanel from './LensRxPanel.svelte';
+	import type { RowTint } from '../groups/groupsState';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		group: DisplayGroup;
@@ -39,6 +41,10 @@
 		onStartEdit: (item: SaleItemWithDetails) => void;
 		onSaveEdit: () => void;
 		onCancelEdit: () => void;
+		/** Subtle per-person tint in detail "Lista" view (null when unassigned / no groups). */
+		rowTint?: RowTint | null;
+		/** Per-person line under the description (detail). */
+		person?: Snippet;
 	}
 
 	let {
@@ -59,7 +65,9 @@
 		onStartEnrich,
 		onStartEdit,
 		onSaveEdit,
-		onCancelEdit
+		onCancelEdit,
+		rowTint = null,
+		person
 	}: Props = $props();
 
 	const item = $derived(group.item);
@@ -157,7 +165,12 @@
 	aria-expanded={isLens ? expanded : undefined}
 	onclick={handleRowClick}
 	onkeydown={isLens ? onKeydown : undefined}
-	class="item-row grid grid-cols-[32px_1fr_104px_128px_26px] items-start gap-3 border-t border-outline-variant/60 px-4 py-2.5 transition-colors duration-150 hover:bg-[#f6f8fb] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue"
+	style:--row-bg={rowTint?.bg}
+	style:--row-hover={rowTint?.hover}
+	style:--row-accent={rowTint?.accent}
+	class="item-row grid grid-cols-[32px_1fr_104px_128px_26px] items-start gap-3 border-t border-outline-variant/60 px-4 py-2.5 transition-colors duration-150 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue {rowTint
+		? 'tinted-row'
+		: 'hover:bg-[#f6f8fb]'}"
 >
 	<!-- Neutral kind chip -->
 	{#snippet chipTooltipOuter({ props }: { props: Record<string, unknown> })}
@@ -202,6 +215,8 @@
 		{#if subtitle}
 			<p class="item-subtitle mt-0.5 truncate text-xs text-on-surface-variant">{subtitle}</p>
 		{/if}
+
+		{@render person?.()}
 
 		{#if hasRx}
 			{#if !expanded}
@@ -385,6 +400,15 @@
 {/if}
 
 <style>
+	.tinted-row {
+		background-color: var(--row-bg);
+		border-left: 3px solid var(--row-accent);
+		padding-left: calc(1rem - 3px);
+	}
+	.tinted-row:hover {
+		background-color: var(--row-hover);
+	}
+
 	/* Móvil <700 (contenedor de página): la fila es una tarjeta por áreas —
 	   cabecera (chip+título+chevron) arriba, USD full-row y Bs full-row
 	   (alineado der) con separación; la fórmula colapsable ya es full-row. */

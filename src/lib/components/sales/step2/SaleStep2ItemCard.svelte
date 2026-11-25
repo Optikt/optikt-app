@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, type Snippet } from 'svelte';
 	import { Trash2, FlaskConical } from '@lucide/svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { formatPrice } from '$lib/utils';
@@ -20,22 +20,27 @@
 		item: SaleItemRow;
 		rxErrs?: PrescriptionFieldErrors;
 		onremove: () => void;
+		onquantitychange?: (quantity: number) => void;
 		eyeCount: number;
 		isIncludedAccessory: boolean;
 		availableTreatments?: SupplierTreatment[];
 		currentTreatmentName?: string | null;
 		onopenTreatment?: (() => void) | undefined;
+		/** Per-person chip ("PARA …") under the item info. */
+		person?: Snippet;
 	}
 
 	let {
 		item = $bindable(),
 		rxErrs = {},
 		onremove,
+		onquantitychange,
 		eyeCount = 0,
 		isIncludedAccessory = false,
 		availableTreatments = [],
 		currentTreatmentName = null,
-		onopenTreatment = undefined
+		onopenTreatment = undefined,
+		person
 	}: Props = $props();
 
 	const catalog = getContext<CatalogData>(CATALOG_KEY);
@@ -112,6 +117,11 @@
 						</button>
 					{/if}
 				</div>
+			{:else if person}
+				<div class="flex min-w-0 flex-col gap-1">
+					<SaleItemInfo {item} showAccessoryBadge={isIncludedAccessory} />
+					<div class="pl-1">{@render person()}</div>
+				</div>
 			{:else}
 				<SaleItemInfo {item} showAccessoryBadge={isIncludedAccessory} />
 			{/if}
@@ -131,6 +141,7 @@
 						min="1"
 						max={isProductKind ? (maxStock ?? undefined) : undefined}
 						bind:value={item.quantity}
+						oninput={() => onquantitychange?.(item.quantity)}
 					/>
 					{#if outOfStock}
 						<p class="mt-0.5 text-[10px] text-red-600">Disp: {maxStock}</p>

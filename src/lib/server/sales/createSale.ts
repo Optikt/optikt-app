@@ -3,7 +3,6 @@ import {
 	createSale as insertSale,
 	lockSaleOrderSequence
 } from '$lib/server/db/queries/sales/writes';
-import { createPrescription, unsetCurrentPrescriptions } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import type { Customer, Prescription } from '$lib/server/db/schema';
 import { SaleStatus, UserRole } from '$lib/shared/enums';
@@ -12,7 +11,13 @@ import { auditService } from '$lib/server/audit';
 import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { nowISO, composeBusinessTimestamp } from '$lib/dates';
-import { toPrescriptionInsert } from '$lib/utils/prescription';
+import { replaceSaleItemGroups, setSalePrimaryLens } from '$lib/server/db/queries/sales/itemGroups';
+import { applyPrimaryPrescription } from '$lib/server/sales/primaryPrescription';
+import {
+	defaultPrimaryLens,
+	normalizeGroupsForSubmit,
+	validateItemGroups
+} from '$lib/shared/saleItemGroups';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import { computeDocumentTotals } from '$lib/server/documentTotals';
@@ -57,7 +62,31 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 	);
 	const subtotal = totals.subtotal;
 	const total = totals.total;
-	const hasLensItems = data.items.some((item) => item.itemType === SaleItemType.LENS_PAIR);
+
+	// Client ids are kept as real ids on create (`item.id ?? random`), so group
+	// members and the primary lens need no translation here.
+	const itemIds = data.items.map((item) => item.id ?? crypto.randomUUID());
+	const groups = normalizeGroupsForSubmit(data.groups ?? []);
+	const groupableItems = data.items.map((item, index) => ({
+		id: itemIds[index],
+		itemType: item.itemType,
+		quantity: item.quantity
+	}));
+
+	// Primary lens ("fórmula principal"): explicit value wins; absent (legacy
+	// callers) falls back to the default rule (exactly one lens, no names).
+	const primaryLensItemId =
+		data.primaryLensItemId !== undefined
+			? data.primaryLensItemId
+			: defaultPrimaryLens(
+					groupableItems.filter((item) => item.itemType === SaleItemType.LENS_PAIR),
+					groups
+				);
+
+	if (groups.length > 0 || primaryLensItemId) {
+		const groupErrors = validateItemGroups(groups, groupableItems, primaryLensItemId);
+		if (groupErrors.length > 0) return { success: false as const, error: groupErrors[0] };
+	}
 
 	// Freeze the live USD BCV rate for future tickera reprints (null when API down — print falls back to live)
 	const liveBcvRate = await getExchangeRateValue('USD');
@@ -78,17 +107,6 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 		} else {
 			createdCustomer = await createInlineCustomer(data.newCustomer!, tx);
 			customerId = createdCustomer.id;
-		}
-
-		if (data.prescription && hasLensItems) {
-			await unsetCurrentPrescriptions(customerId, undefined, tx);
-			createdPrescription = await createPrescription(
-				toPrescriptionInsert(customerId, {
-					...data.prescription,
-					isCurrent: true
-				}),
-				tx
-			);
 		}
 
 		// Create the sale header. Order number: DB sequence by default; an ADMIN
@@ -118,14 +136,17 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 			{ deferSequenceBump: true }
 		);
 
-		// Create sale items + handle stock via FIFO lot consumption
-		for (const item of data.items) {
-			const saleItemId = item.id ?? crypto.randomUUID();
-
+		// Create sale items + handle stock via FIFO lot consumption (parents before child treatments)
+		const indexedItems = data.items.map((item, index) => ({ item, saleItemId: itemIds[index] }));
+		const orderedItems = [
+			...indexedItems.filter((entry) => !entry.item.parentSaleItemId),
+			...indexedItems.filter((entry) => !!entry.item.parentSaleItemId)
+		];
+		for (const { item, saleItemId } of orderedItems) {
+			// Each lens keeps its own link; only the primary lens is re-linked
+			// below to the customer's new current prescription.
 			const prescriptionId =
-				item.itemType === SaleItemType.LENS_PAIR
-					? (createdPrescription?.id ?? item.prescriptionId ?? null)
-					: null;
+				item.itemType === SaleItemType.LENS_PAIR ? (item.prescriptionId ?? null) : null;
 			await insertSaleItem(tx, {
 				id: saleItemId,
 				saleId: newSale.id,
@@ -137,11 +158,30 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 			});
 		}
 
+		if (groups.length > 0) {
+			await replaceSaleItemGroups(newSale.id, groups, tx);
+		}
+
+		// Only the primary lens stamps the customer's current Rx. Without a
+		// primary (multi-person sale, or "Ninguna") nothing is created/overwritten.
+		let saleRow = newSale;
+		if (primaryLensItemId) {
+			await setSalePrimaryLens(newSale.id, primaryLensItemId, tx);
+			saleRow = { ...newSale, primaryLensItemId };
+			if (data.prescription) {
+				createdPrescription = await applyPrimaryPrescription(tx, {
+					customerId,
+					saleItemId: primaryLensItemId,
+					fields: data.prescription
+				});
+			}
+		}
+
 		// Bump after every write: a failure above (e.g. stock) rolls back without
 		// having moved the non-transactional sequence.
 		if (data.orderNumber !== undefined) await bumpSaleOrderSequence(data.orderNumber, tx);
 
-		return { sale: newSale, newCustomer: createdCustomer, prescription: createdPrescription };
+		return { sale: saleRow, newCustomer: createdCustomer, prescription: createdPrescription };
 	});
 
 	// Audit logs (best-effort, after transaction succeeds)

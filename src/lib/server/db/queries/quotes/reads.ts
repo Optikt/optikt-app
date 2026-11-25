@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
@@ -64,11 +64,19 @@ export async function findQuoteByIdWithRelations(
 }
 
 /** Quote items con producto/lente/tratamiento y detalle libre. */
-export async function getQuoteItemsWithDetails(quoteId: string): Promise<QuoteItemWithDetails[]> {
-	const results = await db
+export async function getQuoteItemsWithDetails(
+	quoteId: string,
+	executor: DbOrTx = db
+): Promise<QuoteItemWithDetails[]> {
+	const results = await executor
 		.select({
 			item: quoteItems,
-			product: { id: products.id, name: products.name, sku: products.sku },
+			product: {
+				id: products.id,
+				name: products.name,
+				sku: products.sku,
+				type: products.type
+			},
 			lensCatalogItem: {
 				id: lensCatalogItems.id,
 				name: lensCatalogItems.name,
@@ -86,7 +94,13 @@ export async function getQuoteItemsWithDetails(quoteId: string): Promise<QuoteIt
 		.leftJoin(lensCatalogItems, eq(quoteItems.lensCatalogItemId, lensCatalogItems.id))
 		.leftJoin(supplierTreatments, eq(quoteItems.supplierTreatmentId, supplierTreatments.id))
 		.leftJoin(quoteItemFreeDetails, eq(quoteItems.id, quoteItemFreeDetails.quoteItemId))
-		.where(and(eq(quoteItems.quoteId, quoteId), isNull(quoteItems.deletedAt)));
+		.where(and(eq(quoteItems.quoteId, quoteId), isNull(quoteItems.deletedAt)))
+		// Parents before child treatments so re-insert/convert never violates the self-FK when timestamps tie.
+		.orderBy(
+			sql`CASE WHEN ${quoteItems.parentQuoteItemId} IS NULL THEN 0 ELSE 1 END`,
+			asc(quoteItems.createdAt),
+			asc(quoteItems.id)
+		);
 
 	return results.map((r) => ({
 		...r.item,

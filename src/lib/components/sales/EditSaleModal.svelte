@@ -37,7 +37,7 @@
 		quoteItemToEditable
 	} from '$lib/components/quotes/editQuote/quoteEditAdapter';
 	import { formatQuoteNumber } from '$lib/components/quotes/list/quoteListDisplay';
-	import { submitEditSale } from './editSale/submitEditSale';
+	import { buildEditSubmitInput, submitEditSale } from './editSale/submitEditSale';
 	import {
 		EMPTY_MEASURES,
 		measuresChanged,
@@ -49,6 +49,9 @@
 		validateEditModal,
 		type Measures
 	} from './editSale/editSaleModalHelpers';
+	import EditSalePersonsTab from './editSale/EditSalePersonsTab.svelte';
+	import { EditPersons } from './groups/editPersons.svelte';
+	import type { ItemGroup } from '$lib/shared/saleItemGroups';
 	interface Props {
 		open: boolean;
 		sale?: SaleWithRelations;
@@ -59,6 +62,8 @@
 		/** Adapter quote (D1): mutually exclusive with `sale`. */
 		quote?: QuoteWithRelations;
 		quoteItems?: QuoteItemWithDetails[];
+		/** Current per-person groups of the sale/quote. */
+		itemGroups?: ItemGroup[];
 		onSuccess?: () => void;
 	}
 
@@ -70,6 +75,7 @@
 		prescription = null,
 		quote,
 		quoteItems = [],
+		itemGroups = [],
 		onSuccess
 	}: Props = $props();
 
@@ -108,6 +114,19 @@
 	});
 
 	let editableItems = $state<EditableItem[]>([]);
+
+	// ── Per-person grouping (Personas tab) ─────────────────────────────
+	const persons = new EditPersons(() => ({
+		mode,
+		docLabel:
+			mode === 'quote' && quote
+				? formatQuoteNumber(quote.quoteNumber)
+				: sale
+					? `#${String(sale.orderNumber).padStart(4, '0')}`
+					: undefined,
+		editable: editableItems,
+		lines: [...items, ...quoteItems]
+	}));
 	let editingId = $state<string | null>(null);
 	let editorKind = $state<EditorKind | null>(null);
 	let creating = $state(false);
@@ -145,6 +164,7 @@
 	});
 
 	let hasChanges = $derived.by(() => {
+		if (persons.changed) return true;
 		if (mode === 'quote') return quoteChanges.changed;
 		return (
 			hasChangesForSale(
@@ -176,6 +196,7 @@
 		creating = false;
 		view = 'list';
 		staggerRows = false;
+		persons.seed(itemGroups, sale?.primaryLensItemId ?? null);
 
 		if (mode === 'quote' && quote) {
 			// quoteDate (no createdAt): fecha editable del presupuesto, en día de negocio.
@@ -227,11 +248,7 @@
 				(item) => item.id !== id && item.parentSaleItemId !== id
 			);
 		}
-		editingId = null;
-		editorKind = null;
-		creating = false;
-		view = 'list';
-		staggerRows = false;
+		finishEditing();
 	}
 
 	function startAdd(kind: AddItemKind) {
@@ -269,15 +286,7 @@
 		savedItem: EditableItem,
 		editTreatments: EditLensTreatment[],
 		brandName: string | undefined,
-		applyInfo?: {
-			measures: {
-				odDp: number | null;
-				osDp: number | null;
-				odDnp: number | null;
-				osDnp: number | null;
-			};
-			eyesWithRx: number;
-		}
+		applyInfo?: { measures: Measures; eyesWithRx: number }
 	) {
 		const wasNew = creating;
 		if (applyInfo) measures = applyInfo.measures;
@@ -293,23 +302,15 @@
 		toast.success(wasNew ? 'Cristal agregado' : 'Cristal actualizado');
 	}
 
-	function replaceItem(updated: EditableItem) {
+	function commitSimpleItem(updated: EditableItem, noun: string) {
+		const wasNew = creating;
 		editableItems = editableItems.map((item) => (item.id === updated.id ? updated : item));
+		finishEditing();
+		toast.success(`${noun} ${wasNew ? 'agregado' : 'actualizado'}`);
 	}
 
-	function handleCommitProduct(updated: EditableItem) {
-		const wasNew = creating;
-		replaceItem(updated);
-		finishEditing();
-		toast.success(wasNew ? 'Producto agregado' : 'Producto actualizado');
-	}
-
-	function handleCommitFree(updated: EditableItem) {
-		const wasNew = creating;
-		replaceItem(updated);
-		finishEditing();
-		toast.success(wasNew ? 'Ítem libre agregado' : 'Ítem libre actualizado');
-	}
+	const handleCommitProduct = (updated: EditableItem) => commitSimpleItem(updated, 'Producto');
+	const handleCommitFree = (updated: EditableItem) => commitSimpleItem(updated, 'Ítem libre');
 
 	function removeItem(item: EditableItem) {
 		editableItems = removeEditableItem(editableItems, item);
@@ -340,54 +341,37 @@
 		return result.valid;
 	}
 
-	async function handleSubmit() {
+	async function handleSubmit(skipReorganizeCheck = false) {
 		submitError = '';
 		if (!validate()) return;
+		if (!skipReorganizeCheck && persons.needsReorganizeConfirm) {
+			persons.confirmReorganize = true;
+			return;
+		}
 		saving = true;
 		try {
 			const error = await submitEditSale(
-				mode === 'quote' && quote
-					? {
-							mode: 'quote',
-							quote,
-							draft: {
-								dateIso: saleDate,
-								validUntilIso: validUntil,
-								notes,
-								isCashea,
-								discount,
-								discountType,
-								items: editableItems
-							}
-						}
-					: {
-							mode: 'sale',
-							sale: sale!,
-							originalItems: items,
-							draft: {
-								saleDate,
-								notes,
-								isCashea,
-								discount,
-								discountType,
-								reason,
-								removedCount,
-								activeItems,
-								originalItems: items,
-								prescription: {
-									dp: prescription?.dp ?? null,
-									npRight: prescription?.npRight ?? null,
-									npLeft: prescription?.npLeft ?? null
-								},
-								prescriptionPatch: {
-									dp: measures.odDp,
-									npRight: measures.odDnp,
-									npLeft: measures.osDnp
-								}
-							}
-						}
+				buildEditSubmitInput({
+					quote: mode === 'quote' ? quote : undefined,
+					sale,
+					items,
+					editableItems,
+					activeItems,
+					removedCount,
+					saleDate,
+					validUntil,
+					notes,
+					isCashea,
+					discount,
+					discountType,
+					reason,
+					prescription,
+					measures,
+					groupsPatch: persons.patch()
+				})
 			);
 			submitError = error ?? '';
+			persons.confirmReorganize = false;
 			if (error === null) {
 				confirmDiscard = false;
 				open = false;
@@ -416,6 +400,7 @@
 	size="xl"
 	closeGuard={guardClose}
 	escapeHandler={() => {
+		if (persons.confirmReorganize || confirmDiscard) return true;
 		if (view === 'editor') {
 			closeEditor();
 			return true;
@@ -455,7 +440,9 @@
 	{/snippet}
 
 	{#key view}
-		{#if view === 'list'}
+		{#if view === 'list' && persons.tab === 'persons'}
+			<EditSalePersonsTab {persons} />
+		{:else if view === 'list'}
 			<div transition:inFly>
 				<EditSaleItemsList
 					{activeItems}
@@ -468,6 +455,7 @@
 					onRestore={restoreItem}
 					onAdd={startAdd}
 					onRemoveChild={removeChild}
+					{persons}
 				/>
 			</div>
 		{:else}
@@ -515,6 +503,9 @@
 <EditSaleDiscardConfirm
 	bind:open={confirmDiscard}
 	{mode}
+	{persons}
+	{saving}
 	onConfirm={discardAndClose}
 	onCancel={() => (confirmDiscard = false)}
+	onConfirmReorganize={() => void handleSubmit(true)}
 />

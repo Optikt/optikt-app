@@ -6,7 +6,8 @@ import {
 	UpdateSaleSchema,
 	SetSaleStatusSchema,
 	ListSalesSchema,
-	VoidPaymentSchema
+	VoidPaymentSchema,
+	SaveSaleItemGroupsSchema
 } from '$lib/schemas/sales';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { DiscountType, RefundStatus } from '$lib/shared/enums';
@@ -786,5 +787,131 @@ describe('VoidPaymentSchema', () => {
 	it('rejects a reason longer than 500 chars', () => {
 		const result = VoidPaymentSchema.safeParse({ ...base, reason: 'x'.repeat(501) });
 		expect(result.success).toBe(false);
+	});
+});
+
+// ── Item groups (per-person grouping) ───────────────────────────────────
+
+describe('CreateSaleSchema groups', () => {
+	const base = {
+		customerId: crypto.randomUUID(),
+		saleDate: '2025-01-15'
+	};
+
+	it('accepts a split frame ×2 and a primary lens; empty label → null', () => {
+		const frame = { ...makeProductItem({ quantity: 2 }), id: crypto.randomUUID() };
+		const lens = makeLensPairItem();
+		const result = CreateSaleSchema.safeParse({
+			...base,
+			items: [frame, lens],
+			groups: [
+				{
+					label: ' Sofía ',
+					members: [
+						{ itemId: frame.id, quantity: 1 },
+						{ itemId: lens.id, quantity: 1 }
+					]
+				},
+				{ label: '  ', members: [{ itemId: frame.id, quantity: 1 }] }
+			],
+			primaryLensItemId: lens.id
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.groups?.map((g) => g.label)).toEqual(['Sofía', null]);
+		}
+	});
+
+	it('rejects more units than the line has', () => {
+		const frame = { ...makeProductItem({ quantity: 1 }), id: crypto.randomUUID() };
+		const result = CreateSaleSchema.safeParse({
+			...base,
+			items: [frame],
+			groups: [{ members: [{ itemId: frame.id, quantity: 2 }] }]
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects treatments as members and a non-lens primary (with primaryLensItemId path)', () => {
+		const lens = makeLensPairItem();
+		const treatment = { ...makeTreatmentItem(lens.id!), id: crypto.randomUUID() };
+		expect(
+			CreateSaleSchema.safeParse({
+				...base,
+				items: [lens, treatment],
+				groups: [{ members: [{ itemId: treatment.id, quantity: 1 }] }]
+			}).success
+		).toBe(false);
+		const badPrimary = CreateSaleSchema.safeParse({
+			...base,
+			items: [lens, treatment],
+			primaryLensItemId: treatment.id
+		});
+		expect(badPrimary.success).toBe(false);
+		if (!badPrimary.success) {
+			expect(badPrimary.error.issues.some((i) => i.path.includes('primaryLensItemId'))).toBe(true);
+		}
+	});
+
+	it('rejects duplicate itemId in a group and duplicate client item ids', () => {
+		const id = crypto.randomUUID();
+		const frame = { ...makeProductItem({ quantity: 2 }), id };
+		expect(
+			CreateSaleSchema.safeParse({
+				...base,
+				items: [frame],
+				groups: [
+					{
+						label: 'Ana',
+						members: [
+							{ itemId: id, quantity: 1 },
+							{ itemId: id, quantity: 1 }
+						]
+					}
+				]
+			}).success
+		).toBe(false);
+
+		expect(
+			CreateSaleSchema.safeParse({
+				...base,
+				items: [frame, { ...makeProductItem({ quantity: 1 }), id }],
+				groups: [{ label: 'Ana', members: [{ itemId: id, quantity: 1 }] }]
+			}).success
+		).toBe(false);
+	});
+
+	it('rejects a group without members', () => {
+		const lens = makeLensPairItem();
+		expect(
+			CreateSaleSchema.safeParse({ ...base, items: [lens], groups: [{ label: 'A', members: [] }] })
+				.success
+		).toBe(false);
+	});
+});
+
+describe('SaveSaleItemGroupsSchema', () => {
+	it('requires an explicit primary (null allowed) and rejects duplicate members', () => {
+		const saleId = crypto.randomUUID();
+		const itemId = crypto.randomUUID();
+		expect(SaveSaleItemGroupsSchema.safeParse({ saleId, groups: [] }).success).toBe(false);
+		expect(
+			SaveSaleItemGroupsSchema.safeParse({ saleId, groups: [], primaryLensItemId: null }).success
+		).toBe(true);
+		expect(
+			SaveSaleItemGroupsSchema.safeParse({
+				saleId,
+				primaryLensItemId: null,
+				groups: [
+					{
+						label: 'Ana',
+						members: [
+							{ itemId, quantity: 1 },
+							{ itemId, quantity: 1 }
+						]
+					}
+				]
+			}).success
+		).toBe(false);
 	});
 });

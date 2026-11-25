@@ -20,17 +20,33 @@
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import type { SaleItemRow, TreatmentSaleItemRow } from '../../newSaleTypes';
 	import SaleItemInfo from '../../SaleItemInfo.svelte';
+	import ItemPersonBadge from '../../groups/ItemPersonBadge.svelte';
+	import type { GroupItemView } from '../../groups/groupsState';
+	import type { ItemGroup } from '$lib/shared/saleItemGroups';
 	import { CATALOG_KEY, type CatalogData } from '../../wizardContext';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 	interface Props {
 		items: SaleItemRow[];
 		defaultTaxRate?: number;
+		groupViews?: GroupItemView[];
+		groups?: ItemGroup[];
+		primaryLensId?: string | null;
+		docLabel?: string;
 	}
 
-	let { items, defaultTaxRate = DEFAULT_TAX_RATE }: Props = $props();
+	let {
+		items,
+		defaultTaxRate = DEFAULT_TAX_RATE,
+		groupViews = [],
+		groups = [],
+		primaryLensId = null,
+		docLabel
+	}: Props = $props();
 
 	const catalog = getContext<CatalogData>(CATALOG_KEY);
+	const viewById = $derived(new Map(groupViews.map((v) => [v.id, v])));
+	const lensCount = $derived(items.filter((i) => i.kind === 'lens').length);
 
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
 		return findProduct(item, catalog.getProducts());
@@ -62,7 +78,29 @@
 			<div class="rounded-lg border border-slate-300 bg-white p-1">
 				<div class="space-y-1">
 					<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-						<SaleItemInfo {item} />
+						<div class="min-w-0 flex-1">
+							<SaleItemInfo {item} />
+							{#if groups.length > 0}
+								{@const view = viewById.get(item.id)}
+								{#if view}
+									<div class="pl-[42px]">
+										<ItemPersonBadge
+											item={view}
+											{groups}
+											isPrimary={primaryLensId === item.id}
+											{docLabel}
+										/>
+									</div>
+								{/if}
+							{:else if primaryLensId === item.id && lensCount > 1}
+								<div class="mt-1 pl-[42px]">
+									<span
+										class="inline-block rounded bg-[#fff4c2] px-1.5 py-0.5 text-[9.5px] font-bold tracking-[0.06em] text-[#6f5900]"
+										>★ FÓRMULA DEL CLIENTE</span
+									>
+								</div>
+							{/if}
+						</div>
 						<div class="flex w-1/3 shrink-0 flex-col items-end gap-1">
 							<div class="flex items-center gap-1 text-[10px] text-slate-500">
 								<span>CANT {item.kind === 'product' ? item.quantity : 1}</span>

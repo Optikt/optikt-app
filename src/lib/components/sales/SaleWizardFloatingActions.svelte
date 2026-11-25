@@ -12,6 +12,8 @@
 		primaryKind?: 'next' | 'confirm';
 		summaryLabel?: string;
 		summaryValue?: string;
+		/** Short note before the total (e.g. "★ Fórmula del cliente: Sofía"). */
+		note?: string;
 		onBack?: () => void;
 		onPrimary: () => void;
 	}
@@ -27,6 +29,7 @@
 		primaryKind = 'next',
 		summaryLabel,
 		summaryValue,
+		note,
 		onBack,
 		onPrimary
 	}: Props = $props();
@@ -69,6 +72,13 @@
 		</div>
 
 		<div class="flex items-center gap-3">
+			{#if note}
+				<p
+					class="hidden max-w-72 truncate rounded-md bg-[#fff4c2] px-2.5 py-1 text-xs text-[#6f5900] lg:block"
+				>
+					{note}
+				</p>
+			{/if}
 			{#if summaryLabel && summaryValue}
 				<div class="hidden text-right md:block">
 					<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">

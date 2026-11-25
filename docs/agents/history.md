@@ -17,6 +17,8 @@ Audit trail field-level por entidad: modal de historial con diff de valores (old
 - ⚠️ `ALL_ENTITY_TYPES` (`schema/changeHistory.ts:64-89`, lista escrita a mano de 25 tipos) es la fuente de verdad tanto del schema como del enum de `trash` (`DeletedEntityType`) — **agregar nuevas entidades auditadas exige actualizarla**, no la olvides.
 - Enums de entityType y cambio de label: tocar `schema/changeHistory.ts` y `remote/history.remote.ts:40-65` (validación).
 
+- Agrupación por persona: `logCustom('sale'|'quote', id, 'update', { personGroups, primaryLens })` con texto legible (`summarizeGroups`); etiquetas en `display-utils.ts`; el timeline lo muestra como «Agrupación por persona actualizada» (`isGroupsOnlyChange`, `utils/saleDetail.ts`).
+
 ## Patrones locales
 
 - Remote de un solo endpoint `getHistory` con limit/offset/hasMore; `entityType` validado contra `ALL_ENTITY_TYPES`.

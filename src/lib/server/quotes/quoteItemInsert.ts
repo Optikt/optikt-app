@@ -1,17 +1,21 @@
-import { quoteItems, quoteItemFreeDetails } from '$lib/server/db/schema';
+import { quoteItems, quoteItemFreeDetails } from '$lib/server/db/schema/quotes';
 import type { DbOrTx } from '$lib/server/db/types';
 import { buildQuoteItemValues } from '$lib/server/quotes/quoteHelpers';
 import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 import type { QuoteItemInput } from '$lib/schemas/quotes';
 
-/** Insert quote items (+ FREE_ITEM details). Caller owns the transaction. */
+/** Insert quote items (+ FREE_ITEM details), parents before child treatments. Caller owns the transaction. */
 export async function insertQuoteItems(
 	executor: DbOrTx,
 	quoteId: string,
 	items: QuoteItemInput[],
 	now: string
 ) {
-	for (const item of items) {
+	const orderedItems = [
+		...items.filter((item) => !item.parentQuoteItemId),
+		...items.filter((item) => !!item.parentQuoteItemId)
+	];
+	for (const item of orderedItems) {
 		const quoteItemId = item.id ?? crypto.randomUUID();
 		await executor
 			.insert(quoteItems)

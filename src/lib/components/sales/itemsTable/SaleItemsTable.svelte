@@ -16,6 +16,12 @@
 	import EnrichItemModal from './EnrichItemModal.svelte';
 	import SaleItemsRow from './SaleItemsRow.svelte';
 	import type { Snippet } from 'svelte';
+	import { Users } from '@lucide/svelte';
+	import ItemPersonBadge from '../groups/ItemPersonBadge.svelte';
+	import PersonsView from '../groups/PersonsView.svelte';
+	import { orderByPerson } from '../groups/detailGroups';
+	import { rowTintForItem, type GroupItemView } from '../groups/groupsState';
+	import type { ItemGroup } from '$lib/shared/saleItemGroups';
 
 	interface Props {
 		items: SaleItemWithDetails[];
@@ -33,6 +39,14 @@
 		headerBadge?: Snippet;
 		/** Título de la sección ("Artículos y servicios"). */
 		sectionTitle?: string;
+		/** Per-person grouping (chip per line, Lista | Por persona, Organizar). */
+		persons?: {
+			items: GroupItemView[];
+			groups: ItemGroup[];
+			primaryLensItemId?: string | null;
+			docLabel?: string;
+			onOrganize?: () => void;
+		};
 	}
 
 	let {
@@ -45,8 +59,12 @@
 		onCostsUpdated,
 		groups: groupsProp,
 		headerBadge,
-		sectionTitle = 'Artículos y servicios'
+		sectionTitle = 'Artículos y servicios',
+		persons
 	}: Props = $props();
+
+	let personView = $state<'list' | 'people'>('list');
+	const hasGroups = $derived((persons?.groups.length ?? 0) > 0);
 
 	// ── Cost editing (lens rows) ──────────────────────────────────────────
 	let editingItemId = $state<string | null>(null);
@@ -74,15 +92,22 @@
 
 	const mainItems = $derived(items.filter((item) => item.itemType !== SaleItemType.TREATMENT));
 
-	const displayGroups: DisplayGroup[] = $derived(
+	const baseGroups: DisplayGroup[] = $derived(
 		groupsProp ??
 			buildPersistedDisplayGroups(
 				items,
 				mainItems,
 				SaleItemType.LENS_PAIR,
 				SaleItemType.TREATMENT,
-				(item) => item.parentSaleItemId
+				(item) => item.parentSaleItemId,
+				hasGroups
 			)
+	);
+	/** Same order as the ticket/PDF: by person (montura, cristal, …); identity without groups. */
+	const displayGroups: DisplayGroup[] = $derived(
+		persons
+			? orderByPerson(baseGroups, (g) => g.item.id, persons.items, persons.groups)
+			: baseGroups
 	);
 
 	const totalInternalCost = $derived(computeInternalCostTotal(displayGroups));
@@ -245,7 +270,7 @@
 <section
 	class="items-section overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm"
 >
-	<div class="flex items-center gap-3 px-4 pt-3.5 pb-3">
+	<div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-3.5 pb-3">
 		<h2 class="font-heading text-[15px] font-bold text-brand-navy">{sectionTitle}</h2>
 		<span class="rounded bg-brand-navy px-[7px] text-[12px] font-bold text-white tabular-nums">
 			{displayGroups.length}
@@ -253,67 +278,125 @@
 		{#if headerBadge}
 			{@render headerBadge()}
 		{/if}
-		<span class="flex-1"></span>
-		<TriggerTooltip
-			trigger={costsSwitch}
-			text="Muestra costos internos y márgenes. No es información para el cliente."
-		/>
-	</div>
-
-	<!-- Column header -->
-	<div
-		class="items-header grid grid-cols-[32px_1fr_104px_128px_26px] gap-3 border-t border-outline-variant/60 px-4 py-1.5 text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
-	>
-		<span></span>
-		<span>Artículo</span>
-		<span class="text-right">USD</span>
-		<span class="text-right">Bs.</span>
-		<span></span>
-	</div>
-
-	<!-- Rows -->
-	{#if displayGroups.length === 0}
-		<p
-			class="border-t border-outline-variant/60 px-4 py-9 text-center text-[13px] text-on-surface-variant italic"
-		>
-			Esta venta no tiene artículos
-		</p>
-	{:else}
-		{#each displayGroups as group (group.key)}
-			<SaleItemsRow
-				{group}
-				expanded={expandedItems.get(group.key) ?? false}
-				editing={editingItemId === group.item.id}
-				{allowCostEdit}
-				{showCosts}
-				{bsRate}
-				{bsApproximate}
-				bind:editBaseCost
-				bind:editMounting
-				bind:editShipping
-				bind:editShippingPending
-				{saving}
-				onToggle={() => toggleExpanded(group.key)}
-				onKeydown={(e) => handleRowKeydown(e, group.key)}
-				onStartEnrich={startEnrich}
-				onStartEdit={startEdit}
-				onSaveEdit={saveEdit}
-				onCancelEdit={cancelEdit}
+		{#if persons && hasGroups}
+			<div
+				role="tablist"
+				aria-label="Vista de artículos"
+				class="inline-flex rounded-md bg-surface-container-high p-0.5"
+			>
+				{#each [{ v: 'list', l: 'Lista' }, { v: 'people', l: 'Por persona' }] as opt (opt.v)}
+					<button
+						type="button"
+						role="tab"
+						aria-selected={personView === opt.v}
+						onclick={() => (personView = opt.v as 'list' | 'people')}
+						class="min-h-11 rounded px-2.5 text-xs font-semibold @min-[700px]:min-h-8 {personView ===
+						opt.v
+							? 'bg-white text-brand-navy shadow-sm'
+							: 'text-on-surface-variant'}">{opt.l}</button
+					>
+				{/each}
+			</div>
+		{/if}
+		{#if persons?.onOrganize}
+			<button
+				type="button"
+				onclick={persons.onOrganize}
+				class="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-brand-navy px-2.5 text-xs font-semibold text-brand-navy hover:bg-surface-container-low @min-[700px]:min-h-8"
+			>
+				<Users class="h-3.5 w-3.5" /> Organizar
+			</button>
+		{/if}
+		<div class="ml-auto">
+			<TriggerTooltip
+				trigger={costsSwitch}
+				text="Muestra costos internos y márgenes. No es información para el cliente."
 			/>
+		</div>
+	</div>
 
-			<!-- Treatment children (tree connector, drawer parity) -->
-			{#each group.treatments as treatment, childIndex (treatment.id)}
-				{@const vm = childView(treatment)}
-				{#if vm}
-					<DocumentChildRow
-						child={vm}
-						last={childIndex === group.treatments.length - 1}
-						tooltip="Ver la fórmula del cristal"
-						onOpen={() => toggleExpanded(group.key)}
-					/>
-				{/if}
+	{#if persons && hasGroups && personView === 'people'}
+		<PersonsView
+			{displayGroups}
+			items={persons.items}
+			groups={persons.groups}
+			primaryLensItemId={persons.primaryLensItemId}
+			docLabel={persons.docLabel}
+		/>
+	{:else}
+		<!-- Column header -->
+		<div
+			class="items-header grid grid-cols-[32px_1fr_104px_128px_26px] gap-3 border-t border-outline-variant/60 px-4 py-1.5 text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
+		>
+			<span></span>
+			<span>Artículo</span>
+			<span class="text-right">USD</span>
+			<span class="text-right">Bs.</span>
+			<span></span>
+		</div>
+
+		<!-- Rows -->
+		{#if displayGroups.length === 0}
+			<p
+				class="border-t border-outline-variant/60 px-4 py-9 text-center text-[13px] text-on-surface-variant italic"
+			>
+				Esta venta no tiene artículos
+			</p>
+		{:else}
+			{#each displayGroups as group (group.key)}
+				{@const personViewItem = persons?.items.find((v) => v.id === group.item.id)}
+				<SaleItemsRow
+					{group}
+					expanded={expandedItems.get(group.key) ?? false}
+					editing={editingItemId === group.item.id}
+					{allowCostEdit}
+					{showCosts}
+					{bsRate}
+					{bsApproximate}
+					bind:editBaseCost
+					bind:editMounting
+					bind:editShipping
+					bind:editShippingPending
+					{saving}
+					rowTint={persons && hasGroups ? rowTintForItem(personViewItem, persons.groups) : null}
+					onToggle={() => toggleExpanded(group.key)}
+					onKeydown={(e) => handleRowKeydown(e, group.key)}
+					onStartEnrich={startEnrich}
+					onStartEdit={startEdit}
+					onSaveEdit={saveEdit}
+					onCancelEdit={cancelEdit}
+				>
+					{#snippet person()}
+						{#if persons && hasGroups && personViewItem}
+							<ItemPersonBadge
+								item={personViewItem}
+								groups={persons.groups}
+								isPrimary={persons.primaryLensItemId === group.item.id}
+								docLabel={persons.docLabel}
+							/>
+						{:else if persons?.primaryLensItemId === group.item.id && displayGroups.filter((g) => g.item.itemType === SaleItemType.LENS_PAIR).length > 1}
+							<span
+								class="mt-1 inline-block rounded bg-[#fff4c2] px-2 py-0.5 text-[11px] font-bold text-[#6f5900]"
+								>★ FÓRMULA DEL CLIENTE</span
+							>
+						{/if}
+					{/snippet}
+				</SaleItemsRow>
+
+				<!-- Treatment children (tree connector, drawer parity) -->
+				{#each group.treatments as treatment, childIndex (treatment.id)}
+					{@const vm = childView(treatment)}
+					{#if vm}
+						<DocumentChildRow
+							child={vm}
+							last={childIndex === group.treatments.length - 1}
+							tooltip="Ver la fórmula del cristal"
+							onOpen={() => toggleExpanded(group.key)}
+						/>
+					{/if}
+				{/each}
 			{/each}
-		{/each}
+		{/if}
 	{/if}
 
 	<!-- Costs footer (only with the switch on) -->

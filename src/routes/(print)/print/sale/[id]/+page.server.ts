@@ -5,6 +5,8 @@ import { SaleStatus } from '$lib/shared/enums';
 import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
 import { getSalePayments } from '$lib/server/db/queries/sales/payments';
 import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
+import { findSaleItemGroups } from '$lib/server/db/queries/sales/itemGroups';
+import { orderLinesByGroups } from '$lib/shared/saleItemGroups';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 
 // TODO: Verify if we should load the BCV rate value of Sale date, or by
@@ -23,12 +25,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(409, 'No se puede imprimir una venta cancelada');
 	}
 
-	const [items, payments, settings, bcvRate] = await Promise.all([
+	const [rawItems, payments, settings, bcvRate, groups] = await Promise.all([
 		getSaleItemsWithDetails(params.id),
 		getSalePayments(params.id),
 		getSettings(),
-		getExchangeRateValue('USD')
+		getExchangeRateValue('USD'),
+		findSaleItemGroups(params.id)
 	]);
+	// Lines of each person together (names are not printed).
+	const items = orderLinesByGroups(rawItems, groups, (i) => i.parentSaleItemId);
 
 	return {
 		bcvRate: bcvRate ?? null,

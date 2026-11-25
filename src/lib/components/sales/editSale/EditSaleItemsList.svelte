@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import PersonChipLine from '../groups/PersonChipLine.svelte';
+	import { orderEditableByGroups } from '../groups/editGroups';
+	import EditSaleTabs from './EditSaleTabs.svelte';
+	import type { EditPersons } from '../groups/editPersons.svelte';
 	import { ChevronDown, Plus } from '@lucide/svelte';
 	import DocumentItemRow from '$lib/components/commercialDocument/DocumentItemRow.svelte';
 	import DocumentChildRow from '$lib/components/commercialDocument/DocumentChildRow.svelte';
@@ -28,6 +32,8 @@
 		onRestore: (item: EditableItem) => void;
 		onAdd: (kind: AddItemKind) => void;
 		onRemoveChild: (child: EditableItem) => void;
+		/** Per-person grouping: tabs in the header + chip under each line. */
+		persons?: EditPersons;
 	}
 
 	let {
@@ -40,11 +46,22 @@
 		onRemove,
 		onRestore,
 		onAdd,
-		onRemoveChild
+		onRemoveChild,
+		persons
 	}: Props = $props();
 
 	let menuOpen = $state(false);
 	let menuRoot = $state<HTMLElement>();
+	let orderTick = $state(0);
+
+	// Order by person on mount / tab return / popover close (never mid-popover edit).
+	const orderedMainItems = $derived.by(() => {
+		void orderTick;
+		if (!persons) return mainItems;
+		const views = untrack(() => persons.items);
+		const groups = untrack(() => persons.groups);
+		return orderEditableByGroups(mainItems, views, groups);
+	});
 
 	// ── View-model mapping ──────────────────────────────────────────────────
 	const FACTORY_TREATMENTS = (lens: ReturnType<typeof getCachedLensItem>): string[] => {
@@ -212,6 +229,13 @@
 		>
 			{mainItems.filter((item) => !item._removed).length}
 		</span>
+		{#if persons}
+			<EditSaleTabs
+				tab={persons.tab}
+				personCount={persons.count}
+				onchange={(t) => (persons.tab = t)}
+			/>
+		{/if}
 
 		<div class="relative ml-auto" bind:this={menuRoot}>
 			{#snippet addTrigger({ props }: { props: Record<string, unknown> })}
@@ -272,14 +296,31 @@
 		</p>
 	{:else}
 		<div>
-			{#each mainItems as item, index (item.id ?? `new-${index}`)}
+			{#each orderedMainItems as item, index (item.id ?? `new-${index}`)}
 				<div data-item-id={item.id ?? `new-${index}`} style:--d={index} class:row-in={stagger}>
 					<DocumentItemRow
 						item={toView(item)}
 						onOpen={() => onToggleEditor(item)}
 						onRemove={() => onRemove(item)}
 						onRestore={() => onRestore(item)}
+						extra={persons && item.id && item.itemType !== SaleItemType.TREATMENT
+							? personExtra
+							: undefined}
 					/>
+					{#snippet personExtra()}
+						{@const view = persons?.items.find((g) => g.id === item.id)}
+						{#if persons && view}
+							<PersonChipLine
+								item={view}
+								groups={persons.groups}
+								onchange={persons.change}
+								onorganize={() => (persons.tab = 'persons')}
+								onclose={() => (orderTick += 1)}
+								isPrimary={persons.showPrimary && persons.primary === item.id}
+								docLabel={persons.docLabel}
+							/>
+						{/if}
+					{/snippet}
 
 					{#each childItemsOf(item) as child, childIndex (child.id)}
 						{@const childVm = childView(child)}

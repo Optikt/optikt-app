@@ -1,14 +1,27 @@
 <script lang="ts">
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import ReorganizeGroupsConfirm from '../groups/ReorganizeGroupsConfirm.svelte';
+	import type { EditPersons } from '../groups/editPersons.svelte';
 
 	interface Props {
 		open: boolean;
 		mode: 'sale' | 'quote';
 		onConfirm: () => void;
 		onCancel: () => void;
+		persons?: EditPersons;
+		saving?: boolean;
+		onConfirmReorganize?: () => void;
 	}
 
-	let { open = $bindable(), mode, onConfirm, onCancel }: Props = $props();
+	let {
+		open = $bindable(),
+		mode,
+		onConfirm,
+		onCancel,
+		persons,
+		saving = false,
+		onConfirmReorganize
+	}: Props = $props();
 </script>
 
 <ConfirmModal
@@ -23,3 +36,16 @@
 	{onConfirm}
 	{onCancel}
 />
+
+{#if persons && onConfirmReorganize}
+	<ReorganizeGroupsConfirm
+		bind:open={persons.confirmReorganize}
+		kind={mode}
+		docLabel={persons.docLabel}
+		previousGroups={persons.seedGroups}
+		nextGroups={persons.submitted}
+		loading={saving}
+		onConfirm={() => onConfirmReorganize()}
+		onCancel={() => (persons.confirmReorganize = false)}
+	/>
+{/if}

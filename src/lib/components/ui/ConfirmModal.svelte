@@ -115,7 +115,12 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class={sizeClass[size]} showCloseButton={!permanent}>
+	<Dialog.Content
+		class={sizeClass[size]}
+		showCloseButton={!permanent}
+		escapeKeydownBehavior={permanent ? 'ignore' : 'close'}
+		interactOutsideBehavior={permanent ? 'ignore' : 'close'}
+	>
 		<Dialog.Header>
 			<Dialog.Title>{title}</Dialog.Title>
 		</Dialog.Header>

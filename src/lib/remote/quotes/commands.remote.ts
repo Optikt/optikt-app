@@ -3,11 +3,17 @@
  * Shell: auth + delegate. Logic lives in src/lib/server/quotes/.
  */
 import { command } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
-import { CreateQuoteSchema, UpdateQuoteSchema } from '$lib/schemas/quotes';
+import { requireAuth, requireRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums/roles';
+import {
+	CreateQuoteSchema,
+	SaveQuoteItemGroupsSchema,
+	UpdateQuoteSchema
+} from '$lib/schemas/quotes';
 import { getActionContext } from '$lib/server/actionContext';
 import { createNewQuoteCore } from '$lib/server/quotes/createNewQuote';
 import { updateExistingQuoteCore } from '$lib/server/quotes/updateExistingQuote';
+import { saveQuoteItemGroupsCore } from '$lib/server/quotes/saveQuoteItemGroups';
 
 /**
  * Create a new quote with items in a single transaction.
@@ -25,4 +31,10 @@ export const createNewQuote = command(CreateQuoteSchema, async (data) => {
 export const updateExistingQuote = command(UpdateQuoteSchema, async (data) => {
 	const user = requireAuth();
 	return updateExistingQuoteCore(data, getActionContext(user));
+});
+
+/** Groups-only save (per-person grouping) from the quote detail. DRAFT only. */
+export const saveQuoteItemGroups = command(SaveQuoteItemGroupsSchema, async (data) => {
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+	return saveQuoteItemGroupsCore(data, getActionContext(user));
 });

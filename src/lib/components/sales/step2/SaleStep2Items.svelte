@@ -1,10 +1,7 @@
 <script lang="ts">
 	import { untrack, getContext } from 'svelte';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
-	import { cacheProduct } from '../catalogCache.svelte';
-	import { toast } from 'svelte-sonner';
-	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
-	import { formatPrice, getErrorMessage } from '$lib/utils';
+	import { formatPrice } from '$lib/utils/format';
 	import { LensCatalogSource } from '$lib/shared/enums';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { listSupplierTreatments } from '$lib/remote/suppliers.remote';
@@ -30,8 +27,6 @@
 	} from '../newSaleTypes';
 	import {
 		allowsDuplicateProductLines,
-		canAutoIncludeAccessories,
-		linkIncludedAccessories,
 		removeItemWithIncludedAccessories,
 		type IncludedAccessoryMap
 	} from '../includedAccessories';
@@ -42,10 +37,18 @@
 	import SaleTreatmentSlideOver from './SaleTreatmentSlideOver.svelte';
 	import Step2ItemsList from './items/Step2ItemsList.svelte';
 	import Step2ValidationHints from './items/Step2ValidationHints.svelte';
-	import { createIncludedAccessoryItem } from './items/step2Accessories';
+	import {
+		fetchAndLinkIncludedAccessories,
+		syncStep2AccessoryQuantities
+	} from './items/step2Accessories';
 	import { recalcSuggestedPrice } from './items/step2Pricing';
 	import { copyFirstRxToAll } from './items/step2RxCopy';
 	import { getValidationReasons } from './items/step2Validation';
+	import PersonChipLine from '../groups/PersonChipLine.svelte';
+	import PersonsDrawer from '../groups/PersonsDrawer.svelte';
+	import type { UiGroup, WizardPersonsOptions } from '../groups/groupsState';
+	import { WizardPersons } from '../groups/wizardPersons.svelte';
+	import { isGroupableItemType } from '$lib/shared/saleItemGroups';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -60,6 +63,9 @@
 		noCustomerContextLabel?: string;
 		itemsSectionTitle?: string;
 		onCancel?: () => void;
+		/** Per-person grouping (sale and quote wizard). */
+		groups?: UiGroup[];
+		persons?: WizardPersonsOptions;
 		valid: boolean;
 		onnext: () => void;
 		onprev: () => void;
@@ -78,6 +84,8 @@
 		noCustomerContextLabel = 'Venta sin cliente',
 		itemsSectionTitle = 'Artículos',
 		onCancel,
+		groups = $bindable([]),
+		persons = {},
 		valid,
 		onnext,
 		onprev
@@ -124,68 +132,6 @@
 		return item;
 	}
 
-	async function addIncludedAccessoriesForItem(
-		option: { kind: string; brandId?: string | null; productType?: string; id: string },
-		parentItem: SaleItemRow
-	) {
-		if (
-			option.kind !== 'product' ||
-			!option.brandId ||
-			!canAutoIncludeAccessories(option.productType)
-		) {
-			return;
-		}
-
-		try {
-			const accessories = await getAccessoriesForProduct({
-				productId: option.id,
-				brandId: option.brandId
-			});
-
-			if (!items.some((item) => item.id === parentItem.id)) {
-				return;
-			}
-
-			const addedNames: string[] = [];
-			const linkedIds: string[] = [];
-			const accessoryItems: SaleItemRow[] = [];
-
-			for (const accessoryRule of accessories) {
-				if (accessoryRule.accessory.stock <= 0) {
-					toast.warning(
-						`⚠ ${accessoryRule.accessory.name} no tiene stock disponible y no fue agregado automáticamente.`
-					);
-					continue;
-				}
-
-				// Seed the on-demand catalog cache so UI, stock checks, IVA, and DB snapshots
-				// resolve this accessory product without requiring a manual search first.
-				cacheProduct(accessoryRule.accessory);
-				const accessoryItem = createIncludedAccessoryItem(parentItem.id, accessoryRule);
-				accessoryItems.push(accessoryItem);
-				linkedIds.push(accessoryItem.id);
-				addedNames.push(accessoryRule.accessory.name);
-			}
-
-			if (accessoryItems.length === 0) {
-				return;
-			}
-
-			items = [...items, ...accessoryItems];
-			includedAccessoryMap = linkIncludedAccessories(
-				includedAccessoryMap,
-				parentItem.id,
-				linkedIds
-			);
-
-			if (addedNames.length > 1) {
-				toast.info(`✓ Se agregaron automáticamente: ${addedNames.join(', ')}`);
-			}
-		} catch (error) {
-			toast.error(getErrorMessage(error, 'Error cargando accesorios incluidos'));
-		}
-	}
-
 	async function selectQuickAddOption(option: {
 		kind: 'product' | 'lens';
 		id: string;
@@ -194,18 +140,30 @@
 		productType?: string;
 	}) {
 		if (option.kind === 'product' && !allowsDuplicateProductLines(option.productType)) {
-			const alreadySelected = items.some(
-				(item) => item.kind === 'product' && item.productId === option.id
-			);
-			if (alreadySelected) {
-				return;
-			}
+			if (items.some((item) => item.kind === 'product' && item.productId === option.id)) return;
 		}
-
 		const nextItem = createItemFromQuickAdd(option);
 		items = [...items, nextItem];
+		await fetchAndLinkIncludedAccessories(option, nextItem.id, {
+			getItems: () => items,
+			getMap: () => includedAccessoryMap,
+			setItems: (next) => (items = next),
+			setMap: (next) => (includedAccessoryMap = next),
+			onLinked: (frameId) => wp.syncFrameAccessories(frameId)
+		});
+	}
 
-		await addIncludedAccessoriesForItem(option, nextItem);
+	function handleQuantityChange(id: string, quantity: number) {
+		const synced = syncStep2AccessoryQuantities(
+			items,
+			includedAccessoryMap,
+			id,
+			quantity,
+			catalog.getProducts()
+		);
+		if (synced !== items) items = synced;
+		// Defer clamping while clearing the field (quantity === null) so Backspace preserves assignments.
+		if (Number.isFinite(quantity) && quantity >= 1) wp.clamp();
 	}
 
 	function removeItem(id: string) {
@@ -221,6 +179,7 @@
 		if (childIds.length > 0) {
 			items = items.filter((item) => !childIds.includes(item.id));
 		}
+		wp.clamp(true);
 	}
 
 	function addFreeItem() {
@@ -384,6 +343,19 @@
 			)
 	);
 
+	// ── Per-person grouping ────────────────────────────────────────────
+	const wp = new WizardPersons(
+		() => ({
+			items,
+			groups,
+			accessoryMap: includedAccessoryMap,
+			products: catalog.getProducts(),
+			lenses: catalog.getLensItems(),
+			persons
+		}),
+		{ groups: (next) => (groups = next), items: (next) => (items = next) }
+	);
+
 	const rxErrorsPerLens = $derived.by((): Record<string, PrescriptionFieldErrors> => {
 		const map: Record<string, PrescriptionFieldErrors> = {};
 		for (const item of items) {
@@ -410,6 +382,8 @@
 			{canCopyRxToAll}
 			oncopyrx={handleCopyRxToAll}
 			onaddfree={addFreeItem}
+			onpersons={items.length > 0 ? () => (wp.open = true) : undefined}
+			personCount={wp.count}
 		/>
 	</div>
 
@@ -437,9 +411,25 @@
 		{lensTreatmentInfo}
 		{rxErrorsPerLens}
 		onRemoveItem={removeItem}
+		onQuantityChange={handleQuantityChange}
 		onRemoveTreatment={handleRemoveTreatment}
 		onOpenTreatment={handleOpenTreatmentSelector}
-	/>
+	>
+		{#snippet personChip(row)}
+			{@const view = wp.items.find((g) => g.id === row.id)}
+			{#if view && isGroupableItemType(view.itemType)}
+				<PersonChipLine
+					item={view}
+					groups={wp.groups}
+					onchange={wp.change}
+					onorganize={() => (wp.open = true)}
+					onclose={wp.reorder}
+					isPrimary={wp.isPrimary(row.id)}
+					docLabel={persons.docLabel}
+				/>
+			{/if}
+		{/snippet}
+	</Step2ItemsList>
 
 	<Step2ValidationHints {valid} reasons={validationReasons} />
 
@@ -451,6 +441,7 @@
 		primaryKind="next"
 		summaryLabel="Total previo"
 		summaryValue={formatPrice(partialTotal)}
+		note={wp.footerNote}
 		onBack={onprev}
 		onPrimary={onnext}
 	/>
@@ -462,4 +453,18 @@
 	availableTreatments={activeTreatmentAvail}
 	currentTreatmentId={activeTreatmentItem?.supplierTreatmentId ?? null}
 	onselect={handleSelectTreatment}
+/>
+
+<PersonsDrawer
+	bind:open={wp.open}
+	onclose={wp.reorder}
+	docLabel={persons.docLabel}
+	items={wp.items}
+	groups={wp.groups}
+	onchange={wp.change}
+	transformGroups={wp.previewChange}
+	oncommit={wp.commit}
+	showPrimary={wp.showPrimary}
+	primaryLensId={wp.primaryLensId}
+	primaryAuto={wp.primaryAuto}
 />

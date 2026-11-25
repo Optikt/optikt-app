@@ -20,6 +20,7 @@ import {
 } from '$lib/shared/enums/lensTypes';
 import { AxisSchema, AlturaSchema } from '$lib/schemas/prescriptions';
 import { InlineCustomerSchema } from '$lib/schemas/sales';
+import { ItemGroupsSchema, refineItemGroups } from '$lib/schemas/salesItemGroups';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];
@@ -111,41 +112,55 @@ export const QuoteItemSchema = z
 // CREATE QUOTE SCHEMA
 // ============================================================================
 
-export const CreateQuoteSchema = z.object({
-	/** Customer is optional at quote time */
-	customerId: z.uuid().optional(),
-	/** Inline new customer data (if no existing customerId) */
-	newCustomer: InlineCustomerSchema.optional(),
-	quoteDate: z.iso.date('Fecha del presupuesto inválida'),
-	discount: CoercedNumber.min(0).default(0),
-	discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
-	snapshotTaxRate: CoercedNumber.min(0).default(DEFAULT_TAX_RATE),
-	/** Cashea en el presupuesto: se copia a la venta al convertir (D4). */
-	isCashea: z.boolean().default(false),
-	/** Presupuesto origen si es un duplicado (D7). */
-	sourceQuoteId: z.uuid().optional(),
-	validUntil: z.iso.date().optional(),
-	notes: z.string().optional(),
-	items: z.array(QuoteItemSchema).min(1, 'El presupuesto debe tener al menos un ítem')
-});
+export const CreateQuoteSchema = z
+	.object({
+		/** Customer is optional at quote time */
+		customerId: z.uuid().optional(),
+		/** Inline new customer data (if no existing customerId) */
+		newCustomer: InlineCustomerSchema.optional(),
+		quoteDate: z.iso.date('Fecha del presupuesto inválida'),
+		discount: CoercedNumber.min(0).default(0),
+		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
+		snapshotTaxRate: CoercedNumber.min(0).default(DEFAULT_TAX_RATE),
+		/** Cashea en el presupuesto: se copia a la venta al convertir (D4). */
+		isCashea: z.boolean().default(false),
+		/** Presupuesto origen si es un duplicado (D7). */
+		sourceQuoteId: z.uuid().optional(),
+		validUntil: z.iso.date().optional(),
+		notes: z.string().optional(),
+		items: z.array(QuoteItemSchema).min(1, 'El presupuesto debe tener al menos un ítem'),
+		/** Per-person grouping (client item ids). Quotes have no primary prescription. */
+		groups: ItemGroupsSchema.optional()
+	})
+	.superRefine(refineItemGroups);
 
 // ============================================================================
 // UPDATE QUOTE SCHEMA
 // ============================================================================
 
-export const UpdateQuoteSchema = z.object({
-	id: z.uuid('ID de presupuesto inválido'),
-	customerId: z.uuid().optional().nullable(),
-	/** Fecha del presupuesto (YYYY-MM-DD): día del form + hora del submit, Caracas. */
-	quoteDate: z.iso.date().optional(),
-	discount: CoercedNumber.min(0).optional(),
-	discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
-	snapshotTaxRate: CoercedNumber.min(0).optional(),
-	/** Cashea en el presupuesto (toggle del drawer de edición). */
-	isCashea: z.boolean().optional(),
-	validUntil: z.iso.date().optional().nullable(),
-	notes: z.string().optional().nullable(),
-	items: z.array(QuoteItemSchema).min(1, 'El presupuesto debe tener al menos un ítem')
+export const UpdateQuoteSchema = z
+	.object({
+		id: z.uuid('ID de presupuesto inválido'),
+		customerId: z.uuid().optional().nullable(),
+		/** Fecha del presupuesto (YYYY-MM-DD): día del form + hora del submit, Caracas. */
+		quoteDate: z.iso.date().optional(),
+		discount: CoercedNumber.min(0).optional(),
+		discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
+		snapshotTaxRate: CoercedNumber.min(0).optional(),
+		/** Cashea en el presupuesto (toggle del drawer de edición). */
+		isCashea: z.boolean().optional(),
+		validUntil: z.iso.date().optional().nullable(),
+		notes: z.string().optional().nullable(),
+		items: z.array(QuoteItemSchema).min(1, 'El presupuesto debe tener al menos un ítem'),
+		/** Absent = keep the current groups (remapped onto the replaced items); [] = remove all. */
+		groups: ItemGroupsSchema.optional()
+	})
+	.superRefine(refineItemGroups);
+
+/** Groups-only save from the quote detail (real quote item ids). Blocked once converted. */
+export const SaveQuoteItemGroupsSchema = z.object({
+	quoteId: z.uuid('ID de presupuesto inválido'),
+	groups: ItemGroupsSchema
 });
 
 // ============================================================================
@@ -168,7 +183,13 @@ export const ConvertQuoteSchema = z
 		customerId: z.uuid().optional(),
 		newCustomer: InlineCustomerSchema.optional(),
 		/** undefined → usa `quote.isCashea` (lo marcado en el presupuesto). */
-		isCashea: z.boolean().optional()
+		isCashea: z.boolean().optional(),
+		/**
+		 * Quote LENS_PAIR line whose Rx becomes the customer's current prescription.
+		 * null = "Ninguna" (no prescription created); undefined = default rule
+		 * (one lens and no names → that lens).
+		 */
+		primaryQuoteItemId: z.uuid().nullable().optional()
 	})
 	.refine((d) => !(d.customerId && d.newCustomer), {
 		message: 'Indica un cliente existente o uno nuevo, no ambos'
@@ -188,5 +209,6 @@ export const QuoteIdSchema = EntityIdSchema('Presupuesto');
 
 export type CreateQuoteInput = z.infer<typeof CreateQuoteSchema>;
 export type UpdateQuoteInput = z.infer<typeof UpdateQuoteSchema>;
+export type SaveQuoteItemGroupsInput = z.infer<typeof SaveQuoteItemGroupsSchema>;
 export type QuoteItemInput = z.infer<typeof QuoteItemSchema>;
 export type ListQuotesInput = z.infer<typeof ListQuotesSchema>;

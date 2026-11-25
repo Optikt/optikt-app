@@ -8,6 +8,7 @@ import { requireAuth } from '$lib/server/guards';
 import { ListSalesSchema, SaleIdSchema, CustomerLookupSchema } from '$lib/schemas/';
 import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
 import { getSalePayments } from '$lib/server/db/queries/sales/payments';
+import { findSaleItemGroups } from '$lib/server/db/queries/sales/itemGroups';
 import {
 	getSalesListPage,
 	getSalesStats as getSalesStatsQuery,
@@ -83,12 +84,13 @@ export const getSaleDetail = query(SaleIdSchema, async (data): Promise<SaleDetai
 	const saleWithRelations = await findSaleByIdWithRelations(data.id);
 	if (!saleWithRelations) return null;
 
-	const [items, payments] = await Promise.all([
+	const [items, payments, itemGroups] = await Promise.all([
 		getSaleItemsWithDetails(data.id),
-		getSalePayments(data.id, { includeVoided: true })
+		getSalePayments(data.id, { includeVoided: true }),
+		findSaleItemGroups(data.id)
 	]);
 
-	return { sale: saleWithRelations, items, payments };
+	return { sale: saleWithRelations, items, payments, itemGroups };
 });
 
 /**

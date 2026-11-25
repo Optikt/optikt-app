@@ -13,7 +13,7 @@
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import type { IncludedAccessoryMap } from '$lib/components/sales/includedAccessories';
-	import { setContext, untrack, type Snippet } from 'svelte';
+	import { onMount, setContext, untrack, type Snippet } from 'svelte';
 	import WizardHeader from '$lib/components/ui/WizardHeader.svelte';
 	import { CATALOG_KEY } from '$lib/components/sales/wizardContext';
 	import {
@@ -25,6 +25,13 @@
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 	import SaleStep1Info from '$lib/components/sales/step1/SaleStep1Info.svelte';
 	import SaleStep2Items from '$lib/components/sales/step2/SaleStep2Items.svelte';
+	import {
+		toSubmitGroups,
+		toUiGroups,
+		type UiGroup
+	} from '$lib/components/sales/groups/groupsState';
+	import { wizardGroupItems } from '$lib/components/sales/groups/wizardGroups';
+	import { clampAllocations, type ItemGroup } from '$lib/shared/saleItemGroups';
 	import SaleStep3Summary from '$lib/components/sales/step3/SaleStep3Summary.svelte';
 	import PrescriptionValidationModal from '$lib/components/sales/PrescriptionValidationModal.svelte';
 	import { Copy } from '@lucide/svelte';
@@ -42,7 +49,11 @@
 		nextQuoteNumber?: number;
 		defaultTaxRate?: number;
 		/** Duplicar (D7): `?from=<id>` — el loader entrega el detalle del origen. */
-		fromQuote?: { quote: QuoteWithRelations; items: QuoteItemWithDetails[] } | null;
+		fromQuote?: {
+			quote: QuoteWithRelations;
+			items: QuoteItemWithDetails[];
+			groups?: ItemGroup[];
+		} | null;
 		breadcrumbs?: Snippet;
 	}
 
@@ -196,6 +207,9 @@
 	let items = $state<SaleItemRow[]>([]);
 	let includedAccessoryMap = $state<IncludedAccessoryMap>({});
 	let sourceQuoteId = $state<string | null>(null);
+	let groups = $state<UiGroup[]>([]);
+	/** Duplicate: names cleared from the source groups (pairing kept). */
+	let clearedNames = $state(0);
 
 	// Duplicar (D7): precarga ítems/descuento/Cashea/notas; resetea cliente,
 	// fecha (hoy) y validez (sourceQuoteId se envía en el create).
@@ -209,14 +223,26 @@
 			discountType = draft.discountType as DiscountTypeEnum;
 			notes = draft.notes;
 			isCashea = draft.isCashea;
+			groups = toUiGroups(draft.groups);
+			clearedNames = draft.clearedNames;
 			sourceQuoteId = seed.quote.id;
 			quoteDate = nowUTC();
 		}
 	}
 
+	onMount(() => {
+		if (clearedNames > 0) {
+			toast.warning(
+				`Se limpiaron los nombres de ${clearedNames} ${clearedNames === 1 ? 'persona' : 'personas'}; el emparejamiento se conservó.`
+			);
+		}
+	});
+
 	function startEmpty() {
 		items = [];
 		includedAccessoryMap = {};
+		groups = [];
+		clearedNames = 0;
 		customerId = '';
 		selectedCustomer = null;
 		newCustomer = null;
@@ -285,6 +311,9 @@
 
 		try {
 			const quoteItems = buildQuoteItemsFromWizard(items, products, lensItems);
+			const submitGroups = toSubmitGroups(
+				clampAllocations(groups, wizardGroupItems(items, products, lensItems))
+			);
 			const snapshotTaxRate = defaultTaxRate ?? DEFAULT_TAX_RATE;
 
 			const result = await createNewQuote({
@@ -299,7 +328,8 @@
 				sourceQuoteId: sourceQuoteId ?? undefined,
 				validUntil: validUntil || undefined,
 				notes: notes || undefined,
-				items: quoteItems
+				items: quoteItems,
+				groups: submitGroups.length > 0 ? submitGroups : undefined
 			});
 
 			if (!result.success) {
@@ -329,6 +359,10 @@
 			<p class="flex-1 text-[14px]">
 				<b>Duplicando {formatQuoteNumber(fromQuote.quote.quoteNumber)}</b>
 				· {duplicateItemCount} artículos y descuento copiados. Elige el cliente y escribe la fórmula.
+				{#if clearedNames > 0}
+					Se limpiaron los nombres de {clearedNames}
+					{clearedNames === 1 ? 'persona' : 'personas'}; el emparejamiento se conservó.
+				{/if}
 			</p>
 			<button
 				type="button"
@@ -377,6 +411,8 @@
 		<SaleStep2Items
 			bind:items
 			bind:includedAccessoryMap
+			bind:groups
+			persons={{ docLabel: `P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}` }}
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}
@@ -397,6 +433,8 @@
 	<div class:hidden={currentStep !== 3}>
 		<SaleStep3Summary
 			{items}
+			{groups}
+			docLabel={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
 			{selectedCustomer}
 			{newCustomer}
 			bind:discount

@@ -5,6 +5,7 @@
 	import type { PrescriptionFieldErrors } from '../../saleItemHelpers';
 	import { getEnabledEyeCount } from '../../saleItemHelpers';
 	import type { SaleItemRow } from '../../newSaleTypes';
+	import type { Snippet } from 'svelte';
 	import SaleStep2ItemCard from '../SaleStep2ItemCard.svelte';
 
 	interface Props {
@@ -13,8 +14,11 @@
 		lensTreatmentInfo: Record<string, { name: string; total: number } | null>;
 		rxErrorsPerLens: Record<string, PrescriptionFieldErrors>;
 		onRemoveItem: (id: string) => void;
+		onQuantityChange?: (id: string, quantity: number) => void;
 		onRemoveTreatment: (treatmentItemId: string) => void;
 		onOpenTreatment: (lensItemId: string) => void;
+		/** Per-person chip for groupable lines (sale/quote wizard). */
+		personChip?: Snippet<[SaleItemRow]>;
 	}
 
 	let {
@@ -23,8 +27,10 @@
 		lensTreatmentInfo,
 		rxErrorsPerLens,
 		onRemoveItem,
+		onQuantityChange,
 		onRemoveTreatment,
-		onOpenTreatment
+		onOpenTreatment,
+		personChip
 	}: Props = $props();
 </script>
 
@@ -65,6 +71,7 @@
 						{item}
 						rxErrs={item.kind === 'lens' ? (rxErrorsPerLens[item.id] ?? {}) : {}}
 						onremove={() => onRemoveItem(item.id)}
+						onquantitychange={(qty) => onQuantityChange?.(item.id, qty)}
 						eyeCount={item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
 						isIncludedAccessory={item.isIncludedAccessory}
 						availableTreatments={itemTreatmentsMap[item.id] ?? []}
@@ -72,7 +79,11 @@
 						onopenTreatment={item.kind === 'lens' && itemTreatmentsMap[item.id]?.length > 0
 							? () => onOpenTreatment(item.id)
 							: undefined}
-					/>
+					>
+						{#snippet person()}
+							{@render personChip?.(item)}
+						{/snippet}
+					</SaleStep2ItemCard>
 				{/if}
 			{/each}
 		{/if}

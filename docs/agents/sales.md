@@ -9,7 +9,7 @@ Ventas ópticas: wizard con receta, items polimórficos (`PRODUCT | LENS_PAIR | 
 
 ## Scope
 
-`components/sales/**`, `routes/(app)/sales/**`, `remote/sales/**`, `server/sales/**`, `queries/sales/**`, `schemas/sales*`, `schema/sales.ts`; lógica pura `shared/saleTotals*`, `saleItemCosts*`, `saleItemValues`, `tickera*`, `ticketRate*`, `saleBalance*`.
+`components/sales/**`, `routes/(app)/sales/**`, `remote/sales/**`, `server/sales/**`, `queries/sales/**`, `schemas/sales*`, `schema/sales.ts`; lógica pura `shared/saleTotals*`, `saleItemCosts*`, `saleItemValues`, `saleItemGroups*`, `tickera*`, `ticketRate*`, `saleBalance*`.
 
 Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`consumeFifoForSaleItem`); los pagos usan el factory transversal de `payments` (`server/payments/salePayments.ts`) pero con semántica propia de venta (documento abajo).
 
@@ -104,7 +104,18 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 
 **Detalle móvil (B+ §3-E, <700px contenedor)**: el sidebar global ya es overlay en viewport móvil (hamburguesa en `AppNavbar`, velo que cierra al tocar, `translate-x-full`↔abierto) — no se tocó para no romper otras rutas; nombre oculto <640 y búsqueda en segunda fila (patrón global existente). En la página: `+page.svelte` mide el contenedor `.page` con `ResizeObserver` (`isNarrow = width < 700`, el sidebar reacomoda el switch) y solo entonces monta `SaleDetailMobileBar` (fuera del contenedor: `fixed` + `container-type` son incompatibles) + `.mobile-spacer` de 96px. Hero 1 col: título 24, stepper compacto (etiqueta solo en paso actual, resto puntos), meta 2 col, dirección envuelve (`SaleDetailHeroCustomer`), dinero 2 col (Total+Bs | Saldo+Bs con divisor) + Desglose/Calcular full-width; barras decorativas ya ocultas <700. Acciones desktop (`hero-acts`/`hero-hcta`) ocultas <700; la barra fija lleva CTA dorado Cobrar/Imprimir + «Más» (hoja `SlideOver direction="bottom"`: estados con descripción, editar, imprimir ×3, calcular, pagos, historial, stock, separador, cancelar rojo — mismos guards que `SaleDetailHeroActions`). Artículos como tarjetas (`SaleItemsRow` flex: cabecera arriba, USD izq/Bs der abajo; subtítulo envuelve), header oculto, hijos sangría 36, fórmula full-row. Drawers ya `w-full sm:w-[...]`; calculadora `w-full sm:w-[580px]` + columnas compactas `sm:`; modales `ConfirmModal`/`Dialog` ya full-width (`max-w-[calc(100%-2rem)]`). Rail pagos/historial apilado <700 (`grid-cols-1 @min-[700px]:grid-cols-[1fr_1fr]`).
 
+### Agrupación por persona (`sale-item-groups`)
+
+- **Modelo**: `sale_item_groups` (`label` libre ≤60, nunca vinculado a `customers`; `position`) + `sale_item_group_members` (`quantity > 0`, PK compuesta). Metadato puro: borrado duro (cascade), **no toca dinero ni inventario**. Espejo en quotes.
+- ⚠️ **Sin dividir líneas**: una línea ×N se reparte por unidades (`Σ members.quantity ≤ item.quantity`, resto = sin asignar). Tratamientos siguen a su cristal (`parentSaleItemId`) y nunca son miembros. Reglas y validación únicas en `shared/saleItemGroups.ts` (`validateItemGroups`, usado por Zod y servidor).
+- ⚠️ **Fórmula principal** (`sales.primary_lens_item_id`, anclada al `LENS_PAIR`, no al grupo): solo ese cristal crea/reemplaza la `isCurrent` del cliente (`server/sales/primaryPrescription.ts`). Sin principal no se crea/pisa ninguna receta ni se parchean DP/NP. Default (`defaultPrimaryLens`): 1 cristal y sin nombres. Cambiar principal, cliente o graduación crea nueva `isCurrent` (nunca muta la del cliente anterior); desmarcar o cambiar cliente limpia `sale_items.prescription_id` sin borrar historial. `getSalePrescription` filtra `prescriptions.customerId = sales.customerId` y restringe al principal cuando existe.
+- ⚠️ **Concurrencia y orden FK**: `saveSaleItemGroups`, `updateSale` y `cancelSale` toman `FOR UPDATE` sobre `sales` (`lockSaleForGroups`) y re-leen el estado bloqueado dentro de la tx. Lecturas (`getSaleItemsWithDetails`/`getQuoteItemsWithDetails`) y escrituras ordenan padres antes que tratamientos hijos para evitar violaciones de FK autoreferenciada (`23503`).
+- **IDs y accesorios**: create usa el id cliente; `updateSale` reemplaza ítems y remapea grupos/principal con `idMap` (`groups` ausente = conserva remapeados; `[]` = quita todos). En wizard, accesorios auto-incluidos siguen a su montura (`followIncludedAccessories`).
+- **Orden, códigos y UI** (`components/sales/groups/`): orden derivado (`orderItemsByGroups`/`orderLinesByGroups`: montura → cristal+tratamientos → accesorios; sin imprimir nombres en ticket/PDF). Códigos `groupCode` derivados de número+posición (`230-1`, `P-0055-1`); reorganizar un documento ya guardado con grupos exige confirmación (`ReorganizeGroupsConfirm`). Entrypoints: `ItemPersonChip`, `PersonsDrawer` (draft local en wizard), `PersonsView` (detalle sin dinero) y `GroupsOrganizer`.
+
 ## Patrones locales
+
+- Remote `saveSaleItemGroups({saleId, groups, primaryLensItemId})` (`remote/sales/groups.remote.ts` → `server/sales/saveSaleItemGroups.ts`): guardado solo-grupos con ids reales; `requireRole(ADMIN, MANAGER, SELLER)` + `canManageSaleByOwner`; todo estado salvo CANCELLED (incluye COMPLETED); lock `FOR UPDATE` en `sales`; auditoría «Agrupación por persona actualizada». `createSale`/`updateSale` aceptan `groups` y `primaryLensItemId` (ids cliente).
 
 - **Shell/core (DT9)**: lógica = `<acción>Core(input, ctx)` en `server/sales/<acción>.ts` con `ActionContext` explícito; remote solo `requireRole` + delega. Es el patrón de referencia para otros dominios.
 - **Int specs co-ubicados** junto al core (`server/sales/*.int.spec.ts`, Postgres real/Testcontainers).
@@ -143,13 +154,14 @@ Owner rules: el consumo FIFO de venta vive acá pero delega en `inventory` (`con
 ## Known gaps / tech debt
 
 - 🟡 `updateSaleFifo.int.spec.ts` existe pero **su fuente `updateSaleFifo.ts` aún no** — spec avanzado del plan; extraer la lógica FIFO de update antes de confiar en el spec.
-- 🟠 **Fórmulas multi-persona (compartido con quotes):** `SaleItem.prescriptionId` apunta a UNA prescripción del cliente de la venta y no hay forma de asociar el lente a otra persona (madre e hija, pareja). Hoy la conversión desde quote deriva una sola fórmula con `firstDefined` y pisa la `isCurrent` del titular. A futuro: persona/beneficiario por ítem LENS_PAIR y no sobrescribir la fórmula vigente del cliente titular. Ver `docs/agents/quotes.md`.
+- 🟡 **Seguimiento de laboratorio por persona (plan futuro):** compra del cristal, montaje y entrega por grupo/persona. Fuera del alcance de `sale-item-groups`; los grupos ya dan el emparejamiento montura↔cristal sobre el que se apoyaría.
 - ~~🟡 `getNextOrderNumber` sigue siendo MAX+1 dentro de la tx~~ — **Resuelto** (PR fix/sessions-dt26-sale-sequence): sequence `sales_order_number_seq` + número manual con `setval` solo hacia arriba (ver Numeración). Spec: `server/sales/saleOrderNumber.int.spec.ts`.
 - 🟡 `PaymentForm` family: el state factory vive en `components/sales/payments/` aunque la UI adapter está en `components/payments/` (herencia del factory transversal) — mover al unificar pagos (plan pr5).
 - 🟡 Fecha-verdad (composición Caracas) pendiente para: `sale_payments.paymentDate`, `purchase_orders.orderDate`, `quotes.quoteDate`, `prescriptions.prescriptionDate` .
 
 ## Planes completados
 
+- **2026-11 · sale-item-groups** — Agrupar ítems por persona en ventas y presupuestos (reparto por unidades sin dividir líneas, códigos `N-1`, orden por persona, fórmula principal anclada al cristal y confirmación al reorganizar) (#232)
 - **2026-11 · sales-list-mobile** — Listado /sales en móvil + búsqueda global plegable en el shell (kit móvil compartido, mockup ventas-listado-mobile) (#228)
 - **2026-11 · detalle-venta-bplus** — Detalle de venta B+: pantallas grandes, pagos con quién+motivo, stock drawer, historial con diff y móvil (#225)
 - **2026-11 · dt1-t2-sales** — sales/[id] 792→~300 (luego 504 con B+) + 6 secciones detail/ + saleDetail.ts con spec (#122)

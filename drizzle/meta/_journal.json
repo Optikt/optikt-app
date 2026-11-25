@@ -386,6 +386,13 @@
       "when": 1795136651815,
       "tag": "0054_sales-order-number-sequence",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1795224743198,
+      "tag": "0055_sale-item-groups",
+      "breakpoints": true
     }
   ]
 }

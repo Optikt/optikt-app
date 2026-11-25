@@ -10,6 +10,7 @@
 	import { formatPrice } from '$lib/utils';
 	import { ITEM_KIND_ICONS, BADGE_TONES } from './tones';
 	import { itemTotals, type DocumentItemView } from './itemView';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		item: DocumentItemView;
@@ -19,9 +20,11 @@
 		onOpen: () => void;
 		onRemove?: () => void;
 		onRestore?: () => void;
+		/** Extra line under the description (e.g. the per-person chip). Clicks don't open the row. */
+		extra?: Snippet;
 	}
 
-	let { item, open = false, tooltip, onOpen, onRemove, onRestore }: Props = $props();
+	let { item, open = false, tooltip, onOpen, onRemove, onRestore, extra }: Props = $props();
 
 	const KindIcon = $derived(ITEM_KIND_ICONS[item.kind].icon);
 	const chipClass = $derived(ITEM_KIND_ICONS[item.kind].chipClass);
@@ -68,6 +71,18 @@
 				{#each item.subtitleLines ?? [] as line (line)}
 					<div class="text-[12px] text-on-surface">{line}</div>
 				{/each}
+				{#if extra && !item.removed}
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div
+						class="mt-1"
+						onclick={(event) => event.stopPropagation()}
+						onkeydown={(event) => {
+							if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
+						}}
+					>
+						{@render extra()}
+					</div>
+				{/if}
 			</div>
 
 			<div class="flex shrink-0 items-center gap-2.5">

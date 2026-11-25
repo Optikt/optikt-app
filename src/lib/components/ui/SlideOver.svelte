@@ -100,7 +100,7 @@
 		panel?.focus();
 
 		function onKeyDown(e: KeyboardEvent) {
-			if (e.key !== 'Escape') return;
+			if (e.key !== 'Escape' || e.defaultPrevented) return;
 			if (escapeHandler?.()) {
 				e.preventDefault();
 				return;

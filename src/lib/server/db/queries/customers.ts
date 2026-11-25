@@ -93,12 +93,12 @@ export async function getAllCustomers<T extends SelectedFields>(
  */
 export async function findCustomerById(
 	id: string,
-	{ deleted }: { deleted?: boolean } = {}
+	{ deleted, executor = db }: { deleted?: boolean; executor?: DbOrTx } = {}
 ): Promise<Customer | null> {
 	const filter = deleted
 		? eq(customers.id, id)
 		: and(eq(customers.id, id), isNull(customers.deletedAt));
-	const [customer] = await db.select().from(customers).where(filter);
+	const [customer] = await executor.select().from(customers).where(filter);
 	return customer ?? null;
 }
 
@@ -271,8 +271,11 @@ export async function getLatestPrescription(customerId: string): Promise<Prescri
 /**
  * Find a prescription by ID
  */
-export async function findPrescriptionById(id: string): Promise<Prescription | null> {
-	const [prescription] = await db
+export async function findPrescriptionById(
+	id: string,
+	executor: DbOrTx = db
+): Promise<Prescription | null> {
+	const [prescription] = await executor
 		.select()
 		.from(prescriptions)
 		.where(and(eq(prescriptions.id, id), isNull(prescriptions.deletedAt)));

@@ -24,7 +24,7 @@ vi.mock('$lib/components/quotes/editQuote/quoteEditAdapter', () => ({
 }));
 vi.mock('../editSaleDraft', () => ({ buildUpdateSalePayload: () => ({ id: 's-1' }) }));
 
-const { submitEditSale } = await import('./submitEditSale');
+const { buildEditSubmitInput, submitEditSale } = await import('./submitEditSale');
 
 const quoteInput = { mode: 'quote', quote: {}, draft: {} } as never;
 const saleInput = { mode: 'sale', sale: {}, originalItems: [], draft: {} } as never;
@@ -66,5 +66,66 @@ describe('submitEditSale · venta', () => {
 		await expect(submitEditSale(saleInput)).resolves.toBe('Error actualizando venta');
 		updateSale.mockRejectedValueOnce(new Error('timeout'));
 		await expect(submitEditSale(saleInput)).resolves.toBe('timeout');
+	});
+
+	it('reenvía groupsPatch en venta y presupuesto', async () => {
+		const groups = [{ label: 'Ana', members: [{ itemId: 'i-1', quantity: 1 }] }];
+		updateExistingQuote.mockResolvedValueOnce({ success: true });
+		await submitEditSale({
+			...(quoteInput as object),
+			groupsPatch: { groups }
+		} as never);
+		expect(updateExistingQuote).toHaveBeenCalledWith({ id: 'q-1', items: [], groups });
+
+		updateSale.mockResolvedValueOnce({ success: true });
+		await submitEditSale({
+			...(saleInput as object),
+			groupsPatch: { groups, primaryLensItemId: 'l-1' }
+		} as never);
+		expect(updateSale).toHaveBeenCalledWith({ id: 's-1', groups, primaryLensItemId: 'l-1' });
+	});
+});
+
+describe('buildEditSubmitInput', () => {
+	const base = {
+		items: [],
+		editableItems: [],
+		activeItems: [],
+		removedCount: 0,
+		saleDate: '2026-11-24',
+		validUntil: '2026-12-01',
+		notes: 'nota',
+		isCashea: false,
+		discount: 5,
+		discountType: 'FIXED',
+		reason: 'ajuste',
+		prescription: { dp: 62, npRight: 31, npLeft: 31 },
+		measures: { odDp: 63, odDnp: 31.5, osDnp: 31.5 },
+		groupsPatch: {}
+	};
+
+	it('arma input de presupuesto cuando viene quote', () => {
+		const out = buildEditSubmitInput({ ...base, quote: { id: 'q-1' } as never });
+		expect(out.mode).toBe('quote');
+		if (out.mode === 'quote') {
+			expect(out.draft.dateIso).toBe('2026-11-24');
+			expect(out.draft.validUntilIso).toBe('2026-12-01');
+		}
+	});
+
+	it('arma input de venta con y sin fórmula', () => {
+		const withRx = buildEditSubmitInput({ ...base, sale: { id: 's-1' } as never });
+		expect(withRx.mode).toBe('sale');
+		if (withRx.mode === 'sale') {
+			expect(withRx.draft.prescription).toEqual({ dp: 62, npRight: 31, npLeft: 31 });
+			expect(withRx.draft.prescriptionPatch).toEqual({ dp: 63, npRight: 31.5, npLeft: 31.5 });
+		}
+
+		const noRx = buildEditSubmitInput({
+			...base,
+			sale: { id: 's-1' } as never,
+			prescription: null
+		});
+		if (noRx.mode === 'sale') expect(noRx.draft.prescription).toBeNull();
 	});
 });

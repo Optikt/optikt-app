@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { NarrowContainer } from '$lib/components/sales/detail/narrowContainer.svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { CancelSaleModal, EditSaleModal, SaleStatusModal } from '$lib/components/sales';
 	import SaleStockDrawer from '$lib/components/sales/detail/SaleStockDrawer.svelte';
 	import SaleItemsTable from '$lib/components/sales/itemsTable/SaleItemsTable.svelte';
+	import GroupsOrganizer from '$lib/components/sales/groups/GroupsOrganizer.svelte';
+	import { persistedGroupItems } from '$lib/components/sales/groups/detailGroups';
 	import SaleAuditTimeline from '$lib/components/sales/detail/SaleAuditTimeline.svelte';
 	import SaleAuditHistoryDrawer from '$lib/components/sales/detail/SaleAuditHistoryDrawer.svelte';
 	import SaleDetailHero from '$lib/components/sales/detail/SaleDetailHero.svelte';
@@ -46,7 +49,8 @@
 	const bcvRate = $derived(store.bcvRate);
 	let showCancelModal = $state(false);
 	let showEditModal = $state(false);
-
+	let showOrganizer = $state(false);
+	const groupViews = $derived(persistedGroupItems(items, (i) => i.parentSaleItemId));
 	// Drawer state
 	let showDrawer = $state(false);
 	let printingTickera = $state(false);
@@ -76,19 +80,7 @@
 	// ── Mobile bottom bar: visible only when the PAGE container is <700px.
 	// A ResizeObserver on the container (not a viewport query) so the sidebar
 	// open/close reflow drives the switch, like every other layout rule here.
-	let pageEl = $state<HTMLElement | undefined>(undefined);
-	let isNarrow = $state(false);
-
-	$effect(() => {
-		const target = pageEl;
-		if (!target) return;
-		const observer = new ResizeObserver((entries) => {
-			const width = entries[0]?.contentRect.width;
-			if (width !== undefined) isNarrow = width < 700;
-		});
-		observer.observe(target);
-		return () => observer.disconnect();
-	});
+	const pageWidth = new NarrowContainer();
 	/** Load instant comes from the audit create event — sale.createdAt is the business date now. */
 	let saleLoadedAt = $derived(
 		auditHistory.find((e) => e.entityType === 'sale' && e.action === 'create')?.changedAt ??
@@ -276,7 +268,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-surface">
-	<div bind:this={pageEl} class="page anim-page @container w-full px-5 pt-3.5 pb-7">
+	<div {@attach pageWidth.attach} class="page anim-page @container w-full px-5 pt-3.5 pb-7">
 		<SaleDetailHero
 			{sale}
 			{items}
@@ -330,6 +322,13 @@
 						await invalidateAll();
 						syncFromData();
 					}}
+					persons={{
+						items: groupViews,
+						groups: data.itemGroups,
+						primaryLensItemId: sale.primaryLensItemId,
+						docLabel: `#${String(sale.orderNumber).padStart(4, '0')}`,
+						onOrganize: canManageSale && !isCancelled ? () => (showOrganizer = true) : undefined
+					}}
 				/>
 			</div>
 
@@ -369,7 +368,7 @@
 	</div>
 </div>
 
-{#if isNarrow}
+{#if pageWidth.narrow}
 	<SaleDetailMobileBar
 		{sale}
 		{canAct}
@@ -429,7 +428,20 @@
 	{items}
 	treatments={data.allTreatments}
 	prescription={data.prescription}
+	itemGroups={data.itemGroups}
 	onSuccess={handleEditSuccess}
+/>
+
+<GroupsOrganizer
+	bind:open={showOrganizer}
+	kind="sale"
+	docId={sale.id}
+	docLabel={`#${String(sale.orderNumber).padStart(4, '0')}`}
+	items={groupViews}
+	itemGroups={data.itemGroups}
+	primaryLensItemId={sale.primaryLensItemId}
+	sheet={pageWidth.narrow}
+	onsaved={handleEditSuccess}
 />
 
 <CancelSaleModal

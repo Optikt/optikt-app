@@ -7,7 +7,8 @@ import {
 	hasAuditDetail,
 	matchesAuditFilter,
 	saleAuditTotalDelta,
-	type AuditEvent
+	type AuditEvent,
+	isGroupsOnlyChange
 } from './saleDetail';
 
 function entry(overrides: Record<string, unknown> = {}): ChangeHistoryWithUser {
@@ -379,5 +380,30 @@ describe('saleDetail edge branches', () => {
 		const { auditChangeCountLabel } = await import('./saleDetail');
 		expect(auditChangeCountLabel({ changeCount: 1 } as AuditEvent)).toBe('1 cambio');
 		expect(auditChangeCountLabel({ changeCount: 3 } as AuditEvent)).toBe('3 cambios');
+	});
+});
+
+describe('isGroupsOnlyChange', () => {
+	it('true only when grouping keys changed', () => {
+		expect(isGroupsOnlyChange({ personGroups: { old: 'a', new: 'b' } })).toBe(true);
+		expect(isGroupsOnlyChange({ primaryLens: { old: 'Ninguna', new: 'Cristal' } })).toBe(true);
+		expect(isGroupsOnlyChange({ personGroups: {}, total: {} })).toBe(false);
+		expect(isGroupsOnlyChange({})).toBe(false);
+	});
+
+	it('classifies groups-only and primary-only sale updates as non-legacy with diff rows', () => {
+		const event = eventOf({
+			action: 'update',
+			changes: {
+				personGroups: { old: 'Sin agrupar', new: 'Sofía (Cristal A)' },
+				primaryLens: { old: 'Ninguna', new: 'Cristal A' }
+			}
+		});
+		expect(event.label).toBe('Agrupación por persona actualizada');
+		expect(event.legacyUpdate).toBe(false);
+		expect(event.changeCount).toBe(2);
+		expect(event.note).toBe('Sofía (Cristal A) · Fórmula: Cristal A');
+		expect(hasAuditDetail(event)).toBe(true);
+		expect(auditDiffRows(event).map((r) => r.field)).toEqual(['personGroups', 'primaryLens']);
 	});
 });

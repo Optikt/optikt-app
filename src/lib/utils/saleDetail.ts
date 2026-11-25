@@ -208,21 +208,37 @@ export function classifySaleAuditEntry(entry: ClassifiableAuditEntry): AuditEven
 				reason: null
 			});
 		}
+		const groupsOnly = isGroupsOnlyChange(fields);
 		const label = fields.customerId
 			? 'Cliente actualizado'
 			: fields.sellerId
 				? 'Vendedor actualizado'
-				: 'Venta actualizada';
+				: groupsOnly
+					? 'Agrupación por persona actualizada'
+					: 'Venta actualizada';
 		const itemsDiff = extractSaleAuditDiff(changes as ChangeRecord);
+		const groupNote = groupsOnly
+			? [
+					typeof fields.personGroups?.new === 'string' ? fields.personGroups.new : null,
+					typeof fields.primaryLens?.new === 'string' ? `Fórmula: ${fields.primaryLens.new}` : null
+				]
+					.filter((v): v is string => !!v)
+					.join(' · ') || null
+			: null;
 		return baseEvent(entry, {
 			label,
 			kind: 'update',
 			changes: hasChanges ? record : null,
 			reason: readString(entry.reason),
 			itemsDiff,
-			legacyUpdate: itemsDiff === null,
+			legacyUpdate: itemsDiff === null && !groupsOnly,
 			totalDelta: saleAuditTotalDelta(itemsDiff),
-			changeCount: itemsDiff ? countSaleAuditChanges(itemsDiff) : 0
+			changeCount: itemsDiff
+				? countSaleAuditChanges(itemsDiff)
+				: groupsOnly
+					? Object.keys(fields).length
+					: 0,
+			note: itemsDiff ? null : groupNote
 		});
 	}
 
@@ -353,4 +369,10 @@ export function hasAuditDetail(event: AuditEvent): boolean {
 export function auditChangeCountLabel(event: AuditEvent): string {
 	if (event.changeCount === 1) return '1 cambio';
 	return `${event.changeCount} cambios`;
+}
+
+/** Groups-only edits ("Organizar"): only `personGroups` / `primaryLens` changed. */
+export function isGroupsOnlyChange(fields: Record<string, unknown>): boolean {
+	const keys = Object.keys(fields);
+	return keys.length > 0 && keys.every((k) => k === 'personGroups' || k === 'primaryLens');
 }
