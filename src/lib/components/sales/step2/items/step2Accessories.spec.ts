@@ -188,4 +188,48 @@ describe('step2Accessories', () => {
 		expect(synced.find((i) => i.id === 'a1')?.quantity).toBe(2);
 		expect(toastWarning).toHaveBeenCalledWith('⚠ Kit Palazzo solo tiene 2 en stock.');
 	});
+
+	it('respects remaining stock across two frames sharing the same accessory', () => {
+		const p1 = parentRow('p1', 2);
+		const p2 = parentRow('p2', 2);
+		const a1: SaleItemRow = {
+			...parentRow('a1', 2),
+			productId: 'acc-1',
+			isIncludedAccessory: true,
+			includedAccessoryParentItemId: 'p1'
+		};
+
+		// Stock is 3 and a1 already takes 2 → p2 gets only 1 accessory instead of 2
+		const built = buildIncludedAccessoriesForParent(
+			'p2',
+			2,
+			[rule({ accessory: { id: 'acc-1', name: 'Estuche', stock: 3 } })],
+			[p1, a1, p2]
+		);
+		expect(built.accessoryItems).toHaveLength(1);
+		expect(built.accessoryItems[0].quantity).toBe(1);
+
+		const a2: SaleItemRow = {
+			...parentRow('a2', 1),
+			productId: 'acc-1',
+			isIncludedAccessory: true,
+			includedAccessoryParentItemId: 'p2'
+		};
+		const products = [
+			{ id: 'acc-1', name: 'Estuche', stock: 3 }
+		] as unknown as ProductWithRelations[];
+
+		// Increasing p2 to 3 cannot allocate more than remaining stock (3 - 2 = 1)
+		const synced = syncStep2AccessoryQuantities(
+			[p1, a1, p2, a2],
+			{ p2: ['a2'] },
+			'p2',
+			3,
+			products
+		);
+		expect(synced.find((i) => i.id === 'a2')?.quantity).toBe(1);
+		expect(toastWarning).toHaveBeenCalledWith(
+			'⚠ Estuche: solo quedan 1 disponibles de 3 en stock.'
+		);
+	});
 });

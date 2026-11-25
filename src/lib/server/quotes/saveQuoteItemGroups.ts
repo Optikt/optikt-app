@@ -24,7 +24,11 @@ class QuoteGroupsSaveError extends Error {}
  * quote left DRAFT (converted quotes carry their groups to the sale).
  */
 export async function saveQuoteItemGroupsCore(data: SaveQuoteItemGroupsInput, ctx: ActionContext) {
-	if (ctx.role === UserRole.VIEWER) {
+	if (
+		ctx.role !== UserRole.ADMIN &&
+		ctx.role !== UserRole.MANAGER &&
+		ctx.role !== UserRole.SELLER
+	) {
 		return { success: false as const, error: 'No tienes permisos para modificar este presupuesto' };
 	}
 

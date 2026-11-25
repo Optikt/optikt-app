@@ -5,13 +5,15 @@
  * customer. Changing the primary creates a new current prescription; the old
  * one stays in the customer's history (unmarking deletes nothing).
  */
-import { eq } from 'drizzle-orm';
-import { createPrescription, unsetCurrentPrescriptions } from '$lib/server/db/queries/customers';
+import {
+	createPrescription,
+	unsetCurrentPrescriptions,
+	updatePrescription
+} from '$lib/server/db/queries/customers';
 import { setSaleItemPrescription } from '$lib/server/db/queries/sales/itemGroups';
 import { getSalePrescription } from '$lib/server/db/queries/sales/reads';
-import { prescriptions, type Prescription } from '$lib/server/db/schema';
+import type { Prescription } from '$lib/server/db/schema/prescriptions';
 import type { DbOrTx } from '$lib/server/db/types';
-import { nowISO } from '$lib/dates';
 import { ALL_LENS_TYPES, LensType } from '$lib/shared/enums/lensTypes';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
 import type { PrescriptionFieldsInput } from '$lib/schemas/prescriptions';
@@ -124,16 +126,13 @@ export async function patchSalePrescriptionMeasures(
 	customerId: string,
 	measures: { dp?: number | null; npRight?: number | null; npLeft?: number | null }
 ): Promise<Prescription | null> {
-	const current = await getSalePrescription(saleId, tx);
-	if (!current || current.customerId !== customerId) return null;
-	const patch: Record<string, unknown> = { updatedAt: nowISO() };
+	const patch: Partial<Pick<Prescription, 'dp' | 'npRight' | 'npLeft'>> = {};
 	for (const key of ['dp', 'npRight', 'npLeft'] as const) {
 		if (measures[key] !== undefined) patch[key] = measures[key];
 	}
-	const [after] = await tx
-		.update(prescriptions)
-		.set(patch)
-		.where(eq(prescriptions.id, current.id))
-		.returning();
-	return after ?? null;
+	if (Object.keys(patch).length === 0) return null;
+
+	const current = await getSalePrescription(saleId, tx);
+	if (!current || current.customerId !== customerId) return null;
+	return updatePrescription(current.id, patch, tx);
 }

@@ -123,4 +123,16 @@ describe('includedAccessories helpers', () => {
 		expect(result.items).toBe(items);
 		expect(result.cappedIds).toEqual([]);
 	});
+
+	it('never increases an accessory quantity when remaining stock is 0', () => {
+		const items = [
+			createProductRow('frame-1', 'product-frame'),
+			createProductRow('case-1', 'product-case', 'frame-1')
+		];
+		const map: IncludedAccessoryMap = { 'frame-1': ['case-1'] };
+
+		const result = syncIncludedAccessoryQuantities(items, map, 'frame-1', 3, () => 0);
+		expect(result.items.find((i) => i.id === 'case-1')?.quantity).toBe(1);
+		expect(result.cappedIds).toEqual(['case-1']);
+	});
 });

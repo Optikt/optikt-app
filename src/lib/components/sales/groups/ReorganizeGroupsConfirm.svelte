@@ -40,6 +40,7 @@
 	confirmLabel="Sí, reorganizar"
 	cancelLabel="Volver"
 	confirmColor="red"
+	permanent={loading}
 	{loading}
 	{onConfirm}
 	{onCancel}

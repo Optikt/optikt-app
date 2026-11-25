@@ -4,7 +4,7 @@ import { createSaleCore } from './createSale';
 import { updateSaleCore } from './updateSale';
 import { saveSaleItemGroupsCore } from './saveSaleItemGroups';
 import { db } from '$lib/server/db';
-import { prescriptions, saleItems, sales } from '$lib/server/db/schema';
+import { changeHistory, prescriptions, saleItems, sales } from '$lib/server/db/schema';
 import { findSaleItemGroups } from '$lib/server/db/queries/sales/itemGroups';
 import { resetDb } from '$lib/testing/integration/db';
 import { createCustomer, createUser } from '$lib/testing/integration/factories';
@@ -272,5 +272,151 @@ describe('sale item groups', () => {
 			ctx(admin.id)
 		);
 		expect(cancelled.success).toBe(false);
+	});
+
+	it('audit: header-only primary change logs primaryLens without an empty itemsDiff', async () => {
+		const { admin, customer } = await seed();
+		const a = lens(-1);
+		const b = lens(-2);
+		const created = await createSaleCore(
+			{
+				customerId: customer.id,
+				saleDate: '2026-11-20',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				items: [a, b],
+				primaryLensItemId: a.id
+			},
+			ctx(admin.id)
+		);
+		if (!created.success) throw new Error(created.error);
+
+		const res = await updateSaleCore(
+			{ id: created.sale.id, reason: 'cambio principal', primaryLensItemId: b.id },
+			ctx(admin.id)
+		);
+		expect(res.success).toBe(true);
+
+		const events = await db
+			.select()
+			.from(changeHistory)
+			.where(and(eq(changeHistory.entityId, created.sale.id), eq(changeHistory.action, 'update')));
+		expect(events).toHaveLength(1);
+		const changes = events[0].changes as Record<string, unknown>;
+		expect(changes.primaryLens).toEqual({ old: 'Cristal -1', new: 'Cristal -2' });
+		expect(changes.itemsDiff).toBeUndefined();
+	});
+
+	it('audit: item replacement that removes primary lens logs X → Ninguna', async () => {
+		const { admin, customer } = await seed();
+		const a = lens(-1);
+		const b = lens(-2);
+		const created = await createSaleCore(
+			{
+				customerId: customer.id,
+				saleDate: '2026-11-20',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				items: [a, b],
+				primaryLensItemId: a.id
+			},
+			ctx(admin.id)
+		);
+		if (!created.success) throw new Error(created.error);
+
+		const updated = await updateSaleCore(
+			{ id: created.sale.id, reason: 'quitar cristal a', items: [b], primaryLensItemId: null },
+			ctx(admin.id)
+		);
+		expect(updated.success).toBe(true);
+
+		const events = await db
+			.select()
+			.from(changeHistory)
+			.where(and(eq(changeHistory.entityId, created.sale.id), eq(changeHistory.action, 'update')));
+		expect(events).toHaveLength(1);
+		const changes = events[0].changes as Record<string, unknown>;
+		expect(changes.primaryLens).toEqual({ old: 'Cristal -1', new: 'Ninguna' });
+	});
+
+	it('update: customer change with DP/NP measures never mutates old customer Rx and applies them to new customer', async () => {
+		const { admin, customer } = await seed();
+		const other = await createCustomer();
+		const a = lens(-2);
+		const saleId = await createWithPrimary(customer.id, admin.id, a);
+		const [oldRxBefore] = await currentRx(customer.id);
+
+		const updated = await updateSaleCore(
+			{
+				id: saleId,
+				reason: 'cambio cliente y medidas',
+				customerId: other.id,
+				prescription: { dp: 64, npRight: 32, npLeft: 32 }
+			},
+			ctx(admin.id)
+		);
+		expect(updated.success).toBe(true);
+
+		const [oldRxAfter] = await currentRx(customer.id);
+		expect(oldRxAfter.dp).toBe(oldRxBefore.dp);
+		const [newCustomerRx] = await currentRx(other.id);
+		expect(newCustomerRx.odSphere).toBe(-2);
+		expect(newCustomerRx.dp).toBe(64);
+		expect(newCustomerRx.npRight).toBe(32);
+	});
+
+	it('update: setting a new primary lens + DP/NP when no prior Rx existed creates one with measures', async () => {
+		const { admin, customer } = await seed();
+		const a = lens(-1.5);
+		const created = await createSaleCore(
+			{
+				customerId: customer.id,
+				saleDate: '2026-11-20',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				items: [a],
+				primaryLensItemId: null
+			},
+			ctx(admin.id)
+		);
+		if (!created.success) throw new Error(created.error);
+
+		const updated = await updateSaleCore(
+			{
+				id: created.sale.id,
+				reason: 'marcar principal y dp',
+				primaryLensItemId: a.id,
+				prescription: { dp: 62 }
+			},
+			ctx(admin.id)
+		);
+		expect(updated.success).toBe(true);
+		const [rxAfter] = await currentRx(customer.id);
+		expect(rxAfter.odSphere).toBe(-1.5);
+		expect(rxAfter.dp).toBe(62);
+	});
+
+	it('saveSaleItemGroupsCore: rejects VIEWER and non-owner SELLER', async () => {
+		const seller = await createUser({ role: UserRole.SELLER });
+		const otherSeller = await createUser({ role: UserRole.SELLER });
+		const viewer = await createUser({ role: UserRole.VIEWER });
+		const customer = await createCustomer();
+		const a = lens(-1);
+		const saleId = await createWithPrimary(customer.id, seller.id, a);
+
+		const byViewer = await saveSaleItemGroupsCore(
+			{ saleId, groups: [], primaryLensItemId: null },
+			{ userId: viewer.id, role: UserRole.VIEWER, ipAddress: '127.0.0.1', userAgent: null }
+		);
+		expect(byViewer.success).toBe(false);
+
+		const byOther = await saveSaleItemGroupsCore(
+			{ saleId, groups: [], primaryLensItemId: null },
+			{ userId: otherSeller.id, role: UserRole.SELLER, ipAddress: '127.0.0.1', userAgent: null }
+		);
+		expect(byOther.success).toBe(false);
 	});
 });

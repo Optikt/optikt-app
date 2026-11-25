@@ -5,13 +5,15 @@ import { db } from '$lib/server/db';
 import type { ChangeRecord } from '$lib/server/db/schema';
 import {
 	findQuoteItemGroups,
+	lockQuoteForGroups,
 	replaceQuoteItemGroups
 } from '$lib/server/db/queries/quotes/itemGroups';
 import {
 	clampAllocations,
 	dropEmptyGroups,
 	normalizeGroupsForSubmit,
-	summarizeGroups
+	summarizeGroups,
+	validateItemGroups
 } from '$lib/shared/saleItemGroups';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { auditService } from '$lib/server/audit';
@@ -36,6 +38,8 @@ import type { ActionContext } from '$lib/server/actionContext';
  * Auditoría: mismo formato que ventas — diff estructurado (`itemsDiff`:
  * artículos, datos, totales) anexado al evento de edición.
  */
+class QuoteUpdateError extends Error {}
+
 export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: ActionContext) {
 	const existing = await findQuoteById(data.id);
 	if (!existing) {
@@ -45,9 +49,14 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 		return { success: false as const, error: 'Solo se pueden editar presupuestos en borrador' };
 	}
 
-	// Lectura de validación (fuera de la tx): ítems previos para el diff de auditoría.
-	const beforeItems = await getQuoteItemsWithDetails(data.id);
-	const beforeGroups = await findQuoteItemGroups(data.id);
+	const groupableItems = data.items
+		.filter((item): item is typeof item & { id: string } => !!item.id)
+		.map((item) => ({ id: item.id, itemType: item.itemType, quantity: item.quantity }));
+
+	if (data.groups !== undefined) {
+		const groupErrors = validateItemGroups(normalizeGroupsForSubmit(data.groups), groupableItems);
+		if (groupErrors.length > 0) return { success: false as const, error: groupErrors[0] };
+	}
 
 	// Calculate totals from new items
 	const discount = data.discount ?? existing.discount;
@@ -62,54 +71,78 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 	const subtotal = totals.subtotal;
 	const total = totals.total;
 
+	let beforeItems: Awaited<ReturnType<typeof getQuoteItemsWithDetails>> = [];
+	let beforeGroups: Awaited<ReturnType<typeof findQuoteItemGroups>> = [];
 	let afterGroups: ReturnType<typeof normalizeGroupsForSubmit> = [];
-	const quote = await db.transaction(async (tx) => {
-		const now = nowISO();
+	let quote: Awaited<ReturnType<typeof updateQuote>>;
 
-		// Update quote header (query function con executor — sin Drizzle inline)
-		const updated = await updateQuote(
-			data.id,
-			{
-				customerId: data.customerId !== undefined ? data.customerId : existing.customerId,
-				...(data.quoteDate !== undefined
-					? { quoteDate: composeBusinessTimestamp(data.quoteDate) }
-					: {}),
-				subtotal,
-				discount,
-				discountType,
-				snapshotTaxRate: data.snapshotTaxRate ?? existing.snapshotTaxRate,
-				isCashea: data.isCashea ?? existing.isCashea,
-				total,
-				validUntil:
-					data.validUntil !== undefined
-						? data.validUntil
+	try {
+		quote = await db.transaction(async (tx) => {
+			// Serialize with concurrent saves/conversions and read pre-edit state inside the lock.
+			const locked = await lockQuoteForGroups(data.id, tx);
+			if (!locked) throw new QuoteUpdateError('Presupuesto no encontrado');
+			if (locked.status !== QuoteStatus.DRAFT) {
+				throw new QuoteUpdateError('Solo se pueden editar presupuestos en borrador');
+			}
+
+			[beforeItems, beforeGroups] = await Promise.all([
+				getQuoteItemsWithDetails(data.id, tx),
+				findQuoteItemGroups(data.id, tx)
+			]);
+
+			const now = nowISO();
+
+			// Update quote header (query function con executor — sin Drizzle inline)
+			const updated = await updateQuote(
+				data.id,
+				{
+					customerId: data.customerId !== undefined ? data.customerId : existing.customerId,
+					...(data.quoteDate !== undefined
+						? { quoteDate: composeBusinessTimestamp(data.quoteDate) }
+						: {}),
+					subtotal,
+					discount,
+					discountType,
+					snapshotTaxRate: data.snapshotTaxRate ?? existing.snapshotTaxRate,
+					isCashea: data.isCashea ?? existing.isCashea,
+					total,
+					validUntil:
+						data.validUntil !== undefined
 							? data.validUntil
-							: null
-						: existing.validUntil,
-				notes: data.notes !== undefined ? data.notes : existing.notes,
-				updatedAt: now
-			},
-			tx
-		);
+								? data.validUntil
+								: null
+							: existing.validUntil,
+					notes: data.notes !== undefined ? data.notes : existing.notes,
+					updatedAt: now
+				},
+				tx
+			);
 
-		// Delete existing items and recreate (cascade deletes quoteItemFreeDetails)
-		await deleteQuoteItems(data.id, tx);
-		await insertQuoteItems(tx, data.id, data.items, now);
+			// Delete existing items and recreate (cascade deletes quoteItemFreeDetails)
+			await deleteQuoteItems(data.id, tx);
+			await insertQuoteItems(tx, data.id, data.items, now);
 
-		// Items are re-inserted with their client ids (the drawer keeps the
-		// existing ids), so the current groups survive when `groups` is absent.
-		// Dropped lines / lower quantities are clamped; [] removes all groups.
-		const groupableItems = data.items
-			.filter((item): item is typeof item & { id: string } => !!item.id)
-			.map((item) => ({ id: item.id, itemType: item.itemType, quantity: item.quantity }));
-		afterGroups = normalizeGroupsForSubmit(
-			dropEmptyGroups(clampAllocations(data.groups ?? beforeGroups, groupableItems))
-		);
-		await replaceQuoteItemGroups(data.id, afterGroups, tx);
+			// Preserving omitted groups clamps against the new items; explicit groups are validated above.
+			afterGroups = normalizeGroupsForSubmit(
+				data.groups !== undefined
+					? data.groups
+					: dropEmptyGroups(clampAllocations(beforeGroups, groupableItems))
+			);
+			await replaceQuoteItemGroups(data.id, afterGroups, tx);
 
-		if (!updated) throw new Error('Presupuesto no encontrado al actualizar');
-		return updated;
-	});
+			if (!updated) throw new QuoteUpdateError('Presupuesto no encontrado al actualizar');
+			return updated;
+		});
+	} catch (error) {
+		if (error instanceof QuoteUpdateError) {
+			return { success: false as const, error: error.message };
+		}
+		throw error;
+	}
+
+	if (!quote) {
+		return { success: false as const, error: 'Presupuesto no encontrado' };
+	}
 
 	// Audit (best-effort, tras la tx): cambios de cabecera + diff de ítems.
 	const headerChanges = calculateDiff(existing, quote, ['createdAt', 'updatedAt', 'deletedAt']);

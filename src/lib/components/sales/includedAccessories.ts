@@ -82,7 +82,7 @@ export function syncIncludedAccessoryQuantities(
 	currentMap: IncludedAccessoryMap,
 	parentItemId: string,
 	parentQuantity: number,
-	stockOf?: (productId: string) => number | null | undefined
+	stockOf?: (productId: string, accessoryItemId: string) => number | null | undefined
 ): { items: SaleItemRow[]; cappedIds: string[] } {
 	if (!Number.isFinite(parentQuantity) || parentQuantity < 1) {
 		return { items: currentItems, cappedIds: [] };
@@ -99,8 +99,11 @@ export function syncIncludedAccessoryQuantities(
 
 	const nextItems = currentItems.map((item) => {
 		if (!linkedSet.has(item.id) || item.kind !== 'product') return item;
-		const stock = item.productId ? stockOf?.(item.productId) : null;
-		const nextQty = stock != null && stock > 0 && targetQty > stock ? stock : targetQty;
+		const stock = item.productId ? stockOf?.(item.productId, item.id) : null;
+		let nextQty = targetQty;
+		if (stock != null && targetQty > Math.max(stock, 0)) {
+			nextQty = stock > 0 ? stock : Math.min(targetQty, item.quantity);
+		}
 		if (nextQty < targetQty) cappedIds.push(item.id);
 		if (item.quantity === nextQty) return item;
 		changed = true;

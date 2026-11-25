@@ -8,13 +8,13 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
+import { lensCatalogItems } from '$lib/server/db/schema/lenses';
 import {
-	lensCatalogItems,
 	saleItemGroupMembers,
 	saleItemGroups,
 	saleItems,
 	sales
-} from '$lib/server/db/schema';
+} from '$lib/server/db/schema/sales';
 import { nowISO } from '$lib/dates';
 import type { ItemGroup } from '$lib/shared/saleItemGroups';
 
@@ -32,7 +32,7 @@ export async function findSaleItemGroups(
 		.select()
 		.from(saleItemGroups)
 		.where(eq(saleItemGroups.saleId, saleId))
-		.orderBy(asc(saleItemGroups.position));
+		.orderBy(asc(saleItemGroups.position), asc(saleItemGroups.id));
 	if (groups.length === 0) return [];
 
 	const members = await executor
@@ -52,7 +52,7 @@ export async function findSaleItemGroups(
 				isNull(saleItems.deletedAt)
 			)
 		)
-		.orderBy(asc(saleItems.createdAt));
+		.orderBy(asc(saleItems.createdAt), asc(saleItems.id));
 
 	return groups.map((group) => ({
 		id: group.id,
@@ -145,7 +145,7 @@ export async function lockSaleForGroups(
 			primaryLensItemId: sales.primaryLensItemId
 		})
 		.from(sales)
-		.where(eq(sales.id, saleId))
+		.where(and(eq(sales.id, saleId), isNull(sales.deletedAt)))
 		.for('update');
 	return row ?? null;
 }
@@ -202,5 +202,5 @@ export async function findSaleGroupableItems(saleId: string, executor: DbOrTx = 
 		})
 		.from(saleItems)
 		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)))
-		.orderBy(asc(saleItems.createdAt));
+		.orderBy(asc(saleItems.createdAt), asc(saleItems.id));
 }

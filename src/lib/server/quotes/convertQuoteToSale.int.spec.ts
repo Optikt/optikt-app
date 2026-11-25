@@ -11,6 +11,8 @@ import {
 	saleItems
 } from '$lib/server/db/schema';
 import { buildQuoteItemValues } from './quoteHelpers';
+import { replaceQuoteItemGroups } from '$lib/server/db/queries/quotes/itemGroups';
+import { findSaleItemGroups } from '$lib/server/db/queries/sales/itemGroups';
 import { bumpSaleOrderSequence } from '$lib/server/db/queries/sales/writes';
 import { resetDb } from '$lib/testing/integration/db';
 import {
@@ -356,5 +358,102 @@ describe('convertQuoteToSaleCore', () => {
 			.from(saleItems)
 			.where(and(eq(saleItems.saleId, result.sale.id), eq(saleItems.itemType, 'LENS_PAIR')));
 		expect(lensSaleItem.prescriptionId).toBe(rx.id);
+	});
+
+	it('copies quote_item_groups to sale_item_groups and honors primaryQuoteItemId selection or null', async () => {
+		const seller = await createUser();
+		const customer = await createCustomer();
+		const quote = await createQuote({ customerId: customer.id, sellerId: seller.id });
+		const qLensA = crypto.randomUUID();
+		const qLensB = crypto.randomUUID();
+		await db.insert(quoteItems).values([
+			buildQuoteItemValues(
+				{
+					id: qLensA,
+					itemType: SaleItemType.LENS_PAIR,
+					quantity: 1,
+					unitPrice: 80,
+					discount: 0,
+					discountType: DiscountType.FIXED,
+					snapshotName: 'Cristal Sofía',
+					odSphere: -1,
+					osSphere: -1
+				},
+				quote.id,
+				nowISO()
+			),
+			buildQuoteItemValues(
+				{
+					id: qLensB,
+					itemType: SaleItemType.LENS_PAIR,
+					quantity: 1,
+					unitPrice: 90,
+					discount: 0,
+					discountType: DiscountType.FIXED,
+					snapshotName: 'Cristal Andrés',
+					odSphere: -3,
+					osSphere: -3
+				},
+				quote.id,
+				nowISO()
+			)
+		]);
+		await replaceQuoteItemGroups(
+			quote.id,
+			[
+				{ label: 'Sofía', members: [{ itemId: qLensA, quantity: 1 }] },
+				{ label: 'Andrés', members: [{ itemId: qLensB, quantity: 1 }] }
+			],
+			db
+		);
+
+		const result = await convertQuoteToSaleCore(
+			{ id: quote.id, primaryQuoteItemId: qLensB },
+			ctx(seller.id)
+		);
+		if (!result.success) throw new Error(result.error);
+
+		const saleGroups = await findSaleItemGroups(result.sale.id);
+		expect(saleGroups.map((g) => g.label)).toEqual(['Sofía', 'Andrés']);
+		const saleLines = await db.select().from(saleItems).where(eq(saleItems.saleId, result.sale.id));
+		const lineB = saleLines.find((l) => l.snapshotName === 'Cristal Andrés')!;
+		expect(result.sale.primaryLensItemId).toBe(lineB.id);
+
+		const rxRows = await db
+			.select()
+			.from(prescriptions)
+			.where(eq(prescriptions.customerId, customer.id));
+		expect(rxRows).toHaveLength(1);
+		expect(rxRows[0].odSphere).toBe(-3);
+
+		// Separate quote converted with primaryQuoteItemId: null ("Ninguna") creates no Rx
+		const otherCustomer = await createCustomer();
+		const quoteNone = await createQuote({ customerId: otherCustomer.id, sellerId: seller.id });
+		await db.insert(quoteItems).values(
+			buildQuoteItemValues(
+				{
+					itemType: SaleItemType.LENS_PAIR,
+					quantity: 1,
+					unitPrice: 70,
+					discount: 0,
+					discountType: DiscountType.FIXED,
+					odSphere: -2,
+					osSphere: -2
+				},
+				quoteNone.id,
+				nowISO()
+			)
+		);
+		const resNone = await convertQuoteToSaleCore(
+			{ id: quoteNone.id, primaryQuoteItemId: null },
+			ctx(seller.id)
+		);
+		if (!resNone.success) throw new Error(resNone.error);
+		expect(resNone.sale.primaryLensItemId).toBeNull();
+		const noneRx = await db
+			.select()
+			.from(prescriptions)
+			.where(eq(prescriptions.customerId, otherCustomer.id));
+		expect(noneRx).toHaveLength(0);
 	});
 });

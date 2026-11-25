@@ -2,7 +2,7 @@ import { toSaleTotalsLine, computeSaleTotals } from '$lib/shared/saleTotals';
 import { findQuoteById, getQuoteItemsWithDetails } from '$lib/server/db/queries/quotes/reads';
 import { markQuoteConverted } from '$lib/server/db/queries/quotes/conversion';
 import { findCustomerById, resolveInlineCustomer } from '$lib/server/db/queries/customers';
-import { findQuoteItemGroups } from '$lib/server/db/queries/quotes/itemGroups';
+import { findQuoteItemGroups, lockQuoteForGroups } from '$lib/server/db/queries/quotes/itemGroups';
 import { replaceSaleItemGroups, setSalePrimaryLens } from '$lib/server/db/queries/sales/itemGroups';
 import {
 	applyPrimaryPrescription,
@@ -45,7 +45,7 @@ class ConversionError extends Error {}
  * final de la tx — dos conversiones simultáneas nunca crean dos ventas.
  */
 export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: ActionContext) {
-	// Validación de lectura, fuera de la tx
+	// Pre-checks rápidos (fuera de tx); la lectura autoritativa ocurre tras el lock en tx.
 	const quote = await findQuoteById(data.id);
 	if (!quote) {
 		return { success: false as const, error: 'Presupuesto no encontrado' };
@@ -57,78 +57,55 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 		};
 	}
 
-	const [items, quoteGroups] = await Promise.all([
-		getQuoteItemsWithDetails(data.id),
-		findQuoteItemGroups(data.id)
-	]);
-	if (items.length === 0) {
-		return { success: false as const, error: 'El presupuesto no tiene ítems' };
-	}
-
-	// ── Resolver el cliente ───────────────────────────────────────────────
-	// customerId existente y el heredado del presupuesto se validan aquí
-	// (lecturas); el cliente nuevo inline se crea dentro de la tx.
-	let customerId: string | null = null;
-	let createdCustomer: Customer | null = null;
-
 	if (data.customerId) {
 		const customer = await findCustomerById(data.customerId);
 		if (!customer) {
 			return { success: false as const, error: 'Cliente no encontrado' };
 		}
-		customerId = customer.id;
-	} else if (quote.customerId) {
-		const customer = await findCustomerById(quote.customerId);
-		if (!customer) {
-			return { success: false as const, error: 'Cliente del presupuesto no encontrado' };
-		}
-		customerId = customer.id;
 	}
 
-	// Recomputed totals — never copy quote.subtotal/quote.total (pre-tax semantics)
-	const totals = computeSaleTotals(
-		items.map((item) => toSaleTotalsLine(item, quote.snapshotTaxRate)),
-		quote.discount,
-		quote.discountType
-	);
-
-	// Build a map of quote item IDs → new sale item IDs (treatment parents + groups)
-	const idMap = new Map<string, string>();
-	for (const item of items) {
-		idMap.set(item.id, crypto.randomUUID());
-	}
-
-	// "Fórmula del cliente": chosen in the modal (null = "Ninguna"); absent →
-	// default rule (exactly one lens and no names). Replaces the old
-	// `firstDefined` derivation over every lens (multi-person debt).
-	const primaryQuoteItemId =
-		data.primaryQuoteItemId !== undefined
-			? data.primaryQuoteItemId
-			: defaultPrimaryLens(
-					items.map((item) => ({ ...item, parentId: item.parentQuoteItemId })),
-					quoteGroups
-				);
-	const primaryQuoteItem = primaryQuoteItemId
-		? items.find((i) => i.id === primaryQuoteItemId && i.itemType === SaleItemType.LENS_PAIR)
-		: undefined;
-	if (primaryQuoteItemId && !primaryQuoteItem) {
-		return {
-			success: false as const,
-			error: 'La fórmula elegida no es un cristal del presupuesto'
-		};
-	}
-
-	// Freeze the live USD BCV rate for future tickera reprints (null when API down)
+	// Freeze the live USD BCV rate before entering the transaction lock.
 	const liveBcvRate = await getExchangeRateValue('USD');
 	const snapshotBcvRate = liveBcvRate !== null && liveBcvRate > 0 ? liveBcvRate : null;
 
 	let sale!: Awaited<ReturnType<typeof createSale>>;
+	let createdCustomer: Customer | null = null;
 	let createdPrescription: Prescription | null = null;
+	let beforeQuote: Quote = quote;
 	let finalQuote: Quote | null = null;
 
 	try {
 		await db.transaction(async (tx) => {
-			// Cliente nuevo inline: se crea dentro de la tx (cédula duplicada ⇒ rollback)
+			const locked = await lockQuoteForGroups(data.id, tx);
+			if (!locked) {
+				throw new ConversionError('Presupuesto no encontrado');
+			}
+			if (locked.status !== QuoteStatus.DRAFT) {
+				throw new ConversionError('Este presupuesto ya fue convertido o cancelado');
+			}
+
+			const [freshQuote, items, quoteGroups] = await Promise.all([
+				findQuoteById(data.id, {}, tx),
+				getQuoteItemsWithDetails(data.id, tx),
+				findQuoteItemGroups(data.id, tx)
+			]);
+			if (!freshQuote || freshQuote.status !== QuoteStatus.DRAFT) {
+				throw new ConversionError('Este presupuesto ya fue convertido o cancelado');
+			}
+			if (items.length === 0) {
+				throw new ConversionError('El presupuesto no tiene ítems');
+			}
+			beforeQuote = freshQuote;
+
+			// Resolver cliente: data.customerId, heredado del quote bloqueado o newCustomer inline.
+			let customerId: string | null = data.customerId ?? null;
+			if (!customerId && freshQuote.customerId) {
+				const inherited = await findCustomerById(freshQuote.customerId, { executor: tx });
+				if (!inherited) {
+					throw new ConversionError('Cliente del presupuesto no encontrado');
+				}
+				customerId = inherited.id;
+			}
 			if (!customerId && data.newCustomer) {
 				const result = await resolveInlineCustomer(data.newCustomer, tx);
 				if ('error' in result) {
@@ -141,31 +118,53 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 				throw new ConversionError('Selecciona o registra al cliente para convertir');
 			}
 
+			// Recomputed totals — never copy quote.subtotal/quote.total (pre-tax semantics)
+			const totals = computeSaleTotals(
+				items.map((item) => toSaleTotalsLine(item, freshQuote.snapshotTaxRate)),
+				freshQuote.discount,
+				freshQuote.discountType
+			);
+
+			const idMap = new Map<string, string>();
+			for (const item of items) {
+				idMap.set(item.id, crypto.randomUUID());
+			}
+
+			const primaryQuoteItemId =
+				data.primaryQuoteItemId !== undefined
+					? data.primaryQuoteItemId
+					: defaultPrimaryLens(
+							items.map((item) => ({ ...item, parentId: item.parentQuoteItemId })),
+							quoteGroups
+						);
+			const primaryQuoteItem = primaryQuoteItemId
+				? items.find((i) => i.id === primaryQuoteItemId && i.itemType === SaleItemType.LENS_PAIR)
+				: undefined;
+			if (primaryQuoteItemId && !primaryQuoteItem) {
+				throw new ConversionError('La fórmula elegida no es un cristal del presupuesto');
+			}
+
 			const now = nowISO();
 
-			// Create the sale via the query function (no Drizzle inline).
-			// El número lo asigna la sequence `sales_order_number_seq`.
-			// `createdAt` la fija createSale (= now del submit, fecha-verdad).
 			sale = await createSale(
 				{
 					customerId,
 					sellerId: ctx.userId!,
 					status: SaleStatus.PENDING,
 					subtotal: totals.subtotal,
-					discount: quote.discount,
-					discountType: quote.discountType,
-					snapshotTaxRate: quote.snapshotTaxRate,
+					discount: freshQuote.discount,
+					discountType: freshQuote.discountType,
+					snapshotTaxRate: freshQuote.snapshotTaxRate,
 					/** Frozen USD BCV rate for tickera reprints */
 					snapshotBcvRate,
 					total: totals.total,
 					paidAmountBcvUsd: 0,
-					isCashea: data.isCashea ?? quote.isCashea,
-					notes: quote.notes ?? null
+					isCashea: data.isCashea ?? freshQuote.isCashea,
+					notes: freshQuote.notes ?? null
 				},
 				tx
 			);
 
-			// Create sale items from quote items + handle stock via FIFO
 			for (const item of items) {
 				const newId = idMap.get(item.id)!;
 				const parentSaleItemId = item.parentQuoteItemId
@@ -187,8 +186,6 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 				await replaceSaleItemGroups(sale.id, remapGroupItemIds(quoteGroups, idMap), tx);
 			}
 
-			// Only the chosen lens becomes the customer's current Rx (and is the
-			// only lens linked to it). "Ninguna" → nothing is created/overwritten.
 			if (primaryQuoteItem) {
 				const saleLensId = idMap.get(primaryQuoteItem.id)!;
 				await setSalePrimaryLens(sale.id, saleLensId, tx);
@@ -207,13 +204,11 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 				}
 			}
 
-			// Guard de concurrencia: solo transiciona si sigue DRAFT.
-			// 0 filas ⇒ alguien más ya convirtió o canceló ⇒ rollback total.
 			finalQuote = await markQuoteConverted(
 				data.id,
 				{
 					conversionSaleId: sale.id,
-					customerId: customerId !== quote.customerId ? customerId : undefined
+					customerId: customerId !== freshQuote.customerId ? customerId : undefined
 				},
 				tx
 			);
@@ -245,7 +240,7 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 	});
 
 	if (finalQuote) {
-		await auditService.logUpdate('quote', data.id, quote, finalQuote, ctx, {
+		await auditService.logUpdate('quote', data.id, beforeQuote, finalQuote, ctx, {
 			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 		});
 	}

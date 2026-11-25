@@ -162,7 +162,8 @@
 			catalog.getProducts()
 		);
 		if (synced !== items) items = synced;
-		wp.clamp();
+		// Defer clamping while clearing the field (quantity === null) so Backspace preserves assignments.
+		if (Number.isFinite(quantity) && quantity >= 1) wp.clamp();
 	}
 
 	function removeItem(id: string) {

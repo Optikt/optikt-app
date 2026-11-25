@@ -10,7 +10,7 @@ import {
 	replaceSaleItemGroups,
 	setSalePrimaryLens
 } from '$lib/server/db/queries/sales/itemGroups';
-import type { Prescription } from '$lib/server/db/schema';
+import type { Prescription } from '$lib/server/db/schema/prescriptions';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
 	applyPrimaryPrescription,

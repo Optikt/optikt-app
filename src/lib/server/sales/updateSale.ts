@@ -39,6 +39,17 @@ import {
 import { remapGroupItemIds, validateItemGroups } from '$lib/shared/saleItemGroups';
 import type { ActionContext } from '$lib/server/actionContext';
 
+class SaleUpdateError extends Error {}
+
+function editableSaleError(status: string, isAdmin: boolean): string | null {
+	if (status === SaleStatus.CANCELLED) return 'No se puede modificar una venta cancelada';
+	if (status === SaleStatus.COMPLETED) return 'No se puede modificar una venta completada';
+	if ((status === SaleStatus.IN_PROGRESS || status === SaleStatus.READY) && !isAdmin) {
+		return 'Solo administradores pueden modificar ventas en progreso o listas para retirar';
+	}
+	return null;
+}
+
 /**
  * Edit an existing sale: update header fields and/or replace items.
  *
@@ -54,28 +65,14 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	// Read validation (outside transaction)
 	const existing = await findSaleById(data.id);
 	if (!existing) return { success: false as const, error: 'Venta no encontrada' };
-	if (existing.status === SaleStatus.CANCELLED) {
-		return { success: false as const, error: 'No se puede modificar una venta cancelada' };
-	}
 
 	if (!canManageSaleByOwner(ctx.role, ctx.userId, existing.sellerId)) {
 		return { success: false as const, error: 'No tienes permisos para modificar esta venta' };
 	}
 
-	if (existing.status === SaleStatus.COMPLETED) {
-		return { success: false as const, error: 'No se puede modificar una venta completada' };
-	}
-
 	const isAdmin = ctx.role === UserRole.ADMIN || ctx.role === UserRole.MANAGER;
-	if (
-		(existing.status === SaleStatus.IN_PROGRESS || existing.status === SaleStatus.READY) &&
-		!isAdmin
-	) {
-		return {
-			success: false as const,
-			error: 'Solo administradores pueden modificar ventas en progreso o listas para retirar'
-		};
-	}
+	const statusErr = editableSaleError(existing.status, isAdmin);
+	if (statusErr) return { success: false as const, error: statusErr };
 
 	// Order number reassignment: admin only (code-only for now, no UI field yet).
 	if (data.orderNumber && !isAdmin) {
@@ -159,11 +156,8 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		};
 	}
 
-	// Per-person groups + primary lens before the change (only read when needed).
+	// Per-person groups + primary lens before the change (read inside the locked tx).
 	const touchesGroups = data.groups !== undefined || data.primaryLensItemId !== undefined;
-	const customerIdAfter = data.customerId ?? existing.customerId;
-	const customerChanged = customerIdAfter !== existing.customerId;
-	const needsGroupWork = hasItemChanges || touchesGroups || customerChanged;
 
 	// Prescription measures (DP / nasal) patch: pre-validate unless this edit
 	// itself sets a primary lens (which creates a fresh prescription in the tx).
@@ -181,250 +175,262 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		}
 	}
 
-	const [beforeGroups, beforeLines] = needsGroupWork
-		? await Promise.all([findSaleItemGroups(data.id), findSaleGroupableItems(data.id)])
-		: [[], []];
-	// Item edits are validated by the schema (client ids). A header-only edit
-	// sends real ids: check them here, never clamp a bad primary to null.
-	if (!hasItemChanges && touchesGroups) {
-		const errors = validateItemGroups(
-			data.groups ?? beforeGroups,
-			beforeLines,
-			data.primaryLensItemId
-		);
-		if (errors.length > 0) return { success: false as const, error: errors[0] };
-	}
+	let beforeGroups: Awaited<ReturnType<typeof findSaleItemGroups>> = [];
+	let beforeLines: Awaited<ReturnType<typeof findSaleGroupableItems>> = [];
 	let groupsResult = null as PersistSaleGroupsResult | null;
 	let beforePrimaryUsed: string | null = existing.primaryLensItemId;
 	let logicalBeforePrimary: string | null = existing.primaryLensItemId;
 
 	// All writes in a single transaction
 	const beforeItems: SaleItem[] = [];
-	// A race on the reassigned number surfaces as the same friendly duplicate error
-	const txResult = await db
-		.transaction(async (tx) => {
-			// Same lock order as createSaleCore (sequence lock → sale row → inventory rows).
-			if (newOrderNumber !== undefined) await lockSaleOrderSequence(tx);
-			const lockedSale = needsGroupWork ? await lockSaleForGroups(data.id, tx) : null;
-			const lockedPrimary = lockedSale ? lockedSale.primaryLensItemId : existing.primaryLensItemId;
-			beforePrimaryUsed = lockedPrimary;
-			logicalBeforePrimary = lockedPrimary;
+	let txResult: { sale: typeof existing | undefined; prescription: Prescription | null };
+	try {
+		// A race on the reassigned number surfaces as the same friendly duplicate error
+		txResult = await db
+			.transaction(async (tx) => {
+				// Same lock order as createSaleCore (sequence lock → sale row → inventory rows).
+				if (newOrderNumber !== undefined) await lockSaleOrderSequence(tx);
+				const lockedSale = await lockSaleForGroups(data.id, tx);
+				if (!lockedSale) throw new SaleUpdateError('Venta no encontrada');
+				const lockedErr = editableSaleError(lockedSale.status, isAdmin);
+				if (lockedErr) throw new SaleUpdateError(lockedErr);
 
-			if (hasItemChanges) {
-				// ── 1. Return only what the sale still holds (net outstanding per
-				// lot — never re-returns movements a prior edit already reverted) ──
-				await revertSaleInventory(tx, data.id, ctx.userId!, {
-					origin: 'edit',
-					reason: data.reason
-				});
+				const customerIdAfter = data.customerId ?? lockedSale.customerId;
+				const customerChanged = customerIdAfter !== lockedSale.customerId;
+				const needsGroupWork = hasItemChanges || touchesGroups || customerChanged;
+				const lockedPrimary = lockedSale.primaryLensItemId;
+				beforePrimaryUsed = lockedPrimary;
+				logicalBeforePrimary = lockedPrimary;
 
-				// ── 2. Restore cached stock counters ────────────────────────────
-				const oldItems = await tx
-					.select()
-					.from(saleItems)
-					.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
-
-				// Snapshot for the post-tx audit diff (read before the soft-delete below).
-				beforeItems.push(...oldItems);
-
-				for (const item of oldItems) {
-					if (item.productId) {
-						const [product] = await tx
-							.select({ id: products.id, stock: products.stock })
-							.from(products)
-							.where(eq(products.id, item.productId));
-
-						if (product && product.stock !== null) {
-							await tx
-								.update(products)
-								.set({ stock: product.stock + item.quantity, updatedAt: nowISO() })
-								.where(eq(products.id, item.productId));
-						}
-					}
-
-					if (item.lensCatalogItemId) {
-						const [lens] = await tx
-							.select({
-								id: lensCatalogItems.id,
-								stock: lensCatalogItems.stock,
-								inventoryMode: lensCatalogItems.inventoryMode
-							})
-							.from(lensCatalogItems)
-							.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
-
-						if (lens && lens.inventoryMode === 'STOCK' && lens.stock !== null) {
-							await tx
-								.update(lensCatalogItems)
-								.set({ stock: lens.stock + item.quantity, updatedAt: nowISO() })
-								.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
-						}
+				if (needsGroupWork) {
+					[beforeGroups, beforeLines] = await Promise.all([
+						findSaleItemGroups(data.id, tx),
+						findSaleGroupableItems(data.id, tx)
+					]);
+					// Item edits are validated by the schema (client ids). A header-only edit
+					// sends real ids: verify against locked live lines before saving.
+					if (!hasItemChanges && touchesGroups) {
+						const errors = validateItemGroups(
+							data.groups ?? beforeGroups,
+							beforeLines,
+							data.primaryLensItemId
+						);
+						if (errors.length > 0) throw new SaleUpdateError(errors[0]);
 					}
 				}
 
-				// ── 3. Soft-delete all existing sale items (cascade handles free_details + child treatments) ──
-				await tx
-					.update(saleItems)
-					.set({ deletedAt: nowISO(), updatedAt: nowISO() })
-					.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
+				if (hasItemChanges) {
+					// ── 1. Return only what the sale still holds (net outstanding per
+					// lot — never re-returns movements a prior edit already reverted) ──
+					await revertSaleInventory(tx, data.id, ctx.userId!, {
+						origin: 'edit',
+						reason: data.reason
+					});
 
-				// ── 4. Insert new items + consume inventory ──────────────────────
-				const idMap = new Map<string, string>();
-				const newIds = new Map<number, string>();
-				data.items!.forEach((item, index) => {
-					const newId = crypto.randomUUID();
-					newIds.set(index, newId);
-					if (item.id) idMap.set(item.id, newId);
-				});
-				for (const [index, item] of data.items!.entries()) {
-					const saleItemId = newIds.get(index)!;
-					const resolvedParentId = item.parentSaleItemId
-						? (idMap.get(item.parentSaleItemId) ?? null)
-						: null;
+					// ── 2. Restore cached stock counters ────────────────────────────
+					const oldItems = await tx
+						.select()
+						.from(saleItems)
+						.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
 
-					await insertSaleItem(tx, {
-						id: saleItemId,
+					// Snapshot for the post-tx audit diff (read before the soft-delete below).
+					beforeItems.push(...oldItems);
+
+					for (const item of oldItems) {
+						if (item.productId) {
+							const [product] = await tx
+								.select({ id: products.id, stock: products.stock })
+								.from(products)
+								.where(eq(products.id, item.productId));
+
+							if (product && product.stock !== null) {
+								await tx
+									.update(products)
+									.set({ stock: product.stock + item.quantity, updatedAt: nowISO() })
+									.where(eq(products.id, item.productId));
+							}
+						}
+
+						if (item.lensCatalogItemId) {
+							const [lens] = await tx
+								.select({
+									id: lensCatalogItems.id,
+									stock: lensCatalogItems.stock,
+									inventoryMode: lensCatalogItems.inventoryMode
+								})
+								.from(lensCatalogItems)
+								.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
+
+							if (lens && lens.inventoryMode === 'STOCK' && lens.stock !== null) {
+								await tx
+									.update(lensCatalogItems)
+									.set({ stock: lens.stock + item.quantity, updatedAt: nowISO() })
+									.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
+							}
+						}
+					}
+
+					// ── 3. Soft-delete all existing sale items (cascade handles free_details + child treatments) ──
+					await tx
+						.update(saleItems)
+						.set({ deletedAt: nowISO(), updatedAt: nowISO() })
+						.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
+
+					// ── 4. Insert new items + consume inventory ──────────────────────
+					const idMap = new Map<string, string>();
+					const newIds = new Map<number, string>();
+					data.items!.forEach((item, index) => {
+						const newId = crypto.randomUUID();
+						newIds.set(index, newId);
+						if (item.id) idMap.set(item.id, newId);
+					});
+					for (const [index, item] of data.items!.entries()) {
+						const saleItemId = newIds.get(index)!;
+						const resolvedParentId = item.parentSaleItemId
+							? (idMap.get(item.parentSaleItemId) ?? null)
+							: null;
+
+						await insertSaleItem(tx, {
+							id: saleItemId,
+							saleId: data.id,
+							item,
+							parentSaleItemId: resolvedParentId,
+							prescriptionId: item.prescriptionId ?? null,
+							userId: ctx.userId!,
+							now: nowISO()
+						});
+					}
+
+					// ── 4b. Groups + primary lens follow the replaced items ─────────
+					// Items got new ids: translate (client id → new id) the incoming
+					// groups, or the current ones when the payload doesn't send groups.
+					const remapId = (id: string | null | undefined) => (id ? (idMap.get(id) ?? null) : null);
+					const previousPrimary = remapId(lockedPrimary);
+					// Keep the old id when item replacement deleted the primary line so audit logs X → Ninguna.
+					logicalBeforePrimary = previousPrimary ?? lockedPrimary;
+					groupsResult = await persistSaleGroups(tx, {
 						saleId: data.id,
-						item,
-						parentSaleItemId: resolvedParentId,
-						prescriptionId: item.prescriptionId ?? null,
-						userId: ctx.userId!,
-						now: nowISO()
+						customerId: customerIdAfter,
+						groups: remapGroupItemIds(data.groups ?? beforeGroups, idMap),
+						primaryLensItemId:
+							data.primaryLensItemId !== undefined
+								? remapId(data.primaryLensItemId)
+								: previousPrimary,
+						previousPrimaryLensItemId: previousPrimary,
+						previousPrimaryRx: beforeLines.find((l) => l.id === lockedPrimary),
+						customerChanged,
+						measures: data.prescription
+					});
+
+					// DP/NP measures: if persistSaleGroups created a fresh Rx they were
+					// already merged; otherwise patch the existing linked Rx (same customer).
+					const patchedPrescription =
+						data.prescription && !groupsResult.prescription
+							? await patchSalePrescriptionMeasures(tx, data.id, customerIdAfter, data.prescription)
+							: null;
+
+					// ── 5. Recalculate tax snapshot if provided ─────────────────────
+					const taxRate = data.snapshotTaxRate ?? existing.snapshotTaxRate;
+					const updateData: Record<string, unknown> = {
+						subtotal: newSubtotal,
+						total: newTotal,
+						snapshotTaxRate: taxRate,
+						updatedAt: nowISO()
+					};
+
+					if (data.customerId) updateData.customerId = data.customerId;
+					/** saleDate alias → createdAt (modal already composes day + preserved time) */
+					if (data.saleDate) updateData.createdAt = data.saleDate;
+					if (data.notes !== undefined) updateData.notes = data.notes;
+					if (data.discount !== undefined) updateData.discount = data.discount;
+					if (data.discountType !== undefined) updateData.discountType = data.discountType;
+					if (data.isCashea !== undefined) updateData.isCashea = data.isCashea;
+					if (newOrderNumber !== undefined) updateData.orderNumber = newOrderNumber;
+
+					const [updated] = await tx
+						.update(sales)
+						.set(updateData)
+						.where(eq(sales.id, data.id))
+						.returning();
+					if (newOrderNumber !== undefined) await bumpSaleOrderSequence(newOrderNumber, tx);
+					return { sale: updated, prescription: patchedPrescription };
+				}
+
+				// Header-only update (no item changes)
+				if (touchesGroups || (customerChanged && lockedPrimary)) {
+					groupsResult = await persistSaleGroups(tx, {
+						saleId: data.id,
+						customerId: customerIdAfter,
+						groups: data.groups,
+						primaryLensItemId:
+							data.primaryLensItemId !== undefined
+								? data.primaryLensItemId
+								: customerChanged
+									? lockedPrimary
+									: undefined,
+						previousPrimaryLensItemId: lockedPrimary,
+						customerChanged,
+						measures: data.prescription
 					});
 				}
 
-				// ── 4b. Groups + primary lens follow the replaced items ─────────
-				// Items got new ids: translate (client id → new id) the incoming
-				// groups, or the current ones when the payload doesn't send groups.
-				const remapId = (id: string | null | undefined) => (id ? (idMap.get(id) ?? null) : null);
-				const previousPrimary = remapId(lockedPrimary);
-				logicalBeforePrimary = previousPrimary;
-				groupsResult = await persistSaleGroups(tx, {
-					saleId: data.id,
-					customerId: customerIdAfter,
-					groups: remapGroupItemIds(data.groups ?? beforeGroups, idMap),
-					primaryLensItemId:
-						data.primaryLensItemId !== undefined
-							? remapId(data.primaryLensItemId)
-							: previousPrimary,
-					previousPrimaryLensItemId: previousPrimary,
-					previousPrimaryRx: beforeLines.find((l) => l.id === lockedPrimary),
-					customerChanged,
-					measures: data.prescription
-				});
-
-				// DP/NP measures: if persistSaleGroups created a fresh Rx they were
-				// already merged; otherwise patch the existing linked Rx (same customer).
 				const patchedPrescription =
-					data.prescription && !groupsResult.prescription
+					data.prescription && !groupsResult?.prescription
 						? await patchSalePrescriptionMeasures(tx, data.id, customerIdAfter, data.prescription)
 						: null;
 
-				// ── 5. Recalculate tax snapshot if provided ─────────────────────
-				const taxRate = data.snapshotTaxRate ?? existing.snapshotTaxRate;
-				const updateData: Record<string, unknown> = {
-					subtotal: newSubtotal,
-					total: newTotal,
-					snapshotTaxRate: taxRate,
-					updatedAt: nowISO()
-				};
+				const headerUpdate: Record<string, unknown> = {};
+				if (data.customerId) headerUpdate.customerId = data.customerId;
+				if (data.saleDate) headerUpdate.createdAt = data.saleDate;
+				if (data.notes !== undefined) headerUpdate.notes = data.notes;
+				if (data.discount !== undefined) headerUpdate.discount = data.discount;
+				if (data.discountType !== undefined) headerUpdate.discountType = data.discountType;
+				if (data.snapshotTaxRate !== undefined) headerUpdate.snapshotTaxRate = data.snapshotTaxRate;
+				if (data.isCashea !== undefined) headerUpdate.isCashea = data.isCashea;
+				if (newOrderNumber !== undefined) headerUpdate.orderNumber = newOrderNumber;
+				if (data.discount !== undefined || data.discountType !== undefined) {
+					headerUpdate.subtotal = newSubtotal;
+					headerUpdate.total = newTotal;
+				}
 
-				if (data.customerId) updateData.customerId = data.customerId;
-				/** saleDate alias → createdAt (modal already composes day + preserved time) */
-				if (data.saleDate) updateData.createdAt = data.saleDate;
-				if (data.notes !== undefined) updateData.notes = data.notes;
-				if (data.discount !== undefined) updateData.discount = data.discount;
-				if (data.discountType !== undefined) updateData.discountType = data.discountType;
-				if (data.isCashea !== undefined) updateData.isCashea = data.isCashea;
-				if (newOrderNumber !== undefined) updateData.orderNumber = newOrderNumber;
+				// A no-op save (reason only) must not bump `updatedAt` on the sale row.
+				if (Object.keys(headerUpdate).length === 0) {
+					const saleOut =
+						groupsResult?.primaryLensItemId !== undefined
+							? { ...existing, primaryLensItemId: groupsResult.primaryLensItemId }
+							: existing;
+					return { sale: saleOut, prescription: patchedPrescription };
+				}
+				headerUpdate.updatedAt = nowISO();
 
 				const [updated] = await tx
 					.update(sales)
-					.set(updateData)
+					.set(headerUpdate)
 					.where(eq(sales.id, data.id))
 					.returning();
-				// Reassigned number ahead of the sequence → the next automatic sale is N+1
 				if (newOrderNumber !== undefined) await bumpSaleOrderSequence(newOrderNumber, tx);
 
 				return { sale: updated, prescription: patchedPrescription };
-			}
-
-			// ── Header-only update (no item changes) ───────────────────────────
-			if (touchesGroups || (customerChanged && lockedPrimary)) {
-				groupsResult = await persistSaleGroups(tx, {
-					saleId: data.id,
-					customerId: customerIdAfter,
-					groups: data.groups,
-					primaryLensItemId:
-						data.primaryLensItemId !== undefined
-							? data.primaryLensItemId
-							: customerChanged
-								? lockedPrimary
-								: undefined,
-					previousPrimaryLensItemId: lockedPrimary,
-					customerChanged,
-					measures: data.prescription
-				});
-			}
-
-			const patchedPrescription =
-				data.prescription && !groupsResult?.prescription
-					? await patchSalePrescriptionMeasures(tx, data.id, customerIdAfter, data.prescription)
-					: null;
-
-			const headerUpdate: Record<string, unknown> = {};
-			if (data.customerId) headerUpdate.customerId = data.customerId;
-			/** saleDate alias → createdAt (modal already composes day + preserved time) */
-			if (data.saleDate) headerUpdate.createdAt = data.saleDate;
-			if (data.notes !== undefined) headerUpdate.notes = data.notes;
-			if (data.discount !== undefined) headerUpdate.discount = data.discount;
-			if (data.discountType !== undefined) headerUpdate.discountType = data.discountType;
-			if (data.snapshotTaxRate !== undefined) headerUpdate.snapshotTaxRate = data.snapshotTaxRate;
-			if (data.isCashea !== undefined) headerUpdate.isCashea = data.isCashea;
-			if (newOrderNumber !== undefined) headerUpdate.orderNumber = newOrderNumber;
-
-			if (data.discount !== undefined || data.discountType !== undefined) {
-				headerUpdate.subtotal = newSubtotal;
-				headerUpdate.total = newTotal;
-			}
-
-			// A no-op save (reason only) must not touch the sale row at all:
-			// `updatedAt` only bumps when a real field changes.
-			if (Object.keys(headerUpdate).length === 0) {
-				const saleOut =
-					groupsResult?.primaryLensItemId !== undefined
-						? { ...existing, primaryLensItemId: groupsResult.primaryLensItemId }
-						: existing;
-				return { sale: saleOut, prescription: patchedPrescription };
-			}
-			headerUpdate.updatedAt = nowISO();
-
-			const [updated] = await tx
-				.update(sales)
-				.set(headerUpdate)
-				.where(eq(sales.id, data.id))
-				.returning();
-			if (newOrderNumber !== undefined) await bumpSaleOrderSequence(newOrderNumber, tx);
-
-			return { sale: updated, prescription: patchedPrescription };
-		})
-		.catch((err: unknown) => {
-			if (newOrderNumber !== undefined && isDuplicateOrderNumberError(err)) {
-				throw new Error(`El número de orden #${newOrderNumber} ya existe`, { cause: err });
-			}
-			throw err;
-		});
+			})
+			.catch((err: unknown) => {
+				if (newOrderNumber !== undefined && isDuplicateOrderNumberError(err)) {
+					throw new Error(`El número de orden #${newOrderNumber} ya existe`, { cause: err });
+				}
+				throw err;
+			});
+	} catch (err) {
+		if (err instanceof SaleUpdateError) {
+			return { success: false as const, error: err.message };
+		}
+		throw err;
+	}
 
 	const updatedSale = txResult.sale;
-
-	// New current prescription from the primary lens (best-effort audit).
 	if (groupsResult?.prescription) {
 		await auditService.logCreate('prescription', groupsResult.prescription, ctx, {
 			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 		});
 	}
-
-	// Prescription audit (best-effort, after transaction succeeds): the DP/NP patch
-	// does NOT land on the sale row, so the sale logUpdate above would never show it.
 	if (txResult.prescription && prescriptionBefore) {
 		await auditService.logUpdate(
 			'prescription',
@@ -435,7 +441,6 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 			{ excludeFields: ['updatedAt', 'createdAt', 'deletedAt'] }
 		);
 	}
-
 	if (!updatedSale) {
 		return { success: false as const, error: 'Error al actualizar la venta' };
 	}
@@ -443,7 +448,11 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	// Audit (best-effort, after transaction succeeds). The structured items
 	// diff is computed pure here and annexed as `changes.itemsDiff` on the same
 	// «Venta actualizada» event — the inventory tx above is never touched.
-	const headerChanges = calculateDiff(existing, updatedSale, ['updatedAt', 'deletedAt']);
+	const headerChanges = calculateDiff(existing, updatedSale, [
+		'updatedAt',
+		'deletedAt',
+		'primaryLensItemId'
+	]);
 	const needsDiff = hasItemChanges || hasChanges(headerChanges);
 	let itemsDiff: { old: null; new: ReturnType<typeof buildSaleAuditDiff> } | null = null;
 	if (needsDiff) {
@@ -488,20 +497,15 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 				nameOf: (id) => lineNames.get(id) ?? 'Artículo'
 			})
 		: {};
-	// Item replacement alone changes the line ids; compare by readable summary only.
-	delete headerChanges.primaryLensItemId;
-	if (
-		hasChanges(headerChanges) ||
-		hasChanges(groupChanges) ||
-		(itemsDiff && countSaleAuditChanges(itemsDiff.new) > 0)
-	) {
-		await auditService.logCustom(
-			'sale',
-			data.id,
-			'update',
-			{ ...headerChanges, ...groupChanges, ...(itemsDiff ? { itemsDiff } : {}) },
-			{ ...ctx, reason: data.reason }
-		);
+	const auditChanges = { ...headerChanges, ...groupChanges };
+	if (itemsDiff && countSaleAuditChanges(itemsDiff.new) > 0) {
+		auditChanges.itemsDiff = itemsDiff;
+	}
+	if (hasChanges(auditChanges)) {
+		await auditService.logCustom('sale', data.id, 'update', auditChanges, {
+			...ctx,
+			reason: data.reason
+		});
 	}
 
 	return { success: true as const, sale: updatedSale };

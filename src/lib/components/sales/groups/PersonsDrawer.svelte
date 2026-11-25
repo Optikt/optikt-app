@@ -4,7 +4,7 @@
 	import { defaultPrimaryLens } from '$lib/shared/saleItemGroups';
 	import PersonsEditor from './PersonsEditor.svelte';
 	import { primaryNote } from './primaryNote';
-	import type { GroupItemView, UiGroup } from './groupsState';
+	import { toSubmitGroups, type GroupItemView, type UiGroup } from './groupsState';
 
 	interface Props {
 		open: boolean;
@@ -86,7 +86,7 @@
 	const activePrimary = $derived(
 		draftMode
 			? !primaryTouched && primaryAuto
-				? defaultPrimaryLens(items, draftGroups)
+				? defaultPrimaryLens(items, toSubmitGroups(draftGroups))
 				: draftPrimary
 			: primaryLensId
 	);

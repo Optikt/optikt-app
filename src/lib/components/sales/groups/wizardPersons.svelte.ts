@@ -84,7 +84,7 @@ export class WizardPersons {
 	commit = (nextGroups: UiGroup[], nextPrimary?: string | null) => {
 		const finalGroups = clampUiGroups(nextGroups, this.items);
 		this.write.groups(finalGroups);
-		if (this.showPrimary && nextPrimary !== undefined && nextPrimary !== this.primaryLensId) {
+		if (this.showPrimary && nextPrimary !== undefined) {
 			this.source().persons.onprimarychange?.(nextPrimary);
 		}
 		const rows = this.source().items;

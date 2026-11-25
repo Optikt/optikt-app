@@ -12,7 +12,8 @@ import {
 	persistSaleGroups,
 	type PersistSaleGroupsResult
 } from '$lib/server/sales/saleItemGroupsCore';
-import { SaleStatus, canManageSaleByOwner } from '$lib/shared/enums';
+import { SaleStatus } from '$lib/shared/enums/salesTypes';
+import { canManageSaleByOwner } from '$lib/shared/enums/roles';
 import { validateItemGroups } from '$lib/shared/saleItemGroups';
 import type { SaveSaleItemGroupsInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';

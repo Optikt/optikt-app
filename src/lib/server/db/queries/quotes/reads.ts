@@ -64,8 +64,11 @@ export async function findQuoteByIdWithRelations(
 }
 
 /** Quote items con producto/lente/tratamiento y detalle libre. */
-export async function getQuoteItemsWithDetails(quoteId: string): Promise<QuoteItemWithDetails[]> {
-	const results = await db
+export async function getQuoteItemsWithDetails(
+	quoteId: string,
+	executor: DbOrTx = db
+): Promise<QuoteItemWithDetails[]> {
+	const results = await executor
 		.select({
 			item: quoteItems,
 			product: {

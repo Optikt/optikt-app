@@ -4,7 +4,12 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
-import { quoteItemGroupMembers, quoteItemGroups, quoteItems, quotes } from '$lib/server/db/schema';
+import {
+	quoteItemGroupMembers,
+	quoteItemGroups,
+	quoteItems,
+	quotes
+} from '$lib/server/db/schema/quotes';
 import { nowISO } from '$lib/dates';
 import type { ItemGroup } from '$lib/shared/saleItemGroups';
 
@@ -21,7 +26,7 @@ export async function findQuoteItemGroups(
 		.select()
 		.from(quoteItemGroups)
 		.where(eq(quoteItemGroups.quoteId, quoteId))
-		.orderBy(asc(quoteItemGroups.position));
+		.orderBy(asc(quoteItemGroups.position), asc(quoteItemGroups.id));
 	if (groups.length === 0) return [];
 
 	const members = await executor
@@ -41,7 +46,7 @@ export async function findQuoteItemGroups(
 				isNull(quoteItems.deletedAt)
 			)
 		)
-		.orderBy(asc(quoteItems.createdAt));
+		.orderBy(asc(quoteItems.createdAt), asc(quoteItems.id));
 
 	return groups.map((group) => ({
 		id: group.id,
@@ -122,5 +127,5 @@ export async function findQuoteGroupableItems(quoteId: string, executor: DbOrTx 
 		})
 		.from(quoteItems)
 		.where(and(eq(quoteItems.quoteId, quoteId), isNull(quoteItems.deletedAt)))
-		.orderBy(asc(quoteItems.createdAt));
+		.orderBy(asc(quoteItems.createdAt), asc(quoteItems.id));
 }

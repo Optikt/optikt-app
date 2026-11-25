@@ -11,6 +11,7 @@ import {
 	syncIncludedAccessoryQuantities,
 	type IncludedAccessoryMap
 } from '../../includedAccessories';
+import { getAvailableProductStock, getRequestedProductQuantity } from '../../helpers/items';
 import { cacheProduct } from '../../catalogCache.svelte';
 
 export type IncludedAccessoryRule = Pick<
@@ -47,7 +48,8 @@ export function createIncludedAccessoryItem(
 export function buildIncludedAccessoriesForParent(
 	parentItemId: string,
 	parentQuantity: number,
-	rules: readonly IncludedAccessoryRule[]
+	rules: readonly IncludedAccessoryRule[],
+	existingItems: readonly SaleItemRow[] = []
 ): {
 	accessoryItems: SaleItemRow[];
 	linkedIds: string[];
@@ -61,12 +63,17 @@ export function buildIncludedAccessoriesForParent(
 	const outOfStockNames: string[] = [];
 
 	for (const rule of rules) {
-		if (rule.accessory.stock <= 0) {
+		const used = getRequestedProductQuantity(
+			[...existingItems, ...accessoryItems],
+			rule.accessoryProductId
+		);
+		const remainingStock = Math.max(0, rule.accessory.stock - used);
+		if (remainingStock <= 0) {
 			outOfStockNames.push(rule.accessory.name);
 			continue;
 		}
 		const accessoryItem = createIncludedAccessoryItem(parentItemId, rule);
-		accessoryItem.quantity = Math.min(qty, rule.accessory.stock);
+		accessoryItem.quantity = Math.min(qty, remainingStock);
 		accessoryItems.push(accessoryItem);
 		linkedIds.push(accessoryItem.id);
 		addedNames.push(rule.accessory.name);
@@ -104,7 +111,12 @@ export async function fetchAndLinkIncludedAccessories(
 		if (!currentParent) return;
 
 		const { accessoryItems, linkedIds, addedNames, outOfStockNames } =
-			buildIncludedAccessoriesForParent(parentItemId, currentParent.quantity, accessories);
+			buildIncludedAccessoriesForParent(
+				parentItemId,
+				currentParent.quantity,
+				accessories,
+				currentItems
+			);
 		for (const name of outOfStockNames) {
 			toast.warning(`⚠ ${name} no tiene stock disponible y no fue agregado automáticamente.`);
 		}
@@ -129,18 +141,28 @@ export function syncStep2AccessoryQuantities(
 	quantity: number,
 	products: readonly ProductWithRelations[]
 ): SaleItemRow[] {
+	const productList = [...products];
 	const productById = (pid: string) => products.find((p) => p.id === pid);
 	const { items: synced, cappedIds } = syncIncludedAccessoryQuantities(
 		items,
 		map,
 		parentId,
 		quantity,
-		(pid) => productById(pid)?.stock
+		(pid, accId) => getAvailableProductStock(items, productList, pid, accId)
 	);
 	for (const accId of cappedIds) {
 		const acc = synced.find((i) => i.id === accId);
-		const prod = acc?.kind === 'product' && acc.productId ? productById(acc.productId) : null;
-		if (prod) toast.warning(`⚠ ${prod.name} solo tiene ${prod.stock} en stock.`);
+		if (!acc || acc.kind !== 'product' || !acc.productId) continue;
+		const prod = productById(acc.productId);
+		if (!prod) continue;
+		const available = getAvailableProductStock(synced, productList, acc.productId, acc.id);
+		if (available != null && available < prod.stock) {
+			toast.warning(
+				`⚠ ${prod.name}: solo quedan ${available} disponibles de ${prod.stock} en stock.`
+			);
+		} else {
+			toast.warning(`⚠ ${prod.name} solo tiene ${prod.stock} en stock.`);
+		}
 	}
 	return synced;
 }

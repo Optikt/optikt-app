@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { groupCode, groupDisplayLabel, type ItemGroup } from '$lib/shared/saleItemGroups';
+	import {
+		groupCode,
+		groupDisplayLabel,
+		orderGroupMembers,
+		type ItemGroup
+	} from '$lib/shared/saleItemGroups';
 	import PersonAvatar from '$lib/components/sales/groups/PersonAvatar.svelte';
 	import type { GroupItemView } from '$lib/components/sales/groups/groupsState';
 
@@ -49,7 +54,7 @@
 							{/if}
 							<b class="text-brand-navy">{groupDisplayLabel(group.label, index)}</b>
 							<span class="text-on-surface-variant">
-								· {group.members
+								· {orderGroupMembers(group.members, items)
 									.map((m) => `${nameOf(m.itemId)}${m.quantity > 1 ? ` ×${m.quantity}` : ''}`)
 									.join(', ')}
 							</span>

@@ -236,7 +236,9 @@
 												aria-pressed={isLensPrimary}
 												aria-label="Fórmula del cliente: {item.name}"
 												onclick={() => togglePrimary(item.id)}
-												class="ml-1 inline-flex align-middle transition-colors {isLensPrimary
+												class="ml-1 inline-flex align-middle transition-colors {touch
+													? 'h-11 w-11 items-center justify-center'
+													: 'p-1'} {isLensPrimary
 													? 'text-[#b38f00]'
 													: 'text-outline hover:text-[#b38f00]'}"
 											>

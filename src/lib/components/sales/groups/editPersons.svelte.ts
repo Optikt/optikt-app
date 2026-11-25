@@ -4,6 +4,7 @@
  */
 import type { ItemGroup } from '$lib/shared/saleItemGroups';
 import type { EditableItem } from '../editSaleDraft';
+import { getCachedProducts } from '../catalogCache.svelte';
 import type { GroupsPatch } from '../editSale/submitEditSale';
 import {
 	clampUiGroups,
@@ -37,9 +38,10 @@ export class EditPersons {
 		const { editable, lines } = this.source();
 		// Plain lookup rebuilt per derivation (never mutated): no SvelteMap needed.
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
-		const types = new Map(
-			lines.filter((l) => l.productId).map((l) => [l.productId as string, l.product?.type ?? null])
-		);
+		const types = new Map<string, string | null>(getCachedProducts().map((p) => [p.id, p.type]));
+		for (const l of lines) {
+			if (l.productId && l.product?.type) types.set(l.productId, l.product.type);
+		}
 		return editableGroupItems(editable, types);
 	});
 	readonly groups = $derived.by(() => clampUiGroups(this.groupsRaw, this.items));
