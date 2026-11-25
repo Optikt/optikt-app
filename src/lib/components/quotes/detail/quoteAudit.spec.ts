@@ -134,6 +134,19 @@ describe('classifyQuoteAuditEntry', () => {
 		expect(e?.label).toBe('Cliente actualizado');
 	});
 
+	it('cambio solo de grupos → "Agrupación por persona actualizada" con resumen', () => {
+		const e = classifyQuoteAuditEntry(
+			entry({
+				changes: {
+					personGroups: { old: 'Sin agrupación', new: 'Ana: Montura ×1' }
+				} as never
+			}),
+			CTX
+		);
+		expect(e?.label).toBe('Agrupación por persona actualizada');
+		expect(e?.note).toBe('Ana: Montura ×1');
+	});
+
 	it('acciones desconocidas → null', () => {
 		expect(classifyQuoteAuditEntry(entry({ action: 'delete' }), CTX)).toBeNull();
 	});
