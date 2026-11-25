@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, isNull, type SQL } from 'drizzle-orm';
 
 import { nowISO } from '$lib/dates';
 import { db } from '$lib/server/db';
@@ -155,9 +155,9 @@ export async function getAccessoryProduct(
 	return product ?? null;
 }
 
-export async function getBrandAccessoryRows(
-	brandId: string,
-	executor: DbOrTx = db
+async function selectAccessoryJoinRows(
+	where: SQL | undefined,
+	executor: DbOrTx
 ): Promise<BrandAccessoryJoinRow[]> {
 	return executor
 		.select(ACCESSORY_JOIN_SELECT)
@@ -169,15 +169,23 @@ export async function getBrandAccessoryRows(
 		.leftJoin(brands, eq(products.brandId, brands.id))
 		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
 		.leftJoin(materials, eq(products.materialId, materials.id))
-		.where(
-			and(
-				eq(brandAccessories.brandId, brandId),
-				isNull(brandAccessories.productId),
-				eq(brandAccessories.isActive, true),
-				isNotNull(brandAccessories.accessoryProductId)
-			)
-		)
+		.where(where)
 		.orderBy(asc(products.name), asc(brandAccessories.id));
+}
+
+export async function getBrandAccessoryRows(
+	brandId: string,
+	executor: DbOrTx = db
+): Promise<BrandAccessoryJoinRow[]> {
+	return selectAccessoryJoinRows(
+		and(
+			eq(brandAccessories.brandId, brandId),
+			isNull(brandAccessories.productId),
+			eq(brandAccessories.isActive, true),
+			isNotNull(brandAccessories.accessoryProductId)
+		),
+		executor
+	);
 }
 
 export async function getProductOverrideRows(
@@ -185,18 +193,10 @@ export async function getProductOverrideRows(
 	brandId: string,
 	executor: DbOrTx = db
 ): Promise<BrandAccessoryJoinRow[]> {
-	return executor
-		.select(ACCESSORY_JOIN_SELECT)
-		.from(brandAccessories)
-		.leftJoin(
-			products,
-			and(eq(brandAccessories.accessoryProductId, products.id), isNull(products.deletedAt))
-		)
-		.leftJoin(brands, eq(products.brandId, brands.id))
-		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
-		.leftJoin(materials, eq(products.materialId, materials.id))
-		.where(and(eq(brandAccessories.brandId, brandId), eq(brandAccessories.productId, productId)))
-		.orderBy(asc(products.name), asc(brandAccessories.id));
+	return selectAccessoryJoinRows(
+		and(eq(brandAccessories.brandId, brandId), eq(brandAccessories.productId, productId)),
+		executor
+	);
 }
 
 export async function findExistingRule(
