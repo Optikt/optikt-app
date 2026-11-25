@@ -10,6 +10,7 @@ import { auditService } from '$lib/server/audit';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { UserRole } from '$lib/shared/enums/roles';
 import {
+	groupsCanonicalSignature,
 	normalizeGroupsForSubmit,
 	summarizeGroups,
 	validateItemGroups
@@ -75,7 +76,10 @@ export async function saveQuoteItemGroupsCore(data: SaveQuoteItemGroupsInput, ct
 	const nameOf = (id: string) => names.get(id) ?? 'Artículo';
 	const before = summarizeGroups(beforeGroups, nameOf);
 	const after = summarizeGroups(groups, nameOf);
-	if (before !== after) {
+	const structChanged =
+		groupsCanonicalSignature(normalizeGroupsForSubmit(beforeGroups)) !==
+		groupsCanonicalSignature(groups);
+	if (before !== after || structChanged) {
 		await auditService.logCustom(
 			'quote',
 			data.quoteId,

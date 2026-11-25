@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { convertQuoteToSaleCore } from './convertQuoteToSale';
+import { updateExistingQuoteCore } from './updateExistingQuote';
+import { getQuoteItemsWithDetails } from '$lib/server/db/queries/quotes/reads';
 import { db } from '$lib/server/db';
 import {
 	customers,
@@ -455,5 +457,65 @@ describe('convertQuoteToSaleCore', () => {
 			.from(prescriptions)
 			.where(eq(prescriptions.customerId, otherCustomer.id));
 		expect(noneRx).toHaveLength(0);
+	});
+
+	it('updates and converts a quote with a child TREATMENT whose id sorts before its parent LENS_PAIR (no 23503 FK error)', async () => {
+		const seller = await createUser();
+		const customer = await createCustomer();
+		const quote = await createQuote({ customerId: customer.id, sellerId: seller.id });
+		const treatmentId = '00000000-0000-4000-8000-000000000002';
+		const lensId = 'ffffffff-ffff-4fff-8fff-fffffffffff2';
+		const sameTs = nowISO();
+		const lensInput: QuoteItemInput = {
+			id: lensId,
+			itemType: SaleItemType.LENS_PAIR,
+			quantity: 1,
+			unitPrice: 80,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			snapshotName: 'Cristal Lab',
+			odSphere: -1,
+			osSphere: -1
+		};
+		const treatmentInput: QuoteItemInput = {
+			id: treatmentId,
+			itemType: SaleItemType.TREATMENT,
+			parentQuoteItemId: lensId,
+			quantity: 1,
+			unitPrice: 15,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			snapshotName: 'Antirreflejo'
+		};
+
+		await db
+			.insert(quoteItems)
+			.values([
+				buildQuoteItemValues(lensInput, quote.id, sameTs),
+				buildQuoteItemValues(treatmentInput, quote.id, sameTs)
+			]);
+
+		const readItems = await getQuoteItemsWithDetails(quote.id);
+		expect(readItems.map((i) => i.id)).toEqual([lensId, treatmentId]);
+
+		// Update with child BEFORE parent must succeed without FK violation
+		const updated = await updateExistingQuoteCore(
+			{ id: quote.id, items: [treatmentInput, { ...lensInput, unitPrice: 85 }] },
+			ctx(seller.id)
+		);
+		expect(updated.success).toBe(true);
+
+		// Convert must also insert parent before child without FK violation
+		const converted = await convertQuoteToSaleCore({ id: quote.id }, ctx(seller.id));
+		expect(converted.success).toBe(true);
+		if (!converted.success) throw new Error(converted.error);
+		const createdSaleItems = await db
+			.select()
+			.from(saleItems)
+			.where(eq(saleItems.saleId, converted.sale.id));
+		expect(createdSaleItems).toHaveLength(2);
+		const saleLens = createdSaleItems.find((i) => i.itemType === SaleItemType.LENS_PAIR)!;
+		const saleTreatment = createdSaleItems.find((i) => i.itemType === SaleItemType.TREATMENT)!;
+		expect(saleTreatment.parentSaleItemId).toBe(saleLens.id);
 	});
 });

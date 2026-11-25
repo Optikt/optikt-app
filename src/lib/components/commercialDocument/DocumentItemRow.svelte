@@ -76,7 +76,9 @@
 					<div
 						class="mt-1"
 						onclick={(event) => event.stopPropagation()}
-						onkeydown={(event) => event.stopPropagation()}
+						onkeydown={(event) => {
+							if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
+						}}
 					>
 						{@render extra()}
 					</div>

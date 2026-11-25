@@ -112,7 +112,8 @@ export function buildPersistedDisplayGroups<
 	mainItems: T[],
 	lensPairType: string,
 	treatmentType: string,
-	getParentId: (item: T) => string | null | undefined
+	getParentId: (item: T) => string | null | undefined,
+	disableLegacyLensMerge = false
 ): PersistedDisplayGroup<T>[] {
 	const groups: PersistedDisplayGroup<T>[] = [];
 	const lensGroupMap = new Map<string, PersistedDisplayGroup<T>>();
@@ -148,7 +149,12 @@ export function buildPersistedDisplayGroups<
 		);
 		const lineTotal = item.unitPrice * item.quantity - discountAmount;
 
-		if (item.itemType === lensPairType && item.lensCatalogItemId && isLegacySplitLensItem(item)) {
+		if (
+			!disableLegacyLensMerge &&
+			item.itemType === lensPairType &&
+			item.lensCatalogItemId &&
+			isLegacySplitLensItem(item)
+		) {
 			const existing = lensGroupMap.get(item.lensCatalogItemId);
 			if (existing) {
 				existing.quantity += item.quantity;

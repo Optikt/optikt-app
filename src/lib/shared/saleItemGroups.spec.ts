@@ -9,6 +9,7 @@ import {
 	followIncludedAccessories,
 	groupCode,
 	groupDisplayLabel,
+	groupsCanonicalSignature,
 	normalizeGroupsForSubmit,
 	orderGroupMembers,
 	orderItemsByGroups,
@@ -262,5 +263,29 @@ describe('orderLinesByGroups (ticket / PDF)', () => {
 			'lb',
 			'f'
 		]);
+	});
+
+	it('truncates fractional item quantities in clampAllocations and keeps strict weak order in orderGroupMembers', () => {
+		const fractional: GroupableItem = { id: 'f', itemType: 'PRODUCT', quantity: 1.5 };
+		expect(clampAllocations([g('Sofía', [['f', 2]])], [fractional])[0].members).toEqual([
+			{ itemId: 'f', quantity: 1 }
+		]);
+
+		const ordered = orderGroupMembers(
+			[
+				{ itemId: 'missing-1', quantity: 1 },
+				{ itemId: 'la', quantity: 1 },
+				{ itemId: 'f', quantity: 1 },
+				{ itemId: 'missing-2', quantity: 1 }
+			],
+			[frame2, lensA]
+		);
+		expect(ordered.map((m) => m.itemId)).toEqual(['f', 'la', 'missing-1', 'missing-2']);
+	});
+
+	it('groupsCanonicalSignature detects swapping identically-named items', () => {
+		const before = [g('Sofía', [['la', 1]]), g('Andrés', [['lb', 1]])];
+		const swapped = [g('Sofía', [['lb', 1]]), g('Andrés', [['la', 1]])];
+		expect(groupsCanonicalSignature(before)).not.toBe(groupsCanonicalSignature(swapped));
 	});
 });

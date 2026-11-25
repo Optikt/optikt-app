@@ -12,7 +12,7 @@ import type {
 	SalesStats
 } from './types';
 import { buildSaleConditions, saleSearchFields } from './shared';
-import { eq, isNull, and, desc, asc, count, sql, type SQL } from 'drizzle-orm';
+import { eq, isNull, and, or, desc, asc, count, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { relevanceScoreOrderSql } from '$lib/server/db/search';
@@ -71,9 +71,19 @@ export async function getSalePrescription(
 		.from(saleItems)
 		.innerJoin(prescriptions, eq(saleItems.prescriptionId, prescriptions.id))
 		.innerJoin(sales, eq(sales.id, saleItems.saleId))
-		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)))
-		// The primary lens ("fórmula principal") wins; otherwise the first linked lens.
-		.orderBy(desc(sql`(${saleItems.id} = ${sales.primaryLensItemId})`), saleItems.createdAt)
+		.where(
+			and(
+				eq(saleItems.saleId, saleId),
+				isNull(saleItems.deletedAt),
+				eq(prescriptions.customerId, sales.customerId),
+				or(isNull(sales.primaryLensItemId), eq(saleItems.id, sales.primaryLensItemId))
+			)
+		)
+		// The primary lens ("fórmula principal") wins; otherwise the first linked lens (legacy sales).
+		.orderBy(
+			desc(sql`COALESCE(${saleItems.id} = ${sales.primaryLensItemId}, false)`),
+			saleItems.createdAt
+		)
 		.limit(1);
 	return row?.prescription ?? null;
 }

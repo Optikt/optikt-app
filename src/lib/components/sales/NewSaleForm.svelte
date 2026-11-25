@@ -195,6 +195,19 @@
 		if (primaryChoice === null) return null;
 		return items.some((i) => i.kind === 'lens' && i.id === primaryChoice) ? primaryChoice : null;
 	});
+	// Deleting a manually selected primary lens returns to automatic default rules.
+	$effect(() => {
+		if (
+			typeof primaryChoice === 'string' &&
+			!items.some((i) => i.kind === 'lens' && i.id === primaryChoice)
+		) {
+			primaryChoice = undefined;
+		}
+	});
+	const docLabel = $derived.by(() => {
+		const trimmed = orderNumberInput.trim();
+		return trimmed ? `#${trimmed.padStart(4, '0')}` : undefined;
+	});
 
 	const step2PrescriptionConfirmation = $derived(
 		buildStep2PrescriptionConfirmation(items, getCachedLensItems())
@@ -395,7 +408,7 @@
 				primaryLensId,
 				primaryAuto: primaryChoice === undefined,
 				onprimarychange: (id) => (primaryChoice = id),
-				docLabel: orderNumberInput ? `#${orderNumberInput.padStart(4, '0')}` : undefined
+				docLabel
 			}}
 			{customerPrescription}
 			{selectedCustomer}
@@ -412,7 +425,7 @@
 			{items}
 			{groups}
 			{primaryLensId}
-			docLabel={orderNumberInput ? `#${orderNumberInput.padStart(4, '0')}` : undefined}
+			{docLabel}
 			{customerId}
 			{selectedCustomer}
 			{newCustomer}

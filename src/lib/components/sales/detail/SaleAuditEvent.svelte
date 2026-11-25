@@ -52,9 +52,11 @@
 	const toggleLabel = $derived(
 		open
 			? 'Ocultar'
-			: event.changeCount > 0
-				? `Ver los ${event.changeCount} cambios`
-				: 'Ver cambios'
+			: event.changeCount === 1
+				? 'Ver el cambio'
+				: event.changeCount > 1
+					? `Ver los ${event.changeCount} cambios`
+					: 'Ver cambios'
 	);
 	const summaryLabel = $derived(
 		`${auditChangeCountLabel(event)}${showDeltaChip ? ` · Total ${formatDelta(event.totalDelta ?? 0)}` : ''} →`

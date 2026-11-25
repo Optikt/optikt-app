@@ -99,7 +99,8 @@
 				mainItems,
 				SaleItemType.LENS_PAIR,
 				SaleItemType.TREATMENT,
-				(item) => item.parentSaleItemId
+				(item) => item.parentSaleItemId,
+				hasGroups
 			)
 	);
 	/** Same order as the ticket/PDF: by person (montura, cristal, …); identity without groups. */

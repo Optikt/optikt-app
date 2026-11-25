@@ -26,6 +26,7 @@ import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { UpdateSaleInput } from '$lib/schemas/sales';
 import {
+	clearSaleItemPrescriptions,
 	findSaleGroupableItems,
 	findSaleItemGroups,
 	lockSaleForGroups
@@ -51,18 +52,10 @@ function editableSaleError(status: string, isAdmin: boolean): string | null {
 }
 
 /**
- * Edit an existing sale: update header fields and/or replace items.
- *
- * Strict state/role enforcement:
- * - COMPLETED: blocked entirely.
- * - IN_PROGRESS / READY: only ADMIN/MANAGER may edit.
- * - PENDING: allowed for authorized users.
- *
- * When items change the full inventory is reset (EDIT_REVERT) and
- * re-consumed (SALE_OUT) inside the same transaction.
+ * Edit an existing sale (header and/or full item replacement with EDIT_REVERT + SALE_OUT).
+ * COMPLETED blocked; IN_PROGRESS/READY admin-only; PENDING authorized users.
  */
 export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) {
-	// Read validation (outside transaction)
 	const existing = await findSaleById(data.id);
 	if (!existing) return { success: false as const, error: 'Venta no encontrada' };
 
@@ -74,7 +67,6 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	const statusErr = editableSaleError(existing.status, isAdmin);
 	if (statusErr) return { success: false as const, error: statusErr };
 
-	// Order number reassignment: admin only (code-only for now, no UI field yet).
 	if (data.orderNumber && !isAdmin) {
 		return {
 			success: false as const,
@@ -93,17 +85,10 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 			.select({ id: sales.id })
 			.from(sales)
 			.where(eq(sales.orderNumber, newOrderNumber));
-		// Reassigning a sale its own number is a no-op, not a duplicate
 		if (existingOrder && existingOrder.id !== data.id) {
-			return {
-				success: false as const,
-				error: `El número de orden #${newOrderNumber} ya existe`
-			};
+			return { success: false as const, error: `El número de orden #${newOrderNumber} ya existe` };
 		}
 	}
-
-	// Payment protection
-	const paidAmount = existing.paidAmountBcvUsd;
 
 	// Validate customer reference if changed
 	if (data.customerId) {
@@ -111,53 +96,27 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		if (!customer) return { success: false as const, error: 'Cliente no encontrado' };
 	}
 
-	// Calculate new totals
 	const hasItemChanges = !!data.items && data.items.length > 0;
 	if (data.items && data.items.length === 0) {
 		return { success: false as const, error: 'La venta debe tener al menos un artículo' };
 	}
 
-	// Treatments must belong to the same supplier as their parent lens (same rule
-	// as createSale). This keeps edited sales consistent when the lens changes.
-	if (hasItemChanges) {
-		const treatmentError = await validateTreatmentItems(data.items!);
-		if (treatmentError) {
-			return { success: false as const, error: treatmentError.error };
-		}
-	}
-
-	let newSubtotal = existing.subtotal;
-
-	const newDiscount = data.discount ?? existing.discount;
-	const newDiscountType = data.discountType ?? existing.discountType;
-
-	let newTotal = Math.max(
-		0,
-		newSubtotal - computeDiscount(newDiscount, newDiscountType, newSubtotal)
-	);
-
-	if (hasItemChanges) {
-		const totals = computeSaleTotals(
-			data.items!.map((item) =>
-				toSaleTotalsLine(item, data.snapshotTaxRate ?? existing.snapshotTaxRate)
-			),
-			newDiscount,
-			newDiscountType
-		);
-		newSubtotal = totals.subtotal;
-		newTotal = totals.total;
-	}
-
-	if (newTotal < paidAmount - 0.01) {
-		return {
-			success: false as const,
-			error:
-				'La modificación reduce el total por debajo de lo ya cobrado. Por favor cancele esta venta y cree una nueva.'
-		};
-	}
-
 	// Per-person groups + primary lens before the change (read inside the locked tx).
 	const touchesGroups = data.groups !== undefined || data.primaryLensItemId !== undefined;
+
+	// Treatments must belong to the same supplier as their parent lens (same rule
+	// as createSale). Also validate explicit groups/primary on item edits.
+	if (hasItemChanges) {
+		const treatmentError = await validateTreatmentItems(data.items!);
+		if (treatmentError) return { success: false as const, error: treatmentError.error };
+		if (touchesGroups) {
+			const incoming = data
+				.items!.filter((i): i is typeof i & { id: string } => !!i.id)
+				.map((i) => ({ id: i.id, itemType: i.itemType, quantity: i.quantity }));
+			const errs = validateItemGroups(data.groups ?? [], incoming, data.primaryLensItemId);
+			if (errs.length > 0) return { success: false as const, error: errs[0] };
+		}
+	}
 
 	// Prescription measures (DP / nasal) patch: pre-validate unless this edit
 	// itself sets a primary lens (which creates a fresh prescription in the tx).
@@ -165,9 +124,11 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	if (data.prescription) {
 		prescriptionBefore = await getSalePrescription(data.id);
 		const customerChangedPre = !!data.customerId && data.customerId !== existing.customerId;
+		const effectivePrimary =
+			data.primaryLensItemId !== undefined ? data.primaryLensItemId : existing.primaryLensItemId;
 		const createsPrimaryRx =
-			(!!data.primaryLensItemId && data.primaryLensItemId !== existing.primaryLensItemId) ||
-			(customerChangedPre && !!existing.primaryLensItemId);
+			(!!effectivePrimary && effectivePrimary !== existing.primaryLensItemId) ||
+			(customerChangedPre && !!effectivePrimary);
 		if (!prescriptionBefore && !createsPrimaryRx) {
 			return {
 				success: false as const,
@@ -177,7 +138,12 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		}
 	}
 
+	let beforeSale = existing;
+	let newSubtotal = existing.subtotal;
+	let newTotal = existing.total;
 	let beforeGroups: Awaited<ReturnType<typeof findSaleItemGroups>> = [];
+	let logicalBeforeGroups:
+		Awaited<ReturnType<typeof findSaleItemGroups>> | ReturnType<typeof remapGroupItemIds> = [];
 	let beforeLines: Awaited<ReturnType<typeof findSaleGroupableItems>> = [];
 	let groupsResult = null as PersistSaleGroupsResult | null;
 	let beforePrimaryUsed: string | null = existing.primaryLensItemId;
@@ -196,11 +162,39 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 				if (!lockedSale) throw new SaleUpdateError('Venta no encontrada');
 				const lockedErr = editableSaleError(lockedSale.status, isAdmin);
 				if (lockedErr) throw new SaleUpdateError(lockedErr);
+				const freshSale = await findSaleById(data.id, {}, tx);
+				if (!freshSale) throw new SaleUpdateError('Venta no encontrada');
+				beforeSale = freshSale;
 
-				const customerIdAfter = data.customerId ?? lockedSale.customerId;
-				const customerChanged = customerIdAfter !== lockedSale.customerId;
+				// Compute totals & payment protection from the locked row (never stale pre-lock totals).
+				const newDiscount = data.discount ?? freshSale.discount;
+				const newDiscountType = data.discountType ?? freshSale.discountType;
+				const taxRate = data.snapshotTaxRate ?? freshSale.snapshotTaxRate;
+				if (hasItemChanges) {
+					const totals = computeSaleTotals(
+						data.items!.map((item) => toSaleTotalsLine(item, taxRate)),
+						newDiscount,
+						newDiscountType
+					);
+					newSubtotal = totals.subtotal;
+					newTotal = totals.total;
+				} else {
+					newSubtotal = freshSale.subtotal;
+					newTotal = Math.max(
+						0,
+						newSubtotal - computeDiscount(newDiscount, newDiscountType, newSubtotal)
+					);
+				}
+				if (newTotal < freshSale.paidAmountBcvUsd - 0.01) {
+					throw new SaleUpdateError(
+						'La modificación reduce el total por debajo de lo ya cobrado. Por favor cancele esta venta y cree una nueva.'
+					);
+				}
+
+				const customerIdAfter = data.customerId ?? freshSale.customerId;
+				const customerChanged = customerIdAfter !== freshSale.customerId;
 				const needsGroupWork = hasItemChanges || touchesGroups || customerChanged;
-				const lockedPrimary = lockedSale.primaryLensItemId;
+				const lockedPrimary = freshSale.primaryLensItemId;
 				beforePrimaryUsed = lockedPrimary;
 				logicalBeforePrimary = lockedPrimary;
 
@@ -209,8 +203,8 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 						findSaleItemGroups(data.id, tx),
 						findSaleGroupableItems(data.id, tx)
 					]);
-					// Item edits are validated by the schema (client ids). A header-only edit
-					// sends real ids: verify against locked live lines before saving.
+					logicalBeforeGroups = beforeGroups;
+					// Header-only edits send real ids: verify against locked live lines before saving.
 					if (!hasItemChanges && touchesGroups) {
 						const errors = validateItemGroups(
 							data.groups ?? beforeGroups,
@@ -278,16 +272,18 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 						.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 						.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
 
-					// ── 4. Insert new items + consume inventory ──────────────────────
+					// ── 4. Insert new items + consume inventory (parents before child treatments) ──
 					const idMap = new Map<string, string>();
-					const newIds = new Map<number, string>();
-					data.items!.forEach((item, index) => {
-						const newId = crypto.randomUUID();
-						newIds.set(index, newId);
-						if (item.id) idMap.set(item.id, newId);
+					const indexedItems = data.items!.map((item) => {
+						const saleItemId = crypto.randomUUID();
+						if (item.id) idMap.set(item.id, saleItemId);
+						return { item, saleItemId };
 					});
-					for (const [index, item] of data.items!.entries()) {
-						const saleItemId = newIds.get(index)!;
+					const orderedItems = [
+						...indexedItems.filter((e) => !e.item.parentSaleItemId),
+						...indexedItems.filter((e) => !!e.item.parentSaleItemId)
+					];
+					for (const { item, saleItemId } of orderedItems) {
 						const resolvedParentId = item.parentSaleItemId
 							? (idMap.get(item.parentSaleItemId) ?? null)
 							: null;
@@ -297,17 +293,16 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 							saleId: data.id,
 							item,
 							parentSaleItemId: resolvedParentId,
-							prescriptionId: item.prescriptionId ?? null,
+							prescriptionId: customerChanged ? null : (item.prescriptionId ?? null),
 							userId: ctx.userId!,
 							now: nowISO()
 						});
 					}
 
 					// ── 4b. Groups + primary lens follow the replaced items ─────────
-					// Items got new ids: translate (client id → new id) the incoming
-					// groups, or the current ones when the payload doesn't send groups.
 					const remapId = (id: string | null | undefined) => (id ? (idMap.get(id) ?? null) : null);
 					const previousPrimary = remapId(lockedPrimary);
+					logicalBeforeGroups = remapGroupItemIds(beforeGroups, idMap);
 					// Keep the old id when item replacement deleted the primary line so audit logs X → Ninguna.
 					logicalBeforePrimary = previousPrimary ?? lockedPrimary;
 					groupsResult = await persistSaleGroups(tx, {
@@ -331,8 +326,7 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 							? await patchSalePrescriptionMeasures(tx, data.id, customerIdAfter, data.prescription)
 							: null;
 
-					// ── 5. Recalculate tax snapshot if provided ─────────────────────
-					const taxRate = data.snapshotTaxRate ?? existing.snapshotTaxRate;
+					// ── 5. Update sale header ───────────────────────────────────────
 					const updateData: Record<string, unknown> = {
 						subtotal: newSubtotal,
 						total: newTotal,
@@ -374,6 +368,9 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 						customerChanged,
 						measures: data.prescription
 					});
+				} else if (customerChanged) {
+					// Even without a primary lens, sever any legacy Rx links to the previous customer.
+					await clearSaleItemPrescriptions(data.id, tx);
 				}
 
 				const patchedPrescription =
@@ -399,8 +396,8 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 				if (Object.keys(headerUpdate).length === 0) {
 					const saleOut =
 						groupsResult?.primaryLensItemId !== undefined
-							? { ...existing, primaryLensItemId: groupsResult.primaryLensItemId }
-							: existing;
+							? { ...freshSale, primaryLensItemId: groupsResult.primaryLensItemId }
+							: freshSale;
 					return { sale: saleOut, prescription: patchedPrescription };
 				}
 				headerUpdate.updatedAt = nowISO();
@@ -429,9 +426,12 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 
 	const updatedSale = txResult.sale;
 	if (groupsResult?.prescription) {
-		await auditService.logCreate('prescription', groupsResult.prescription, ctx, {
-			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
-		});
+		await auditService.logCreate(
+			'prescription',
+			groupsResult.prescription,
+			{ ...ctx, reason: data.reason },
+			{ excludeFields: ['createdAt', 'updatedAt', 'deletedAt'] }
+		);
 	}
 	if (txResult.prescription && prescriptionBefore) {
 		await auditService.logUpdate(
@@ -447,10 +447,8 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		return { success: false as const, error: 'Error al actualizar la venta' };
 	}
 
-	// Audit (best-effort, after transaction succeeds). The structured items
-	// diff is computed pure here and annexed as `changes.itemsDiff` on the same
-	// «Venta actualizada» event — the inventory tx above is never touched.
-	const headerChanges = calculateDiff(existing, updatedSale, [
+	// Audit (best-effort, after transaction succeeds) against the locked pre-edit snapshot.
+	const headerChanges = calculateDiff(beforeSale, updatedSale, [
 		'updatedAt',
 		'deletedAt',
 		'primaryLensItemId'
@@ -460,20 +458,20 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	if (needsDiff) {
 		const diffContext: SaleAuditDiffContext = {
 			beforeHeader: {
-				saleDate: existing.createdAt,
-				notes: existing.notes,
-				isCashea: existing.isCashea,
-				discount: existing.discount,
-				discountType: existing.discountType
+				saleDate: beforeSale.createdAt,
+				notes: beforeSale.notes,
+				isCashea: beforeSale.isCashea,
+				discount: beforeSale.discount,
+				discountType: beforeSale.discountType
 			},
 			afterHeader: {
-				saleDate: data.saleDate ?? existing.createdAt,
-				notes: data.notes ?? existing.notes,
-				isCashea: data.isCashea ?? existing.isCashea,
-				discount: data.discount ?? existing.discount,
-				discountType: data.discountType ?? existing.discountType
+				saleDate: data.saleDate ?? beforeSale.createdAt,
+				notes: data.notes ?? beforeSale.notes,
+				isCashea: data.isCashea ?? beforeSale.isCashea,
+				discount: data.discount ?? beforeSale.discount,
+				discountType: data.discountType ?? beforeSale.discountType
 			},
-			beforeTotals: { subtotal: existing.subtotal, total: existing.total },
+			beforeTotals: { subtotal: beforeSale.subtotal, total: beforeSale.total },
 			afterTotals: { subtotal: newSubtotal, total: newTotal }
 		};
 		const diff = buildSaleAuditDiff(
@@ -492,6 +490,7 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	const groupChanges = groupsResult
 		? groupsAuditChanges({
 				before: beforeGroups,
+				logicalBefore: logicalBeforeGroups,
 				after: groupsResult.groups,
 				beforePrimary: beforePrimaryUsed,
 				logicalBeforePrimary,

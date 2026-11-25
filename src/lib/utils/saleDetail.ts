@@ -208,23 +208,37 @@ export function classifySaleAuditEntry(entry: ClassifiableAuditEntry): AuditEven
 				reason: null
 			});
 		}
+		const groupsOnly = isGroupsOnlyChange(fields);
 		const label = fields.customerId
 			? 'Cliente actualizado'
 			: fields.sellerId
 				? 'Vendedor actualizado'
-				: isGroupsOnlyChange(fields)
+				: groupsOnly
 					? 'Agrupación por persona actualizada'
 					: 'Venta actualizada';
 		const itemsDiff = extractSaleAuditDiff(changes as ChangeRecord);
+		const groupNote = groupsOnly
+			? [
+					typeof fields.personGroups?.new === 'string' ? fields.personGroups.new : null,
+					typeof fields.primaryLens?.new === 'string' ? `Fórmula: ${fields.primaryLens.new}` : null
+				]
+					.filter((v): v is string => !!v)
+					.join(' · ') || null
+			: null;
 		return baseEvent(entry, {
 			label,
 			kind: 'update',
 			changes: hasChanges ? record : null,
 			reason: readString(entry.reason),
 			itemsDiff,
-			legacyUpdate: itemsDiff === null,
+			legacyUpdate: itemsDiff === null && !groupsOnly,
 			totalDelta: saleAuditTotalDelta(itemsDiff),
-			changeCount: itemsDiff ? countSaleAuditChanges(itemsDiff) : 0
+			changeCount: itemsDiff
+				? countSaleAuditChanges(itemsDiff)
+				: groupsOnly
+					? Object.keys(fields).length
+					: 0,
+			note: itemsDiff ? null : groupNote
 		});
 	}
 

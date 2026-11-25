@@ -5,6 +5,7 @@
  */
 import { findPrescriptionById } from '$lib/server/db/queries/customers';
 import {
+	clearSaleItemPrescriptions,
 	findLensCatalogType,
 	findSaleGroupableItems,
 	replaceSaleItemGroups,
@@ -21,6 +22,7 @@ import {
 import {
 	clampAllocations,
 	dropEmptyGroups,
+	groupsCanonicalSignature,
 	normalizeGroupsForSubmit,
 	summarizeGroups,
 	type ItemGroup
@@ -68,12 +70,21 @@ export async function persistSaleGroups(
 
 	let primary: string | null | undefined = undefined;
 	let prescription: Prescription | null = null;
+	if (input.customerChanged) {
+		// Never leave links to the previous customer's prescriptions on this sale's items.
+		await clearSaleItemPrescriptions(input.saleId, tx);
+	}
 	if (input.primaryLensItemId !== undefined) {
 		const line = input.primaryLensItemId
 			? lines.find((l) => l.id === input.primaryLensItemId && l.itemType === 'LENS_PAIR')
 			: undefined;
 		primary = line?.id ?? null;
 		await setSalePrimaryLens(input.saleId, primary, tx);
+
+		if (primary === null && input.previousPrimaryLensItemId && !input.customerChanged) {
+			// Unlink the sale item (never deletes the prescription from customer history).
+			await clearSaleItemPrescriptions(input.saleId, tx);
+		}
 
 		// A new primary lens creates a new current prescription; so does the
 		// same primary when the sale changes customer or its graduation was
@@ -83,7 +94,13 @@ export async function persistSaleGroups(
 			!!input.customerChanged ||
 			(!!input.previousPrimaryRx && !!line && !sameLensRx(input.previousPrimaryRx, line));
 		if (line && refresh) {
-			prescription = await createPrimaryFromLine(tx, input.customerId, line, input.measures);
+			prescription = await createPrimaryFromLine(
+				tx,
+				input.customerId,
+				line,
+				input.measures,
+				!!input.customerChanged
+			);
 		}
 	}
 
@@ -94,7 +111,8 @@ async function createPrimaryFromLine(
 	tx: DbOrTx,
 	customerId: string,
 	line: SaleLine,
-	measures?: { dp?: number | null; npRight?: number | null; npLeft?: number | null }
+	measures?: { dp?: number | null; npRight?: number | null; npLeft?: number | null },
+	customerChanged = false
 ): Promise<Prescription | null> {
 	const lensType = await findLensCatalogType(line.lensCatalogItemId, tx);
 	const effectiveLine = measures
@@ -108,8 +126,8 @@ async function createPrimaryFromLine(
 	const fields = prescriptionFromLensLine(effectiveLine, toISODate(nowUTC()), lensType);
 	if (!fields) return null;
 
-	// Keep the doctor of the Rx the lens was linked to, when there is one.
-	if (line.prescriptionId) {
+	// Keep the doctor of the Rx the lens was linked to, when staying on the same customer.
+	if (line.prescriptionId && !customerChanged) {
 		const linked = await findPrescriptionById(line.prescriptionId, tx);
 		if (linked?.doctorName) fields.doctorName = linked.doctorName;
 	}
@@ -120,6 +138,8 @@ async function createPrimaryFromLine(
 /** Audit change record for the "Agrupación por persona" history entry. */
 export function groupsAuditChanges(input: {
 	before: readonly ItemGroup[];
+	/** Remapped `before` after item replacement (defaults to `before`). */
+	logicalBefore?: readonly ItemGroup[];
 	after: readonly ItemGroup[] | null;
 	beforePrimary: string | null;
 	/** Remapped id of `beforePrimary` after item replacement (defaults to `beforePrimary`). */
@@ -131,7 +151,13 @@ export function groupsAuditChanges(input: {
 	if (input.after) {
 		const oldText = summarizeGroups(input.before, input.nameOf);
 		const newText = summarizeGroups(input.after, input.nameOf);
-		if (oldText !== newText) changes.personGroups = { old: oldText, new: newText };
+		const compareBefore = input.logicalBefore ?? input.before;
+		const structChanged =
+			groupsCanonicalSignature(normalizeGroupsForSubmit(compareBefore)) !==
+			groupsCanonicalSignature(normalizeGroupsForSubmit(input.after));
+		if (oldText !== newText || structChanged) {
+			changes.personGroups = { old: oldText, new: newText };
+		}
 	}
 	const compareBefore =
 		input.logicalBeforePrimary !== undefined ? input.logicalBeforePrimary : input.beforePrimary;

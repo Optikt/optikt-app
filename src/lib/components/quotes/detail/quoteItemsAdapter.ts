@@ -38,7 +38,8 @@ export function quoteItemToDisplayItem(
 /** Grupos de display (lente + tratamientos hijos, productos, ítems libres). */
 export function buildQuoteDisplayGroups(
 	items: QuoteItemWithDetails[],
-	quoteId: string
+	quoteId: string,
+	disableLegacyLensMerge = false
 ): DisplayGroup[] {
 	const displayItems = items.map((item) => quoteItemToDisplayItem(item, quoteId));
 	const mainItems = displayItems.filter((i) => i.itemType !== SaleItemType.TREATMENT);
@@ -47,6 +48,7 @@ export function buildQuoteDisplayGroups(
 		mainItems,
 		SaleItemType.LENS_PAIR,
 		SaleItemType.TREATMENT,
-		(item) => (item as unknown as QuoteItemWithDetails).parentQuoteItemId
+		(item) => (item as unknown as QuoteItemWithDetails).parentQuoteItemId,
+		disableLegacyLensMerge
 	);
 }

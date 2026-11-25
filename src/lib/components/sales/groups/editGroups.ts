@@ -5,7 +5,7 @@
  */
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import {
-	normalizeGroupLabel,
+	groupsCanonicalSignature,
 	orderItemsByGroups,
 	type ItemGroup
 } from '$lib/shared/saleItemGroups';
@@ -31,20 +31,9 @@ export function editableGroupItems(
 		}));
 }
 
-/**
- * Canonical comparison key for "did the grouping change?":
- * preserves `null` vs explicit `"Trabajo N"` labels and sorts members by itemId
- * so re-assigning the same item never causes false positives.
- */
+/** Canonical comparison key for "did the grouping change?" (reuses shared signature). */
 export function groupsSignature(groups: readonly ItemGroup[]): string {
-	return JSON.stringify(
-		groups.map((g) => ({
-			label: normalizeGroupLabel(g.label),
-			members: [...g.members]
-				.sort((a, b) => a.itemId.localeCompare(b.itemId))
-				.map((m) => [m.itemId, m.quantity])
-		}))
-	);
+	return groupsCanonicalSignature(groups);
 }
 
 /** Orders edit-drawer main rows by person (without touching rows that lack an id). */

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { UserRole } from '$lib/shared/enums';
+import { UserRole } from '$lib/shared/enums/roles';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -134,5 +134,31 @@ describe('saveQuoteItemGroupsCore', () => {
 		);
 		expect(res.success).toBe(true);
 		expect(logCustom).not.toHaveBeenCalled();
+	});
+
+	it('logs audit when two identically-named items swap between people', async () => {
+		const itemB = '33333333-3333-4333-8333-333333333333';
+		findQuoteById.mockResolvedValue({ id: quoteId, status: QuoteStatus.DRAFT });
+		findQuoteGroupableItems.mockResolvedValue([
+			{ id: itemId, itemType: 'LENS_PAIR', quantity: 1, parentId: null, snapshotName: 'CR-39' },
+			{ id: itemB, itemType: 'LENS_PAIR', quantity: 1, parentId: null, snapshotName: 'CR-39' }
+		]);
+		findQuoteItemGroups.mockResolvedValue([
+			{ label: 'Sofía', members: [{ itemId, quantity: 1 }] },
+			{ label: 'Andrés', members: [{ itemId: itemB, quantity: 1 }] }
+		]);
+
+		const res = await saveQuoteItemGroupsCore(
+			{
+				quoteId,
+				groups: [
+					{ label: 'Sofía', members: [{ itemId: itemB, quantity: 1 }] },
+					{ label: 'Andrés', members: [{ itemId, quantity: 1 }] }
+				]
+			},
+			ctx
+		);
+		expect(res.success).toBe(true);
+		expect(logCustom).toHaveBeenCalledTimes(1);
 	});
 });

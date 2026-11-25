@@ -265,11 +265,12 @@
 			{#each orderedMembers as member (member.itemId)}
 				{@const dg = byId.get(member.itemId)}
 				{#if dg}
+					{@const isSplit = member.quantity < dg.quantity}
 					{@render personItemRow(
 						dg,
 						`g-${index}-${member.itemId}`,
-						dg.quantity > 1 ? `${member.quantity} de ${dg.quantity}` : '×1',
-						dg.quantity > 1,
+						isSplit ? `${member.quantity} de ${dg.quantity}` : `×${member.quantity}`,
+						isSplit,
 						groupLenses.length > 1 && primaryLensItemId === member.itemId
 					)}
 				{/if}
@@ -287,11 +288,12 @@
 				</span>
 			</div>
 			{#each unassigned as entry (entry.view.id)}
+				{@const isSplit = entry.free < entry.dg.quantity}
 				{@render personItemRow(
 					entry.dg,
 					`u-${entry.view.id}`,
-					entry.dg.quantity > 1 ? `${entry.free} de ${entry.dg.quantity}` : `×${entry.free}`,
-					entry.dg.quantity > 1,
+					isSplit ? `${entry.free} de ${entry.dg.quantity}` : `×${entry.free}`,
+					isSplit,
 					primaryLensItemId === entry.view.id
 				)}
 			{/each}

@@ -136,10 +136,13 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 			{ deferSequenceBump: true }
 		);
 
-		// Create sale items + handle stock via FIFO lot consumption
-		for (const [index, item] of data.items.entries()) {
-			const saleItemId = itemIds[index];
-
+		// Create sale items + handle stock via FIFO lot consumption (parents before child treatments)
+		const indexedItems = data.items.map((item, index) => ({ item, saleItemId: itemIds[index] }));
+		const orderedItems = [
+			...indexedItems.filter((entry) => !entry.item.parentSaleItemId),
+			...indexedItems.filter((entry) => !!entry.item.parentSaleItemId)
+		];
+		for (const { item, saleItemId } of orderedItems) {
 			// Each lens keeps its own link; only the primary lens is re-linked
 			// below to the customer's new current prescription.
 			const prescriptionId =

@@ -2,7 +2,7 @@
  * Split from parent query module (DT1 phase 4) — logic unchanged, verbatim move: sale items.
  */
 import type { SaleItemWithDetails } from './types';
-import { eq, isNull, and, asc } from 'drizzle-orm';
+import { eq, isNull, and, asc, sql } from 'drizzle-orm';
 
 import { db } from '$lib/server/db';
 
@@ -53,7 +53,12 @@ export async function getSaleItemsWithDetails(saleId: string): Promise<SaleItemW
 		.leftJoin(supplierTreatments, eq(saleItems.supplierTreatmentId, supplierTreatments.id))
 		.leftJoin(saleItemFreeDetails, eq(saleItems.id, saleItemFreeDetails.saleItemId))
 		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)))
-		.orderBy(asc(saleItems.createdAt), asc(saleItems.id));
+		// Parents before child treatments so re-insert never violates the self-FK when timestamps tie.
+		.orderBy(
+			sql`CASE WHEN ${saleItems.parentSaleItemId} IS NULL THEN 0 ELSE 1 END`,
+			asc(saleItems.createdAt),
+			asc(saleItems.id)
+		);
 
 	return results.map((r) => ({
 		...r.item,

@@ -69,7 +69,9 @@
 	const saleLikeItems = $derived(
 		displayItems.map((item) => quoteItemToDisplayItem(item, quote.id))
 	);
-	const groups = $derived(buildQuoteDisplayGroups(displayItems, quote.id));
+	const groups = $derived(
+		buildQuoteDisplayGroups(displayItems, quote.id, data.itemGroups.length > 0)
+	);
 	// Per-person grouping (chip per line, Por persona, Organizar — only DRAFT).
 	const groupViews = $derived(persistedGroupItems(displayItems, (i) => i.parentQuoteItemId));
 	let showOrganizer = $state(false);

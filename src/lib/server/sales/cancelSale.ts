@@ -30,10 +30,9 @@ export async function cancelSaleCore(data: CancelSaleInput, ctx: ActionContext) 
 	}
 
 	const refundBcvRate =
-		existing.paidAmountBcvUsd > 0 && data.refundStatus === RefundStatus.REFUNDED
-			? await getExchangeRateValue('USD')
-			: null;
+		data.refundStatus === RefundStatus.REFUNDED ? await getExchangeRateValue('USD') : null;
 
+	let beforeSale = existing;
 	try {
 		await db.transaction(async (tx) => {
 			// Lock the sale row first so cancelSale matches updateSale/saveSaleItemGroups
@@ -43,6 +42,9 @@ export async function cancelSaleCore(data: CancelSaleInput, ctx: ActionContext) 
 			if (locked.status === SaleStatus.CANCELLED) {
 				throw new SaleCancelError('La venta ya está cancelada');
 			}
+			const freshSale = await findSaleById(data.id, {}, tx);
+			if (!freshSale) throw new SaleCancelError('Venta no encontrada');
+			beforeSale = freshSale;
 
 			const now = nowISO();
 
@@ -91,8 +93,8 @@ export async function cancelSaleCore(data: CancelSaleInput, ctx: ActionContext) 
 				}
 			}
 
-			// Update sale status, cancellation info, and refund disposition
-			const hasPriorPayments = existing.paidAmountBcvUsd > 0;
+			// Update sale status, cancellation info, and refund disposition (from locked row)
+			const hasPriorPayments = beforeSale.paidAmountBcvUsd > 0;
 			const refundStatus = hasPriorPayments ? data.refundStatus : RefundStatus.NO_PAYMENT;
 
 			await updateSaleQuery(
@@ -103,7 +105,7 @@ export async function cancelSaleCore(data: CancelSaleInput, ctx: ActionContext) 
 					cancelledAt: now,
 					cancelledById: ctx.userId!,
 					refundStatus,
-					refundAmount: hasPriorPayments ? existing.paidAmountBcvUsd : null,
+					refundAmount: hasPriorPayments ? beforeSale.paidAmountBcvUsd : null,
 					refundNotes: hasPriorPayments ? (data.refundNotes ?? null) : null,
 					refundedAt: now,
 					refundedById: ctx.userId!
@@ -118,21 +120,21 @@ export async function cancelSaleCore(data: CancelSaleInput, ctx: ActionContext) 
 			if (
 				hasPriorPayments &&
 				refundStatus === RefundStatus.REFUNDED &&
-				existing.paidAmountBcvUsd > 0
+				beforeSale.paidAmountBcvUsd > 0
 			) {
 				await createExpense(
 					{
 						category: 'REFUND',
-						description: `Reembolso venta #${existing.orderNumber}: ${data.reason}`,
+						description: `Reembolso venta #${beforeSale.orderNumber}: ${data.reason}`,
 						currency: 'USD',
-						amount: existing.paidAmountBcvUsd,
-						amountUsd: existing.paidAmountBcvUsd,
+						amount: beforeSale.paidAmountBcvUsd,
+						amountUsd: beforeSale.paidAmountBcvUsd,
 						exchangeRate: null,
 						bcvRate: refundBcvRate,
 						rateType: null,
 						expenseDate: toISODate(nowUTC()),
 						registeredById: ctx.userId!,
-						reference: `SALE:${existing.id}`,
+						reference: `SALE:${beforeSale.id}`,
 						notes: data.refundNotes ?? null
 					},
 					tx
@@ -149,7 +151,7 @@ export async function cancelSaleCore(data: CancelSaleInput, ctx: ActionContext) 
 	// Audit logs (best-effort, after transaction succeeds)
 	const updated = await findSaleById(data.id);
 	if (updated) {
-		await auditService.logUpdate('sale', data.id, existing, updated, ctx, {
+		await auditService.logUpdate('sale', data.id, beforeSale, updated, ctx, {
 			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 		});
 	}

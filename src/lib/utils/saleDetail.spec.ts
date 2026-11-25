@@ -390,4 +390,20 @@ describe('isGroupsOnlyChange', () => {
 		expect(isGroupsOnlyChange({ personGroups: {}, total: {} })).toBe(false);
 		expect(isGroupsOnlyChange({})).toBe(false);
 	});
+
+	it('classifies groups-only and primary-only sale updates as non-legacy with diff rows', () => {
+		const event = eventOf({
+			action: 'update',
+			changes: {
+				personGroups: { old: 'Sin agrupar', new: 'Sofía (Cristal A)' },
+				primaryLens: { old: 'Ninguna', new: 'Cristal A' }
+			}
+		});
+		expect(event.label).toBe('Agrupación por persona actualizada');
+		expect(event.legacyUpdate).toBe(false);
+		expect(event.changeCount).toBe(2);
+		expect(event.note).toBe('Sofía (Cristal A) · Fórmula: Cristal A');
+		expect(hasAuditDetail(event)).toBe(true);
+		expect(auditDiffRows(event).map((r) => r.field)).toEqual(['personGroups', 'primaryLens']);
+	});
 });

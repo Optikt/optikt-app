@@ -126,7 +126,11 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 			);
 
 			const idMap = new Map<string, string>();
-			for (const item of items) {
+			const orderedItems = [
+				...items.filter((i) => !i.parentQuoteItemId),
+				...items.filter((i) => !!i.parentQuoteItemId)
+			];
+			for (const item of orderedItems) {
 				idMap.set(item.id, crypto.randomUUID());
 			}
 
@@ -165,7 +169,7 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 				tx
 			);
 
-			for (const item of items) {
+			for (const item of orderedItems) {
 				const newId = idMap.get(item.id)!;
 				const parentSaleItemId = item.parentQuoteItemId
 					? (idMap.get(item.parentQuoteItemId) ?? null)

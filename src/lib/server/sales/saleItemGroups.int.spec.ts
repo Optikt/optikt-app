@@ -4,12 +4,24 @@ import { createSaleCore } from './createSale';
 import { updateSaleCore } from './updateSale';
 import { saveSaleItemGroupsCore } from './saveSaleItemGroups';
 import { db } from '$lib/server/db';
-import { changeHistory, prescriptions, saleItems, sales } from '$lib/server/db/schema';
+import { changeHistory } from '$lib/server/db/schema/changeHistory';
+import { lensCatalogItems, lensMaterials } from '$lib/server/db/schema/lenses';
+import { prescriptions } from '$lib/server/db/schema/prescriptions';
+import { saleItems, sales } from '$lib/server/db/schema/sales';
+import { supplierTreatments } from '$lib/server/db/schema/suppliers';
 import { findSaleItemGroups } from '$lib/server/db/queries/sales/itemGroups';
+import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
+import { getSalePrescription } from '$lib/server/db/queries/sales/reads';
 import { resetDb } from '$lib/testing/integration/db';
-import { createCustomer, createUser } from '$lib/testing/integration/factories';
-import { DiscountType, SaleStatus, UserRole } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { createCustomer, createSupplier, createUser } from '$lib/testing/integration/factories';
+import { DiscountType, SaleStatus } from '$lib/shared/enums/salesTypes';
+import { UserRole } from '$lib/shared/enums/roles';
+import {
+	LensCatalogSource,
+	LensType,
+	SaleItemType,
+	TreatmentCategory
+} from '$lib/shared/enums/lensTypes';
 import type { ActionContext } from '$lib/server/actionContext';
 import type { CreateSaleInput, SaleItemInput } from '$lib/schemas/sales';
 
@@ -432,5 +444,170 @@ describe('sale item groups', () => {
 			{ userId: otherSeller.id, role: UserRole.SELLER, ipAddress: '127.0.0.1', userAgent: null }
 		);
 		expect(byOther.success).toBe(false);
+	});
+
+	it('orders parent lens before child treatment even when treatment.id < lens.id (no 23503 FK error)', async () => {
+		const { admin, customer } = await seed();
+		const supplier = await createSupplier();
+		const [lensMaterial] = await db
+			.insert(lensMaterials)
+			.values({ name: 'CR-39 Lab', code: 'CR39-LAB' })
+			.returning();
+		const [catalogLens] = await db
+			.insert(lensCatalogItems)
+			.values({
+				source: LensCatalogSource.LAB,
+				supplierId: supplier.id,
+				name: 'Tallado Monofocal',
+				type: LensType.MONOFOCAL,
+				materialId: lensMaterial.id,
+				basePrice: 30
+			})
+			.returning();
+		const [treatmentRow] = await db
+			.insert(supplierTreatments)
+			.values({
+				supplierId: supplier.id,
+				name: 'AR Verde',
+				category: Object.values(TreatmentCategory)[0],
+				price: 15
+			})
+			.returning();
+
+		// Force treatment UUID to sort strictly before parent lens UUID.
+		const treatmentId = '00000000-0000-4000-8000-000000000001';
+		const lensId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+		const lensItem: SaleItemInput = {
+			...lens(-1),
+			id: lensId,
+			lensCatalogItemId: catalogLens.id,
+			snapshotName: 'Tallado Monofocal'
+		};
+		const treatmentItem: SaleItemInput = {
+			id: treatmentId,
+			itemType: SaleItemType.TREATMENT,
+			supplierTreatmentId: treatmentRow.id,
+			parentSaleItemId: lensId,
+			quantity: 1,
+			unitPrice: 20,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			snapshotName: 'AR Verde'
+		};
+
+		// Create with child listed BEFORE parent in payload
+		const created = await createSaleCore(
+			{
+				customerId: customer.id,
+				saleDate: '2026-11-20',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				items: [treatmentItem, lensItem],
+				primaryLensItemId: lensId
+			},
+			ctx(admin.id)
+		);
+		expect(created.success).toBe(true);
+		if (!created.success) throw new Error(created.error);
+
+		// Read must return parent BEFORE child despite treatment.id < lens.id and identical createdAt
+		const readItems = await getSaleItemsWithDetails(created.sale.id);
+		expect(readItems.map((i) => i.id)).toEqual([lensId, treatmentId]);
+
+		// Edit with child listed BEFORE parent must also succeed without FK violation
+		const updated = await updateSaleCore(
+			{
+				id: created.sale.id,
+				reason: 'ajuste precio',
+				items: [treatmentItem, { ...lensItem, unitPrice: 60 }]
+			},
+			ctx(admin.id)
+		);
+		expect(updated.success).toBe(true);
+		const afterEdit = await getSaleItemsWithDetails(created.sale.id);
+		expect(afterEdit).toHaveLength(2);
+		expect(afterEdit[0].itemType).toBe(SaleItemType.LENS_PAIR);
+		expect(afterEdit[1].itemType).toBe(SaleItemType.TREATMENT);
+		expect(afterEdit[1].parentSaleItemId).toBe(afterEdit[0].id);
+	});
+
+	it('never leaks old customer prescription on customer change with primary=null and unlinks on unmark', async () => {
+		const { admin, customer } = await seed();
+		const other = await createCustomer();
+		const a = lens(-2);
+		const created = await createSaleCore(
+			{
+				customerId: customer.id,
+				saleDate: '2026-11-20',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				prescription: rx,
+				items: [a],
+				primaryLensItemId: a.id
+			},
+			ctx(admin.id)
+		);
+		if (!created.success) throw new Error(created.error);
+		expect(await getSalePrescription(created.sale.id)).not.toBeNull();
+
+		// Unmark primary on same customer: history stays intact, sale has no linked prescription
+		const unmarked = await saveSaleItemGroupsCore(
+			{ saleId: created.sale.id, groups: [], primaryLensItemId: null },
+			ctx(admin.id)
+		);
+		expect(unmarked.success).toBe(true);
+		expect(await getSalePrescription(created.sale.id)).toBeNull();
+		expect(await currentRx(customer.id)).toHaveLength(1);
+
+		// Re-mark primary, then move to Customer B with primaryLensItemId: null
+		await saveSaleItemGroupsCore(
+			{ saleId: created.sale.id, groups: [], primaryLensItemId: a.id! },
+			ctx(admin.id)
+		);
+		const moved = await updateSaleCore(
+			{
+				id: created.sale.id,
+				reason: 'cambio cliente sin receta',
+				customerId: other.id,
+				primaryLensItemId: null
+			},
+			ctx(admin.id)
+		);
+		expect(moved.success).toBe(true);
+		expect(await getSalePrescription(created.sale.id)).toBeNull();
+		expect(await currentRx(other.id)).toHaveLength(0);
+		expect(await currentRx(customer.id)).toHaveLength(1);
+	});
+
+	it('update: validates explicit primary on item edits and rejects measures when unmarking primary during customer change', async () => {
+		const { admin, customer } = await seed();
+		const other = await createCustomer();
+		const a = lens(-1);
+		const saleId = await createWithPrimary(customer.id, admin.id, a);
+
+		const badPrimary = await updateSaleCore(
+			{
+				id: saleId,
+				reason: 'bad primary',
+				items: [a],
+				primaryLensItemId: crypto.randomUUID()
+			},
+			ctx(admin.id)
+		);
+		expect(badPrimary.success).toBe(false);
+
+		const measuresWithoutPrimary = await updateSaleCore(
+			{
+				id: saleId,
+				reason: 'cliente sin principal con medidas',
+				customerId: other.id,
+				primaryLensItemId: null,
+				prescription: { dp: 63 }
+			},
+			ctx(admin.id)
+		);
+		expect(measuresWithoutPrimary.success).toBe(false);
 	});
 });

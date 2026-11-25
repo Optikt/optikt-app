@@ -105,7 +105,9 @@ export function clampAllocations<G extends ItemGroup>(
 	const byId = new Map(items.map((item) => [item.id, item]));
 	const budget = new Map<string, number>();
 	for (const item of items) {
-		if (isGroupableItemType(item.itemType)) budget.set(item.id, Math.max(0, item.quantity));
+		if (isGroupableItemType(item.itemType)) {
+			budget.set(item.id, Math.floor(Math.max(0, item.quantity)));
+		}
 	}
 
 	// Walk groups in order, consuming each item's budget first-come.
@@ -167,7 +169,9 @@ export function orderGroupMembers<M extends { itemId: string }, T extends Groupa
 	return [...members].sort((a, b) => {
 		const ea = byId.get(a.itemId);
 		const eb = byId.get(b.itemId);
-		if (!ea || !eb) return 0;
+		if (!ea && !eb) return 0;
+		if (!ea) return 1;
+		if (!eb) return -1;
 		return displayRank(ea.item) - displayRank(eb.item) || ea.idx - eb.idx;
 	});
 }
@@ -191,6 +195,21 @@ export function normalizeGroupsForSubmit(
 			members: group.members
 				.filter((m) => m.quantity > 0)
 				.map((m) => ({ itemId: m.itemId, quantity: Math.floor(m.quantity) }))
+		}))
+	);
+}
+
+/**
+ * Canonical structural key for comparing two normalized group lists (preserves
+ * group order and `null` vs explicit `"Trabajo N"`, sorts members by itemId).
+ */
+export function groupsCanonicalSignature(groups: readonly ItemGroup[]): string {
+	return JSON.stringify(
+		groups.map((g) => ({
+			label: normalizeGroupLabel(g.label),
+			members: [...g.members]
+				.sort((a, b) => a.itemId.localeCompare(b.itemId))
+				.map((m) => [m.itemId, m.quantity])
 		}))
 	);
 }

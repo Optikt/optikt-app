@@ -2,7 +2,7 @@ import { toSaleTotalsLine, computeSaleTotals } from '$lib/shared/saleTotals';
 import { findQuoteById, getQuoteItemsWithDetails } from '$lib/server/db/queries/quotes/reads';
 import { deleteQuoteItems, updateQuote } from '$lib/server/db/queries/quotes/writes';
 import { db } from '$lib/server/db';
-import type { ChangeRecord } from '$lib/server/db/schema';
+import type { ChangeRecord } from '$lib/server/db/schema/changeHistory';
 import {
 	findQuoteItemGroups,
 	lockQuoteForGroups,
@@ -11,6 +11,7 @@ import {
 import {
 	clampAllocations,
 	dropEmptyGroups,
+	groupsCanonicalSignature,
 	normalizeGroupsForSubmit,
 	summarizeGroups,
 	validateItemGroups
@@ -58,19 +59,7 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 		if (groupErrors.length > 0) return { success: false as const, error: groupErrors[0] };
 	}
 
-	// Calculate totals from new items
-	const discount = data.discount ?? existing.discount;
-	const discountType = data.discountType ?? existing.discountType;
-	const totals = computeSaleTotals(
-		data.items.map((item) =>
-			toSaleTotalsLine(item, data.snapshotTaxRate ?? existing.snapshotTaxRate)
-		),
-		discount,
-		discountType
-	);
-	const subtotal = totals.subtotal;
-	const total = totals.total;
-
+	let beforeQuote = existing;
 	let beforeItems: Awaited<ReturnType<typeof getQuoteItemsWithDetails>> = [];
 	let beforeGroups: Awaited<ReturnType<typeof findQuoteItemGroups>> = [];
 	let afterGroups: ReturnType<typeof normalizeGroupsForSubmit> = [];
@@ -85,10 +74,23 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 				throw new QuoteUpdateError('Solo se pueden editar presupuestos en borrador');
 			}
 
+			const freshQuote = await findQuoteById(data.id, {}, tx);
+			if (!freshQuote) throw new QuoteUpdateError('Presupuesto no encontrado');
+			beforeQuote = freshQuote;
+
 			[beforeItems, beforeGroups] = await Promise.all([
 				getQuoteItemsWithDetails(data.id, tx),
 				findQuoteItemGroups(data.id, tx)
 			]);
+
+			const discount = data.discount ?? freshQuote.discount;
+			const discountType = data.discountType ?? freshQuote.discountType;
+			const snapshotTaxRate = data.snapshotTaxRate ?? freshQuote.snapshotTaxRate;
+			const totals = computeSaleTotals(
+				data.items.map((item) => toSaleTotalsLine(item, snapshotTaxRate)),
+				discount,
+				discountType
+			);
 
 			const now = nowISO();
 
@@ -96,23 +98,23 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 			const updated = await updateQuote(
 				data.id,
 				{
-					customerId: data.customerId !== undefined ? data.customerId : existing.customerId,
+					customerId: data.customerId !== undefined ? data.customerId : freshQuote.customerId,
 					...(data.quoteDate !== undefined
 						? { quoteDate: composeBusinessTimestamp(data.quoteDate) }
 						: {}),
-					subtotal,
+					subtotal: totals.subtotal,
 					discount,
 					discountType,
-					snapshotTaxRate: data.snapshotTaxRate ?? existing.snapshotTaxRate,
-					isCashea: data.isCashea ?? existing.isCashea,
-					total,
+					snapshotTaxRate,
+					isCashea: data.isCashea ?? freshQuote.isCashea,
+					total: totals.total,
 					validUntil:
 						data.validUntil !== undefined
 							? data.validUntil
 								? data.validUntil
 								: null
-							: existing.validUntil,
-					notes: data.notes !== undefined ? data.notes : existing.notes,
+							: freshQuote.validUntil,
+					notes: data.notes !== undefined ? data.notes : freshQuote.notes,
 					updatedAt: now
 				},
 				tx
@@ -145,7 +147,7 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 	}
 
 	// Audit (best-effort, tras la tx): cambios de cabecera + diff de ítems.
-	const headerChanges = calculateDiff(existing, quote, ['createdAt', 'updatedAt', 'deletedAt']);
+	const headerChanges = calculateDiff(beforeQuote, quote, ['createdAt', 'updatedAt', 'deletedAt']);
 	const toDiffItem = (item: SaleAuditItemLike & { parentQuoteItemId?: string | null }) => ({
 		...item,
 		parentSaleItemId: item.parentQuoteItemId ?? null
@@ -153,11 +155,11 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 	const itemsDiff = buildSaleAuditDiff(beforeItems.map(toDiffItem), data.items.map(toDiffItem), {
 		dateLabel: 'Fecha',
 		beforeHeader: {
-			saleDate: existing.quoteDate,
-			notes: existing.notes,
-			isCashea: existing.isCashea,
-			discount: existing.discount,
-			discountType: existing.discountType
+			saleDate: beforeQuote.quoteDate,
+			notes: beforeQuote.notes,
+			isCashea: beforeQuote.isCashea,
+			discount: beforeQuote.discount,
+			discountType: beforeQuote.discountType
 		},
 		afterHeader: {
 			saleDate: quote.quoteDate,
@@ -166,18 +168,25 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 			discount: quote.discount,
 			discountType: quote.discountType
 		},
-		beforeTotals: { subtotal: existing.subtotal, total: existing.total },
+		beforeTotals: { subtotal: beforeQuote.subtotal, total: beforeQuote.total },
 		afterTotals: { subtotal: quote.subtotal, total: quote.total }
 	});
 	const diffCount = countSaleAuditChanges(itemsDiff);
-	const nameOf = (id: string) =>
-		data.items.find((i) => i.id === id)?.snapshotName ??
-		beforeItems.find((i) => i.id === id)?.snapshotName ??
-		'Artículo';
+	const nameOf = (id: string) => {
+		const nextItem = data.items.find((i) => i.id === id);
+		if (nextItem) return nextItem.snapshotName ?? nextItem.freeItemDescription ?? 'Artículo';
+		const prevItem = beforeItems.find((i) => i.id === id);
+		return prevItem?.snapshotName ?? prevItem?.freeDetails?.description ?? 'Artículo';
+	};
 	const groupsBefore = summarizeGroups(beforeGroups, nameOf);
 	const groupsAfter = summarizeGroups(afterGroups, nameOf);
+	const groupsStructChanged =
+		groupsCanonicalSignature(normalizeGroupsForSubmit(beforeGroups)) !==
+		groupsCanonicalSignature(afterGroups);
 	const groupChanges: ChangeRecord =
-		groupsBefore !== groupsAfter ? { personGroups: { old: groupsBefore, new: groupsAfter } } : {};
+		groupsBefore !== groupsAfter || groupsStructChanged
+			? { personGroups: { old: groupsBefore, new: groupsAfter } }
+			: {};
 	if (hasChanges(headerChanges) || diffCount > 0 || hasChanges(groupChanges)) {
 		await auditService.logCustom(
 			'quote',

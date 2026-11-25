@@ -150,16 +150,27 @@ export async function lockSaleForGroups(
 	return row ?? null;
 }
 
-/** Links one sale line to a prescription (the primary lens → the new current Rx). */
+/** Links (or unlinks) one sale line to a prescription. */
 export async function setSaleItemPrescription(
 	saleItemId: string,
-	prescriptionId: string,
+	prescriptionId: string | null,
 	executor: DbOrTx = db
 ): Promise<void> {
 	await executor
 		.update(saleItems)
 		.set({ prescriptionId, updatedAt: nowISO() })
 		.where(eq(saleItems.id, saleItemId));
+}
+
+/** Clears prescription links on all live lines of a sale (customer change / unmarking primary). */
+export async function clearSaleItemPrescriptions(
+	saleId: string,
+	executor: DbOrTx = db
+): Promise<void> {
+	await executor
+		.update(saleItems)
+		.set({ prescriptionId: null, updatedAt: nowISO() })
+		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)));
 }
 
 /** Lens type of a catalog lens (recommended lens type of the derived Rx). */
