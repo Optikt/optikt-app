@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack, getContext } from 'svelte';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
+	import { cacheProduct } from '../catalogCache.svelte';
 	import { toast } from 'svelte-sonner';
 	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
@@ -41,10 +42,7 @@
 	import SaleTreatmentSlideOver from './SaleTreatmentSlideOver.svelte';
 	import Step2ItemsList from './items/Step2ItemsList.svelte';
 	import Step2ValidationHints from './items/Step2ValidationHints.svelte';
-	import {
-		createIncludedAccessoryItem,
-		type IncludedAccessoryRule
-	} from './items/step2Accessories';
+	import { createIncludedAccessoryItem } from './items/step2Accessories';
 	import { recalcSuggestedPrice } from './items/step2Pricing';
 	import { copyFirstRxToAll } from './items/step2RxCopy';
 	import { getValidationReasons } from './items/step2Validation';
@@ -152,7 +150,7 @@
 			const linkedIds: string[] = [];
 			const accessoryItems: SaleItemRow[] = [];
 
-			for (const accessoryRule of accessories as unknown as IncludedAccessoryRule[]) {
+			for (const accessoryRule of accessories) {
 				if (accessoryRule.accessory.stock <= 0) {
 					toast.warning(
 						`⚠ ${accessoryRule.accessory.name} no tiene stock disponible y no fue agregado automáticamente.`
@@ -160,6 +158,9 @@
 					continue;
 				}
 
+				// Seed the on-demand catalog cache so UI, stock checks, IVA, and DB snapshots
+				// resolve this accessory product without requiring a manual search first.
+				cacheProduct(accessoryRule.accessory);
 				const accessoryItem = createIncludedAccessoryItem(parentItem.id, accessoryRule);
 				accessoryItems.push(accessoryItem);
 				linkedIds.push(accessoryItem.id);
