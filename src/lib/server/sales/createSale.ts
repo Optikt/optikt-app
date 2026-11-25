@@ -13,7 +13,11 @@ import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { nowISO, composeBusinessTimestamp } from '$lib/dates';
 import { replaceSaleItemGroups, setSalePrimaryLens } from '$lib/server/db/queries/sales/itemGroups';
 import { applyPrimaryPrescription } from '$lib/server/sales/primaryPrescription';
-import { defaultPrimaryLens, normalizeGroupsForSubmit } from '$lib/shared/saleItemGroups';
+import {
+	defaultPrimaryLens,
+	normalizeGroupsForSubmit,
+	validateItemGroups
+} from '$lib/shared/saleItemGroups';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import { computeDocumentTotals } from '$lib/server/documentTotals';
@@ -63,6 +67,11 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 	// members and the primary lens need no translation here.
 	const itemIds = data.items.map((item) => item.id ?? crypto.randomUUID());
 	const groups = normalizeGroupsForSubmit(data.groups ?? []);
+	const groupableItems = data.items.map((item, index) => ({
+		id: itemIds[index],
+		itemType: item.itemType,
+		quantity: item.quantity
+	}));
 
 	// Primary lens ("fórmula principal"): explicit value wins; absent (legacy
 	// callers) falls back to the default rule (exactly one lens, no names).
@@ -70,11 +79,14 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 		data.primaryLensItemId !== undefined
 			? data.primaryLensItemId
 			: defaultPrimaryLens(
-					data.items
-						.map((item, index) => ({ ...item, id: itemIds[index] }))
-						.filter((item) => item.itemType === SaleItemType.LENS_PAIR),
+					groupableItems.filter((item) => item.itemType === SaleItemType.LENS_PAIR),
 					groups
 				);
+
+	if (groups.length > 0 || primaryLensItemId) {
+		const groupErrors = validateItemGroups(groups, groupableItems, primaryLensItemId);
+		if (groupErrors.length > 0) return { success: false as const, error: groupErrors[0] };
+	}
 
 	// Freeze the live USD BCV rate for future tickera reprints (null when API down — print falls back to live)
 	const liveBcvRate = await getExchangeRateValue('USD');

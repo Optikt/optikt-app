@@ -5,6 +5,7 @@
 		groupCode,
 		groupDisplayLabel,
 		isGroupableItemType,
+		MAX_ITEM_GROUPS,
 		remainingQty
 	} from '$lib/shared/saleItemGroups';
 	import PersonAvatar from './PersonAvatar.svelte';
@@ -49,7 +50,17 @@
 	}: Props = $props();
 
 	const rows = $derived(items.filter((i) => isGroupableItemType(i.itemType)));
-	const lensCount = $derived(rows.filter((i) => i.itemType === 'LENS_PAIR').length);
+	const lensRows = $derived(rows.filter((i) => i.itemType === 'LENS_PAIR'));
+	const atLimit = $derived(groups.length >= MAX_ITEM_GROUPS);
+	const singleLensGroupLensIds = $derived.by(() => {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const ids = new Set<string>();
+		for (const group of groups) {
+			const groupLenses = groupLensIds(group, items);
+			if (groupLenses.length === 1) ids.add(groupLenses[0]);
+		}
+		return ids;
+	});
 	const cell = $derived(touch ? 'h-11 w-11' : 'h-[30px] w-[30px]');
 
 	function togglePrimary(lensId: string) {
@@ -137,14 +148,52 @@
 		{/each}
 		<button
 			type="button"
-			onclick={() => onchange([...groups, newUiGroup()])}
+			aria-disabled={atLimit}
+			onclick={() => !atLimit && onchange([...groups, newUiGroup()])}
 			class="{touch
 				? 'h-11'
-				: 'h-8'} self-start rounded-md border border-dashed border-outline px-2.5 text-xs font-semibold text-brand-navy"
+				: 'h-8'} self-start rounded-md border border-dashed border-outline px-2.5 text-xs font-semibold text-brand-navy aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
 		>
-			+ Agregar persona
+			{atLimit ? `Máximo ${MAX_ITEM_GROUPS} personas` : '+ Agregar persona'}
 		</button>
 	</section>
+
+	{#if showPrimary && groups.length === 0 && lensRows.length > 0}
+		<section class="flex flex-col gap-1.5" aria-label="Fórmula del cliente">
+			<p class="text-[11px] font-bold tracking-[0.1em] text-brand-navy">FÓRMULA DEL CLIENTE</p>
+			<div class="flex flex-col gap-1.5 rounded-lg bg-white p-2.5">
+				{#each lensRows as lens (lens.id)}
+					{@const isLensPrimary = primaryLensId === lens.id}
+					<div class="flex items-center justify-between gap-2 text-[13px]">
+						<span class="min-w-0 flex-1 truncate font-semibold text-brand-navy">{lens.name}</span>
+						{#snippet emptyLensPrimary({ props }: { props: Record<string, unknown> })}
+							<button
+								{...props}
+								type="button"
+								aria-pressed={isLensPrimary}
+								onclick={() => togglePrimary(lens.id)}
+								class="{touch
+									? 'h-11'
+									: 'h-8'} inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold whitespace-nowrap transition-colors {isLensPrimary
+									? 'border-[#d4a900] bg-[#ffeb85] text-[#5c4700] shadow-xs'
+									: 'border-outline-variant bg-white text-on-surface-variant hover:border-[#e6c200] hover:bg-[#fffbeb] hover:text-[#6f5900]'}"
+							>
+								<Star class="h-3.5 w-3.5 {isLensPrimary ? 'fill-current' : ''}" />
+								Principal
+							</button>
+						{/snippet}
+						<TriggerTooltip
+							title={isLensPrimary ? 'Fórmula del cliente (activa)' : 'Fórmula del cliente'}
+							text={isLensPrimary
+								? 'Esta graduación se guardará como la fórmula vigente del cliente. Haz clic para desmarcar.'
+								: 'Márcala para guardar esta graduación como la fórmula vigente del cliente.'}
+							trigger={emptyLensPrimary}
+						/>
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
 
 	{#if groups.length > 0}
 		<section class="flex flex-col gap-1.5" aria-label="Reparto">
@@ -178,7 +227,7 @@
 								<td class="max-w-[200px] px-2 py-2 text-[13px]">
 									<span class="font-semibold text-brand-navy">{item.name}</span>
 									<span class="text-xs text-on-surface-variant">×{item.quantity}</span>
-									{#if showPrimary && item.itemType === 'LENS_PAIR' && lensCount > 1}
+									{#if showPrimary && item.itemType === 'LENS_PAIR' && !singleLensGroupLensIds.has(item.id)}
 										{@const isLensPrimary = primaryLensId === item.id}
 										{#snippet lensStarTrigger({ props }: { props: Record<string, unknown> })}
 											<button
@@ -223,7 +272,10 @@
 											<span class="inline-flex items-center rounded-md border-2 {color}">
 												<button
 													type="button"
-													aria-label="Quitar una unidad"
+													aria-label="Quitar una unidad de {item.name} a {groupDisplayLabel(
+														group.label,
+														index
+													)}"
 													aria-disabled={n === 0}
 													onclick={() => n > 0 && onchange(stepUnits(groups, index, item, -1))}
 													class="{touch
@@ -235,7 +287,10 @@
 												<span class="font-mono font-bold">{n}</span>
 												<button
 													type="button"
-													aria-label="Agregar una unidad"
+													aria-label="Agregar una unidad de {item.name} a {groupDisplayLabel(
+														group.label,
+														index
+													)}"
 													aria-disabled={free === 0}
 													onclick={() => free > 0 && onchange(stepUnits(groups, index, item, 1))}
 													class="{touch

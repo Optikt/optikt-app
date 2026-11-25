@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DiscountType } from '$lib/shared/enums';
+import { DiscountType } from '$lib/shared/enums/salesTypes';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { ProductType } from '$lib/shared/enums/productTypes';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
@@ -9,7 +9,6 @@ import type { SaleItemRow } from '../newSaleTypes';
 import {
 	assignWhole,
 	clampUiGroups,
-	groupLabel,
 	groupLensIds,
 	groupUnits,
 	memberQty,
@@ -27,7 +26,7 @@ import {
 	type GroupItemView
 } from './groupsState';
 import { orderByPerson, persistedGroupItems } from './detailGroups';
-import { editableGroupItems, groupsSignature } from './editGroups';
+import { editableGroupItems, groupsSignature, orderEditableByGroups } from './editGroups';
 import { primaryFooterNote, primaryNote } from './primaryNote';
 import { applyWizardGroupsChange, orderWizardRows, wizardGroupItems } from './wizardGroups';
 
@@ -69,8 +68,6 @@ describe('groupsState', () => {
 		groups = stepUnits(groups, 1, frameItem, 1);
 		expect(groupUnits(groups[0])).toBe(1);
 		expect(visibleGroupCount(groups)).toBe(2);
-		expect(groupLabel(groups, 0)).toBe('Ana');
-		expect(groupLabel(groups, 1)).toBe('Trabajo 2');
 
 		const renamed = renameGroup(groups, g2.key, 'Bob');
 		expect(renamed[1].label).toBe('Bob');
@@ -212,9 +209,37 @@ describe('editGroups', () => {
 		expect(views).toHaveLength(3);
 		expect(views.map((v) => v.name)).toEqual(['Montura A', 'Cristales', 'Servicio']);
 		expect(views[0].productType).toBe(ProductType.FRAME);
-		expect(groupsSignature([{ label: 'Ana', members: [{ itemId: 'p1', quantity: 1 }] }])).toBe(
-			'Ana: p1 ×1'
+
+		// Member order invariance + null vs explicit "Trabajo 1" distinction
+		const sigA = groupsSignature([
+			{
+				label: 'Ana',
+				members: [
+					{ itemId: 'p1', quantity: 1 },
+					{ itemId: 'l1', quantity: 1 }
+				]
+			}
+		]);
+		const sigB = groupsSignature([
+			{
+				label: '  Ana ',
+				members: [
+					{ itemId: 'l1', quantity: 1 },
+					{ itemId: 'p1', quantity: 1 }
+				]
+			}
+		]);
+		expect(sigA).toBe(sigB);
+		expect(groupsSignature([{ label: null, members: [{ itemId: 'p1', quantity: 1 }] }])).not.toBe(
+			groupsSignature([{ label: 'Trabajo 1', members: [{ itemId: 'p1', quantity: 1 }] }])
 		);
+
+		const ordered = orderEditableByGroups(
+			editable.filter((e) => !e._removed),
+			views,
+			[{ label: 'Ana', members: [{ itemId: 'f1', quantity: 1 }] }]
+		);
+		expect(ordered.map((e) => e.id)).toEqual(['f1', 'p1', 'l1']);
 	});
 });
 
@@ -331,6 +356,16 @@ describe('wizardGroups', () => {
 
 		// Unchanged frame allocation leaves accessories untouched
 		expect(applyWizardGroupsChange(mirrored, mirrored, views, { f1: ['a1'] })).toEqual(mirrored);
+
+		// Deleting an earlier group keeps stable UiGroup.key allocations intact (does not overwrite manual accessory)
+		const withKeysPrev = [
+			{ key: 'g0', label: 'Extra', members: [{ itemId: 'fr1', quantity: 1 }] },
+			{ key: 'g1', label: 'Ana', members: [{ itemId: 'f1', quantity: 1 }] },
+			{ key: 'g2', label: 'Bob', members: [{ itemId: 'a1', quantity: 1 }] }
+		];
+		const withKeysNext = withKeysPrev.slice(1);
+		const afterDelete = applyWizardGroupsChange(withKeysPrev, withKeysNext, views, { f1: ['a1'] });
+		expect(afterDelete[1].members).toEqual([{ itemId: 'a1', quantity: 1 }]);
 
 		const ordered = orderWizardRows(rows, views, mirrored);
 		expect(ordered.map((r) => r.id)).toEqual(['f1', 'l1', 't1', 'a1', 'fr1']);

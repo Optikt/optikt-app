@@ -3,10 +3,12 @@ import { findQuoteById } from '$lib/server/db/queries/quotes/reads';
 import {
 	findQuoteGroupableItems,
 	findQuoteItemGroups,
+	lockQuoteForGroups,
 	replaceQuoteItemGroups
 } from '$lib/server/db/queries/quotes/itemGroups';
 import { auditService } from '$lib/server/audit';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
+import { UserRole } from '$lib/shared/enums/roles';
 import {
 	normalizeGroupsForSubmit,
 	summarizeGroups,
@@ -15,11 +17,17 @@ import {
 import type { SaveQuoteItemGroupsInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 
+class QuoteGroupsSaveError extends Error {}
+
 /**
  * Groups-only save from the quote detail ("Organizar"). Blocked once the
  * quote left DRAFT (converted quotes carry their groups to the sale).
  */
 export async function saveQuoteItemGroupsCore(data: SaveQuoteItemGroupsInput, ctx: ActionContext) {
+	if (ctx.role === UserRole.VIEWER) {
+		return { success: false as const, error: 'No tienes permisos para modificar este presupuesto' };
+	}
+
 	const quote = await findQuoteById(data.quoteId);
 	if (!quote) return { success: false as const, error: 'Presupuesto no encontrado' };
 	if (quote.status !== QuoteStatus.DRAFT) {
@@ -29,13 +37,35 @@ export async function saveQuoteItemGroupsCore(data: SaveQuoteItemGroupsInput, ct
 		};
 	}
 
-	const lines = await findQuoteGroupableItems(data.quoteId);
-	const errors = validateItemGroups(data.groups, lines);
-	if (errors.length > 0) return { success: false as const, error: errors[0] };
+	let lines: Awaited<ReturnType<typeof findQuoteGroupableItems>> = [];
+	let beforeGroups: Awaited<ReturnType<typeof findQuoteItemGroups>> = [];
+	let groups: ReturnType<typeof normalizeGroupsForSubmit> = [];
 
-	const beforeGroups = await findQuoteItemGroups(data.quoteId);
-	const groups = normalizeGroupsForSubmit(data.groups);
-	await db.transaction((tx) => replaceQuoteItemGroups(data.quoteId, groups, tx));
+	try {
+		await db.transaction(async (tx) => {
+			// Lock the quote row so concurrent conversions or item replacements serialize.
+			const locked = await lockQuoteForGroups(data.quoteId, tx);
+			if (!locked) throw new QuoteGroupsSaveError('Presupuesto no encontrado');
+			if (locked.status !== QuoteStatus.DRAFT) {
+				throw new QuoteGroupsSaveError('Solo se pueden organizar presupuestos en borrador');
+			}
+
+			[lines, beforeGroups] = await Promise.all([
+				findQuoteGroupableItems(data.quoteId, tx),
+				findQuoteItemGroups(data.quoteId, tx)
+			]);
+			const errors = validateItemGroups(data.groups, lines);
+			if (errors.length > 0) throw new QuoteGroupsSaveError(errors[0]);
+
+			groups = normalizeGroupsForSubmit(data.groups);
+			await replaceQuoteItemGroups(data.quoteId, groups, tx);
+		});
+	} catch (error) {
+		if (error instanceof QuoteGroupsSaveError) {
+			return { success: false as const, error: error.message };
+		}
+		throw error;
+	}
 
 	const names = new Map(lines.map((l) => [l.id, l.snapshotName ?? 'Artículo']));
 	const nameOf = (id: string) => names.get(id) ?? 'Artículo';

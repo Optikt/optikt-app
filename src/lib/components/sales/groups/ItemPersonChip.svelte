@@ -102,7 +102,7 @@
 				{/if}
 			{/snippet}
 		</PopoverTrigger>
-		<PopoverContent align="start" sideOffset={6} class="w-[340px] bg-white p-2.5 shadow-lg">
+		<PopoverContent align="start" sideOffset={6} class="z-60 w-[340px] bg-white p-2.5 shadow-lg">
 			<ItemPersonPopover
 				{item}
 				{groups}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
 	import SlideOver from '$lib/components/ui/SlideOver.svelte';
+	import { defaultPrimaryLens } from '$lib/shared/saleItemGroups';
 	import PersonsEditor from './PersonsEditor.svelte';
 	import { primaryNote } from './primaryNote';
 	import type { GroupItemView, UiGroup } from './groupsState';
@@ -19,14 +20,18 @@
 		warningMessage?: string;
 		showPrimary?: boolean;
 		primaryLensId?: string | null;
+		/** True while the incoming primary is automatic (not explicitly locked by the user). */
+		primaryAuto?: boolean;
 		onprimarychange?: (lensId: string | null) => void;
-		/** Wizard "Listo": commits draft groups/primary and runs post-apply logic (reorder). */
-		oncommit?: (groups: UiGroup[], primaryLensId: string | null) => void;
+		/** Wizard "Listo": commits draft groups (+ explicit primary when touched) and reorders. */
+		oncommit?: (groups: UiGroup[], primaryLensId?: string | null) => void;
 		/** Detail "Organizar": persist on "Guardar". Without it, edits a local draft until "Listo". */
 		onsave?: () => void;
 		saving?: boolean;
 		/** Bottom sheet with 44px targets (mobile detail). */
 		sheet?: boolean;
+		/** Return true to consume Escape (e.g. when a confirmation modal sits above the drawer). */
+		escapeHandler?: () => boolean;
 	}
 
 	let {
@@ -40,11 +45,13 @@
 		warningMessage,
 		showPrimary = false,
 		primaryLensId = null,
+		primaryAuto = false,
 		onprimarychange,
 		oncommit,
 		onsave,
 		saving = false,
-		sheet = false
+		sheet = false,
+		escapeHandler
 	}: Props = $props();
 
 	/**
@@ -76,7 +83,13 @@
 	});
 
 	const activeGroups = $derived(draftMode ? draftGroups : groups);
-	const activePrimary = $derived(draftMode ? draftPrimary : primaryLensId);
+	const activePrimary = $derived(
+		draftMode
+			? !primaryTouched && primaryAuto
+				? defaultPrimaryLens(items, draftGroups)
+				: draftPrimary
+			: primaryLensId
+	);
 
 	function handleGroupsChange(next: UiGroup[]) {
 		if (draftMode) {
@@ -108,11 +121,12 @@
 			return;
 		}
 		if (oncommit) {
-			oncommit(draftGroups, primaryTouched ? draftPrimary : primaryLensId);
-		} else {
-			onchange(draftGroups);
-			if (primaryTouched) onprimarychange?.(draftPrimary);
+			oncommit(draftGroups, primaryTouched ? draftPrimary : undefined);
+			open = false;
+			return;
 		}
+		onchange(draftGroups);
+		if (primaryTouched) onprimarychange?.(draftPrimary);
 		open = false;
 		onclose();
 	}
@@ -127,6 +141,8 @@
 <SlideOver
 	bind:open
 	onclose={draftMode ? undefined : onclose}
+	closeGuard={() => !saving}
+	{escapeHandler}
 	direction={sheet ? 'bottom' : 'right'}
 	dragClose={sheet}
 	widthClass="w-full max-w-[600px]"
@@ -162,7 +178,7 @@
 				type="button"
 				onclick={close}
 				aria-label="Cerrar"
-				class="relative z-[1] inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[#38466b] bg-[#1e2d55] sm:h-[34px] sm:w-[34px]"
+				class="relative z-[1] inline-flex h-11 w-11 items-center justify-center rounded-lg bg-white/15 text-white ring-1 ring-white/30 transition-colors hover:bg-white/25 sm:h-[34px] sm:w-[34px]"
 			>
 				<X class="h-4 w-4" />
 			</button>

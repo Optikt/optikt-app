@@ -6,6 +6,7 @@ import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { SaleItemRow } from '../newSaleTypes';
 import type { IncludedAccessoryMap } from '../includedAccessories';
+import { followIncludedAccessories } from '$lib/shared/saleItemGroups';
 import {
 	clampUiGroups,
 	visibleGroupCount,
@@ -36,6 +37,7 @@ export class WizardPersons {
 	readonly count = $derived(visibleGroupCount(this.groups));
 	readonly showPrimary = $derived.by(() => this.source().persons.showPrimary ?? false);
 	readonly primaryLensId = $derived.by(() => this.source().persons.primaryLensId ?? null);
+	readonly primaryAuto = $derived.by(() => this.source().persons.primaryAuto ?? false);
 	readonly footerNote = $derived(
 		this.showPrimary ? primaryFooterNote(this.items, this.groups, this.primaryLensId) : undefined
 	);
@@ -57,11 +59,32 @@ export class WizardPersons {
 		this.write.groups(this.previewChange(this.groups, next));
 	};
 
+	/** Syncs newly linked async accessories to an already-assigned parent frame. */
+	syncFrameAccessories = (frameId: string) => {
+		const accessoryIds = this.source().accessoryMap[frameId];
+		if (!accessoryIds || accessoryIds.length === 0) return;
+		const current = this.groups;
+		if (!current.some((g) => g.members.some((m) => m.itemId === frameId))) return;
+		this.write.groups(followIncludedAccessories(current, this.items, frameId, accessoryIds));
+	};
+
+	/** Persists clamped allocations into raw groups after item deletion or qty change. */
+	clamp = (dropEmptied = false) => {
+		const raw = this.source().groups;
+		if (raw.length === 0) return;
+		const hadMembersKeys = raw.filter((g) => g.members.length > 0).map((g) => g.key);
+		const clamped = clampUiGroups(raw, this.items);
+		const next = dropEmptied
+			? clamped.filter((g) => g.members.length > 0 || !hadMembersKeys.includes(g.key))
+			: clamped;
+		this.write.groups(next);
+	};
+
 	/** Commit a draft from the Personas drawer and reorder cards right away. */
-	commit = (nextGroups: UiGroup[], nextPrimary: string | null) => {
+	commit = (nextGroups: UiGroup[], nextPrimary?: string | null) => {
 		const finalGroups = clampUiGroups(nextGroups, this.items);
 		this.write.groups(finalGroups);
-		if (this.showPrimary && nextPrimary !== this.primaryLensId) {
+		if (this.showPrimary && nextPrimary !== undefined && nextPrimary !== this.primaryLensId) {
 			this.source().persons.onprimarychange?.(nextPrimary);
 		}
 		const rows = this.source().items;

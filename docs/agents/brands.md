@@ -5,13 +5,13 @@
 
 ## Purpose
 
-CRUD de marcas con soft-delete/reactivación, vínculo marca↔proveedor, y **accesorios incluidos**: fórmulas por marca + overrides por producto FRAME/SUNGLASSES consultadas por el asistente de venta para armar ítems `FREE_ITEM` (`components/sales/step2/SaleStep2Items.svelte:5`).
+CRUD de marcas con soft-delete/reactivación, vínculo marca↔proveedor, y **accesorios incluidos**: fórmulas por marca + overrides por producto FRAME/SUNGLASSES consultadas por el asistente de venta para auto-agregar ítems `PRODUCT` (`components/sales/step2/SaleStep2Items.svelte:5`).
 
 ## Scope
 
 `components/brands/**`, `components/accessories/**`, `routes/(app)/brands/**`, `remote/brands.remote.ts`, `remote/brandAccessories.remote.ts`, `queries/brands.ts`, `queries/brandAccessories/**`, `schemas/brands*` + `brandAccessories*`, `schema/brands.ts`, `schema/brandAccessories.ts`.
 
-Owner rules: el proveedor es del dominio `suppliers` (`*brandSuppliers*` → ese doc); los `FREE_ITEM` resultantes pertenecen a la venta (`sales`).
+Owner rules: el proveedor es del dominio `suppliers` (`*brandSuppliers*` → ese doc); los ítems `PRODUCT` resultantes pertenecen a la venta (`sales`).
 
 ## Reglas de dominio / invarianzas
 
@@ -26,7 +26,7 @@ Owner rules: el proveedor es del dominio `suppliers` (`*brandSuppliers*` → ese
 
 - El accesorio debe ser type ACCESSORY; el producto anfitrión debe pertenecer a la marca y ser FRAME/SUNGLASSES (`internal.ts:227-258`).
 - `priceMode CUSTOM` exige `customPrice > 0`, y `customPrice` solo puede existir en CUSTOM (doble: fns `internal.ts:69-87` + schema `schemas/brandAccessories.ts:39-58`).
-- **Resolución de reglas**: si el producto tiene overrides activos → se usan SOLO las del producto; si alguna override está inactiva → `[` vacía; sin override → reglas activas de marca (`productId IS NULL`) — `reads.ts:27-37`.
+- **Resolución de reglas**: si el producto tiene overrides activos → se usan SOLO las del producto; si alguna override está inactiva → `[]` vacía; sin override → reglas activas de marca (`productId IS NULL`) — `reads.ts:27-37`. `getAccessoriesForProduct` devuelve `accessory: ProductWithRelations` (excluyendo accesorios con `deletedAt`) para que el wizard de venta hidrate `catalogCache` en un solo roundtrip (`internal.ts:132-181`).
 - `toggleProductOverride` usa filas-marcador (`accessoryProductId = null`) para recordar "deshabilitado" cuando no hay accesorios (`writes.ts:96-179`); upsert con override borra el marcador y reactiva filas inactivas (`internal.ts:197-225`).
 
 - **Update parcial (DT26)**: `UpdateBrandSchema = partialUpdate(Create) + id`; `updateBrandForm` persiste solo el diff (`buildChangedFields`); sin cambios → devuelve la marca sin `UPDATE` ni audit. Spec: `remote/catalogPartialUpdates.int.spec.ts`.

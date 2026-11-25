@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
@@ -91,7 +91,8 @@ export async function getQuoteItemsWithDetails(quoteId: string): Promise<QuoteIt
 		.leftJoin(lensCatalogItems, eq(quoteItems.lensCatalogItemId, lensCatalogItems.id))
 		.leftJoin(supplierTreatments, eq(quoteItems.supplierTreatmentId, supplierTreatments.id))
 		.leftJoin(quoteItemFreeDetails, eq(quoteItems.id, quoteItemFreeDetails.quoteItemId))
-		.where(and(eq(quoteItems.quoteId, quoteId), isNull(quoteItems.deletedAt)));
+		.where(and(eq(quoteItems.quoteId, quoteId), isNull(quoteItems.deletedAt)))
+		.orderBy(asc(quoteItems.createdAt), asc(quoteItems.id));
 
 	return results.map((r) => ({
 		...r.item,

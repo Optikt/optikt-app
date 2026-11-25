@@ -3,15 +3,21 @@ import { findSaleById } from '$lib/server/db/queries/sales/reads';
 import {
 	findSaleGroupableItems,
 	findSaleItemGroups,
-	lockSalePrimaryLens
+	lockSaleForGroups
 } from '$lib/server/db/queries/sales/itemGroups';
 import { auditService } from '$lib/server/audit';
 import { hasChanges } from '$lib/server/audit/utils';
-import { groupsAuditChanges, persistSaleGroups } from '$lib/server/sales/saleItemGroupsCore';
+import {
+	groupsAuditChanges,
+	persistSaleGroups,
+	type PersistSaleGroupsResult
+} from '$lib/server/sales/saleItemGroupsCore';
 import { SaleStatus, canManageSaleByOwner } from '$lib/shared/enums';
 import { validateItemGroups } from '$lib/shared/saleItemGroups';
 import type { SaveSaleItemGroupsInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
+
+class SaleGroupsSaveError extends Error {}
 
 /**
  * Groups-only save ("Organizar" from the detail / Personas tab when the sale
@@ -30,25 +36,43 @@ export async function saveSaleItemGroupsCore(data: SaveSaleItemGroupsInput, ctx:
 		return { success: false as const, error: 'No tienes permisos para modificar esta venta' };
 	}
 
-	const lines = await findSaleGroupableItems(data.saleId);
-	const errors = validateItemGroups(data.groups, lines, data.primaryLensItemId);
-	if (errors.length > 0) return { success: false as const, error: errors[0] };
+	let lines: Awaited<ReturnType<typeof findSaleGroupableItems>> = [];
+	let beforeGroups: Awaited<ReturnType<typeof findSaleItemGroups>> = [];
+	let beforePrimary: string | null = null;
+	let result!: PersistSaleGroupsResult;
 
-	const beforeGroups = await findSaleItemGroups(data.saleId);
+	try {
+		await db.transaction(async (tx) => {
+			// Lock the sale row: concurrent saves, cancellations, or item edits
+			// serialize here so status, customer, lines, and primary stay consistent.
+			const locked = await lockSaleForGroups(data.saleId, tx);
+			if (!locked) throw new SaleGroupsSaveError('Venta no encontrada');
+			if (locked.status === SaleStatus.CANCELLED) {
+				throw new SaleGroupsSaveError('No se puede organizar una venta cancelada');
+			}
 
-	const { result, beforePrimary } = await db.transaction(async (tx) => {
-		// Read the primary under a row lock: two concurrent saves must not both
-		// see it as "changed" and create two current prescriptions.
-		const lockedPrimary = await lockSalePrimaryLens(data.saleId, tx);
-		const persisted = await persistSaleGroups(tx, {
-			saleId: data.saleId,
-			customerId: sale.customerId,
-			groups: data.groups,
-			primaryLensItemId: data.primaryLensItemId,
-			previousPrimaryLensItemId: lockedPrimary
+			[lines, beforeGroups] = await Promise.all([
+				findSaleGroupableItems(data.saleId, tx),
+				findSaleItemGroups(data.saleId, tx)
+			]);
+			const errors = validateItemGroups(data.groups, lines, data.primaryLensItemId);
+			if (errors.length > 0) throw new SaleGroupsSaveError(errors[0]);
+
+			beforePrimary = locked.primaryLensItemId;
+			result = await persistSaleGroups(tx, {
+				saleId: data.saleId,
+				customerId: locked.customerId,
+				groups: data.groups,
+				primaryLensItemId: data.primaryLensItemId,
+				previousPrimaryLensItemId: locked.primaryLensItemId
+			});
 		});
-		return { result: persisted, beforePrimary: lockedPrimary };
-	});
+	} catch (error) {
+		if (error instanceof SaleGroupsSaveError) {
+			return { success: false as const, error: error.message };
+		}
+		throw error;
+	}
 
 	// Audit (best-effort, after the transaction)
 	if (result.prescription) {

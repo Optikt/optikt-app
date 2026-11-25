@@ -832,7 +832,7 @@ describe('CreateSaleSchema groups', () => {
 		expect(result.success).toBe(false);
 	});
 
-	it('rejects treatments as members and a non-lens primary', () => {
+	it('rejects treatments as members and a non-lens primary (with primaryLensItemId path)', () => {
 		const lens = makeLensPairItem();
 		const treatment = { ...makeTreatmentItem(lens.id!), id: crypto.randomUUID() };
 		expect(
@@ -842,11 +842,41 @@ describe('CreateSaleSchema groups', () => {
 				groups: [{ members: [{ itemId: treatment.id, quantity: 1 }] }]
 			}).success
 		).toBe(false);
+		const badPrimary = CreateSaleSchema.safeParse({
+			...base,
+			items: [lens, treatment],
+			primaryLensItemId: treatment.id
+		});
+		expect(badPrimary.success).toBe(false);
+		if (!badPrimary.success) {
+			expect(badPrimary.error.issues.some((i) => i.path.includes('primaryLensItemId'))).toBe(true);
+		}
+	});
+
+	it('rejects duplicate itemId in a group and duplicate client item ids', () => {
+		const id = crypto.randomUUID();
+		const frame = { ...makeProductItem({ quantity: 2 }), id };
 		expect(
 			CreateSaleSchema.safeParse({
 				...base,
-				items: [lens, treatment],
-				primaryLensItemId: treatment.id
+				items: [frame],
+				groups: [
+					{
+						label: 'Ana',
+						members: [
+							{ itemId: id, quantity: 1 },
+							{ itemId: id, quantity: 1 }
+						]
+					}
+				]
+			}).success
+		).toBe(false);
+
+		expect(
+			CreateSaleSchema.safeParse({
+				...base,
+				items: [frame, { ...makeProductItem({ quantity: 1 }), id }],
+				groups: [{ label: 'Ana', members: [{ itemId: id, quantity: 1 }] }]
 			}).success
 		).toBe(false);
 	});
@@ -861,11 +891,27 @@ describe('CreateSaleSchema groups', () => {
 });
 
 describe('SaveSaleItemGroupsSchema', () => {
-	it('requires an explicit primary (null allowed)', () => {
+	it('requires an explicit primary (null allowed) and rejects duplicate members', () => {
 		const saleId = crypto.randomUUID();
+		const itemId = crypto.randomUUID();
 		expect(SaveSaleItemGroupsSchema.safeParse({ saleId, groups: [] }).success).toBe(false);
 		expect(
 			SaveSaleItemGroupsSchema.safeParse({ saleId, groups: [], primaryLensItemId: null }).success
 		).toBe(true);
+		expect(
+			SaveSaleItemGroupsSchema.safeParse({
+				saleId,
+				primaryLensItemId: null,
+				groups: [
+					{
+						label: 'Ana',
+						members: [
+							{ itemId, quantity: 1 },
+							{ itemId, quantity: 1 }
+						]
+					}
+				]
+			}).success
+		).toBe(false);
 	});
 });

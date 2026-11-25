@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import PersonChipLine from '../groups/PersonChipLine.svelte';
+	import { orderEditableByGroups } from '../groups/editGroups';
 	import EditSaleTabs from './EditSaleTabs.svelte';
 	import type { EditPersons } from '../groups/editPersons.svelte';
 	import { ChevronDown, Plus } from '@lucide/svelte';
@@ -51,6 +52,16 @@
 
 	let menuOpen = $state(false);
 	let menuRoot = $state<HTMLElement>();
+	let orderTick = $state(0);
+
+	// Order by person on mount / tab return / popover close (never mid-popover edit).
+	const orderedMainItems = $derived.by(() => {
+		void orderTick;
+		if (!persons) return mainItems;
+		const views = untrack(() => persons.items);
+		const groups = untrack(() => persons.groups);
+		return orderEditableByGroups(mainItems, views, groups);
+	});
 
 	// ── View-model mapping ──────────────────────────────────────────────────
 	const FACTORY_TREATMENTS = (lens: ReturnType<typeof getCachedLensItem>): string[] => {
@@ -285,7 +296,7 @@
 		</p>
 	{:else}
 		<div>
-			{#each mainItems as item, index (item.id ?? `new-${index}`)}
+			{#each orderedMainItems as item, index (item.id ?? `new-${index}`)}
 				<div data-item-id={item.id ?? `new-${index}`} style:--d={index} class:row-in={stagger}>
 					<DocumentItemRow
 						item={toView(item)}
@@ -304,6 +315,7 @@
 								groups={persons.groups}
 								onchange={persons.change}
 								onorganize={() => (persons.tab = 'persons')}
+								onclose={() => (orderTick += 1)}
 								isPrimary={persons.showPrimary && persons.primary === item.id}
 								docLabel={persons.docLabel}
 							/>

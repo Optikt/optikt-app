@@ -189,8 +189,9 @@
 	/** undefined = automatic (one lens and no names → that lens); null = "Ninguna". */
 	let primaryChoice = $state<string | null | undefined>(undefined);
 	const groupItems = $derived(wizardGroupItems(items, getCachedProducts(), getCachedLensItems()));
+	const activeSubmitGroups = $derived(toSubmitGroups(clampAllocations(groups, groupItems)));
 	const primaryLensId = $derived.by(() => {
-		if (primaryChoice === undefined) return defaultPrimaryLens(groupItems, groups);
+		if (primaryChoice === undefined) return defaultPrimaryLens(groupItems, activeSubmitGroups);
 		if (primaryChoice === null) return null;
 		return items.some((i) => i.kind === 'lens' && i.id === primaryChoice) ? primaryChoice : null;
 	});
@@ -392,6 +393,7 @@
 			persons={{
 				showPrimary: true,
 				primaryLensId,
+				primaryAuto: primaryChoice === undefined,
 				onprimarychange: (id) => (primaryChoice = id),
 				docLabel: orderNumberInput ? `#${orderNumberInput.padStart(4, '0')}` : undefined
 			}}

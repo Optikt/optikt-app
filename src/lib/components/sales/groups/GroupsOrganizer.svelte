@@ -2,7 +2,8 @@
 	import { toast } from 'svelte-sonner';
 	import { saveSaleItemGroups } from '$lib/remote/sales/groups.remote';
 	import { saveQuoteItemGroups } from '$lib/remote/quotes/commands.remote';
-	import { getErrorMessage, logger } from '$lib/utils';
+	import { getErrorMessage } from '$lib/utils/errors';
+	import { logger } from '$lib/utils/logger';
 	import type { ItemGroup } from '$lib/shared/saleItemGroups';
 	import PersonsDrawer from './PersonsDrawer.svelte';
 	import ReorganizeGroupsConfirm from './ReorganizeGroupsConfirm.svelte';
@@ -115,6 +116,7 @@
 	onsave={requestSave}
 	{saving}
 	{sheet}
+	escapeHandler={() => confirmReorganize}
 />
 
 <ReorganizeGroupsConfirm

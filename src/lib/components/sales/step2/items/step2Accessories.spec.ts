@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DiscountType } from '$lib/shared/enums';
+import { DiscountType } from '$lib/shared/enums/salesTypes';
+import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
 import { ProductType } from '$lib/shared/enums/productTypes';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { ProductSaleItemRow, SaleItemRow } from '../../newSaleTypes';
 import type { IncludedAccessoryMap } from '../../includedAccessories';
+import type { IncludedAccessoryRule } from './step2Accessories';
 
 const toastWarning = vi.fn();
 const toastInfo = vi.fn();
 const toastError = vi.fn();
 const getAccessoriesForProduct = vi.fn();
-const cacheProductIfMissing = vi.fn();
+const cacheProduct = vi.fn();
 
 vi.mock('svelte-sonner', () => ({
 	toast: {
@@ -22,7 +24,7 @@ vi.mock('$lib/remote/brandAccessories.remote', () => ({
 	getAccessoriesForProduct: (p: unknown) => getAccessoriesForProduct(p)
 }));
 vi.mock('../../catalogCache.svelte', () => ({
-	cacheProductIfMissing: (p: unknown) => cacheProductIfMissing(p)
+	cacheProduct: (p: unknown) => cacheProduct(p)
 }));
 
 const {
@@ -32,15 +34,21 @@ const {
 	syncStep2AccessoryQuantities
 } = await import('./step2Accessories');
 
-function rule(overrides: Record<string, unknown> = {}) {
+function rule(overrides: Record<string, unknown> = {}): IncludedAccessoryRule {
 	return {
 		accessoryProductId: 'acc-1',
-		priceMode: 'FREE',
+		priceMode: BrandAccessoryPriceMode.COURTESY,
 		customPrice: null,
 		currentProductPrice: 12,
-		accessory: { id: 'acc-1', name: 'Estuche', stock: 5, sku: 'EST-1', type: 'ACCESSORY' },
+		accessory: {
+			id: 'acc-1',
+			name: 'Estuche',
+			stock: 5,
+			sku: 'EST-1',
+			type: 'ACCESSORY'
+		} as unknown as ProductWithRelations,
 		...overrides
-	};
+	} as IncludedAccessoryRule;
 }
 
 function parentRow(id = 'frame-1', quantity = 1): ProductSaleItemRow {
@@ -59,13 +67,7 @@ function parentRow(id = 'frame-1', quantity = 1): ProductSaleItemRow {
 }
 
 beforeEach(() => {
-	for (const fn of [
-		toastWarning,
-		toastInfo,
-		toastError,
-		getAccessoriesForProduct,
-		cacheProductIfMissing
-	]) {
+	for (const fn of [toastWarning, toastInfo, toastError, getAccessoriesForProduct, cacheProduct]) {
 		fn.mockReset();
 	}
 });
@@ -88,7 +90,7 @@ describe('step2Accessories', () => {
 		expect(custom.unitPrice).toBe(7);
 		expect(fallback.unitPrice).toBe(0);
 		expect(free.isIncludedAccessory).toBe(true);
-		expect(cacheProductIfMissing).toHaveBeenCalledTimes(4);
+		expect(cacheProduct).toHaveBeenCalledTimes(4);
 	});
 
 	it('splits out-of-stock accessories and caps quantity to accessory stock', () => {
@@ -106,11 +108,13 @@ describe('step2Accessories', () => {
 	it('fetches, links, warns on out-of-stock/errors and skips non-eligible options', async () => {
 		let items: SaleItemRow[] = [parentRow('p1', 2)];
 		let map: IncludedAccessoryMap = {};
+		const onLinked = vi.fn();
 		const state = {
 			getItems: () => items,
 			getMap: () => map,
 			setItems: (next: SaleItemRow[]) => (items = next),
-			setMap: (next: IncludedAccessoryMap) => (map = next)
+			setMap: (next: IncludedAccessoryMap) => (map = next),
+			onLinked
 		};
 
 		// Non-eligible option → no query
@@ -134,6 +138,7 @@ describe('step2Accessories', () => {
 		);
 		expect(items).toHaveLength(3);
 		expect(map.p1).toHaveLength(2);
+		expect(onLinked).toHaveBeenCalledWith('p1');
 		expect(toastWarning).toHaveBeenCalledTimes(1);
 		expect(toastInfo).toHaveBeenCalledTimes(1);
 

@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { Minus, Plus } from '@lucide/svelte';
-	import { groupCode, groupDisplayLabel, remainingQty } from '$lib/shared/saleItemGroups';
+	import {
+		groupCode,
+		groupDisplayLabel,
+		MAX_ITEM_GROUPS,
+		remainingQty
+	} from '$lib/shared/saleItemGroups';
 	import PersonAvatar from './PersonAvatar.svelte';
 	import {
 		assignWhole,
@@ -27,9 +32,11 @@
 
 	const single = $derived(item.quantity <= 1);
 	const free = $derived(remainingQty(item, groups));
+	const atLimit = $derived(groups.length >= MAX_ITEM_GROUPS);
 	const btn = $derived(touch ? 'h-11 min-w-11' : 'h-8 min-w-8');
 
 	function createPerson() {
+		if (atLimit) return;
 		const group = newUiGroup(newName.trim() || null);
 		const next = [...groups, group];
 		const index = next.length - 1;
@@ -120,16 +127,18 @@
 			aria-label="Nombre de la nueva persona"
 			bind:value={newName}
 			maxlength={60}
-			placeholder="Nueva persona (opcional)"
+			disabled={atLimit}
+			placeholder={atLimit ? `Máximo ${MAX_ITEM_GROUPS} personas` : 'Nueva persona (opcional)'}
 			class="{touch
 				? 'h-11'
-				: 'h-8'} min-w-0 flex-1 rounded-md border border-outline-variant px-2 text-[13px]"
+				: 'h-8'} min-w-0 flex-1 rounded-md border border-outline-variant px-2 text-[13px] disabled:opacity-50"
 		/>
 		<button
 			type="submit"
+			aria-disabled={atLimit}
 			class="{touch
 				? 'h-11'
-				: 'h-8'} rounded-md bg-brand-navy px-2.5 text-xs font-semibold text-white"
+				: 'h-8'} rounded-md bg-brand-navy px-2.5 text-xs font-semibold text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
 		>
 			+ Crear
 		</button>

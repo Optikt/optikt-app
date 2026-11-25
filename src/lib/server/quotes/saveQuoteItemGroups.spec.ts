@@ -6,6 +6,7 @@ import type { ActionContext } from '$lib/server/actionContext';
 const findQuoteById = vi.fn();
 const findQuoteGroupableItems = vi.fn();
 const findQuoteItemGroups = vi.fn();
+const lockQuoteForGroups = vi.fn();
 const replaceQuoteItemGroups = vi.fn();
 const logCustom = vi.fn();
 
@@ -16,8 +17,9 @@ vi.mock('$lib/server/db/queries/quotes/reads', () => ({
 	findQuoteById: (id: string) => findQuoteById(id)
 }));
 vi.mock('$lib/server/db/queries/quotes/itemGroups', () => ({
-	findQuoteGroupableItems: (id: string) => findQuoteGroupableItems(id),
-	findQuoteItemGroups: (id: string) => findQuoteItemGroups(id),
+	findQuoteGroupableItems: (id: string, tx?: unknown) => findQuoteGroupableItems(id, tx),
+	findQuoteItemGroups: (id: string, tx?: unknown) => findQuoteItemGroups(id, tx),
+	lockQuoteForGroups: (id: string, tx?: unknown) => lockQuoteForGroups(id, tx),
 	replaceQuoteItemGroups: (...a: unknown[]) => replaceQuoteItemGroups(...a)
 }));
 vi.mock('$lib/server/audit', () => ({
@@ -40,14 +42,25 @@ beforeEach(() => {
 		findQuoteById,
 		findQuoteGroupableItems,
 		findQuoteItemGroups,
+		lockQuoteForGroups,
 		replaceQuoteItemGroups,
 		logCustom
 	]) {
 		fn.mockReset();
 	}
+	lockQuoteForGroups.mockResolvedValue({ status: QuoteStatus.DRAFT });
 });
 
 describe('saveQuoteItemGroupsCore', () => {
+	it('rejects VIEWER role', async () => {
+		const res = await saveQuoteItemGroupsCore(
+			{ quoteId, groups: [] },
+			{ ...ctx, role: UserRole.VIEWER }
+		);
+		expect(res.success).toBe(false);
+		expect(findQuoteById).not.toHaveBeenCalled();
+	});
+
 	it('returns not found when quote does not exist', async () => {
 		findQuoteById.mockResolvedValue(null);
 		await expect(saveQuoteItemGroupsCore({ quoteId, groups: [] }, ctx)).resolves.toEqual({
@@ -62,11 +75,20 @@ describe('saveQuoteItemGroupsCore', () => {
 		expect(res.success).toBe(false);
 	});
 
+	it('rejects if quote left DRAFT concurrently before acquiring lock', async () => {
+		findQuoteById.mockResolvedValue({ id: quoteId, status: QuoteStatus.DRAFT });
+		lockQuoteForGroups.mockResolvedValue({ status: QuoteStatus.CONVERTED });
+		const res = await saveQuoteItemGroupsCore({ quoteId, groups: [] }, ctx);
+		expect(res.success).toBe(false);
+		expect(replaceQuoteItemGroups).not.toHaveBeenCalled();
+	});
+
 	it('rejects invalid group allocations', async () => {
 		findQuoteById.mockResolvedValue({ id: quoteId, status: QuoteStatus.DRAFT });
 		findQuoteGroupableItems.mockResolvedValue([
 			{ id: itemId, itemType: 'PRODUCT', quantity: 1, parentId: null, snapshotName: 'Montura' }
 		]);
+		findQuoteItemGroups.mockResolvedValue([]);
 
 		const res = await saveQuoteItemGroupsCore(
 			{ quoteId, groups: [{ label: 'Ana', members: [{ itemId, quantity: 2 }] }] },

@@ -3,7 +3,8 @@
  * Shell: auth + delegate. Logic lives in src/lib/server/quotes/.
  */
 import { command } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
+import { requireAuth, requireRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums/roles';
 import {
 	CreateQuoteSchema,
 	SaveQuoteItemGroupsSchema,
@@ -34,6 +35,6 @@ export const updateExistingQuote = command(UpdateQuoteSchema, async (data) => {
 
 /** Groups-only save (per-person grouping) from the quote detail. DRAFT only. */
 export const saveQuoteItemGroups = command(SaveQuoteItemGroupsSchema, async (data) => {
-	const user = requireAuth();
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 	return saveQuoteItemGroupsCore(data, getActionContext(user));
 });

@@ -47,7 +47,7 @@ function line(overrides: Partial<CountLineCore> = {}): CountLineCore {
 
 describe('traffic light', () => {
 	it('classifies by age relative to the cycle', () => {
-		const now = Date.parse('2026-11-10T00:00:00.000Z');
+		const now = Date.parse('2026-11-15T00:00:00.000Z');
 		expect(
 			trafficStateFor({ lastCountedAt: '2026-11-01T00:00:00.000Z', createdAt: null }, 30, now)
 		).toBe('ok');

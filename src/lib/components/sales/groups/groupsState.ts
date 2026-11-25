@@ -6,7 +6,6 @@ import {
 	chipModel,
 	clampAllocations,
 	groupCode,
-	groupDisplayLabel,
 	normalizeGroupsForSubmit,
 	setMemberQuantity,
 	type GroupMember,
@@ -22,8 +21,6 @@ export interface UiGroup extends ItemGroup {
 /** A line as the grouping UI shows it. */
 export interface GroupItemView extends GroupableItem {
 	name: string;
-	/** Short secondary text (Rx summary, SKU…). */
-	detail?: string;
 }
 
 export interface PersonColor {
@@ -135,10 +132,6 @@ export function visibleGroupCount(groups: readonly ItemGroup[]): number {
 	return groups.filter((g) => g.members.length > 0 || (g.label ?? '').trim() !== '').length;
 }
 
-export function groupLabel(groups: readonly ItemGroup[], index: number): string {
-	return groupDisplayLabel(groups[index]?.label, index);
-}
-
 /** Units of a group (badges "3 ítems"). */
 export function groupUnits(group: ItemGroup): number {
 	return group.members.reduce((sum, m: GroupMember) => sum + m.quantity, 0);
@@ -177,6 +170,8 @@ export interface WizardPersonsOptions {
 	/** Sales only: ⭐ "Fórmula del cliente". */
 	showPrimary?: boolean;
 	primaryLensId?: string | null;
+	/** True while the primary lens comes from the automatic default rule (user hasn't clicked ⭐). */
+	primaryAuto?: boolean;
 	onprimarychange?: (lensId: string | null) => void;
 	/** Document chip in the Personas drawer ("#0313", "P-0019"). */
 	docLabel?: string;

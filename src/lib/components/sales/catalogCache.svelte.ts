@@ -30,27 +30,6 @@ export function cacheProduct(product: ProductWithRelations): void {
 	state.products.set(product.id, product);
 }
 
-/** Seed a minimal product entry if missing (e.g. auto-included accessory rules). */
-export function cacheProductIfMissing(summary: {
-	id: string;
-	name: string;
-	sku?: string;
-	stock: number;
-	type?: string;
-	currentSalePrice?: number | null;
-}): void {
-	if (state.products.has(summary.id)) return;
-	state.products.set(summary.id, {
-		id: summary.id,
-		sku: summary.sku ?? '',
-		name: summary.name,
-		type: summary.type ?? 'ACCESSORY',
-		stock: summary.stock,
-		currentSalePrice: summary.currentSalePrice ?? null,
-		isTaxable: true
-	} as ProductWithRelations);
-}
-
 export function cacheLensItem(lens: LensCatalogItemWithRelations): void {
 	state.lensItems.set(lens.id, lens);
 }

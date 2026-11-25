@@ -38,3 +38,7 @@ Fórmulas ópticas por cliente (OD/OS: esfera/cilindro/eje/add/altura, DP/NP, tr
 - 🟠 Sin int test de exclusividad `isCurrent` (la invariant más importante del dominio).
 - 🟡 Barrel `components/prescriptions/index.ts` (consumible, no extendible).
 - Nota del plan `customer-gender-age` (done): género/edad viven en `customers`, no acá.
+
+## Planes completados
+
+- **2026-11 · sale-item-groups** — Fórmula principal anclada al cristal (`sales.primary_lens_item_id`): solo ese cristal crea/reemplaza la `isCurrent` del cliente en ventas y conversiones (#232)

@@ -1,6 +1,7 @@
 import { toast } from 'svelte-sonner';
-import { getErrorMessage } from '$lib/utils';
+import { getErrorMessage } from '$lib/utils/errors';
 import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
+import type { ResolvedAccessoryRule } from '$lib/server/db/queries/brandAccessories/types';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { SaleItemRow } from '../../newSaleTypes';
 import { createEmptyProductItem } from '../../newSaleTypes';
@@ -10,28 +11,20 @@ import {
 	syncIncludedAccessoryQuantities,
 	type IncludedAccessoryMap
 } from '../../includedAccessories';
-import { cacheProductIfMissing } from '../../catalogCache.svelte';
+import { cacheProduct } from '../../catalogCache.svelte';
 
-export interface IncludedAccessoryRule {
-	accessoryProductId: string;
-	priceMode: string;
-	customPrice: number | null;
-	currentProductPrice: number | null;
-	accessory: {
-		id: string;
-		name: string;
-		sku?: string;
-		stock: number;
-		type?: string;
-		currentSalePrice?: number | null;
-	};
-}
+export type IncludedAccessoryRule = Pick<
+	ResolvedAccessoryRule,
+	'accessoryProductId' | 'priceMode' | 'customPrice' | 'currentProductPrice' | 'accessory'
+>;
 
 export function createIncludedAccessoryItem(
 	parentItemId: string,
 	accessoryRule: IncludedAccessoryRule
 ): SaleItemRow {
-	cacheProductIfMissing(accessoryRule.accessory);
+	// Seed the on-demand catalog cache so UI, stock checks, IVA, and DB snapshots
+	// resolve this accessory product without requiring a manual search first.
+	cacheProduct(accessoryRule.accessory);
 	const price = (() => {
 		switch (accessoryRule.priceMode) {
 			case 'PRODUCT':
@@ -91,6 +84,7 @@ export async function fetchAndLinkIncludedAccessories(
 		getMap: () => IncludedAccessoryMap;
 		setItems: (next: SaleItemRow[]) => void;
 		setMap: (next: IncludedAccessoryMap) => void;
+		onLinked?: (parentId: string) => void;
 	}
 ): Promise<void> {
 	if (
@@ -110,11 +104,7 @@ export async function fetchAndLinkIncludedAccessories(
 		if (!currentParent) return;
 
 		const { accessoryItems, linkedIds, addedNames, outOfStockNames } =
-			buildIncludedAccessoriesForParent(
-				parentItemId,
-				currentParent.quantity,
-				accessories as unknown as IncludedAccessoryRule[]
-			);
+			buildIncludedAccessoriesForParent(parentItemId, currentParent.quantity, accessories);
 		for (const name of outOfStockNames) {
 			toast.warning(`⚠ ${name} no tiene stock disponible y no fue agregado automáticamente.`);
 		}
@@ -122,6 +112,7 @@ export async function fetchAndLinkIncludedAccessories(
 
 		state.setItems([...currentItems, ...accessoryItems]);
 		state.setMap(linkIncludedAccessories(state.getMap(), parentItemId, linkedIds));
+		state.onLinked?.(parentItemId);
 		if (addedNames.length > 1) {
 			toast.info(`✓ Se agregaron automáticamente: ${addedNames.join(', ')}`);
 		}

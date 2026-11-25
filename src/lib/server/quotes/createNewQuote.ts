@@ -9,7 +9,7 @@ import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { composeBusinessTimestamp, nowISO } from '$lib/dates';
 import { db } from '$lib/server/db';
 import { replaceQuoteItemGroups } from '$lib/server/db/queries/quotes/itemGroups';
-import { normalizeGroupsForSubmit } from '$lib/shared/saleItemGroups';
+import { normalizeGroupsForSubmit, validateItemGroups } from '$lib/shared/saleItemGroups';
 import type { CreateQuoteInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -47,6 +47,15 @@ export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionCont
 	const subtotal = totals.subtotal;
 	const total = totals.total;
 
+	const groups = normalizeGroupsForSubmit(data.groups ?? []);
+	if (groups.length > 0) {
+		const groupableItems = data.items
+			.filter((item): item is typeof item & { id: string } => !!item.id)
+			.map((item) => ({ id: item.id, itemType: item.itemType, quantity: item.quantity }));
+		const groupErrors = validateItemGroups(groups, groupableItems);
+		if (groupErrors.length > 0) return { success: false as const, error: groupErrors[0] };
+	}
+
 	// All writes in a single transaction
 	const quote = await db.transaction(async (tx) => {
 		const now = nowISO();
@@ -83,7 +92,6 @@ export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionCont
 		await insertQuoteItems(tx, newQuote.id, data.items, now);
 
 		// Per-person groups: client item ids are kept as real ids on insert.
-		const groups = normalizeGroupsForSubmit(data.groups ?? []);
 		if (groups.length > 0) await replaceQuoteItemGroups(newQuote.id, groups, tx);
 
 		return newQuote;

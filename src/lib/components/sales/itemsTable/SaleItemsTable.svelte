@@ -269,7 +269,7 @@
 <section
 	class="items-section overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm"
 >
-	<div class="flex items-center gap-3 px-4 pt-3.5 pb-3">
+	<div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-3.5 pb-3">
 		<h2 class="font-heading text-[15px] font-bold text-brand-navy">{sectionTitle}</h2>
 		<span class="rounded bg-brand-navy px-[7px] text-[12px] font-bold text-white tabular-nums">
 			{displayGroups.length}
@@ -289,7 +289,8 @@
 						role="tab"
 						aria-selected={personView === opt.v}
 						onclick={() => (personView = opt.v as 'list' | 'people')}
-						class="min-h-8 rounded px-2.5 text-xs font-semibold {personView === opt.v
+						class="min-h-11 rounded px-2.5 text-xs font-semibold @min-[700px]:min-h-8 {personView ===
+						opt.v
 							? 'bg-white text-brand-navy shadow-sm'
 							: 'text-on-surface-variant'}">{opt.l}</button
 					>
@@ -300,16 +301,17 @@
 			<button
 				type="button"
 				onclick={persons.onOrganize}
-				class="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-brand-navy px-2.5 text-xs font-semibold text-brand-navy hover:bg-surface-container-low"
+				class="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-brand-navy px-2.5 text-xs font-semibold text-brand-navy hover:bg-surface-container-low @min-[700px]:min-h-8"
 			>
 				<Users class="h-3.5 w-3.5" /> Organizar
 			</button>
 		{/if}
-		<span class="flex-1"></span>
-		<TriggerTooltip
-			trigger={costsSwitch}
-			text="Muestra costos internos y márgenes. No es información para el cliente."
-		/>
+		<div class="ml-auto">
+			<TriggerTooltip
+				trigger={costsSwitch}
+				text="Muestra costos internos y márgenes. No es información para el cliente."
+			/>
+		</div>
 	</div>
 
 	{#if persons && hasGroups && personView === 'people'}

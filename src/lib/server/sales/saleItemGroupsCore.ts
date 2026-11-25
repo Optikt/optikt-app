@@ -42,6 +42,8 @@ export interface PersistSaleGroupsInput {
 	previousPrimaryRx?: LensRxSnapshot | null;
 	/** The sale moved to another customer: the new one gets the current Rx. */
 	customerChanged?: boolean;
+	/** Optional DP/NP measures edited in the same save (merged when a new Rx is created). */
+	measures?: { dp?: number | null; npRight?: number | null; npLeft?: number | null };
 }
 
 export interface PersistSaleGroupsResult {
@@ -81,7 +83,7 @@ export async function persistSaleGroups(
 			!!input.customerChanged ||
 			(!!input.previousPrimaryRx && !!line && !sameLensRx(input.previousPrimaryRx, line));
 		if (line && refresh) {
-			prescription = await createPrimaryFromLine(tx, input.customerId, line);
+			prescription = await createPrimaryFromLine(tx, input.customerId, line, input.measures);
 		}
 	}
 
@@ -91,10 +93,19 @@ export async function persistSaleGroups(
 async function createPrimaryFromLine(
 	tx: DbOrTx,
 	customerId: string,
-	line: SaleLine
+	line: SaleLine,
+	measures?: { dp?: number | null; npRight?: number | null; npLeft?: number | null }
 ): Promise<Prescription | null> {
 	const lensType = await findLensCatalogType(line.lensCatalogItemId, tx);
-	const fields = prescriptionFromLensLine(line, toISODate(nowUTC()), lensType);
+	const effectiveLine = measures
+		? {
+				...line,
+				dp: measures.dp !== undefined ? measures.dp : line.dp,
+				npRight: measures.npRight !== undefined ? measures.npRight : line.npRight,
+				npLeft: measures.npLeft !== undefined ? measures.npLeft : line.npLeft
+			}
+		: line;
+	const fields = prescriptionFromLensLine(effectiveLine, toISODate(nowUTC()), lensType);
 	if (!fields) return null;
 
 	// Keep the doctor of the Rx the lens was linked to, when there is one.
@@ -111,6 +122,8 @@ export function groupsAuditChanges(input: {
 	before: readonly ItemGroup[];
 	after: readonly ItemGroup[] | null;
 	beforePrimary: string | null;
+	/** Remapped id of `beforePrimary` after item replacement (defaults to `beforePrimary`). */
+	logicalBeforePrimary?: string | null;
 	afterPrimary: string | null | undefined;
 	nameOf: (itemId: string) => string;
 }): Record<string, { old: unknown; new: unknown }> {
@@ -120,7 +133,9 @@ export function groupsAuditChanges(input: {
 		const newText = summarizeGroups(input.after, input.nameOf);
 		if (oldText !== newText) changes.personGroups = { old: oldText, new: newText };
 	}
-	if (input.afterPrimary !== undefined && input.afterPrimary !== input.beforePrimary) {
+	const compareBefore =
+		input.logicalBeforePrimary !== undefined ? input.logicalBeforePrimary : input.beforePrimary;
+	if (input.afterPrimary !== undefined && input.afterPrimary !== compareBefore) {
 		changes.primaryLens = {
 			old: input.beforePrimary ? input.nameOf(input.beforePrimary) : 'Ninguna',
 			new: input.afterPrimary ? input.nameOf(input.afterPrimary) : 'Ninguna'

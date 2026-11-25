@@ -65,7 +65,11 @@
 			<span class="truncate text-sm font-semibold text-brand-navy">
 				{item.kind === 'treatment'
 					? item.treatmentName
-					: (lens?.name ?? product?.name ?? 'Ítem libre')}
+					: item.kind === 'free'
+						? item.freeItem.description.trim() || 'Ítem libre'
+						: item.kind === 'lens'
+							? (lens?.name ?? 'Cristal')
+							: (product?.name ?? 'Producto')}
 			</span>
 			<div class="flex items-center gap-2">
 				{#if item.kind === 'treatment'}

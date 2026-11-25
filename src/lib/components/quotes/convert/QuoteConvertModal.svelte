@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '$lib/components/layout/heroNavy.css';
+	import { untrack } from 'svelte';
 	import { Check, CircleCheck, Info, TriangleAlert, UserRound, X } from '@lucide/svelte';
 	import { Dialog as DialogPrimitive } from 'bits-ui';
 	import { toast } from 'svelte-sonner';
@@ -116,35 +117,39 @@
 
 	// ── Subtítulo: número de la venta que se creará ───────────────────────
 	let nextOrderNumber = $state<number | null>(null);
+	let wasOpen = false;
 
 	$effect(() => {
-		if (!open) return;
-		isCashea = quote.isCashea;
-		primaryChoice = persons ? defaultPrimaryLens(persons.items, persons.groups) : null;
-		customerId = quote.customer?.id ?? '';
-		selectedCustomer = null;
-		newCustomer = null;
-		customerMode = forceCustomerRequired || !quote.customer ? 'lookup' : 'card';
-		// Reset del CustomerLookupInput (escritura directa: no leer el contador aquí,
-		// un `+=` crearía un loop read+write en este mismo effect).
-		lookupKey = Date.now();
-		preview = null;
+		const isOpen = open;
+		if (isOpen && !wasOpen) {
+			untrack(() => {
+				isCashea = quote.isCashea;
+				primaryChoice = persons ? defaultPrimaryLens(persons.items, persons.groups) : null;
+				customerId = quote.customer?.id ?? '';
+				selectedCustomer = null;
+				newCustomer = null;
+				customerMode = forceCustomerRequired || !quote.customer ? 'lookup' : 'card';
+				lookupKey = Date.now();
+				preview = null;
 
-		void (async () => {
-			previewLoading = true;
-			try {
-				const [p, next] = await Promise.all([
-					getQuoteConversionPreview({ id: quote.id }),
-					getNextOrderNumberCommand({}).catch(() => null)
-				]);
-				preview = p;
-				nextOrderNumber = next;
-			} catch (e) {
-				logger.error('Error cargando el preview de conversión', e);
-			} finally {
-				previewLoading = false;
-			}
-		})();
+				void (async () => {
+					previewLoading = true;
+					try {
+						const [p, next] = await Promise.all([
+							getQuoteConversionPreview({ id: quote.id }),
+							getNextOrderNumberCommand({}).catch(() => null)
+						]);
+						preview = p;
+						nextOrderNumber = next;
+					} catch (e) {
+						logger.error('Error cargando el preview de conversión', e);
+					} finally {
+						previewLoading = false;
+					}
+				})();
+			});
+		}
+		wasOpen = isOpen;
 	});
 
 	function startLookup() {

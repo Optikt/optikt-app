@@ -1,3 +1,4 @@
+import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
 
 export interface AccessoryProductSummary {
@@ -34,7 +35,7 @@ export interface ResolvedAccessoryRule {
 	priceMode: BrandAccessoryPriceMode;
 	customPrice: number | null;
 	currentProductPrice: number | null;
-	accessory: AccessoryProductSummary;
+	accessory: ProductWithRelations;
 }
 
 export interface UpsertBrandAccessoryData {

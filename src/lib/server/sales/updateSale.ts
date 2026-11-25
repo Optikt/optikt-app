@@ -8,7 +8,7 @@ import {
 import type { Prescription, SaleItem } from '$lib/server/db/schema';
 import { findCustomerById } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
-import { sales, saleItems, products, lensCatalogItems, prescriptions } from '$lib/server/db/schema';
+import { sales, saleItems, products, lensCatalogItems } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
 import { computeDiscount } from '$lib/utils';
@@ -27,8 +27,10 @@ import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { UpdateSaleInput } from '$lib/schemas/sales';
 import {
 	findSaleGroupableItems,
-	findSaleItemGroups
+	findSaleItemGroups,
+	lockSaleForGroups
 } from '$lib/server/db/queries/sales/itemGroups';
+import { patchSalePrescriptionMeasures } from '$lib/server/sales/primaryPrescription';
 import {
 	groupsAuditChanges,
 	persistSaleGroups,
@@ -157,15 +159,20 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		};
 	}
 
-	// Prescription measures (DP / nasal) patch. The target row is resolved once
-	// (before the transaction) as pre-validation — a sale without a prescription
-	// row must NOT silently drop the patch. The same `getSalePrescription` join
-	// (inner → prescriptionId IS NOT NULL, ordered like the sale detail read)
-	// picks the row both here and in the resolver below.
+	// Per-person groups + primary lens before the change (only read when needed).
+	const touchesGroups = data.groups !== undefined || data.primaryLensItemId !== undefined;
+	const customerIdAfter = data.customerId ?? existing.customerId;
+	const customerChanged = customerIdAfter !== existing.customerId;
+	const needsGroupWork = hasItemChanges || touchesGroups || customerChanged;
+
+	// Prescription measures (DP / nasal) patch: pre-validate unless this edit
+	// itself sets a primary lens (which creates a fresh prescription in the tx).
 	let prescriptionBefore: Prescription | null = null;
 	if (data.prescription) {
 		prescriptionBefore = await getSalePrescription(data.id);
-		if (!prescriptionBefore) {
+		const setsNewPrimary =
+			!!data.primaryLensItemId && data.primaryLensItemId !== existing.primaryLensItemId;
+		if (!prescriptionBefore && !setsNewPrimary) {
 			return {
 				success: false as const,
 				error:
@@ -174,12 +181,9 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		}
 	}
 
-	// Per-person groups + primary lens before the change (audit + remap source).
-	const beforeGroups = await findSaleItemGroups(data.id);
-	const beforeLines = await findSaleGroupableItems(data.id);
-	const touchesGroups = data.groups !== undefined || data.primaryLensItemId !== undefined;
-	const customerIdAfter = data.customerId ?? existing.customerId;
-	const customerChanged = customerIdAfter !== existing.customerId;
+	const [beforeGroups, beforeLines] = needsGroupWork
+		? await Promise.all([findSaleItemGroups(data.id), findSaleGroupableItems(data.id)])
+		: [[], []];
 	// Item edits are validated by the schema (client ids). A header-only edit
 	// sends real ids: check them here, never clamp a bad primary to null.
 	if (!hasItemChanges && touchesGroups) {
@@ -191,32 +195,20 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		if (errors.length > 0) return { success: false as const, error: errors[0] };
 	}
 	let groupsResult = null as PersistSaleGroupsResult | null;
+	let beforePrimaryUsed: string | null = existing.primaryLensItemId;
+	let logicalBeforePrimary: string | null = existing.primaryLensItemId;
 
 	// All writes in a single transaction
 	const beforeItems: SaleItem[] = [];
 	// A race on the reassigned number surfaces as the same friendly duplicate error
 	const txResult = await db
 		.transaction(async (tx) => {
-			// Same lock order as createSaleCore (sequence lock → inventory rows): a
-			// number reassignment must take it before touching lots, or deadlock.
+			// Same lock order as createSaleCore (sequence lock → sale row → inventory rows).
 			if (newOrderNumber !== undefined) await lockSaleOrderSequence(tx);
-			let patchedPrescription: Prescription | null = null;
-			if (data.prescription) {
-				const prescId = (await getSalePrescription(data.id, tx))?.id;
-				if (prescId) {
-					const patch: Record<string, unknown> = { updatedAt: nowISO() };
-					for (const key of ['dp', 'npRight', 'npLeft'] as const) {
-						const value = data.prescription[key];
-						if (value !== undefined) patch[key] = value;
-					}
-					const [after] = await tx
-						.update(prescriptions)
-						.set(patch)
-						.where(eq(prescriptions.id, prescId))
-						.returning();
-					patchedPrescription = after ?? null;
-				}
-			}
+			const lockedSale = needsGroupWork ? await lockSaleForGroups(data.id, tx) : null;
+			const lockedPrimary = lockedSale ? lockedSale.primaryLensItemId : existing.primaryLensItemId;
+			beforePrimaryUsed = lockedPrimary;
+			logicalBeforePrimary = lockedPrimary;
 
 			if (hasItemChanges) {
 				// ── 1. Return only what the sale still holds (net outstanding per
@@ -304,7 +296,8 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 				// Items got new ids: translate (client id → new id) the incoming
 				// groups, or the current ones when the payload doesn't send groups.
 				const remapId = (id: string | null | undefined) => (id ? (idMap.get(id) ?? null) : null);
-				const previousPrimary = remapId(existing.primaryLensItemId);
+				const previousPrimary = remapId(lockedPrimary);
+				logicalBeforePrimary = previousPrimary;
 				groupsResult = await persistSaleGroups(tx, {
 					saleId: data.id,
 					customerId: customerIdAfter,
@@ -314,9 +307,17 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 							? remapId(data.primaryLensItemId)
 							: previousPrimary,
 					previousPrimaryLensItemId: previousPrimary,
-					previousPrimaryRx: beforeLines.find((l) => l.id === existing.primaryLensItemId),
-					customerChanged
+					previousPrimaryRx: beforeLines.find((l) => l.id === lockedPrimary),
+					customerChanged,
+					measures: data.prescription
 				});
+
+				// DP/NP measures: if persistSaleGroups created a fresh Rx they were
+				// already merged; otherwise patch the existing linked Rx (same customer).
+				const patchedPrescription =
+					data.prescription && !groupsResult.prescription
+						? await patchSalePrescriptionMeasures(tx, data.id, customerIdAfter, data.prescription)
+						: null;
 
 				// ── 5. Recalculate tax snapshot if provided ─────────────────────
 				const taxRate = data.snapshotTaxRate ?? existing.snapshotTaxRate;
@@ -348,7 +349,7 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 			}
 
 			// ── Header-only update (no item changes) ───────────────────────────
-			if (touchesGroups || (customerChanged && existing.primaryLensItemId)) {
+			if (touchesGroups || (customerChanged && lockedPrimary)) {
 				groupsResult = await persistSaleGroups(tx, {
 					saleId: data.id,
 					customerId: customerIdAfter,
@@ -357,12 +358,18 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 						data.primaryLensItemId !== undefined
 							? data.primaryLensItemId
 							: customerChanged
-								? existing.primaryLensItemId
+								? lockedPrimary
 								: undefined,
-					previousPrimaryLensItemId: existing.primaryLensItemId,
-					customerChanged
+					previousPrimaryLensItemId: lockedPrimary,
+					customerChanged,
+					measures: data.prescription
 				});
 			}
+
+			const patchedPrescription =
+				data.prescription && !groupsResult?.prescription
+					? await patchSalePrescriptionMeasures(tx, data.id, customerIdAfter, data.prescription)
+					: null;
 
 			const headerUpdate: Record<string, unknown> = {};
 			if (data.customerId) headerUpdate.customerId = data.customerId;
@@ -383,7 +390,11 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 			// A no-op save (reason only) must not touch the sale row at all:
 			// `updatedAt` only bumps when a real field changes.
 			if (Object.keys(headerUpdate).length === 0) {
-				return { sale: existing, prescription: patchedPrescription };
+				const saleOut =
+					groupsResult?.primaryLensItemId !== undefined
+						? { ...existing, primaryLensItemId: groupsResult.primaryLensItemId }
+						: existing;
+				return { sale: saleOut, prescription: patchedPrescription };
 			}
 			headerUpdate.updatedAt = nowISO();
 
@@ -471,7 +482,8 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 		? groupsAuditChanges({
 				before: beforeGroups,
 				after: groupsResult.groups,
-				beforePrimary: existing.primaryLensItemId,
+				beforePrimary: beforePrimaryUsed,
+				logicalBeforePrimary,
 				afterPrimary: groupsResult.primaryLensItemId,
 				nameOf: (id) => lineNames.get(id) ?? 'Artículo'
 			})

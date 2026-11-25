@@ -45,10 +45,7 @@
 		previousGroups={persons.seedGroups}
 		nextGroups={persons.submitted}
 		loading={saving}
-		onConfirm={() => {
-			persons.confirmReorganize = false;
-			onConfirmReorganize();
-		}}
+		onConfirm={() => onConfirmReorganize()}
 		onCancel={() => (persons.confirmReorganize = false)}
 	/>
 {/if}

@@ -81,8 +81,14 @@ export function applyWizardGroupsChange<G extends ItemGroup>(
 }
 
 function allocationKey(list: readonly ItemGroup[], itemId: string): string {
-	return list
-		.map((g) => g.members.find((m) => m.itemId === itemId)?.quantity ?? 0)
-		.filter((n, i, arr) => n > 0 || arr.slice(i).some((x) => x > 0))
-		.join(',');
+	const parts: string[] = [];
+	for (let i = 0; i < list.length; i++) {
+		const group = list[i];
+		const qty = group.members.find((m) => m.itemId === itemId)?.quantity ?? 0;
+		if (qty > 0) {
+			const groupKey = 'key' in group && typeof group.key === 'string' ? group.key : String(i);
+			parts.push(`${groupKey}:${qty}`);
+		}
+	}
+	return parts.join(',');
 }

@@ -77,11 +77,21 @@ export async function replaceSaleItemGroups(
 	await executor.delete(saleItemGroups).where(eq(saleItemGroups.saleId, saleId));
 
 	const now = nowISO();
+	const groupRows: {
+		id: string;
+		saleId: string;
+		label: string | null;
+		position: number;
+		createdAt: string;
+		updatedAt: string;
+	}[] = [];
+	const memberRows: { groupId: string; saleItemId: string; quantity: number }[] = [];
+
 	let position = 0;
 	for (const group of groups) {
 		if (group.members.length === 0) continue;
 		const groupId = crypto.randomUUID();
-		await executor.insert(saleItemGroups).values({
+		groupRows.push({
 			id: groupId,
 			saleId,
 			label: group.label,
@@ -89,9 +99,16 @@ export async function replaceSaleItemGroups(
 			createdAt: now,
 			updatedAt: now
 		});
-		await executor
-			.insert(saleItemGroupMembers)
-			.values(group.members.map((m) => ({ groupId, saleItemId: m.itemId, quantity: m.quantity })));
+		for (const member of group.members) {
+			memberRows.push({ groupId, saleItemId: member.itemId, quantity: member.quantity });
+		}
+	}
+
+	if (groupRows.length > 0) {
+		await executor.insert(saleItemGroups).values(groupRows);
+	}
+	if (memberRows.length > 0) {
+		await executor.insert(saleItemGroupMembers).values(memberRows);
 	}
 }
 
@@ -100,20 +117,37 @@ export async function setSalePrimaryLens(
 	saleItemId: string | null,
 	executor: DbOrTx = db
 ): Promise<void> {
-	await executor.update(sales).set({ primaryLensItemId: saleItemId }).where(eq(sales.id, saleId));
+	await executor
+		.update(sales)
+		.set({ primaryLensItemId: saleItemId, updatedAt: nowISO() })
+		.where(eq(sales.id, saleId));
+}
+
+export interface LockedSaleForGroups {
+	status: string;
+	customerId: string;
+	primaryLensItemId: string | null;
 }
 
 /**
- * Locks the sale row and returns its current primary lens. Concurrent group
- * saves serialize here, so only one of them sees the primary as "changed".
+ * Locks the sale row (`FOR UPDATE`) and returns its current status, customer,
+ * and primary lens. Concurrent group saves and item edits serialize here so
+ * only one sees the primary as "changed" or acts on stale items/status.
  */
-export async function lockSalePrimaryLens(saleId: string, tx: DbOrTx): Promise<string | null> {
+export async function lockSaleForGroups(
+	saleId: string,
+	tx: DbOrTx
+): Promise<LockedSaleForGroups | null> {
 	const [row] = await tx
-		.select({ primaryLensItemId: sales.primaryLensItemId })
+		.select({
+			status: sales.status,
+			customerId: sales.customerId,
+			primaryLensItemId: sales.primaryLensItemId
+		})
 		.from(sales)
 		.where(eq(sales.id, saleId))
 		.for('update');
-	return row?.primaryLensItemId ?? null;
+	return row ?? null;
 }
 
 /** Links one sale line to a prescription (the primary lens → the new current Rx). */

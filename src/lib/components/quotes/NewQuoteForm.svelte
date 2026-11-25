@@ -13,7 +13,7 @@
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import type { IncludedAccessoryMap } from '$lib/components/sales/includedAccessories';
-	import { setContext, untrack, type Snippet } from 'svelte';
+	import { onMount, setContext, untrack, type Snippet } from 'svelte';
 	import WizardHeader from '$lib/components/ui/WizardHeader.svelte';
 	import { CATALOG_KEY } from '$lib/components/sales/wizardContext';
 	import {
@@ -225,15 +225,18 @@
 			isCashea = draft.isCashea;
 			groups = toUiGroups(draft.groups);
 			clearedNames = draft.clearedNames;
-			if (draft.clearedNames > 0) {
-				toast.warning(
-					`Se limpiaron los nombres de ${draft.clearedNames} ${draft.clearedNames === 1 ? 'persona' : 'personas'}; el emparejamiento se conservó.`
-				);
-			}
 			sourceQuoteId = seed.quote.id;
 			quoteDate = nowUTC();
 		}
 	}
+
+	onMount(() => {
+		if (clearedNames > 0) {
+			toast.warning(
+				`Se limpiaron los nombres de ${clearedNames} ${clearedNames === 1 ? 'persona' : 'personas'}; el emparejamiento se conservó.`
+			);
+		}
+	});
 
 	function startEmpty() {
 		items = [];

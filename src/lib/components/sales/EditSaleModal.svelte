@@ -371,6 +371,7 @@
 				})
 			);
 			submitError = error ?? '';
+			persons.confirmReorganize = false;
 			if (error === null) {
 				confirmDiscard = false;
 				open = false;
@@ -399,6 +400,7 @@
 	size="xl"
 	closeGuard={guardClose}
 	escapeHandler={() => {
+		if (persons.confirmReorganize || confirmDiscard) return true;
 		if (view === 'editor') {
 			closeEditor();
 			return true;

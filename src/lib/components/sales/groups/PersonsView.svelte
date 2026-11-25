@@ -108,19 +108,12 @@
 		(t) => treatmentChildDisplay(t).perEyeSalePrice > 0
 	)}
 
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 	<div
-		role={isLens ? 'button' : 'group'}
-		tabindex={isLens ? 0 : undefined}
-		aria-expanded={isLens ? isOpen : undefined}
 		onclick={(e) => handleRowClick(e, rowKey, isLens)}
-		onkeydown={(e) => {
-			if (isLens && (e.key === 'Enter' || e.key === ' ')) {
-				e.preventDefault();
-				toggle(rowKey);
-			}
-		}}
-		class="grid grid-cols-[32px_minmax(0,1fr)_auto_26px] items-start gap-3 border-t border-outline-variant/60 px-4 py-2.5 transition-colors duration-150 hover:bg-[#f6f8fb] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue"
+		class="grid grid-cols-[32px_minmax(0,1fr)_auto_26px] items-start gap-3 border-t border-outline-variant/60 px-4 py-2.5 transition-colors duration-150 hover:bg-[#f6f8fb] {isLens
+			? 'cursor-pointer'
+			: ''}"
 	>
 		{#snippet chipTrigger({ props }: { props: Record<string, unknown> })}
 			<span
@@ -261,7 +254,7 @@
 					· {groupUnits(group)}
 					{groupUnits(group) === 1 ? 'ítem' : 'ítems'}
 				</span>
-				{#if hasPrimary}
+				{#if hasPrimary && groupLenses.length === 1}
 					<span
 						class="rounded bg-[#fff4c2] px-2 py-0.5 text-[11px] font-bold tracking-[0.05em] text-[#6f5900]"
 						>★ FÓRMULA DEL CLIENTE</span

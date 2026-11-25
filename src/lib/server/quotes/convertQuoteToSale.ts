@@ -57,7 +57,10 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 		};
 	}
 
-	const items = await getQuoteItemsWithDetails(data.id);
+	const [items, quoteGroups] = await Promise.all([
+		getQuoteItemsWithDetails(data.id),
+		findQuoteItemGroups(data.id)
+	]);
 	if (items.length === 0) {
 		return { success: false as const, error: 'El presupuesto no tiene ítems' };
 	}
@@ -94,9 +97,6 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 	for (const item of items) {
 		idMap.set(item.id, crypto.randomUUID());
 	}
-
-	// Per-person groups pass through as-is (names + unit split).
-	const quoteGroups = await findQuoteItemGroups(data.id);
 
 	// "Fórmula del cliente": chosen in the modal (null = "Ninguna"); absent →
 	// default rule (exactly one lens and no names). Replaces the old

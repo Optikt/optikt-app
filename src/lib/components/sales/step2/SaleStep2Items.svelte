@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack, getContext } from 'svelte';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice } from '$lib/utils/format';
 	import { LensCatalogSource } from '$lib/shared/enums';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { listSupplierTreatments } from '$lib/remote/suppliers.remote';
@@ -148,7 +148,8 @@
 			getItems: () => items,
 			getMap: () => includedAccessoryMap,
 			setItems: (next) => (items = next),
-			setMap: (next) => (includedAccessoryMap = next)
+			setMap: (next) => (includedAccessoryMap = next),
+			onLinked: (frameId) => wp.syncFrameAccessories(frameId)
 		});
 	}
 
@@ -161,6 +162,7 @@
 			catalog.getProducts()
 		);
 		if (synced !== items) items = synced;
+		wp.clamp();
 	}
 
 	function removeItem(id: string) {
@@ -176,6 +178,7 @@
 		if (childIds.length > 0) {
 			items = items.filter((item) => !childIds.includes(item.id));
 		}
+		wp.clamp(true);
 	}
 
 	function addFreeItem() {
@@ -462,5 +465,5 @@
 	oncommit={wp.commit}
 	showPrimary={wp.showPrimary}
 	primaryLensId={wp.primaryLensId}
-	onprimarychange={persons.onprimarychange}
+	primaryAuto={wp.primaryAuto}
 />

@@ -24,7 +24,13 @@ export const ItemGroupSchema = z.object({
 		.nullable()
 		.optional()
 		.transform((v) => (v ? v : null)),
-	members: z.array(ItemGroupMemberSchema).min(1, 'Cada persona debe tener al menos un artículo')
+	members: z
+		.array(ItemGroupMemberSchema)
+		.min(1, 'Cada persona debe tener al menos un artículo')
+		.refine(
+			(members) => new Set(members.map((m) => m.itemId)).size === members.length,
+			'Artículo repetido en la misma persona'
+		)
 });
 
 export const ItemGroupsSchema = z
@@ -52,10 +58,27 @@ export function refineItemGroups(
 ): void {
 	if (!data.items) return;
 	if (!data.groups && !data.primaryLensItemId) return;
-	const items: GroupableItem[] = data.items
-		.filter((item): item is GroupableInput & { id: string } => !!item.id)
-		.map((item) => ({ id: item.id, itemType: item.itemType, quantity: item.quantity }));
+	const seenIds = new Set<string>();
+	const items: GroupableItem[] = [];
+	for (const item of data.items) {
+		if (!item.id) continue;
+		if (seenIds.has(item.id)) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Artículos con identificador duplicado',
+				path: ['items']
+			});
+			return;
+		}
+		seenIds.add(item.id);
+		items.push({ id: item.id, itemType: item.itemType, quantity: item.quantity });
+	}
 	for (const message of validateItemGroups(data.groups ?? [], items, data.primaryLensItemId)) {
-		ctx.addIssue({ code: 'custom', message, path: ['groups'] });
+		const isPrimaryError = message.startsWith('La fórmula principal');
+		ctx.addIssue({
+			code: 'custom',
+			message,
+			path: [isPrimaryError ? 'primaryLensItemId' : 'groups']
+		});
 	}
 }
