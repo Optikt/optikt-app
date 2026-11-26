@@ -152,8 +152,9 @@
 							/>
 							<span
 								class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-on-surface-variant"
-								>%</span
 							>
+								%
+							</span>
 						</div>
 					</FieldWrapper>
 				</div>

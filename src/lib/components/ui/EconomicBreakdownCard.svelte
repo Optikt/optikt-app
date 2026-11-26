@@ -55,9 +55,9 @@
 <div class="rounded-[1.5rem] bg-surface-container-low px-6 py-6 shadow-sm">
 	<div class="space-y-4 text-sm text-on-surface-variant">
 		<div class="flex items-center justify-between gap-4">
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-				>Subtotal (antes de IVA)</span
-			>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+				Subtotal (antes de IVA)
+			</span>
 			<span class="font-mono text-base font-semibold text-brand-navy">{formatPrice(subtotal)}</span>
 		</div>
 
@@ -69,14 +69,14 @@
 						({discount}%)
 					{/if}
 				</span>
-				<span class="font-mono text-base font-semibold text-error"
-					>-{formatPrice(discountOnBase)}</span
-				>
+				<span class="font-mono text-base font-semibold text-error">
+					-{formatPrice(discountOnBase)}
+				</span>
 			</div>
 			<div class="flex items-center justify-between gap-4">
-				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-					>Subtotal neto</span
-				>
+				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+					Subtotal neto
+				</span>
 				<span class="font-mono text-base font-semibold text-brand-navy">
 					{formatPrice(netSubtotal)}
 				</span>
@@ -87,9 +87,9 @@
 
 		{#if adjustedExempt > 0}
 			<div class="flex items-center justify-between gap-4">
-				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-					>Monto exento</span
-				>
+				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+					Monto exento
+				</span>
 				<span class="font-mono text-base font-semibold text-brand-navy">
 					{formatPrice(adjustedExempt)}
 				</span>
@@ -98,9 +98,9 @@
 
 		{#if adjustedBase > 0}
 			<div class="flex items-center justify-between gap-4">
-				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-					>Base imponible</span
-				>
+				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+					Base imponible
+				</span>
 				<span class="font-mono text-base font-semibold text-brand-navy">
 					{formatPrice(adjustedBase)}
 				</span>
@@ -111,9 +111,9 @@
 
 		{#if adjustedTax > 0}
 			<div class="flex items-center justify-between gap-4">
-				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-					>{taxLabel ?? 'IVA'}</span
-				>
+				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+					{taxLabel ?? 'IVA'}
+				</span>
 				<span class="font-mono text-base font-semibold text-brand-navy">
 					{formatPrice(adjustedTax)}
 				</span>

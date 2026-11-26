@@ -72,9 +72,9 @@
 				</span>
 				<span class="ml-auto text-on-surface-variant">
 					BCV:
-					<span class="font-medium text-brand-navy tabular-nums"
-						>{Number(bcvRate || 0).toFixed(2)}</span
-					>
+					<span class="font-medium text-brand-navy tabular-nums">
+						{Number(bcvRate || 0).toFixed(2)}
+					</span>
 				</span>
 			</div>
 			<div class="flex items-center gap-2">

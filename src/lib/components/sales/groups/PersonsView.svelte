@@ -134,23 +134,26 @@
 						href={resolve(`/lenses/${item.lensCatalogItem.id}`)}
 						onclick={(e) => e.stopPropagation()}
 						class="text-sm font-semibold text-on-surface transition-colors hover:text-on-info-container hover:underline hover:underline-offset-2"
-						>{title}</a
 					>
+						{title}
+					</a>
 				{:else if item.itemType === SaleItemType.PRODUCT && item.product}
 					<a
 						href={resolve(`/products/${item.product.id}`)}
 						onclick={(e) => e.stopPropagation()}
 						class="text-sm font-semibold text-on-surface transition-colors hover:text-on-info-container hover:underline hover:underline-offset-2"
-						>{title}</a
 					>
+						{title}
+					</a>
 				{:else}
 					<span class="text-sm font-semibold text-on-surface">{title}</span>
 				{/if}
 				{#if showPrimaryBadge}
 					<span
 						class="rounded bg-[#fff4c2] px-1.5 py-0.5 text-[9.5px] font-bold tracking-[0.06em] text-[#6f5900]"
-						>★ FÓRMULA DEL CLIENTE</span
 					>
+						★ FÓRMULA DEL CLIENTE
+					</span>
 				{/if}
 			</div>
 
@@ -257,8 +260,9 @@
 				{#if hasPrimary && groupLenses.length === 1}
 					<span
 						class="rounded bg-[#fff4c2] px-2 py-0.5 text-[11px] font-bold tracking-[0.05em] text-[#6f5900]"
-						>★ FÓRMULA DEL CLIENTE</span
 					>
+						★ FÓRMULA DEL CLIENTE
+					</span>
 				{/if}
 			</div>
 

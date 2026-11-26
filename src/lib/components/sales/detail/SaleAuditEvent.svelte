@@ -95,8 +95,8 @@
 </script>
 
 {#snippet beforeAfter(from: string | null | undefined, to: string | null | undefined)}
-	{#if hasBefore(from)}{from} <span aria-hidden="true"> → </span>{:else}<span aria-hidden="true"
-			>→
+	{#if hasBefore(from)}{from} <span aria-hidden="true"> → </span>{:else}<span aria-hidden="true">
+			→
 		</span>{/if}{to ?? '—'}
 {/snippet}
 
@@ -143,13 +143,14 @@
 				{#if statusPills.from}
 					<span
 						class="rounded-full bg-surface-container-high px-2 py-0.5 text-on-surface-variant line-through"
-						>{statusPills.from}</span
 					>
+						{statusPills.from}
+					</span>
 					<span aria-hidden="true" class="text-outline">→</span>
 				{/if}
-				<span class="rounded-full bg-brand-blue/10 px-2 py-0.5 text-brand-blue"
-					>{statusPills.to}</span
-				>
+				<span class="rounded-full bg-brand-blue/10 px-2 py-0.5 text-brand-blue">
+					{statusPills.to}
+				</span>
 			</span>
 		{/if}
 	</div>

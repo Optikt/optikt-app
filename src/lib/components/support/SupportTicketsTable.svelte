@@ -72,9 +72,9 @@
 									<p class="mt-0.5 text-xs text-slate-400">{ticket.relatedLabel}</p>
 								{/if}
 							</td>
-							<td class="px-4 py-3 text-xs text-slate-600"
-								>{TICKET_CATEGORY_LABELS[ticket.category]}</td
-							>
+							<td class="px-4 py-3 text-xs text-slate-600">
+								{TICKET_CATEGORY_LABELS[ticket.category]}
+							</td>
 							<td class="px-4 py-3">
 								<SupportTicketPriorityBadge priority={ticket.priority} />
 							</td>

@@ -146,9 +146,9 @@
 					class="max-w-[7rem] truncate text-sm"
 					title="{documentLabel(purchaseOrder)}: {documentNumber(purchaseOrder)}"
 				>
-					<span class="text-xs font-medium text-on-surface-variant"
-						>{documentLabel(purchaseOrder)}</span
-					>
+					<span class="text-xs font-medium text-on-surface-variant">
+						{documentLabel(purchaseOrder)}
+					</span>
 					<span
 						class="ml-1 font-mono text-sm {documentNumber(purchaseOrder) === '--'
 							? 'text-outline'

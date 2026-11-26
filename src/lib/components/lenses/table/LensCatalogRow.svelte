@@ -121,15 +121,17 @@
 												{#if range.cylinderLabel}
 													<p>
 														<span class="font-semibold text-outline">Cilindro:</span>
-														<span class="ml-1 font-mono text-on-surface">{range.cylinderLabel}</span
-														>
+														<span class="ml-1 font-mono text-on-surface">
+															{range.cylinderLabel}
+														</span>
 													</p>
 												{/if}
 												{#if range.additionLabel}
 													<p>
 														<span class="font-semibold text-outline">Adición:</span>
-														<span class="ml-1 font-mono text-on-surface">{range.additionLabel}</span
-														>
+														<span class="ml-1 font-mono text-on-surface">
+															{range.additionLabel}
+														</span>
 													</p>
 												{/if}
 											</div>

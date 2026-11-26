@@ -26,9 +26,9 @@
 	<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">{label}</span>
 	<div class="relative">
 		{#if prefix}
-			<span class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-xs text-outline"
-				>{prefix}</span
-			>
+			<span class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-xs text-outline">
+				{prefix}
+			</span>
 		{/if}
 		<input
 			type="number"
@@ -49,9 +49,9 @@
 				class="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-1 text-outline transition-colors hover:bg-surface-container-high hover:text-on-surface-variant"
 				aria-label={editable ? 'Bloquear tasa' : 'Editar tasa'}
 			>
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3 w-3"
-					><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg
-				>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3 w-3">
+					<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+				</svg>
 			</button>
 		{/if}
 	</div>

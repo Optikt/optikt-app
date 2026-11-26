@@ -15,16 +15,16 @@
 >
 	<TriggerTooltip title="Pendientes" text="Ítems con stock en el sistema que aún no cuentas.">
 		{#snippet trigger({ props })}
-			<button type="button" {...props} class="p-0"
-				>Pendientes <b class="font-heading text-brand-navy">{stats.pendingCounting}</b></button
-			>
+			<button type="button" {...props} class="p-0">
+				Pendientes <b class="font-heading text-brand-navy">{stats.pendingCounting}</b>
+			</button>
 		{/snippet}
 	</TriggerTooltip>
 	<TriggerTooltip title="Coinciden" text="Lo contado es igual al sistema.">
 		{#snippet trigger({ props })}
-			<button type="button" {...props} class="p-0"
-				>Coinciden <b class="font-heading text-brand-navy">{stats.matchCount}</b></button
-			>
+			<button type="button" {...props} class="p-0">
+				Coinciden <b class="font-heading text-brand-navy">{stats.matchCount}</b>
+			</button>
 		{/snippet}
 	</TriggerTooltip>
 	<TriggerTooltip
@@ -43,10 +43,9 @@
 		text="Diferencia × costo de cada ítem. Negativo = pérdida."
 	>
 		{#snippet trigger({ props })}
-			<button type="button" {...props} class="p-0"
-				>Impacto est. <b class="font-heading text-brand-navy">{formatUsd(stats.impactCost)}</b
-				></button
-			>
+			<button type="button" {...props} class="p-0">
+				Impacto est. <b class="font-heading text-brand-navy">{formatUsd(stats.impactCost)}</b>
+			</button>
 		{/snippet}
 	</TriggerTooltip>
 	{#if stats.zeroStockPending > 0}
@@ -55,10 +54,9 @@
 			text="No bloquea el cierre, pero esos ítems no quedan como verificados."
 		>
 			{#snippet trigger({ props })}
-				<button type="button" {...props} class="p-0"
-					>Stock 0 sin confirmar <b class="font-heading text-brand-navy">{stats.zeroStockPending}</b
-					></button
-				>
+				<button type="button" {...props} class="p-0">
+					Stock 0 sin confirmar <b class="font-heading text-brand-navy">{stats.zeroStockPending}</b>
+				</button>
 			{/snippet}
 		</TriggerTooltip>
 	{/if}

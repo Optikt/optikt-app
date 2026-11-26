@@ -164,9 +164,9 @@
 				<option value="cancelled">Canceladas</option>
 				<option value="all">Todas</option>
 			</select>
-			<span class="text-xs text-slate-400"
-				>{filteredSales.length} resultado{filteredSales.length !== 1 ? 's' : ''}</span
-			>
+			<span class="text-xs text-slate-400">
+				{filteredSales.length} resultado{filteredSales.length !== 1 ? 's' : ''}
+			</span>
 		</div>
 		<table class="w-full text-left text-sm">
 			<thead class="border-b border-slate-200 bg-slate-50 text-xs text-slate-600 uppercase">

@@ -135,8 +135,8 @@
 				<option value={role}>{role}</option>
 			{/each}
 		</select>
-		<label class="flex items-center gap-2 text-sm"
-			><input
+		<label class="flex items-center gap-2 text-sm">
+			<input
 				type="checkbox"
 				bind:checked={includeInactive}
 				onchange={handleFilterChange}

@@ -47,36 +47,38 @@
 						{#if activeLot}
 							<p class="text-sm text-on-surface-variant">
 								{#if isOutflow}
-									Salida de <span class="font-mono font-semibold text-brand-navy"
-										>{parsedQuantity}</span
-									>
+									Salida de <span class="font-mono font-semibold text-brand-navy">
+										{parsedQuantity}
+									</span>
 									uds del lote
-									<span class="font-mono font-semibold text-brand-navy"
-										>LOT-{String(activeLot.lotNumber).padStart(4, '0')}</span
-									>.
+									<span class="font-mono font-semibold text-brand-navy">
+										LOT-{String(activeLot.lotNumber).padStart(4, '0')}
+									</span>.
 								{:else}
-									Entrada de <span class="font-mono font-semibold text-brand-navy"
-										>{parsedQuantity}</span
-									>
+									Entrada de <span class="font-mono font-semibold text-brand-navy">
+										{parsedQuantity}
+									</span>
 									uds al lote
-									<span class="font-mono font-semibold text-brand-navy"
-										>LOT-{String(activeLot.lotNumber).padStart(4, '0')}</span
-									>.
+									<span class="font-mono font-semibold text-brand-navy">
+										LOT-{String(activeLot.lotNumber).padStart(4, '0')}
+									</span>.
 								{/if}
 							</p>
 							<p class="mt-2 text-sm text-on-surface-variant">
 								Stock del lote:
-								<span class="font-mono font-semibold text-brand-navy"
-									>{activeLot.quantityAvailable}</span
-								>
+								<span class="font-mono font-semibold text-brand-navy">
+									{activeLot.quantityAvailable}
+								</span>
 								→
 								<span class="font-mono font-semibold text-brand-navy">{projectedLotQuantity}</span>
 							</p>
 						{:else if adjustmentType === InventoryMovementType.ADJUSTMENT_IN}
 							<p class="text-sm text-on-surface-variant">
 								Se creará un lote técnico nuevo con <span
-									class="font-mono font-semibold text-brand-navy">{parsedQuantity}</span
+									class="font-mono font-semibold text-brand-navy"
 								>
+									{parsedQuantity}
+								</span>
 								uds para dejar trazabilidad desde este ajuste.
 							</p>
 							<p class="mt-2 text-sm text-on-surface-variant">

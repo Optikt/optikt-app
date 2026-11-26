@@ -169,9 +169,9 @@
 				>
 					<Wallet size={18} />
 					<span class="font-mono">{formatPrice(summary.totalBalance)}</span>
-					<span class="text-white/60"
-						>con saldo en {summary.totalCount} venta{summary.totalCount !== 1 ? 's' : ''}</span
-					>
+					<span class="text-white/60">
+						con saldo en {summary.totalCount} venta{summary.totalCount !== 1 ? 's' : ''}
+					</span>
 				</div>
 			{/if}
 		{/snippet}
@@ -288,33 +288,36 @@
 			<table class="w-full text-left text-sm">
 				<thead>
 					<tr class="border-b border-surface-container-high bg-surface-container-low">
-						<th class="px-6 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase"
-							>Cliente</th
-						>
-						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase"
-							>Venta</th
-						>
-						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase"
-							>Estado</th
-						>
-						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase"
-							>Fecha</th
-						>
-						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase"
-							>Días</th
-						>
+						<th class="px-6 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+							Cliente
+						</th>
+						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+							Venta
+						</th>
+						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+							Estado
+						</th>
+						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+							Fecha
+						</th>
+						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+							Días
+						</th>
 						<th
 							class="px-4 py-4 text-right text-xs font-semibold tracking-wider text-slate-500 uppercase"
-							>Total venta</th
 						>
+							Total venta
+						</th>
 						<th
 							class="px-4 py-4 text-right text-xs font-semibold tracking-wider text-slate-500 uppercase"
-							>Pagado</th
 						>
+							Pagado
+						</th>
 						<th
 							class="px-4 py-4 text-right text-xs font-semibold tracking-wider text-slate-500 uppercase"
-							>Saldo</th
 						>
+							Saldo
+						</th>
 						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase"
 						></th>
 					</tr>

@@ -141,9 +141,9 @@
 			<div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
 				<div class="grid gap-4 sm:grid-cols-2">
 					<label class="col-span-full flex flex-col gap-1.5 text-sm">
-						<span class={labelClass}
-							>Título<span class="ml-0.5 text-sm leading-none font-bold text-error">*</span></span
-						>
+						<span class={labelClass}>
+							Título<span class="ml-0.5 text-sm leading-none font-bold text-error">*</span>
+						</span>
 						<input
 							type="text"
 							bind:value={title}
@@ -156,10 +156,9 @@
 					</label>
 
 					<label class="col-span-full flex flex-col gap-1.5 text-sm">
-						<span class={labelClass}
-							>Descripción<span class="ml-0.5 text-sm leading-none font-bold text-error">*</span
-							></span
-						>
+						<span class={labelClass}>
+							Descripción<span class="ml-0.5 text-sm leading-none font-bold text-error">*</span>
+						</span>
 						<textarea
 							bind:value={description}
 							required
@@ -171,10 +170,9 @@
 					</label>
 
 					<label class="flex flex-col gap-1.5 text-sm">
-						<span class={labelClass}
-							>Categoría<span class="ml-0.5 text-sm leading-none font-bold text-error">*</span
-							></span
-						>
+						<span class={labelClass}>
+							Categoría<span class="ml-0.5 text-sm leading-none font-bold text-error">*</span>
+						</span>
 						<select bind:value={category} required class={inputClass}>
 							<option value="" disabled>Seleccionar</option>
 							{#each ALL_TICKET_CATEGORIES as c (c)}

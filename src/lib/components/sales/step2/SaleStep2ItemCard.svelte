@@ -129,9 +129,9 @@
 			<!-- Inline controls row -->
 			<div class="flex shrink items-start gap-3">
 				<div class="w-16">
-					<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
-						>Cant</Label
-					>
+					<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase">
+						Cant
+					</Label>
 
 					<input
 						id="qty-{item.id}"
@@ -149,9 +149,12 @@
 				</div>
 
 				<div class="w-20">
-					<Label for="price-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
-						>Precio</Label
+					<Label
+						for="price-{item.id}"
+						class="mb-1 text-[10px] font-semibold text-outline uppercase"
 					>
+						Precio
+					</Label>
 					<input
 						id="price-{item.id}"
 						type="number"
@@ -195,9 +198,9 @@
 			>
 				<div class="flex items-center gap-1.5">
 					<span class="text-on-surface-variant">Costo: </span>
-					<span class="font-mono font-semibold text-brand-navy"
-						>{formatPrice(t.costOverride ?? t.purchasePrice)}</span
-					>
+					<span class="font-mono font-semibold text-brand-navy">
+						{formatPrice(t.costOverride ?? t.purchasePrice)}
+					</span>
 					<span class="text-[10px] text-on-surface-variant">× {t.quantity}</span>
 					<button
 						type="button"
@@ -220,13 +223,15 @@
 					{#if rxErrs && Object.keys(rxErrs).length > 0}
 						<span
 							class="rounded-full bg-error-container px-1.5 py-0.5 text-[12px] font-semibold text-on-error-container"
-							>Pendiente</span
 						>
+							Pendiente
+						</span>
 					{:else if item.lensPair.od.enabled || item.lensPair.oi.enabled}
 						<span
 							class="rounded-full bg-success-container px-1.5 py-0.5 text-[12px] font-semibold text-on-success-container"
-							>Completa</span
 						>
+							Completa
+						</span>
 					{/if}
 					<button
 						type="button"
@@ -240,9 +245,9 @@
 				{#if item.kind === 'lens' && lens && item.costOverrides}
 					<div class="flex items-center gap-1.5">
 						<span class="under text-on-surface-variant">Costo: </span>
-						<span class="font-mono font-semibold text-brand-navy"
-							>{formatPrice(internalCostTotal)}</span
-						>
+						<span class="font-mono font-semibold text-brand-navy">
+							{formatPrice(internalCostTotal)}
+						</span>
 						<button
 							type="button"
 							onclick={() => (costOpen = true)}

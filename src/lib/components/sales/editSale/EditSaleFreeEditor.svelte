@@ -74,8 +74,9 @@
 		<div class="w-44">
 			<span
 				class="mb-1 block text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
-				>Nombre</span
 			>
+				Nombre
+			</span>
 			<input
 				type="text"
 				bind:value={name}
@@ -88,8 +89,9 @@
 		<div class="min-w-[200px] flex-1">
 			<span
 				class="mb-1 block text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
-				>Descripción</span
 			>
+				Descripción
+			</span>
 			<input
 				type="text"
 				bind:value={note}
@@ -101,8 +103,9 @@
 		<div class="min-w-[150px] flex-1">
 			<span
 				class="mb-1 block text-[11px] font-bold tracking-[0.06em] text-on-surface-variant uppercase"
-				>Categoría</span
 			>
+				Categoría
+			</span>
 			<SearchCombobox
 				options={[...ALL_FREE_ITEM_CATEGORIES]}
 				value={category}

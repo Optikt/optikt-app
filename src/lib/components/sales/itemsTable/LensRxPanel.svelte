@@ -103,12 +103,13 @@
 				stroke="currentColor"
 				stroke-width="2"
 				class="h-3 w-3 text-on-surface-variant"
-				><path
+			>
+				<path
 					stroke-linecap="round"
 					stroke-linejoin="round"
 					d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-				/></svg
-			>
+				/>
+			</svg>
 		</span>
 		<span class="text-xs font-bold tracking-[0.1em] text-on-surface-variant uppercase">
 			Prescripción
@@ -125,29 +126,29 @@
 		>
 			<!-- Header -->
 			<span></span>
-			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
-				>ESF</span
-			>
-			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
-				>CIL</span
-			>
-			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
-				>EJE</span
-			>
-			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
-				>ADD</span
-			>
+			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant">
+				ESF
+			</span>
+			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant">
+				CIL
+			</span>
+			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant">
+				EJE
+			</span>
+			<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant">
+				ADD
+			</span>
 			{#if showMeasures}
 				<span class="h-4 w-px justify-self-center bg-outline-variant"></span>
-				<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
-					>ALT</span
-				>
-				<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
-					>DP</span
-				>
-				<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant"
-					>DNP</span
-				>
+				<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant">
+					ALT
+				</span>
+				<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant">
+					DP
+				</span>
+				<span class="text-right text-[10px] font-bold tracking-[0.08em] text-on-surface-variant">
+					DNP
+				</span>
 			{/if}
 
 			<!-- OD -->

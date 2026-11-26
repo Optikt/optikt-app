@@ -90,9 +90,12 @@
 				<nav
 					class="flex items-center gap-2 text-[0.7rem] font-bold tracking-[0.18em] text-outline uppercase"
 				>
-					<a href={resolve(backHref as '/products')} class="transition-colors hover:text-brand-blue"
-						>Inventario</a
+					<a
+						href={resolve(backHref as '/products')}
+						class="transition-colors hover:text-brand-blue"
 					>
+						Inventario
+					</a>
 					<ChevronRight class="h-3.5 w-3.5" />
 					<span class="text-brand-blue">{getProductTypeLabel(product.type)}</span>
 				</nav>

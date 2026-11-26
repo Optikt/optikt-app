@@ -226,9 +226,9 @@
 								<span class="text-xs font-medium text-green-600">{item.stock} disp.</span>
 							{/if}
 						{:else if item.source}
-							<span class="rounded-full bg-sky-50 px-1.5 py-px text-xs font-medium text-sky-600"
-								>Por pedido</span
-							>
+							<span class="rounded-full bg-sky-50 px-1.5 py-px text-xs font-medium text-sky-600">
+								Por pedido
+							</span>
 						{/if}
 					</div>
 					<div class="flex items-center gap-2 text-[0.8rem]">

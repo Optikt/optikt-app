@@ -39,9 +39,9 @@
 			<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Tratamientos</p>
 		</div>
 		{#if treatmentTotal > 0}
-			<span class="font-mono text-xs font-semibold text-brand-navy"
-				>{formatPrice(treatmentTotal)}</span
-			>
+			<span class="font-mono text-xs font-semibold text-brand-navy">
+				{formatPrice(treatmentTotal)}
+			</span>
 		{/if}
 	</div>
 	<div class="space-y-1.5" use:autoAnimate>
@@ -69,13 +69,14 @@
 								TreatmentCategory.AR
 									? 'bg-brand-blue/10 text-brand-blue'
 									: 'bg-surface-container-high text-on-surface-variant'}"
-								>{getTreatmentCategoryLabel(treatment.category)}</span
 							>
+								{getTreatmentCategoryLabel(treatment.category)}
+							</span>
 						</div>
 					</div>
-					<span class="font-mono text-xs font-semibold text-brand-navy"
-						>{formatPrice(selectedTreatment?.price ?? treatment.salePrice ?? treatment.price)}</span
-					>
+					<span class="font-mono text-xs font-semibold text-brand-navy">
+						{formatPrice(selectedTreatment?.price ?? treatment.salePrice ?? treatment.price)}
+					</span>
 				</label>
 				{#if selected && selectedTreatment}
 					<div
@@ -91,9 +92,9 @@
 								class="w-20 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
 							/>
 						</label>
-						<span class="font-mono text-[11px]"
-							>× {eyeCount} = {formatPrice(selectedTreatment.price * eyeCount)}</span
-						>
+						<span class="font-mono text-[11px]">
+							× {eyeCount} = {formatPrice(selectedTreatment.price * eyeCount)}
+						</span>
 					</div>
 				{/if}
 			</div>

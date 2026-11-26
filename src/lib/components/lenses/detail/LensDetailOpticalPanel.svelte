@@ -56,38 +56,41 @@
 					<div class="mt-4 flex flex-wrap gap-x-6 gap-y-3">
 						<div class="flex items-center gap-2">
 							<div class="h-3 w-1 rounded-full bg-info-container"></div>
-							<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
-								>Esf</span
-							>
+							<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">
+								Esf
+							</span>
 							<span
 								class="font-mono text-sm font-bold tracking-tight whitespace-nowrap text-brand-navy"
-								>{range.sphereLabel}</span
 							>
+								{range.sphereLabel}
+							</span>
 						</div>
 
 						{#if range.cylinderLabel}
 							<div class="flex items-center gap-2">
 								<div class="h-3 w-1 rounded-full bg-warning-container"></div>
-								<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
-									>Cil</span
-								>
+								<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">
+									Cil
+								</span>
 								<span
 									class="font-mono text-sm font-bold tracking-tight whitespace-nowrap text-brand-navy"
-									>{range.cylinderLabel}</span
 								>
+									{range.cylinderLabel}
+								</span>
 							</div>
 						{/if}
 
 						{#if range.additionLabel}
 							<div class="flex items-center gap-2">
 								<div class="h-3 w-1 rounded-full bg-purple-container"></div>
-								<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
-									>Add</span
-								>
+								<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">
+									Add
+								</span>
 								<span
 									class="font-mono text-sm font-bold tracking-tight whitespace-nowrap text-brand-navy"
-									>{range.additionLabel}</span
 								>
+									{range.additionLabel}
+								</span>
 							</div>
 						{/if}
 					</div>

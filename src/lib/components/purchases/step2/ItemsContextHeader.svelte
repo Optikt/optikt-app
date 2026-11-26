@@ -45,22 +45,24 @@
 		<span class="text-outline" aria-hidden="true">·</span>
 
 		<span class="hidden text-on-surface-variant sm:inline">Tasa BCV:</span>
-		<span class="font-semibold text-brand-navy tabular-nums">{Number(bcvRate || 0).toFixed(2)}</span
-		>
+		<span class="font-semibold text-brand-navy tabular-nums">
+			{Number(bcvRate || 0).toFixed(2)}
+		</span>
 
 		{#if sourceRateToVes > 0}
 			<span class="text-outline" aria-hidden="true">·</span>
-			<span class="hidden text-on-surface-variant sm:inline"
-				>{getSourceCurrencySymbol(sourceCurrency)}</span
-			>
+			<span class="hidden text-on-surface-variant sm:inline">
+				{getSourceCurrencySymbol(sourceCurrency)}
+			</span>
 			<span class="font-semibold text-brand-navy tabular-nums">{sourceRateToVes}</span>
 		{/if}
 
 		{#if hasStats}
 			<span class="text-outline" aria-hidden="true">·</span>
-			<span class="text-on-surface-variant"
-				>{lineCount} {lineCount === 1 ? 'línea' : 'líneas'} / {totalItems} unds</span
-			>
+			<span class="text-on-surface-variant">
+				{lineCount}
+				{lineCount === 1 ? 'línea' : 'líneas'} / {totalItems} unds
+			</span>
 
 			<span class="text-outline" aria-hidden="true">·</span>
 			<span class="hidden text-on-surface-variant sm:inline">Total:</span>

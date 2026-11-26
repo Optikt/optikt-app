@@ -29,7 +29,8 @@
 	{#if isPrimary}
 		<span
 			class="rounded bg-[#fff4c2] px-2 py-0.5 text-[11px] font-bold tracking-[0.05em] text-[#6f5900] uppercase"
-			>★ Fórmula del cliente</span
 		>
+			★ Fórmula del cliente
+		</span>
 	{/if}
 </span>

@@ -96,8 +96,9 @@
 								<div class="mt-1 pl-[42px]">
 									<span
 										class="inline-block rounded bg-[#fff4c2] px-1.5 py-0.5 text-[9.5px] font-bold tracking-[0.06em] text-[#6f5900]"
-										>★ FÓRMULA DEL CLIENTE</span
 									>
+										★ FÓRMULA DEL CLIENTE
+									</span>
 								</div>
 							{/if}
 						</div>
@@ -185,9 +186,9 @@
 									<div class="flex items-center justify-between rounded-md bg-white px-2.5 py-1.5">
 										<div class="flex min-w-0 items-center gap-2">
 											<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400"></span>
-											<span class="truncate text-xs font-medium text-slate-700"
-												>{t.treatmentName}</span
-											>
+											<span class="truncate text-xs font-medium text-slate-700">
+												{t.treatmentName}
+											</span>
 											<span
 												class="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.12em] uppercase {t.treatmentCategory ===
 												TreatmentCategory.AR

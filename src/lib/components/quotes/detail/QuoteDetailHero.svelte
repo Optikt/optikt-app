@@ -241,39 +241,43 @@
 
 		<div class="hero-meta mt-3 grid grid-cols-[repeat(3,max-content)] gap-x-[30px] gap-y-0.5">
 			<div>
-				<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
-					>Vendedor</span
-				>
+				<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase">
+					Vendedor
+				</span>
 				<b class="block text-sm font-semibold">{quote.seller?.fullName ?? 'Sin asignar'}</b>
 			</div>
 			<div>
-				<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
-					>Fecha</span
-				>
-				<b class="block text-sm font-semibold"
-					>{formatDateOnly(quote.createdAt, { dateStyle: 'medium' })}</b
-				>
+				<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase">
+					Fecha
+				</span>
+				<b class="block text-sm font-semibold">
+					{formatDateOnly(quote.createdAt, { dateStyle: 'medium' })}
+				</b>
 			</div>
 			{#if isConverted && convertedSale}
 				<div>
-					<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
-						>Convertido</span
+					<span
+						class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
 					>
-					<b class="block text-sm font-semibold"
-						>{formatDateOnly(convertedSale.createdAt, { dateStyle: 'medium' })}</b
-					>
+						Convertido
+					</span>
+					<b class="block text-sm font-semibold">
+						{formatDateOnly(convertedSale.createdAt, { dateStyle: 'medium' })}
+					</b>
 				</div>
 			{:else}
 				<div>
-					<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
-						>Válido hasta</span
+					<span
+						class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
 					>
+						Válido hasta
+					</span>
 					{#if validity.kind === 'none'}
 						<b class="block text-sm font-semibold text-[#c9d3ea]">Sin vencimiento</b>
 					{:else}
-						<b class="block text-sm font-semibold"
-							>{formatDateOnly(validity.validUntilDate ?? '', { dateStyle: 'medium' })}</b
-						>
+						<b class="block text-sm font-semibold">
+							{formatDateOnly(validity.validUntilDate ?? '', { dateStyle: 'medium' })}
+						</b>
 						{#if validityText && validity.kind !== 'expired'}
 							<small class="block text-[11px] text-[#b8c4de]">{validityText}</small>
 						{:else if validity.kind === 'expired'}

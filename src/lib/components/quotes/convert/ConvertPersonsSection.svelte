@@ -35,9 +35,9 @@
 	{#if groups.length > 0}
 		<section aria-label="Personas">
 			<p class="text-[11px] font-bold tracking-[0.1em] text-on-surface uppercase">
-				Personas <span class="font-medium tracking-normal normal-case"
-					>· pasan tal cual a la venta</span
-				>
+				Personas <span class="font-medium tracking-normal normal-case">
+					· pasan tal cual a la venta
+				</span>
 			</p>
 			<ul class="mt-1.5 flex flex-col gap-1.5 text-[13px]">
 				{#each groups as group, index (index)}

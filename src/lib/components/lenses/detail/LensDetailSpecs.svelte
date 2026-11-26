@@ -96,20 +96,23 @@
 				{#if item.hasAr}
 					<span
 						class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1.5 text-xs font-bold text-on-info-container"
-						>AR</span
 					>
+						AR
+					</span>
 				{/if}
 				{#if item.hasBluecut}
 					<span
 						class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1.5 text-xs font-bold text-on-info-container"
-						>Bluecut</span
 					>
+						Bluecut
+					</span>
 				{/if}
 				{#if item.isPhotochromic}
 					<span
 						class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1.5 text-xs font-bold text-on-info-container"
-						>Fotocromático</span
 					>
+						Fotocromático
+					</span>
 				{/if}
 			</div>
 		{/if}
@@ -122,8 +125,9 @@
 				{#each item.differentiators.filter((t) => t.trim().length > 0) as tag (tag)}
 					<span
 						class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1.5 text-xs font-semibold text-on-surface"
-						>{tag}</span
 					>
+						{tag}
+					</span>
 				{/each}
 			</div>
 		{/if}
@@ -212,20 +216,23 @@
 				{#if item.hasAr}
 					<span
 						class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1 text-[11px] font-bold text-on-info-container"
-						>AR</span
 					>
+						AR
+					</span>
 				{/if}
 				{#if item.hasBluecut}
 					<span
 						class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1 text-[11px] font-bold text-on-info-container"
-						>Bluecut</span
 					>
+						Bluecut
+					</span>
 				{/if}
 				{#if item.isPhotochromic}
 					<span
 						class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1 text-[11px] font-bold text-on-info-container"
-						>Fotocromático</span
 					>
+						Fotocromático
+					</span>
 				{/if}
 			</div>
 		{/if}
@@ -238,8 +245,9 @@
 				{#each item.differentiators.filter((t) => t.trim().length > 0) as tag (tag)}
 					<span
 						class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1 text-xs font-semibold text-on-surface"
-						>{tag}</span
 					>
+						{tag}
+					</span>
 				{/each}
 			</div>
 		{/if}

@@ -219,11 +219,10 @@
 								{/if}
 							</td>
 							<td class="px-2 py-2 align-top">
-								<AppBadge variant="neutral" class="text-[10px]"
-									>{PURCHASE_PAYMENT_METHOD_LABELS[
-										payment.paymentMethod as PurchasePaymentMethod
-									] ?? payment.paymentMethod}</AppBadge
-								>
+								<AppBadge variant="neutral" class="text-[10px]">
+									{PURCHASE_PAYMENT_METHOD_LABELS[payment.paymentMethod as PurchasePaymentMethod] ??
+										payment.paymentMethod}
+								</AppBadge>
 							</td>
 							<td
 								class="px-2 py-2 text-right align-top font-mono text-on-surface-variant tabular-nums"
@@ -233,9 +232,9 @@
 							<td
 								class="px-2 py-2 text-right align-top font-mono font-semibold text-brand-navy tabular-nums"
 							>
-								<span class:line-through={payment.voidedAt}
-									>{formatPrice(payment.amountUsdBcv)}</span
-								>
+								<span class:line-through={payment.voidedAt}>
+									{formatPrice(payment.amountUsdBcv)}
+								</span>
 							</td>
 							{#if isNativeSettlement}
 								{@const pvar = paymentVariance(payment)}

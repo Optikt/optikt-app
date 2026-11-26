@@ -30,8 +30,9 @@
 >
 	<input type="hidden" name="supplierId" value={supplierId} />
 	<div>
-		<label for="create-name" class="mb-1 block text-[11px] font-medium text-slate-500">Nombre</label
-		>
+		<label for="create-name" class="mb-1 block text-[11px] font-medium text-slate-500">
+			Nombre
+		</label>
 		<input
 			id="create-name"
 			name="name"
@@ -47,9 +48,9 @@
 	</div>
 	<div class="flex items-center gap-3">
 		<div class="flex-1">
-			<label for="create-category" class="mb-1 block text-[11px] font-medium text-slate-500"
-				>Categoría</label
-			>
+			<label for="create-category" class="mb-1 block text-[11px] font-medium text-slate-500">
+				Categoría
+			</label>
 			<select
 				id="create-category"
 				name="category"
@@ -62,9 +63,9 @@
 			</select>
 		</div>
 		<div class="w-28">
-			<label for="create-price" class="mb-1 block text-[11px] font-medium text-slate-500"
-				>Costo</label
-			>
+			<label for="create-price" class="mb-1 block text-[11px] font-medium text-slate-500">
+				Costo
+			</label>
 			<input
 				id="create-price"
 				name="price"
@@ -81,9 +82,9 @@
 			{/if}
 		</div>
 		<div class="w-28">
-			<label for="create-salePrice" class="mb-1 block text-[11px] font-medium text-slate-500"
-				>Precio Venta</label
-			>
+			<label for="create-salePrice" class="mb-1 block text-[11px] font-medium text-slate-500">
+				Precio Venta
+			</label>
 			<input
 				id="create-salePrice"
 				name="salePrice"

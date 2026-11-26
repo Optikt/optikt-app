@@ -152,9 +152,9 @@
 
 	<div class="mt-3 space-y-2">
 		<div class="flex items-center justify-between gap-3">
-			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-				>Cantidad</span
-			>
+			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+				Cantidad
+			</span>
 			<div class="max-w-[120px] flex-1">
 				<label for="cant-m-{item.id}" class="sr-only">Cantidad</label>
 				<input
@@ -169,9 +169,9 @@
 			</div>
 		</div>
 		<div class="flex items-center justify-between gap-3">
-			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-				>Costo UND.</span
-			>
+			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+				Costo UND.
+			</span>
 			<div class="relative max-w-[120px] flex-1">
 				<label for="costo-m-{item.id}" class="sr-only">Costo unitario</label>
 				<input
@@ -189,14 +189,15 @@
 				/>
 				<span
 					class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-on-surface-variant"
-					>{currencySymbol}</span
 				>
+					{currencySymbol}
+				</span>
 			</div>
 		</div>
 		<div class="flex items-center justify-between gap-3">
-			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-				>Venta UND.</span
-			>
+			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+				Venta UND.
+			</span>
 			<div class="relative max-w-[120px] flex-1">
 				<label for="venta-m-{item.id}" class="sr-only">Precio de venta</label>
 				<input
@@ -213,17 +214,18 @@
 				/>
 				<span
 					class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-on-surface-variant"
-					>{saleSymbol}</span
 				>
+					{saleSymbol}
+				</span>
 			</div>
 		</div>
 		<div class="flex items-center justify-between gap-3 border-t border-outline-variant/20 pt-1">
-			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-				>Total</span
-			>
-			<span class="text-sm font-semibold text-brand-navy tabular-nums"
-				><PricePair amountAlt={lineTotalAlt} amountUsd={lineTotal} {sourceCurrency} /></span
-			>
+			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+				Total
+			</span>
+			<span class="text-sm font-semibold text-brand-navy tabular-nums">
+				<PricePair amountAlt={lineTotalAlt} amountUsd={lineTotal} {sourceCurrency} />
+			</span>
 		</div>
 	</div>
 

@@ -81,8 +81,9 @@
 									stroke="currentColor"
 									stroke-width="2"
 									class="h-3.5 w-3.5"
-									><path d="M20 12a8 8 0 1 1-8-8" /><path d="M12 2v4l3-3-3-3" /></svg
 								>
+									<path d="M20 12a8 8 0 1 1-8-8" /><path d="M12 2v4l3-3-3-3" />
+								</svg>
 							</button>
 						{/if}
 						<div>
@@ -118,8 +119,9 @@
 								<Icon size={11} class={style.iconClass} />
 							{/if}
 						</div>
-						<span class="text-[10px] font-medium text-slate-500">{buttonLabel(rate.sourceKey)}</span
-						>
+						<span class="text-[10px] font-medium text-slate-500">
+							{buttonLabel(rate.sourceKey)}
+						</span>
 						<span class="font-mono text-xs font-bold text-brand-navy tabular-nums">
 							{rate.value.toFixed(2)}
 						</span>

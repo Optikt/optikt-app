@@ -273,9 +273,9 @@
 				</div>
 			</td>
 			<td class="px-4 py-4 align-top">
-				<span class="font-mono text-sm font-semibold text-brand-navy"
-					>{movementLotCode(movement)}</span
-				>
+				<span class="font-mono text-sm font-semibold text-brand-navy">
+					{movementLotCode(movement)}
+				</span>
 			</td>
 			<td class="px-4 py-4 text-right align-top">
 				<p

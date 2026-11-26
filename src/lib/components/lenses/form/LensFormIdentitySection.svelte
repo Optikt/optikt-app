@@ -110,16 +110,20 @@
 					LensCatalogSource.FINISHED
 						? 'bg-white text-brand-navy shadow-sm'
 						: 'text-outline hover:text-brand-navy'}"
-					onclick={() => (formData.source = LensCatalogSource.FINISHED)}>Terminado</button
+					onclick={() => (formData.source = LensCatalogSource.FINISHED)}
 				>
+					Terminado
+				</button>
 				<button
 					type="button"
 					class="flex-1 rounded-md px-3 py-2 text-[10px] font-bold tracking-[0.14em] uppercase transition-all {formData.source ===
 					LensCatalogSource.LAB
 						? 'bg-white text-brand-navy shadow-sm'
 						: 'text-outline hover:text-brand-navy'}"
-					onclick={() => (formData.source = LensCatalogSource.LAB)}>Laboratorio</button
+					onclick={() => (formData.source = LensCatalogSource.LAB)}
 				>
+					Laboratorio
+				</button>
 			</div>
 		</div>
 
@@ -175,9 +179,9 @@
 					class="h-3.5 w-3.5 rounded border-outline-variant"
 					disabled={!formData.supplierId || formData.supplierId.startsWith('pending_')}
 				/>
-				<Label for="lc_global_tech" class="text-[11px] font-medium text-on-surface-variant"
-					>Tecnología global (aplica a todos los proveedores)</Label
-				>
+				<Label for="lc_global_tech" class="text-[11px] font-medium text-on-surface-variant">
+					Tecnología global (aplica a todos los proveedores)
+				</Label>
 			</div>
 			<p class={helperTextClass}>
 				{#if supplierTechnologies.length === 0}
@@ -256,8 +260,9 @@
 							<Label
 								for="lc_ar_colors"
 								class="text-[10px] font-semibold tracking-wider text-outline uppercase"
-								>Colores AR</Label
 							>
+								Colores AR
+							</Label>
 							<input
 								id="lc_ar_colors"
 								bind:value={arColorsText}
@@ -297,8 +302,9 @@
 							<Label
 								for="lc_photochromic_colors"
 								class="text-[10px] font-semibold tracking-wider text-outline uppercase"
-								>Colores Fotocromático</Label
 							>
+								Colores Fotocromático
+							</Label>
 							<input
 								id="lc_photochromic_colors"
 								bind:value={photochromicColorsText}

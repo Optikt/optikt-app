@@ -300,8 +300,9 @@
 				<label
 					for="tech-name-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Nombre</label
 				>
+					Nombre
+				</label>
 				<input
 					id="tech-name-edit"
 					name="name"
@@ -317,8 +318,9 @@
 				<label
 					for="tech-height-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Altura mín.</label
 				>
+					Altura mín.
+				</label>
 				{#if draftMinFittingHeight}
 					<input type="hidden" name="minFittingHeight" value={draftMinFittingHeight} />
 				{/if}
@@ -336,8 +338,9 @@
 				<label
 					for="tech-supplier-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Proveedor</label
 				>
+					Proveedor
+				</label>
 				<select
 					id="tech-supplier-edit"
 					name="supplierId"
@@ -355,8 +358,9 @@
 					type="button"
 					onclick={closeDrawer}
 					class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-					>Cancelar</button
 				>
+					Cancelar
+				</button>
 				<button
 					type="submit"
 					disabled={loading}
@@ -394,8 +398,9 @@
 				<label
 					for="tech-name-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Nombre</label
 				>
+					Nombre
+				</label>
 				<input
 					id="tech-name-create"
 					name="name"
@@ -411,8 +416,9 @@
 				<label
 					for="tech-height-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Altura mín.</label
 				>
+					Altura mín.
+				</label>
 				{#if draftMinFittingHeight}
 					<input type="hidden" name="minFittingHeight" value={draftMinFittingHeight} />
 				{/if}
@@ -430,8 +436,9 @@
 				<label
 					for="tech-supplier-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Proveedor</label
 				>
+					Proveedor
+				</label>
 				<select
 					id="tech-supplier-create"
 					name="supplierId"
@@ -449,8 +456,9 @@
 					type="button"
 					onclick={closeDrawer}
 					class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-					>Cancelar</button
 				>
+					Cancelar
+				</button>
 				<button
 					type="submit"
 					disabled={loading}

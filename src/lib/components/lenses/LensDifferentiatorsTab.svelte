@@ -206,8 +206,9 @@
 			<label
 				for="rename-old-display"
 				class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-				>Nombre actual</label
 			>
+				Nombre actual
+			</label>
 			<input
 				id="rename-old-display"
 				type="text"
@@ -220,8 +221,9 @@
 			<label
 				for="rename-new-name"
 				class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-				>Nuevo nombre</label
 			>
+				Nuevo nombre
+			</label>
 			<input
 				id="rename-new-name"
 				name="newName"
@@ -239,8 +241,9 @@
 				onclick={closeRename}
 				disabled={renameLoading}
 				class="inline-flex items-center gap-2 rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:opacity-50"
-				>Cancelar</button
 			>
+				Cancelar
+			</button>
 			<button
 				type="submit"
 				disabled={renameLoading}

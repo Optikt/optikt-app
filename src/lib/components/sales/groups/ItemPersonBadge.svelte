@@ -69,8 +69,9 @@
 		{#if isPrimary}
 			<span
 				class="rounded bg-[#fff4c2] px-2 py-0.5 text-[11px] font-bold tracking-[0.05em] text-[#6f5900]"
-				>★ FÓRMULA DEL CLIENTE</span
 			>
+				★ FÓRMULA DEL CLIENTE
+			</span>
 		{/if}
 	</div>
 	{#if expanded && chip.state !== 'none' && !single}

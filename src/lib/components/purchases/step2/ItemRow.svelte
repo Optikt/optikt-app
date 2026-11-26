@@ -190,8 +190,9 @@
 				/>
 				<span
 					class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-on-surface-variant"
-					>{currencySymbol}</span
 				>
+					{currencySymbol}
+				</span>
 			</div>
 		</div>
 
@@ -214,8 +215,9 @@
 				/>
 				<span
 					class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-on-surface-variant"
-					>{saleSymbol}</span
 				>
+					{saleSymbol}
+				</span>
 			</div>
 		</div>
 

@@ -166,8 +166,9 @@
 					{#if docLabel}
 						<span
 							class="ml-1 rounded bg-brand-blue px-1.5 py-0.5 align-middle font-mono text-[11px]"
-							>{docLabel}</span
 						>
+							{docLabel}
+						</span>
 					{/if}
 				</h2>
 				<p class="text-xs text-[#b8c4de]">

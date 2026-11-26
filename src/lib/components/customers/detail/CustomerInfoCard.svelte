@@ -217,65 +217,65 @@
 
 		<div class="grid grid-cols-1 gap-y-5 sm:grid-cols-2">
 			<div>
-				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-					>Nombre</span
-				>
+				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase">
+					Nombre
+				</span>
 				<p class="mt-0.5 text-sm font-medium text-on-surface">
 					{customer.firstName ?? '-'}
 				</p>
 			</div>
 			<div>
-				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-					>Apellido</span
-				>
+				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase">
+					Apellido
+				</span>
 				<p class="mt-0.5 text-sm font-medium text-on-surface">
 					{customer.lastName ?? '-'}
 				</p>
 			</div>
 			<div>
-				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-					>Cédula</span
-				>
+				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase">
+					Cédula
+				</span>
 				<p class="mt-0.5 font-mono text-sm text-on-surface">
 					{customer.idNumber ?? '-'}
 				</p>
 			</div>
 			<div>
-				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-					>Edad</span
-				>
+				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase">
+					Edad
+				</span>
 				<p class="mt-0.5 text-sm text-on-surface">
 					{age !== null ? `${age} años` : '-'}
 				</p>
 			</div>
 			<div>
-				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-					>Género</span
-				>
+				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase">
+					Género
+				</span>
 				<p class="mt-0.5 text-sm text-on-surface">
 					{genderLabel}
 				</p>
 			</div>
 			<div>
-				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-					>Teléfono</span
-				>
+				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase">
+					Teléfono
+				</span>
 				<p class="mt-0.5 text-sm text-on-surface">
 					{customer.primaryPhone ?? '-'}
 				</p>
 			</div>
 			<div>
-				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-					>Correo</span
-				>
+				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase">
+					Correo
+				</span>
 				<p class="mt-0.5 text-sm text-on-surface">
 					{customer.email ?? '-'}
 				</p>
 			</div>
 			<div class="sm:col-span-2">
-				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-					>Dirección</span
-				>
+				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase">
+					Dirección
+				</span>
 				<p class="mt-0.5 text-sm text-on-surface">
 					{customer.address ?? '-'}
 				</p>
@@ -284,8 +284,9 @@
 				<div class="sm:col-span-2">
 					<span
 						class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-						>Notas</span
 					>
+						Notas
+					</span>
 					<p class="mt-0.5 text-sm whitespace-pre-wrap text-on-surface-variant">
 						{customer.notes}
 					</p>

@@ -225,9 +225,9 @@
 						<tr
 							class="bg-surface-container-low text-xs font-semibold text-on-surface-variant uppercase"
 						>
-							<th class="px-3 text-left"
-								>{dim === 'BRAND' ? 'Marca' : dim === 'SUPPLIER' ? 'Proveedor' : 'Tipo'}</th
-							>
+							<th class="px-3 text-left">
+								{dim === 'BRAND' ? 'Marca' : dim === 'SUPPLIER' ? 'Proveedor' : 'Tipo'}
+							</th>
 							<th class="text-right">Contados</th>
 							<th class="text-right">Coinciden</th>
 							<th class="text-right">Sobran</th>
@@ -278,15 +278,15 @@
 						{#each diffLines as entry (entry.line.id)}
 							<tr>
 								<td class="px-2 py-2">
-									<span class="block max-w-56"
-										><ItemCell
+									<span class="block max-w-56">
+										<ItemCell
 											itemName={entry.line.itemName}
 											itemCode={entry.line.itemCode}
 											itemType={entry.line.itemType}
 											productId={entry.line.productId}
 											lensCatalogItemId={entry.line.lensCatalogItemId}
-										/></span
-									>
+										/>
+									</span>
 								</td>
 								<td class="px-2 py-2 text-right text-on-surface-variant tabular-nums">
 									{entry.line.systemStock} → {finalCount(entry.line)}

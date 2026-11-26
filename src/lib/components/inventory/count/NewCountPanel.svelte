@@ -223,9 +223,9 @@
 								<span class="flex-1">
 									<b class="text-sm text-brand-navy">Todo el inventario</b>
 								</span>
-								<span class="text-sm font-semibold text-brand-navy"
-									>{coverageSummary.itemCount}</span
-								>
+								<span class="text-sm font-semibold text-brand-navy">
+									{coverageSummary.itemCount}
+								</span>
 							</button>
 						{/snippet}
 					</TriggerTooltip>
@@ -271,9 +271,9 @@
 								<span class="flex-1">
 									<b class="text-sm text-brand-navy">Solo nunca contados</b>
 								</span>
-								<span class="text-sm font-semibold text-brand-navy"
-									>{coverageSummary.neverCounted}</span
-								>
+								<span class="text-sm font-semibold text-brand-navy">
+									{coverageSummary.neverCounted}
+								</span>
 							</button>
 						{/snippet}
 					</TriggerTooltip>

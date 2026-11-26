@@ -288,8 +288,9 @@
 				<label
 					for="mat-name-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Nombre</label
 				>
+					Nombre
+				</label>
 				<input
 					id="mat-name-edit"
 					name="name"
@@ -305,8 +306,9 @@
 				<label
 					for="mat-code-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Código</label
 				>
+					Código
+				</label>
 				<input
 					id="mat-code-edit"
 					name="code"
@@ -322,8 +324,9 @@
 				<label
 					for="mat-index-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Índice</label
 				>
+					Índice
+				</label>
 				{#if draftRefractiveIndex}
 					<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
 				{/if}
@@ -340,8 +343,9 @@
 				<label
 					for="mat-desc-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Descripción</label
 				>
+					Descripción
+				</label>
 				<textarea
 					id="mat-desc-edit"
 					name="description"
@@ -355,8 +359,9 @@
 					type="button"
 					onclick={closeDrawer}
 					class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-					>Cancelar</button
 				>
+					Cancelar
+				</button>
 				<button
 					type="submit"
 					disabled={loading}
@@ -394,8 +399,9 @@
 				<label
 					for="mat-name-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Nombre</label
 				>
+					Nombre
+				</label>
 				<input
 					id="mat-name-create"
 					name="name"
@@ -411,8 +417,9 @@
 				<label
 					for="mat-code-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Código</label
 				>
+					Código
+				</label>
 				<input
 					id="mat-code-create"
 					name="code"
@@ -428,8 +435,9 @@
 				<label
 					for="mat-index-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Índice</label
 				>
+					Índice
+				</label>
 				{#if draftRefractiveIndex}
 					<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
 				{/if}
@@ -446,8 +454,9 @@
 				<label
 					for="mat-desc-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Descripción</label
 				>
+					Descripción
+				</label>
 				<textarea
 					id="mat-desc-create"
 					name="description"
@@ -461,8 +470,9 @@
 					type="button"
 					onclick={closeDrawer}
 					class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-					>Cancelar</button
 				>
+					Cancelar
+				</button>
 				<button
 					type="submit"
 					disabled={loading}

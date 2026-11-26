@@ -125,28 +125,34 @@
 					<tr>
 						<th
 							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Fecha</th
 						>
+							Fecha
+						</th>
 						<th
 							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Método</th
 						>
+							Método
+						</th>
 						<th
 							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Monto original</th
 						>
+							Monto original
+						</th>
 						<th
 							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Tasa</th
 						>
+							Tasa
+						</th>
 						<th
 							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Monto USD</th
 						>
+							Monto USD
+						</th>
 						<th
 							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Referencia</th
 						>
+							Referencia
+						</th>
 						{#if allowVoid}
 							<th class="w-16 px-6 py-4"></th>
 						{/if}
@@ -214,9 +220,9 @@
 							<td
 								class="px-6 py-5 text-right align-top font-mono text-base font-semibold text-brand-navy"
 							>
-								<span class:line-through={payment.voidedAt}
-									>{formatPrice(payment.amountBcvUsd)}</span
-								>
+								<span class:line-through={payment.voidedAt}>
+									{formatPrice(payment.amountBcvUsd)}
+								</span>
 							</td>
 							<td class="px-6 py-5 align-top text-sm text-outline">
 								<span class:italic={payment.voidedAt}>

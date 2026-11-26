@@ -123,8 +123,10 @@
 			<div class="flex items-center gap-2">
 				<label
 					for="rx-{pair.catalogItemId}-doctor"
-					class="text-[10px] font-semibold text-outline uppercase">Médico</label
+					class="text-[10px] font-semibold text-outline uppercase"
 				>
+					Médico
+				</label>
 				<input
 					id="rx-{pair.catalogItemId}-doctor"
 					type="text"

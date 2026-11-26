@@ -104,28 +104,34 @@
 									fill="none"
 									stroke="currentColor"
 									stroke-width="2.5"
-									class="h-2.5 w-2.5"><path d="M18 6 6 18M6 6l12 12" /></svg
+									class="h-2.5 w-2.5"
 								>
+									<path d="M18 6 6 18M6 6l12 12" />
+								</svg>
 							{:else if isPayment}
 								<svg
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
 									stroke-width="2.5"
-									class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14" /></svg
+									class="h-2.5 w-2.5"
 								>
+									<path d="M12 5v14M5 12h14" />
+								</svg>
 							{:else if isCreate}
 								<svg
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
 									stroke-width="2.5"
-									class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14" /></svg
+									class="h-2.5 w-2.5"
 								>
+									<path d="M12 5v14M5 12h14" />
+								</svg>
 							{:else}
-								<svg viewBox="0 0 24 24" fill="currentColor" class="h-1.5 w-1.5"
-									><circle cx="12" cy="12" r="6" /></svg
-								>
+								<svg viewBox="0 0 24 24" fill="currentColor" class="h-1.5 w-1.5">
+									<circle cx="12" cy="12" r="6" />
+								</svg>
 							{/if}
 						</span>
 						<p class="text-sm font-semibold text-on-surface {isVoid ? 'text-error' : ''}">
