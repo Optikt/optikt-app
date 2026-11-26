@@ -66,16 +66,16 @@
 										<span class="font-mono">ID: {movement.productSku}</span>
 									{/if}
 									{#if movement.lotNumber != null}
-										<span class="font-mono"
-											>Lote L-{String(movement.lotNumber).padStart(4, '0')}</span
-										>
+										<span class="font-mono">
+											Lote L-{String(movement.lotNumber).padStart(4, '0')}
+										</span>
 									{/if}
-									<span
-										>{formatDate(movement.createdAt, {
+									<span>
+										{formatDate(movement.createdAt, {
 											dateStyle: 'medium',
 											timeStyle: 'short'
-										})}</span
-									>
+										})}
+									</span>
 								</div>
 								{#if movement.createdByName}
 									<p class="mt-2 text-sm text-on-surface-variant">

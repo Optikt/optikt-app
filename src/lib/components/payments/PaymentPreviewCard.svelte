@@ -64,8 +64,9 @@
 	>
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
 			{#if purchaseNormalized.amountBs > 0}
-				<span class="text-on-surface-variant">Bs {formatCurrency(purchaseNormalized.amountBs)}</span
-				>
+				<span class="text-on-surface-variant">
+					Bs {formatCurrency(purchaseNormalized.amountBs)}
+				</span>
 			{/if}
 			{#if resolvedAmountUsd > 0}
 				<span class="text-outline">·</span>
@@ -73,9 +74,10 @@
 			{/if}
 			{#if isNativeSettlement && amountAppliedToDebt != null && amountAppliedToDebt > 0}
 				<span class="text-outline">·</span>
-				<span class="text-on-surface-variant"
-					>Abono {formatCurrency(amountAppliedToDebt)} {settlementSymbol}</span
-				>
+				<span class="text-on-surface-variant">
+					Abono {formatCurrency(amountAppliedToDebt)}
+					{settlementSymbol}
+				</span>
 				<span
 					class={exchangeVariance > 0
 						? 'text-success'
@@ -90,13 +92,13 @@
 		{#if liveEarlyPaymentSuggestion}
 			<div class="mt-1 flex items-center gap-1.5 text-[10px] text-brand-gold">
 				<span class="font-semibold">Pronto pago</span>
-				<span
-					>· {formatDateOnly(liveEarlyPaymentSuggestion.deadline, {
+				<span>
+					· {formatDateOnly(liveEarlyPaymentSuggestion.deadline, {
 						dateStyle: 'short'
 					})} · {isNativeSettlement
 						? `${liveEarlyPaymentSuggestion.amount.toFixed(2)} ${settlementSymbol}`
-						: formatPrice(liveEarlyPaymentSuggestion.amount)}</span
-				>
+						: formatPrice(liveEarlyPaymentSuggestion.amount)}
+				</span>
 			</div>
 		{/if}
 	</div>

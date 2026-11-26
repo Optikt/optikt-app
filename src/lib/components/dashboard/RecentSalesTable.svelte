@@ -39,9 +39,9 @@
 						<div class="mt-0.5 flex flex-wrap items-center gap-2">
 							<span class="font-mono text-xs text-slate-400">Venta #{sale.orderNumber}</span>
 							<span class="hidden text-xs text-slate-300 sm:inline">•</span>
-							<span class="text-xs text-slate-400"
-								>{formatDateOnly(sale.saleDate, { month: 'short' })}</span
-							>
+							<span class="text-xs text-slate-400">
+								{formatDateOnly(sale.saleDate, { month: 'short' })}
+							</span>
 						</div>
 					</div>
 				</div>

@@ -163,9 +163,9 @@
 									productId={line.productId}
 									lensCatalogItemId={line.lensCatalogItemId}
 								/>
-								<span class="block truncate font-mono text-xs text-outline"
-									>{line.itemCode ?? ''}</span
-								>
+								<span class="block truncate font-mono text-xs text-outline">
+									{line.itemCode ?? ''}
+								</span>
 							</td>
 							<td class="px-2 py-2.5 text-right text-on-surface-variant tabular-nums">
 								{line.systemStock} → {finalCount(line) ?? '—'}

@@ -152,9 +152,9 @@
 {#snippet headerCell(eye: 'od' | 'oi', dotClass: string)}
 	<div class="flex h-7 items-center justify-center gap-1">
 		<span class={`h-2.5 w-2.5 rounded-full ${dotClass}`}></span>
-		<span class="font-heading text-[14px] font-bold text-brand-navy"
-			>{eye === 'od' ? 'OD' : 'OI'}</span
-		>
+		<span class="font-heading text-[14px] font-bold text-brand-navy">
+			{eye === 'od' ? 'OD' : 'OI'}
+		</span>
 		{#if eye === 'od'}
 			{#snippet odSwitch({ props }: { props: Record<string, unknown> })}
 				<input
@@ -297,8 +297,10 @@
 				stroke="currentColor"
 				stroke-width="2"
 				stroke-linecap="round"
-				stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg
+				stroke-linejoin="round"
 			>
+				<path d="M5 12h14M13 6l6 6-6 6" />
+			</svg>
 		</button>
 		{@render headerCell('oi', 'bg-brand-navy')}
 

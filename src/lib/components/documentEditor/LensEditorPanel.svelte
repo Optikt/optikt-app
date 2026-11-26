@@ -425,9 +425,9 @@
 							<span class="text-[10px] opacity-60">+</span>
 						{/if}
 						{extra.name}
-						<span class="text-[10px] opacity-70"
-							>+{formatPrice(extra.salePrice ?? extra.price)}/ojo</span
-						>
+						<span class="text-[10px] opacity-70">
+							+{formatPrice(extra.salePrice ?? extra.price)}/ojo
+						</span>
 					</button>
 				{/each}
 			</div>

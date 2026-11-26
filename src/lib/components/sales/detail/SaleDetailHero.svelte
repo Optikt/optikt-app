@@ -124,9 +124,9 @@
 	<!-- ══ hl: encabezado (título + stepper) ═══════════════════════════ -->
 	<div style="grid-area: hl" class="hl min-w-0">
 		<p class="text-[11px] font-bold tracking-[0.12em] text-[#b8c4de] uppercase">
-			<a href={resolve('/sales')} onclick={handleBack} class="transition-colors hover:text-white"
-				>← Ventas</a
-			>
+			<a href={resolve('/sales')} onclick={handleBack} class="transition-colors hover:text-white">
+				← Ventas
+			</a>
 			· Detalle de venta
 		</p>
 
@@ -188,26 +188,27 @@
 
 		<div class="hero-meta mt-3 grid grid-cols-[repeat(3,max-content)] gap-x-[30px] gap-y-0.5">
 			<div>
-				<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
-					>Vendedor</span
-				>
+				<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase">
+					Vendedor
+				</span>
 				<b class="block text-sm font-semibold">{sale.seller?.fullName ?? 'Sin asignar'}</b>
 			</div>
 			<div>
-				<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
-					>Fecha</span
-				>
-				<b class="block text-sm font-semibold"
-					>{formatDateOnly(sale.saleDate, { dateStyle: 'medium' })}</b
-				>
+				<span class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase">
+					Fecha
+				</span>
+				<b class="block text-sm font-semibold">
+					{formatDateOnly(sale.saleDate, { dateStyle: 'medium' })}
+				</b>
 			</div>
 			{#if rate !== null}
 				{#snippet rateValue({ props }: { props: Record<string, unknown> })}
 					<div {...props}>
 						<span
 							class="mb-0.5 block text-[10px] font-bold tracking-[0.1em] text-[#9fb0d2] uppercase"
-							>Tasa BCV</span
 						>
+							Tasa BCV
+						</span>
 						<b class="font-heading block text-sm font-semibold">{formatCurrency(rate)}</b>
 						<small class="block text-[11px] text-[#b8c4de]">{rateSublabel}</small>
 					</div>
@@ -331,9 +332,9 @@
 					></div>
 				</div>
 				<div class="mt-1 mb-2.5 flex flex-wrap justify-between gap-x-2 text-xs text-[#c9d3ea]">
-					<span class="whitespace-nowrap tabular-nums"
-						>{formatPrice(paidAmountBcvUsd)} cubierto</span
-					>
+					<span class="whitespace-nowrap tabular-nums">
+						{formatPrice(paidAmountBcvUsd)} cubierto
+					</span>
 					<span class="shrink-0 tabular-nums">{Math.round(paymentProgressPercent)}%</span>
 				</div>
 			{:else}
@@ -345,9 +346,9 @@
 					<div class="h-full w-full rounded-full bg-[#62d49a]"></div>
 				</div>
 				<div class="mt-1 mb-2.5 flex flex-wrap justify-between gap-x-2 text-xs text-[#c9d3ea]">
-					<span class="whitespace-nowrap tabular-nums"
-						>{formatPrice(paidAmountBcvUsd)} cubierto</span
-					>
+					<span class="whitespace-nowrap tabular-nums">
+						{formatPrice(paidAmountBcvUsd)} cubierto
+					</span>
 					<span class="shrink-0">100%</span>
 				</div>
 			{/if}

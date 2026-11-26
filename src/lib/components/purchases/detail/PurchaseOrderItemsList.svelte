@@ -227,8 +227,9 @@
 					<div class="flex items-start gap-2">
 						<span
 							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-container-high font-mono text-xs font-bold text-brand-navy"
-							>{item.quantity}x</span
 						>
+							{item.quantity}x
+						</span>
 						{@render itemName(item, 'flex-1 min-w-0')}
 						{#if showReviewColumn}
 							{@render reviewToggleButton(item)}
@@ -357,8 +358,9 @@
 									class="mt-1 inline-block w-fit rounded px-1 py-0.5 text-[9px] font-bold {item.appliesIva
 										? 'bg-brand-blue/10 text-brand-blue'
 										: 'bg-surface-container-high text-on-surface-variant'}"
-									>{item.appliesIva ? `IVA ${item.ivaRate}%` : 'Exento'}</span
 								>
+									{item.appliesIva ? `IVA ${item.ivaRate}%` : 'Exento'}
+								</span>
 							</td>
 							<td class="px-2 py-2.5 text-right">
 								{#if showAlt}
@@ -466,11 +468,11 @@
 				<AppBadge variant="warning">{zeroPriceCount} con advertencia</AppBadge>
 			{/if}
 		</div>
-		<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums"
-			>Total: {formatAltAmount(
+		<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
+			Total: {formatAltAmount(
 				showAltPrices ? totalItemCostAlt : totalItemCost,
 				purchaseOrder.sourceCurrency
-			)}</span
-		>
+			)}
+		</span>
 	</div>
 </div>

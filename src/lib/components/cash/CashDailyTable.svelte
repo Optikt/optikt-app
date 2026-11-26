@@ -159,17 +159,18 @@
 								row.exchangeSettlementVariance
 							)}
 						</td>
-						<td class="px-4 py-3 text-right font-mono tabular-nums">{formatPrice(row.collected)}</td
-						>
-						<td class="px-4 py-3 text-right font-mono text-violet-700 tabular-nums"
-							>{formatPrice(row.cogs)}</td
-						>
-						<td class="px-4 py-3 text-right font-mono tabular-nums"
-							>{formatPrice(row.grossProfit)}</td
-						>
-						<td class="px-4 py-3 text-right font-mono text-rose-700 tabular-nums"
-							>{formatPrice(row.expenses)}</td
-						>
+						<td class="px-4 py-3 text-right font-mono tabular-nums">
+							{formatPrice(row.collected)}
+						</td>
+						<td class="px-4 py-3 text-right font-mono text-violet-700 tabular-nums">
+							{formatPrice(row.cogs)}
+						</td>
+						<td class="px-4 py-3 text-right font-mono tabular-nums">
+							{formatPrice(row.grossProfit)}
+						</td>
+						<td class="px-4 py-3 text-right font-mono text-rose-700 tabular-nums">
+							{formatPrice(row.expenses)}
+						</td>
 						<td
 							class="px-4 py-3 text-right font-mono font-semibold tabular-nums {row.netProfit >= 0
 								? 'text-emerald-700'

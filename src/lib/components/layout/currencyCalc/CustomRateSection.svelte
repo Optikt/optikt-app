@@ -40,8 +40,10 @@
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			stroke-width="2"><path d="m9 18 6-6-6-6" /></svg
+			stroke-width="2"
 		>
+			<path d="m9 18 6-6-6-6" />
+		</svg>
 		Tasa personalizada
 		{#if savedRate}
 			<span class="ml-auto flex items-center gap-1">
@@ -70,8 +72,10 @@
 							fill="none"
 							stroke="currentColor"
 							stroke-width="2"
-							class="h-3 w-3"><path d="M20 12a8 8 0 1 1-8-8" /><path d="M12 2v4l3-3-3-3" /></svg
+							class="h-3 w-3"
 						>
+							<path d="M20 12a8 8 0 1 1-8-8" /><path d="M12 2v4l3-3-3-3" />
+						</svg>
 					</button>
 				{/if}
 				<button
@@ -88,8 +92,10 @@
 						fill="none"
 						stroke="currentColor"
 						stroke-width="2"
-						class="h-3 w-3"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg
+						class="h-3 w-3"
 					>
+						<path d="M18 6 6 18" /><path d="m6 6 12 12" />
+					</svg>
 				</button>
 			</span>
 		{:else}

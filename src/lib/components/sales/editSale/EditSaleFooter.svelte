@@ -189,9 +189,9 @@
 						/>
 					{/if}
 					{#if discountOpen}
-						<span class="font-semibold text-[#ffb4ab] tabular-nums"
-							>−{formatPrice(orderDiscountAmount)}</span
-						>
+						<span class="font-semibold text-[#ffb4ab] tabular-nums">
+							−{formatPrice(orderDiscountAmount)}
+						</span>
 					{/if}
 				</span>
 			</div>

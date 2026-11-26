@@ -136,8 +136,8 @@
 			<div class="flex gap-2">
 				<Button variant="outline" onclick={onSkip} disabled={loading}>Omitir</Button>
 				<Button onclick={handleApply} disabled={loading || selectedCount === 0}>
-					{#if loading}<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
-							><circle
+					{#if loading}<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+							<circle
 								class="opacity-25"
 								cx="12"
 								cy="12"
@@ -148,8 +148,8 @@
 								class="opacity-75"
 								fill="currentColor"
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-							/></svg
-						>{/if}
+							/>
+						</svg>{/if}
 					<Check class="mr-1 h-4 w-4" />
 					Aplicar ({selectedCount})
 				</Button>

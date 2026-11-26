@@ -101,10 +101,10 @@
 				{#if prescription.odAltura != null || prescription.osAltura != null}
 					<div class="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2">
 						<span>Altura</span>
-						<span class="font-mono text-white"
-							>{prescription.odAltura != null ? `OD ${prescription.odAltura}mm` : '—'}
-							/ {prescription.osAltura != null ? `OI ${prescription.osAltura}mm` : '—'}</span
-						>
+						<span class="font-mono text-white">
+							{prescription.odAltura != null ? `OD ${prescription.odAltura}mm` : '—'}
+							/ {prescription.osAltura != null ? `OI ${prescription.osAltura}mm` : '—'}
+						</span>
 					</div>
 				{/if}
 			</div>
@@ -112,24 +112,24 @@
 			{#if prescription.treatments}
 				<div class="flex flex-wrap gap-2">
 					{#if prescription.treatments.antiReflective}
-						<span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
-							>Antireflejo</span
-						>
+						<span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90">
+							Antireflejo
+						</span>
 					{/if}
 					{#if prescription.treatments.blueBlock}
-						<span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
-							>Blue Block</span
-						>
+						<span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90">
+							Blue Block
+						</span>
 					{/if}
 					{#if prescription.treatments.photochromic}
-						<span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
-							>Fotocromático</span
-						>
+						<span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90">
+							Fotocromático
+						</span>
 					{/if}
 					{#if prescription.treatments.other}
-						<span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
-							>{prescription.treatments.other}</span
-						>
+						<span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90">
+							{prescription.treatments.other}
+						</span>
 					{/if}
 				</div>
 			{/if}

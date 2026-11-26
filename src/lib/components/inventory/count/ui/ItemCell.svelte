@@ -50,8 +50,10 @@
 		<a
 			{href}
 			target="_blank"
-			class="truncate text-sm font-medium text-brand-navy hover:underline {nameClass}">{itemName}</a
+			class="truncate text-sm font-medium text-brand-navy hover:underline {nameClass}"
 		>
+			{itemName}
+		</a>
 	{:else}
 		<span class="truncate text-sm font-medium text-brand-navy {nameClass}">{itemName}</span>
 	{/if}

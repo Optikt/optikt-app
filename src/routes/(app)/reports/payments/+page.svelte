@@ -161,8 +161,9 @@
 							{#if payment.isRetained}
 								<span
 									class="ml-1 inline-block rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
-									>Retenido</span
 								>
+									Retenido
+								</span>
 							{/if}
 						</td>
 						<td class="px-4 py-3 text-right font-mono">{formatPrice(payment.amount)}</td>

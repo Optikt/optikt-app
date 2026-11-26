@@ -99,9 +99,9 @@
 						bind:checked={data.isCurrent}
 						class="h-4 w-4 rounded border border-brand-gold/30 bg-surface-container-lowest text-brand-navy focus:ring-0"
 					/>
-					<span class="text-xs font-bold tracking-[0.18em] text-brand-navy uppercase"
-						>Fórmula Actual</span
-					>
+					<span class="text-xs font-bold tracking-[0.18em] text-brand-navy uppercase">
+						Fórmula Actual
+					</span>
 				</label>
 			</div>
 		{/if}

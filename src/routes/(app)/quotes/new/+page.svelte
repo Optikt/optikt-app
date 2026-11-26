@@ -13,8 +13,9 @@
 	<div class="w-full">
 		<div class="mb-2 space-y-3">
 			<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
-				<a href={resolve('/quotes')} class="transition-colors hover:text-brand-blue">Presupuestos</a
-				>
+				<a href={resolve('/quotes')} class="transition-colors hover:text-brand-blue">
+					Presupuestos
+				</a>
 				<span class="mx-2 text-outline">›</span>
 				<span class="text-brand-navy">Nuevo presupuesto</span>
 			</p>

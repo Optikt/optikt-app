@@ -293,8 +293,10 @@
 						class="min-h-11 rounded px-2.5 text-xs font-semibold @min-[700px]:min-h-8 {personView ===
 						opt.v
 							? 'bg-white text-brand-navy shadow-sm'
-							: 'text-on-surface-variant'}">{opt.l}</button
+							: 'text-on-surface-variant'}"
 					>
+						{opt.l}
+					</button>
 				{/each}
 			</div>
 		{/if}
@@ -377,8 +379,9 @@
 						{:else if persons?.primaryLensItemId === group.item.id && displayGroups.filter((g) => g.item.itemType === SaleItemType.LENS_PAIR).length > 1}
 							<span
 								class="mt-1 inline-block rounded bg-[#fff4c2] px-2 py-0.5 text-[11px] font-bold text-[#6f5900]"
-								>★ FÓRMULA DEL CLIENTE</span
 							>
+								★ FÓRMULA DEL CLIENTE
+							</span>
 						{/if}
 					{/snippet}
 				</SaleItemsRow>

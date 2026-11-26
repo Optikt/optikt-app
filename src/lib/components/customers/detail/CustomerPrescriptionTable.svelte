@@ -31,28 +31,34 @@
 				<tr class="border-b border-outline-variant bg-surface-container-high">
 					<th
 						class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
-						>Fecha</th
 					>
+						Fecha
+					</th>
 					<th
 						class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
-						>Tipo</th
 					>
+						Tipo
+					</th>
 					<th
 						class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
-						>OD</th
 					>
+						OD
+					</th>
 					<th
 						class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
-						>OS</th
 					>
+						OS
+					</th>
 					<th
 						class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
-						>Estado</th
 					>
+						Estado
+					</th>
 					<th
 						class="px-4 py-2.5 text-right text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
-						>Acciones</th
 					>
+						Acciones
+					</th>
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-outline-variant/20">
@@ -157,14 +163,12 @@
 									>
 										<span><strong>DP/NP:</strong> {formatDpNp(prescription)}</span>
 										{#if prescription.odAltura != null || prescription.osAltura != null}
-											<span
-												><strong>Altura:</strong>
+											<span>
+												<strong>Altura:</strong>
 												{prescription.odAltura != null ? `OD ${prescription.odAltura}mm` : 'OD —'}
 												/
-												{prescription.osAltura != null
-													? `OI ${prescription.osAltura}mm`
-													: 'OI —'}</span
-											>
+												{prescription.osAltura != null ? `OI ${prescription.osAltura}mm` : 'OI —'}
+											</span>
 										{/if}
 										{#if prescription.doctorName}
 											<span><strong>Doctor:</strong> {prescription.doctorName}</span>

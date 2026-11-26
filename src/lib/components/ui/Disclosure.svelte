@@ -57,9 +57,9 @@
 			<span class="font-mono text-xs font-semibold text-brand-navy">{summaryValue}</span>
 		{/if}
 		{#if statusBadge}
-			<span class="rounded-full px-1.5 py-0.5 text-[9px] font-semibold {badgeClass}"
-				>{statusBadge}</span
-			>
+			<span class="rounded-full px-1.5 py-0.5 text-[9px] font-semibold {badgeClass}">
+				{statusBadge}
+			</span>
 		{/if}
 		<ChevronRight
 			class="h-3.5 w-3.5 text-on-surface-variant transition-transform {open ? 'rotate-90' : ''}"

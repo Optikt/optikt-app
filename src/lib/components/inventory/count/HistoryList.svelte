@@ -25,9 +25,9 @@
 				>
 					<b class="min-w-[92px] text-brand-navy">Conteo #{session.id}</b>
 					<span class="flex-1 text-on-surface-variant">{session.scopeLabel}</span>
-					<AppBadge variant={statusVariantFor(session.status)}
-						>{statusLabelFor(session.status)}</AppBadge
-					>
+					<AppBadge variant={statusVariantFor(session.status)}>
+						{statusLabelFor(session.status)}
+					</AppBadge>
 					<span class="text-xs text-on-surface-variant tabular-nums">
 						{new Date(session.appliedAt ?? session.openedAt).toLocaleDateString()}
 					</span>

@@ -23,5 +23,7 @@
 <span
 	aria-hidden="true"
 	class="inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white {sizeClass}"
-	style:background-color={color.dot}>{initials}</span
+	style:background-color={color.dot}
 >
+	{initials}
+</span>

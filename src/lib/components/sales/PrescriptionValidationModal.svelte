@@ -147,9 +147,9 @@
 									</span>
 									{freeItem.description}
 								</span>
-								<span class="shrink-0 font-semibold text-brand-navy"
-									>{formatPrice(freeItem.unitPrice)}</span
-								>
+								<span class="shrink-0 font-semibold text-brand-navy">
+									{formatPrice(freeItem.unitPrice)}
+								</span>
 							</div>
 						{/each}
 					</div>

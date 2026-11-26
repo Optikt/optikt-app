@@ -450,9 +450,9 @@
 			>
 				<span class="text-[13px] font-bold text-brand-navy">
 					Total Bs.
-					<small class="text-xs font-medium text-on-surface-variant"
-						>a tasa {fmtRate(calculation.rate)}</small
-					>
+					<small class="text-xs font-medium text-on-surface-variant">
+						a tasa {fmtRate(calculation.rate)}
+					</small>
 				</span>
 				{@render copyCell({
 					props: {},

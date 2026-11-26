@@ -44,27 +44,28 @@
 				<div class="rounded-xl bg-surface-container-low px-5 py-4">
 					<p class="text-sm text-on-surface-variant">
 						{#if isOutflow}
-							Salida de <span class="font-mono font-semibold text-brand-navy">{parsedQuantity}</span
-							>
+							Salida de <span class="font-mono font-semibold text-brand-navy">
+								{parsedQuantity}
+							</span>
 							uds del lote
-							<span class="font-mono font-semibold text-brand-navy"
-								>LOT-{String(selectedLot.lotNumber).padStart(4, '0')}</span
-							>.
+							<span class="font-mono font-semibold text-brand-navy">
+								LOT-{String(selectedLot.lotNumber).padStart(4, '0')}
+							</span>.
 						{:else}
-							Entrada de <span class="font-mono font-semibold text-brand-navy"
-								>{parsedQuantity}</span
-							>
+							Entrada de <span class="font-mono font-semibold text-brand-navy">
+								{parsedQuantity}
+							</span>
 							uds al lote
-							<span class="font-mono font-semibold text-brand-navy"
-								>LOT-{String(selectedLot.lotNumber).padStart(4, '0')}</span
-							>.
+							<span class="font-mono font-semibold text-brand-navy">
+								LOT-{String(selectedLot.lotNumber).padStart(4, '0')}
+							</span>.
 						{/if}
 					</p>
 					<p class="mt-2 text-sm text-on-surface-variant">
 						Stock del lote:
-						<span class="font-mono font-semibold text-brand-navy"
-							>{selectedLot.quantityAvailable}</span
-						>
+						<span class="font-mono font-semibold text-brand-navy">
+							{selectedLot.quantityAvailable}
+						</span>
 						→
 						<span class="font-mono font-semibold text-brand-navy">{projectedLotQuantity}</span>
 					</p>

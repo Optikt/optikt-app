@@ -99,8 +99,9 @@
 					<div class="relative">
 						<span
 							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-sm font-semibold text-outline"
-							>{nativePrefix}</span
 						>
+							{nativePrefix}
+						</span>
 						<input
 							id="pay-native"
 							type="number"
@@ -128,8 +129,9 @@
 					<div class="relative">
 						<span
 							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-base text-outline"
-							>$</span
 						>
+							$
+						</span>
 						<input
 							id="pay-usd"
 							type="number"
@@ -162,8 +164,9 @@
 					<div class="relative">
 						<span
 							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-base text-outline"
-							>$</span
 						>
+							$
+						</span>
 						<input
 							id="pay-usd"
 							type="number"
@@ -187,8 +190,9 @@
 					<div class="relative">
 						<span
 							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-sm font-semibold text-outline"
-							>{nativePrefix}</span
 						>
+							{nativePrefix}
+						</span>
 						<input
 							id="pay-native"
 							type="number"

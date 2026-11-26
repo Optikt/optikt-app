@@ -26,9 +26,9 @@
 		{getTreatmentCategoryLabel(treatment.category)}
 	</span>
 	{#if treatment.isTaxable}
-		<span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
-			>IVA</span
-		>
+		<span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+			IVA
+		</span>
 	{/if}
 	<span class="text-right font-mono text-xs text-slate-400" title="Costo">
 		{formatPrice(treatment.price)}

@@ -107,8 +107,9 @@
 											{code}
 										</span>
 									{/if}
-									<span class="truncate font-semibold">{groupDisplayLabel(group.label, index)}</span
-									>
+									<span class="truncate font-semibold">
+										{groupDisplayLabel(group.label, index)}
+									</span>
 								</li>
 							{/each}
 						</ul>

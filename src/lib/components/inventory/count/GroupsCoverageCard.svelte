@@ -139,9 +139,13 @@
 						text="Ventas, compras y ajustes desde el último conteo. Más movimiento, más riesgo de desfase."
 					>
 						{#snippet trigger({ props })}
-							<button type="button" {...props} class="p-0 text-left text-sm text-on-surface-variant"
-								>{group.movementsSince}</button
+							<button
+								type="button"
+								{...props}
+								class="p-0 text-left text-sm text-on-surface-variant"
 							>
+								{group.movementsSince}
+							</button>
 						{/snippet}
 					</TriggerTooltip>
 				</div>

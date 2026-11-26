@@ -27,9 +27,9 @@
 >
 	<input type="hidden" name="id" value={treatment.id} />
 	<div>
-		<label for="edit-name-{treatment.id}" class="mb-1 block text-[11px] font-medium text-slate-500"
-			>Nombre</label
-		>
+		<label for="edit-name-{treatment.id}" class="mb-1 block text-[11px] font-medium text-slate-500">
+			Nombre
+		</label>
 		<input
 			id="edit-name-{treatment.id}"
 			name="name"
@@ -48,8 +48,10 @@
 		<div class="flex-1">
 			<label
 				for="edit-category-{treatment.id}"
-				class="mb-1 block text-[11px] font-medium text-slate-500">Categoría</label
+				class="mb-1 block text-[11px] font-medium text-slate-500"
 			>
+				Categoría
+			</label>
 			<select
 				id="edit-category-{treatment.id}"
 				name="category"
@@ -64,8 +66,10 @@
 		<div class="w-28">
 			<label
 				for="edit-price-{treatment.id}"
-				class="mb-1 block text-[11px] font-medium text-slate-500">Costo</label
+				class="mb-1 block text-[11px] font-medium text-slate-500"
 			>
+				Costo
+			</label>
 			<input
 				id="edit-price-{treatment.id}"
 				name="price"
@@ -80,8 +84,10 @@
 		<div class="w-28">
 			<label
 				for="edit-salePrice-{treatment.id}"
-				class="mb-1 block text-[11px] font-medium text-slate-500">Precio Venta</label
+				class="mb-1 block text-[11px] font-medium text-slate-500"
 			>
+				Precio Venta
+			</label>
 			<input
 				id="edit-salePrice-{treatment.id}"
 				name="salePrice"

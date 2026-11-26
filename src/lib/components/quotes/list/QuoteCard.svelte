@@ -58,9 +58,9 @@
 {#snippet validityTag()}
 	{#if quote.status === QuoteStatus.CONVERTED && quote.convertedOrderNumber}
 		<span class="text-[12px] text-on-surface-variant">
-			Venta <b class="font-mono text-brand-blue"
-				>{formatConvertedSaleRef(quote.convertedOrderNumber)}</b
-			>
+			Venta <b class="font-mono text-brand-blue">
+				{formatConvertedSaleRef(quote.convertedOrderNumber)}
+			</b>
 		</span>
 	{:else if cancelled}
 		<span class="text-[12px] text-outline">—</span>

@@ -99,9 +99,9 @@
 				<div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
 					<div class="grid gap-4 sm:grid-cols-2">
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-								>Categoría *</span
-							>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+								Categoría *
+							</span>
 							<select bind:value={form.category} required class={fieldInputClass}>
 								{#each ALL_EXPENSE_CATEGORIES as c (c)}
 									<option value={c}>{EXPENSE_CATEGORY_LABELS[c]}</option>
@@ -110,16 +110,16 @@
 						</label>
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-								>Fecha *</span
-							>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+								Fecha *
+							</span>
 							<input type="date" bind:value={form.expenseDate} required class={fieldInputClass} />
 						</label>
 
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-								>Descripción *</span
-							>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+								Descripción *
+							</span>
 							<input
 								type="text"
 								bind:value={form.description}
@@ -132,9 +132,9 @@
 						</label>
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-								>Moneda *</span
-							>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+								Moneda *
+							</span>
 							<select bind:value={form.currency} required class={fieldInputClass}>
 								{#each ALL_EXPENSE_CURRENCIES as c (c)}
 									<option value={c}>{getCurrencyLabel(EXPENSE_TO_CURRENCY_CODE[c])}</option>
@@ -143,9 +143,9 @@
 						</label>
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-								>Monto *</span
-							>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+								Monto *
+							</span>
 							<input
 								type="number"
 								min="0"
@@ -158,9 +158,9 @@
 						</label>
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-								>Tasa BCV referencia *</span
-							>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+								Tasa BCV referencia *
+							</span>
 							<input
 								type="number"
 								min="0"
@@ -216,9 +216,9 @@
 
 							{#if needsRateType}
 								<label class="flex flex-col gap-1.5 text-sm">
-									<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-										>Tipo de tasa *</span
-									>
+									<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+										Tipo de tasa *
+									</span>
 									<select bind:value={form.rateType} required class={fieldInputClass}>
 										{#each ALL_RATE_TYPES as t (t)}
 											<option value={t}>{RATE_TYPE_LABELS[t]}</option>
@@ -232,17 +232,17 @@
 							<div
 								class="col-span-full rounded-xl bg-surface-container-low px-3 py-2 text-xs text-on-surface-variant"
 							>
-								Se registrarán <span class="font-mono font-semibold text-brand-navy"
-									>{formatPrice(normalizedAmountPreview)}</span
-								>
+								Se registrarán <span class="font-mono font-semibold text-brand-navy">
+									{formatPrice(normalizedAmountPreview)}
+								</span>
 								como USD BCV.
 							</div>
 						{/if}
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-								>Referencia</span
-							>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+								Referencia
+							</span>
 							<input
 								type="text"
 								bind:value={form.reference}
@@ -253,9 +253,9 @@
 						</label>
 
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-								>Notas</span
-							>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+								Notas
+							</span>
 							<textarea bind:value={form.notes} maxlength="1000" rows="3" class={fieldInputClass}
 							></textarea>
 						</label>

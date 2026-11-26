@@ -16,23 +16,24 @@
 	<div class="space-y-1">
 		<div class="flex items-center justify-between text-xs">
 			<span class="text-slate-500">Subtotal</span>
-			<span class="font-semibold text-brand-navy">{formatPrice(adjusted.subtotalBeforeGlobal)}</span
-			>
+			<span class="font-semibold text-brand-navy">
+				{formatPrice(adjusted.subtotalBeforeGlobal)}
+			</span>
 		</div>
 		{#if appliedGlobalDiscount > 0}
 			<div class="flex items-center justify-between text-xs">
 				<span class="text-slate-500">Descuento global</span>
-				<span class="font-semibold text-red-500"
-					>-{formatPrice(
+				<span class="font-semibold text-red-500">
+					-{formatPrice(
 						adjusted.subtotalBeforeGlobal - adjusted.taxableBase - adjusted.exemptTotal
-					)}</span
-				>
+					)}
+				</span>
 			</div>
 			<div class="flex items-center justify-between text-xs">
 				<span class="text-slate-500">Subtotal neto</span>
-				<span class="font-semibold text-brand-navy"
-					>{formatPrice(adjusted.taxableBase + adjusted.exemptTotal)}</span
-				>
+				<span class="font-semibold text-brand-navy">
+					{formatPrice(adjusted.taxableBase + adjusted.exemptTotal)}
+				</span>
 			</div>
 		{/if}
 		<div class="my-1 border-t border-slate-200"></div>

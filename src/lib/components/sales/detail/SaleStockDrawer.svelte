@@ -71,15 +71,15 @@
 				<thead>
 					<tr class="text-left text-[11px] font-semibold tracking-[0.12em] text-outline uppercase">
 						<th scope="col" class="px-3 pt-2.5 pb-1.5 font-semibold">Producto</th>
-						<th scope="col" class="px-2 pt-2.5 pb-1.5 text-right font-semibold tabular-nums"
-							>Salidas</th
-						>
-						<th scope="col" class="px-2 pt-2.5 pb-1.5 text-right font-semibold tabular-nums"
-							>Reversiones</th
-						>
-						<th scope="col" class="px-3 pt-2.5 pb-1.5 text-right font-semibold tabular-nums"
-							>Neto</th
-						>
+						<th scope="col" class="px-2 pt-2.5 pb-1.5 text-right font-semibold tabular-nums">
+							Salidas
+						</th>
+						<th scope="col" class="px-2 pt-2.5 pb-1.5 text-right font-semibold tabular-nums">
+							Reversiones
+						</th>
+						<th scope="col" class="px-3 pt-2.5 pb-1.5 text-right font-semibold tabular-nums">
+							Neto
+						</th>
 					</tr>
 				</thead>
 				<tbody>

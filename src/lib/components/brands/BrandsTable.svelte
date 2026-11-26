@@ -178,8 +178,8 @@
 		</Dialog.Header>
 		{#if checkingDelete}
 			<div class="flex items-center justify-center py-8">
-				<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
-					><circle
+				<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+					<circle
 						class="opacity-25"
 						cx="12"
 						cy="12"
@@ -190,8 +190,8 @@
 						class="opacity-75"
 						fill="currentColor"
 						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-					/></svg
-				>
+					/>
+				</svg>
 			</div>
 		{:else}
 			<div class="flex flex-col gap-4">
@@ -202,9 +202,9 @@
 						<div>
 							<p class="font-medium text-amber-800">¡Atención!</p>
 							<p class="mt-1 text-sm text-amber-700">
-								Esta marca tiene <strong
-									>{productCount} producto{productCount > 1 ? 's' : ''}</strong
-								>
+								Esta marca tiene <strong>
+									{productCount} producto{productCount > 1 ? 's' : ''}
+								</strong>
 								asociado{productCount > 1 ? 's' : ''}. Los productos quedarán sin marca asignada.
 							</p>
 						</div>
@@ -240,7 +240,8 @@
 							class="mx-auto h-5 w-5 animate-spin"
 							viewBox="0 0 24 24"
 							fill="none"
-							><circle
+						>
+							<circle
 								class="opacity-25"
 								cx="12"
 								cy="12"
@@ -251,8 +252,8 @@
 								class="opacity-75"
 								fill="currentColor"
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-							/></svg
-						>{/if}
+							/>
+						</svg>{/if}
 					Eliminar
 				</Button>
 			</Dialog.Footer>

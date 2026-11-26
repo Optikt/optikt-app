@@ -30,14 +30,12 @@
 				></div>
 			</div>
 			<div class="flex justify-between text-xs">
-				<span class="text-on-surface-variant"
-					>{reviewStatus.reviewedCount} / {items.length} artículos revisados</span
-				>
-				<span class="font-semibold {reviewStatus.allReviewed ? 'text-success' : 'text-brand-blue'}"
-					>{items.length > 0
-						? Math.round((reviewStatus.reviewedCount / items.length) * 100)
-						: 0}%</span
-				>
+				<span class="text-on-surface-variant">
+					{reviewStatus.reviewedCount} / {items.length} artículos revisados
+				</span>
+				<span class="font-semibold {reviewStatus.allReviewed ? 'text-success' : 'text-brand-blue'}">
+					{items.length > 0 ? Math.round((reviewStatus.reviewedCount / items.length) * 100) : 0}%
+				</span>
 			</div>
 			{#if zeroPriceCount > 0}
 				<div class="flex items-center gap-1.5 text-xs text-warning">

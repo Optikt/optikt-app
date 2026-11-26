@@ -171,33 +171,33 @@
 			<div class="space-y-3 text-sm">
 				<div class="flex items-center justify-between gap-3">
 					<span class="text-slate-600">Margen bruto</span>
-					<span class="font-mono font-semibold text-brand-navy tabular-nums"
-						>{formatPct(report.grossMarginPct)}</span
-					>
+					<span class="font-mono font-semibold text-brand-navy tabular-nums">
+						{formatPct(report.grossMarginPct)}
+					</span>
 				</div>
 				<div class="flex items-center justify-between gap-3">
 					<span class="text-slate-600">Cobrado vs realizado</span>
-					<span class="font-mono font-semibold text-brand-navy tabular-nums"
-						>{formatPrice(report.totalCollected)}</span
-					>
+					<span class="font-mono font-semibold text-brand-navy tabular-nums">
+						{formatPrice(report.totalCollected)}
+					</span>
 				</div>
 				<div class="flex items-center justify-between gap-3">
 					<span class="text-slate-600">Retenido</span>
-					<span class="font-mono font-semibold text-brand-navy tabular-nums"
-						>{formatPrice(report.otherIncome)}</span
-					>
+					<span class="font-mono font-semibold text-brand-navy tabular-nums">
+						{formatPrice(report.otherIncome)}
+					</span>
 				</div>
 				<div class="flex items-center justify-between gap-3">
 					<span class="text-slate-600">Descuentos en compras</span>
-					<span class="font-mono font-semibold text-emerald-700 tabular-nums"
-						>{formatPrice(report.purchaseDiscountsEarned)}</span
-					>
+					<span class="font-mono font-semibold text-emerald-700 tabular-nums">
+						{formatPrice(report.purchaseDiscountsEarned)}
+					</span>
 				</div>
 				<div class="flex items-center justify-between gap-3">
 					<span class="text-slate-600">Pagos registrados</span>
-					<span class="font-mono font-semibold text-brand-navy tabular-nums"
-						>{report.paymentsCount}</span
-					>
+					<span class="font-mono font-semibold text-brand-navy tabular-nums">
+						{report.paymentsCount}
+					</span>
 				</div>
 			</div>
 
@@ -210,9 +210,9 @@
 						{#each report.expensesByCategory as row (row.category)}
 							<li class="flex items-center justify-between gap-3">
 								<span class="truncate text-slate-600">{EXPENSE_CATEGORY_LABELS[row.category]}</span>
-								<span class="font-mono font-semibold text-brand-navy tabular-nums"
-									>{formatPrice(row.total)}</span
-								>
+								<span class="font-mono font-semibold text-brand-navy tabular-nums">
+									{formatPrice(row.total)}
+								</span>
 							</li>
 						{/each}
 					</ul>

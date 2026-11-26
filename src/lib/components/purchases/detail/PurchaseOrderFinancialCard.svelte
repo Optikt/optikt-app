@@ -157,9 +157,9 @@
 			{/if}
 		</div>
 		<div class="flex flex-wrap items-baseline gap-1.5">
-			<span class="font-mono text-xl font-semibold text-white tabular-nums @sm:text-2xl"
-				>{netCostMain}</span
-			>
+			<span class="font-mono text-xl font-semibold text-white tabular-nums @sm:text-2xl">
+				{netCostMain}
+			</span>
 			{#if showSourceCurrency}
 				<span class="text-[10px] text-white/60">{sourceCurrency}</span>
 			{/if}
@@ -182,9 +182,9 @@
 				<div class="h-px bg-white/15"></div>
 				<div class="flex justify-between text-xs">
 					<span class="font-medium text-white/60">Subtotal neto</span>
-					<span class="font-mono font-medium text-white tabular-nums"
-						>{discountRows.netSubtotal}</span
-					>
+					<span class="font-mono font-medium text-white tabular-nums">
+						{discountRows.netSubtotal}
+					</span>
 				</div>
 				<div class="flex justify-between text-xs">
 					<span class="text-white/60">IVA neto</span>
@@ -317,17 +317,17 @@
 								<span class="truncate text-white/70">
 									<span class="font-mono">#{payment.paymentNumber}</span>
 									<span class="text-white/45">
-										· {formatDateOnly(payment.paymentDate, { dateStyle: 'short' })}</span
-									>
+										· {formatDateOnly(payment.paymentDate, { dateStyle: 'short' })}
+									</span>
 									<span class="text-white/45">
 										· {PURCHASE_PAYMENT_METHOD_LABELS[
 											payment.paymentMethod as PurchasePaymentMethod
-										] ?? payment.paymentMethod}</span
-									>
+										] ?? payment.paymentMethod}
+									</span>
 								</span>
-								<span class="shrink-0 font-mono font-semibold text-white tabular-nums"
-									>{formatPrice(payment.amountUsdBcv)}</span
-								>
+								<span class="shrink-0 font-mono font-semibold text-white tabular-nums">
+									{formatPrice(payment.amountUsdBcv)}
+								</span>
 							</div>
 						{/each}
 					</div>

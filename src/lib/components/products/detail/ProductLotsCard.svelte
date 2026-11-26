@@ -54,18 +54,18 @@
 			<table class="min-w-full border-separate [border-spacing:0_0.6rem] text-left">
 				<thead>
 					<tr>
-						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase"
-							>Lote</th
-						>
-						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase"
-							>Stock</th
-						>
-						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase"
-							>Costo u.</th
-						>
-						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase"
-							>Ingreso</th
-						>
+						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">
+							Lote
+						</th>
+						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">
+							Stock
+						</th>
+						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">
+							Costo u.
+						</th>
+						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">
+							Ingreso
+						</th>
 					</tr>
 				</thead>
 				<tbody>

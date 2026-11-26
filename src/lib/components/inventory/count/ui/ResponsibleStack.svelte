@@ -46,19 +46,25 @@
 				{#each list as entry (entry.id)}
 					<span
 						class="inline-grid h-[26px] w-[26px] place-items-center rounded-full border-[1.5px] border-brand-navy bg-brand-blue text-[11px] font-bold text-brand-navy"
-						style="margin-left:-6px">{initialsFor(entry.displayName)}</span
+						style="margin-left:-6px"
 					>
+						{initialsFor(entry.displayName)}
+					</span>
 				{/each}
 				{#if rest > 0}
 					<span
 						class="inline-grid h-[26px] w-[26px] place-items-center rounded-full border-[1.5px] border-brand-navy bg-brand-blue text-[11px] font-bold text-brand-navy"
-						style="margin-left:-6px">+{rest}</span
+						style="margin-left:-6px"
 					>
+						+{rest}
+					</span>
 				{/if}
 				<span
 					class="inline-grid h-[26px] w-[26px] place-items-center rounded-full border-[1.5px] border-brand-navy bg-white text-sm text-brand-navy"
-					style="margin-left:-6px">＋</span
+					style="margin-left:-6px"
 				>
+					＋
+				</span>
 			</button>
 		{/snippet}
 	</TriggerTooltip>
@@ -74,14 +80,18 @@
 				{#each list as entry (entry.id)}
 					<span
 						class="inline-grid h-[26px] w-[26px] place-items-center rounded-full border-[1.5px] border-brand-navy bg-brand-blue text-[11px] font-bold text-brand-navy"
-						style="margin-left:-6px">{initialsFor(entry.displayName)}</span
+						style="margin-left:-6px"
 					>
+						{initialsFor(entry.displayName)}
+					</span>
 				{/each}
 				{#if rest > 0}
 					<span
 						class="inline-grid h-[26px] w-[26px] place-items-center rounded-full border-[1.5px] border-brand-navy bg-brand-blue text-[11px] font-bold text-brand-navy"
-						style="margin-left:-6px">+{rest}</span
+						style="margin-left:-6px"
 					>
+						+{rest}
+					</span>
 				{/if}
 			</button>
 		{/snippet}

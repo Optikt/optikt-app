@@ -101,13 +101,13 @@
 			<td class="px-3 py-2.5 text-sm">
 				<span
 					class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600"
-					>{material.code}</span
 				>
+					{material.code}
+				</span>
 			</td>
-			<td class="px-3 py-2.5 text-sm"
-				>{MATERIAL_CATEGORY_LABELS[material.productType as MaterialCategory] ??
-					material.productType}</td
-			>
+			<td class="px-3 py-2.5 text-sm">
+				{MATERIAL_CATEGORY_LABELS[material.productType as MaterialCategory] ?? material.productType}
+			</td>
 			<td class="px-3 py-2.5 text-sm">
 				<StatusBadge active={!material.deletedAt} />
 			</td>
@@ -188,8 +188,12 @@
 		<Dialog.Footer class="flex justify-end gap-2">
 			<Button variant="outline" onclick={closeModal}>Cancelar</Button>
 			<Button variant="destructive" disabled={!canConfirm || deleteLoading} onclick={handleDelete}>
-				{#if deleteLoading}<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
-						><circle
+				{#if deleteLoading}<svg
+						class="mx-auto h-5 w-5 animate-spin"
+						viewBox="0 0 24 24"
+						fill="none"
+					>
+						<circle
 							class="opacity-25"
 							cx="12"
 							cy="12"
@@ -200,8 +204,8 @@
 							class="opacity-75"
 							fill="currentColor"
 							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-						/></svg
-					>{/if}
+						/>
+					</svg>{/if}
 				Eliminar
 			</Button>
 		</Dialog.Footer>

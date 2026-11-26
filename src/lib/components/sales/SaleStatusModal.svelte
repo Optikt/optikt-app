@@ -163,8 +163,9 @@
 							{#if option.backward}
 								<span
 									class="rounded-full bg-warning-container px-1.5 py-0.5 text-[10px] font-semibold text-on-warning-container uppercase"
-									>Revertir</span
 								>
+									Revertir
+								</span>
 							{/if}
 						</span>
 						{#if option.description}

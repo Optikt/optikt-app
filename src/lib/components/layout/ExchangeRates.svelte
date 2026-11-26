@@ -227,8 +227,10 @@
 									<span
 										class="rounded px-1 font-mono text-lg font-bold text-brand-navy tabular-nums transition-colors duration-500 {sseAnimating
 											? 'bg-amber-100 text-amber-700'
-											: ''}">{formatRate(rate.value)}</span
+											: ''}"
 									>
+										{formatRate(rate.value)}
+									</span>
 									<span class="ml-1 text-[11px] text-slate-400">Bs</span>
 								</div>
 								<button

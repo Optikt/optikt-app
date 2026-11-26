@@ -110,8 +110,9 @@
 						</span>
 					{/each}
 					<div class="text-[15px] font-semibold text-on-surface tabular-nums">
-						{#if item.removed}<s class="font-medium">{formatPrice(totals.net)}</s
-							>{:else}{formatPrice(totals.net)}{/if}
+						{#if item.removed}<s class="font-medium">
+								{formatPrice(totals.net)}
+							</s>{:else}{formatPrice(totals.net)}{/if}
 					</div>
 					{#if totals.discount > 0 && !item.removed}
 						<div class="text-[12px] font-medium text-error tabular-nums">

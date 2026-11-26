@@ -139,9 +139,9 @@
 				</span>
 				<span class="flex flex-col gap-0.5">
 					<span class="text-sm font-semibold text-on-surface">Duplicar</span>
-					<span class="text-[13px] text-on-surface-variant"
-						>Nuevo presupuesto para otro cliente</span
-					>
+					<span class="text-[13px] text-on-surface-variant">
+						Nuevo presupuesto para otro cliente
+					</span>
 				</span>
 			</button>
 			<button

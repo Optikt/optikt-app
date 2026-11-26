@@ -64,9 +64,9 @@
 			</span>
 
 			<label class="block">
-				<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase"
-					>Motivo</span
-				>
+				<span class="text-xs font-bold tracking-[0.06em] text-on-surface-variant uppercase">
+					Motivo
+				</span>
 				<select
 					bind:value={reason}
 					class="mt-1 w-full rounded-lg border border-outline-variant/40 bg-white px-3 py-2 text-sm"

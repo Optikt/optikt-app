@@ -306,8 +306,10 @@
 					<button
 						type="button"
 						class="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-on-surface-variant transition-colors hover:text-error"
-						onclick={() => onRemoveRange(i)}>Quitar</button
+						onclick={() => onRemoveRange(i)}
 					>
+						Quitar
+					</button>
 				</div>
 			</div>
 		{/each}

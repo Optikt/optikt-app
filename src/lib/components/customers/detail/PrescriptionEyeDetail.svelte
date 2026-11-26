@@ -23,9 +23,9 @@
 		>
 			{side}
 		</div>
-		<span class="text-sm font-bold tracking-wider text-on-surface uppercase"
-			>{isOD ? 'Ojo Derecho (OD)' : 'Ojo Izquierdo (OS)'}</span
-		>
+		<span class="text-sm font-bold tracking-wider text-on-surface uppercase">
+			{isOD ? 'Ojo Derecho (OD)' : 'Ojo Izquierdo (OS)'}
+		</span>
 	</div>
 	<div class="grid grid-cols-4 gap-3 text-xs">
 		<div>

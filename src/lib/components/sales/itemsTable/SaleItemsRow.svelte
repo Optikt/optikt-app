@@ -193,8 +193,9 @@
 					{href}
 					onclick={(e) => e.stopPropagation()}
 					class="text-sm font-semibold text-on-surface transition-colors hover:text-on-info-container hover:underline hover:underline-offset-2"
-					>{title}</a
 				>
+					{title}
+				</a>
 			{:else}
 				<span class="text-sm font-semibold text-on-surface">{title}</span>
 			{/if}

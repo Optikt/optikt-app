@@ -314,10 +314,10 @@
 
 						{#if adjusted.taxAmount > 0}
 							<div class="flex items-center justify-between gap-3">
-								<span
-									>IVA{#if ivaRate !== null}
-										({formatTaxRate(ivaRate)}%){/if}</span
-								>
+								<span>
+									IVA{#if ivaRate !== null}
+										({formatTaxRate(ivaRate)}%){/if}
+								</span>
 								<span class="font-mono text-slate-950 tabular-nums">
 									{formatPrice(adjusted.taxAmount)}
 								</span>
@@ -383,10 +383,10 @@
 
 						{#if adjusted.taxAmount > 0}
 							<div class="flex items-center justify-between gap-3">
-								<span
-									>IVA{#if ivaRate !== null}
-										({formatTaxRate(ivaRate)}%){/if}</span
-								>
+								<span>
+									IVA{#if ivaRate !== null}
+										({formatTaxRate(ivaRate)}%){/if}
+								</span>
 								<span class="font-mono text-slate-950 tabular-nums">
 									{formatPrice(adjusted.taxAmount)}
 								</span>

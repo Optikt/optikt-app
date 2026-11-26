@@ -26,7 +26,9 @@
 			onclick={() => onchange(option.value)}
 			class="rounded px-2.5 py-1 text-xs font-semibold {tab === option.value
 				? 'bg-white text-brand-navy shadow-sm'
-				: 'text-on-surface-variant'}">{option.label}</button
+				: 'text-on-surface-variant'}"
 		>
+			{option.label}
+		</button>
 	{/each}
 </div>

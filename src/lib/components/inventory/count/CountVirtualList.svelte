@@ -386,9 +386,9 @@
 										{#if line.notes}
 											<span class="truncate text-xs text-on-surface-variant">{line.notes}</span>
 										{:else}
-											<span class="truncate font-mono text-xs text-outline"
-												>{line.itemCode ?? ''}</span
-											>
+											<span class="truncate font-mono text-xs text-outline">
+												{line.itemCode ?? ''}
+											</span>
 										{/if}
 									</span>
 									<span class="text-right text-brand-navy tabular-nums">{line.systemStock}</span>
